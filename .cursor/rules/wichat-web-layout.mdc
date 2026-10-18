@@ -1,12 +1,12 @@
 ---
 description: WiChat web client — Next.js app structure, features vs app routing, shared components
-globs: frontend/web-client/**
+globs: frontend/apps/web/**
 alwaysApply: false
 ---
 
-# Web client layout (`frontend/web-client`)
+# Web client layout (`frontend/apps/web`)
 
-**Canonical app path:** `frontend/web-client/` (Electron/RN reuse the same API later).
+**Canonical app path:** `frontend/apps/web/` (pnpm package name `web-client`). Shared API/i18n: `frontend/packages/@wichat/*`. Electron/RN apps attach later.
 
 ## Client architecture (do not drift)
 
@@ -24,8 +24,7 @@ alwaysApply: false
 | `components/ui/` | shadcn primitives. |
 | `components/layout/` | Cross-feature shell (sidebar, header). |
 | `services/` | TanStack Query layer — see `wichat-web-data.mdc`. |
-| `schemas/` | Zod (forms + API parse). |
-| `integrations/` | Third-party & IO (api-client, tanstack-query, i18n, MSW, LiveKit later). |
+| `integrations/` | App wiring (api singleton, tanstack-query, locale cookie, MSW, LiveKit later). |
 | `hooks/` | Generic UI helpers only (`use-mobile`, dialogs) — not domain fetch. |
 | `lib/` | `cn`, dates, small pure helpers. |
 

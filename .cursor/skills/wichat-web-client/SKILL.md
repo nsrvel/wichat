@@ -1,7 +1,7 @@
 ---
 name: wichat-web-client
 description: >-
-  Scaffold or extend WiChat Next.js app at frontend/web-client — thin app/
+  Scaffold or extend WiChat Next.js app at frontend/apps/web — thin app/
   routes, features/, services query/mutation pattern, shadcn, api-gateway
   client. Use when adding frontend slices, auth/chat UI, or initializing
   web-client.
@@ -9,7 +9,7 @@ description: >-
 
 # WiChat web client
 
-Read before implementing under `frontend/web-client/`:
+Read before implementing under `frontend/apps/web/` (shared packages: `frontend/packages/@wichat/*`):
 
 1. **Rules:** `.cursor/rules/wichat-web-layout.mdc`, `.cursor/rules/wichat-web-data.mdc`
 2. **Spec:** `docs/architecture/wichat-system-design.md` (clients, REST, WS, plugins iframe)
@@ -18,12 +18,12 @@ Read before implementing under `frontend/web-client/`:
 
 ## Scaffold checklist (first slice)
 
-1. Next.js App Router + TypeScript + Tailwind under `frontend/web-client/`
+1. Next.js App Router + TypeScript + Tailwind under `frontend/apps/web/`
 2. shadcn → `src/components/ui/`; `next-themes` in `app/layout.tsx`
 3. `@/` alias → `src/`
 4. `integrations/api-client`, `integrations/tanstack-query` (`get-query-client.ts`, `providers.tsx`)
 5. `env.ts` (`NEXT_PUBLIC_API_URL`)
-6. One domain end-to-end in UI: e.g. `schemas/auth`, `services/auth/*`, `features/auth/login`, thin `app/(auth)/login/page.tsx`
+6. One domain end-to-end in UI: e.g. `@wichat/contracts` auth schemas, `services/auth/*`, `features/auth/login`, thin `app/(auth)/login/page.tsx`
 7. Optional: `integrations/msw` for mock until gateway routes exist
 
 ## New feature slice (repeatable)

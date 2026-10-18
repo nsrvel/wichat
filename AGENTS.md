@@ -10,7 +10,7 @@ WiChat is a **self-hosted**, **AGPL-3.0** team communication platform with a **p
 
 ## Architecture constraints (do not drift)
 
-- Core backend: **Go monorepo microservices** under `backend/services/` (gRPC + Kafka between services).
+- Core backend: **Go monorepo microservices** under `backend/` — `api-gateway/`, `ms-<domain>/`, `wi-shared/` (gRPC + Kafka between services).
 - Separate processes: **LiveKit**, **plugins (gRPC)**, not core domains.
 - Data: PostgreSQL, Redis, Elasticsearch, MinIO, Kafka.
 - Clients: Next.js (web + iOS PWA), Electron, React Native (Android).
@@ -19,13 +19,15 @@ WiChat is a **self-hosted**, **AGPL-3.0** team communication platform with a **p
 ## Repository layout (target)
 
 ```
-backend/       # Go: services/, pkg/, plugins/ (plugin servers)
-frontend/      # web-client (Next.js)
+backend/       # Go: api-gateway/, ms-*/, wi-shared/, plugins/ (plugin servers, later)
+frontend/      # apps/web (Next.js) + packages/@wichat/*
 deploy/        # docker compose, env templates
 docs/          # architecture & ops
 ```
 
 Monorepo boundaries: [docs/architecture/monorepo-layout.md](docs/architecture/monorepo-layout.md).
+
+**Go services (`ms-*`):** repository → service → delivery; models and migrations per `wichat-go-layers.mdc`. Shared backend libs: [backend/wi-shared/README.md](backend/wi-shared/README.md).
 
 Phases in system design §15 — implement in order unless explicitly reprioritized.
 
@@ -52,8 +54,8 @@ License: [LICENSE](LICENSE). Preserve AGPL headers on new source files. Do not a
 | `wichat-go.mdc` | Go backend: tests under `<pkg>/test/`, per-module `make check`, wi-shared patterns |
 | `wichat-go-layers.mdc` | Go backend: repository / service / delivery layout |
 | `wichat-go-style.mdc` | Go backend: `//` step comments, wiring spacing |
-| `wichat-web-layout.mdc` | `frontend/web-client/**` — app vs features, components, no micro-FE |
-| `wichat-web-data.mdc` | `frontend/web-client/**` — api-client, Zod, TanStack Query services, WS vs Query |
+| `wichat-web-layout.mdc` | `frontend/apps/web/**` — app vs features, components, no micro-FE |
+| `wichat-web-data.mdc` | `frontend/apps/web/**` + `frontend/packages/**` — `@wichat/*`, TanStack Query services, WS vs Query |
 
 **Skill:** `.cursor/skills/wichat-web-client/` — scaffold and feature slices for web-client.
 

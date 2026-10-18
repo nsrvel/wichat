@@ -20,7 +20,7 @@ Target scale: **2–500 people per workspace** on a single instance (`docker com
 
 ```
 backend/     # Go microservices + wi-shared (see backend/README.md)
-frontend/    # web-client (see frontend/README.md)
+frontend/    # apps/web + @wichat packages (see frontend/README.md)
 deploy/      # Docker Compose & ops
 docs/        # Architecture & product spec
 ```

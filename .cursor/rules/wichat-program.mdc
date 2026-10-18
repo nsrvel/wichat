@@ -21,7 +21,7 @@ WiChat is a **major product** — build and spec it seriously, not as a throwawa
 ## Sequencing
 
 - **Plan before code:** for the **next** slice, write a short plan first (goal, files touched, out-of-scope, how to verify). Get alignment in chat if the slice is non-trivial; then implement. Do not stack the next feature on an unreviewed pile of changes without stating the plan.
-- **Scope and commits:** keep each slice **small and committable**. Before starting the next slice, check `git status`: if the current scope is done and reviewable, **ask Garam to commit** (or commit when he explicitly asks) — do not let the working tree grow **bulky** across unrelated topics. One logical unit ≈ one commit message (e.g. `wi-shared run/grpc foundation`, then `api-gateway health + ms-auth client`, not everything in one diff).
+- **Scope and commits:** keep each slice **small and committable**. Before starting the next slice, check `git status`: if the current scope is done and reviewable, **ask Garam to commit** (or commit when he explicitly asks) — do not let the working tree grow **bulky** across unrelated topics. One logical unit ≈ one commit message (e.g. `wi-shared run/grpc foundation`, then `api-gateway + ms-user client`, not everything in one diff).
 - **Micro-steps only:** one small, reviewable slice at a time. Do not sell distant milestones unless Garam asks.
 - SDD phases (§15) are a **map**, not a sprint plan — translate into the **next single step** after each merge.
 - Do not pull in deferred non-goals (federation, E2E v1, public marketplace, multi-tenant SaaS).

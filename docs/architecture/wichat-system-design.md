@@ -44,7 +44,7 @@ The project originated from a real gap: an internal team found existing tools ei
 
 See [`architecture-context.mermaid`](architecture-context.mermaid) for the C4 Context-level view (users, WiChat, external systems) and [`architecture-container.mermaid`](architecture-container.mermaid) for the Container-level view (internal services, data stores, plugins). Summary of major building blocks:
 
-- **Core Backend**: **monorepo microservices** — multiple Go binaries under `backend/services/` (see §5.1)
+- **Core Backend**: **monorepo microservices** — multiple Go binaries under `backend/` (`api-gateway`, `ms-*`, `wi-shared`; see §5.1)
 - **Media Layer**: LiveKit (self-hosted SFU) as a genuinely separate process
 - **Plugin Layer**: separate processes per plugin, communicating with platform/plugin services via gRPC; frontend plugin UI via iframe/WebView + postMessage
 - **Data Layer**: PostgreSQL (primary store), Redis (ephemeral/real-time), Elasticsearch (search), MinIO (file storage)
@@ -53,25 +53,25 @@ See [`architecture-context.mermaid`](architecture-context.mermaid) for the C4 Co
 
 ### 5.1 Monorepo microservices (core backend)
 
-**Decision:** Core runs as **separate deployable Go services** in `backend/services/<name>/` (workspace `backend/go.work`), talking **gRPC** internally and **Kafka** for async work.
+**Decision:** Core runs as **separate deployable Go modules** in `backend/` (workspace [`backend/go.work`](../../backend/go.work)): **`api-gateway/`** (public HTTP) and **`ms-<domain>/`** gRPC services (e.g. `ms-user`, `ms-chat`), plus **`wi-shared/`** for protobuf and cross-cutting libs. Services talk **gRPC** internally and **Kafka** for async work.
 
 **Why not one binary:** Keeps each runtime small and lets teams evolve/chat scale/realtime paths independently without one growing “god binary.”
 
 **Tradeoff (explicit):** Self-host runs **more containers** than a monolith — mitigated by a single `docker compose` stack and shared infra (one Postgres cluster, one Redis, one Kafka).
 
-**Service set (v1 — nine services under `backend/services/`):**
+**Service set (v1 — seven deployable core services; repo paths match module names under `backend/`):**
 
 | Service | Responsibility |
 |---------|----------------|
-| **api-gateway** | Public HTTP `/api/v1`, rate limits, JWT validation (via ms-auth), routes to gRPC backends, presigned URL issuance, export job trigger |
-| **ms-auth** | Auth, OAuth, email/password, sessions, refresh rotation, first-run admin, guest tokens (when enabled) |
-| **ms-user** | Workspaces, membership, RBAC, channels/categories/DM metadata, workspace settings, lobby/onboarding, user profiles |
-| **ms-chat** | Messages, threads, reactions, pins, typing, read receipts, WebSocket fanout, presence/activity status, chat-side moderation signals |
-| **ms-media** | LiveKit room tokens, webhooks, call lifecycle |
+| **api-gateway** | Public HTTP `/api/v1`, rate limits, JWT validation (via ms-user), routes to gRPC backends, presigned URL issuance, export job trigger |
+| **ms-user** | Auth (OAuth, email/password, sessions, refresh rotation, first-run admin, guest tokens when enabled) **and** workspaces, membership, RBAC, channels/categories/DM metadata, workspace settings, lobby/onboarding, user profiles — one gRPC process, separate domain packages (`internal/auth`, `internal/user`) |
+| **ms-chat** | Messages, threads, reactions, pins, typing, read receipts, WebSocket fanout, presence/activity status, chat-side moderation signals, **and** message search (query API + Elasticsearch indexing via Kafka `chat-events` consumer, RBAC-scoped per §6.10) — one gRPC process, separate domain package `internal/search` when implemented |
+| **ms-core** | LiveKit room tokens, webhooks, call lifecycle (realtime voice/video/screen share control — not auth, chat messages, or plugins) |
 | **ms-plugin** | Plugin registry, install lifecycle, gRPC to plugin processes in `backend/plugins/` |
-| **ms-notify** | @mention and notification dispatch (Kafka in → FCM/Web Push out) |
-| **ms-search** | Search query API + Elasticsearch indexing (Kafka consumer) |
+| **ms-notification** | @mention and notification dispatch (Kafka `notif-events` in → FCM/Web Push out) |
 | **ms-audit** | Audit log writer (Kafka consumer → Postgres) |
+
+**Default local listen ports** (gRPC unless noted): api-gateway **3000** (HTTP), ms-user **3001**, ms-chat **3002**, ms-core **3003**, ms-plugin **3004**, ms-notification **3005**, ms-audit **3006**. See [deploy/README.md](../../deploy/README.md).
 
 **Data ownership:** One **PostgreSQL cluster** at launch; each service owns its **tables** (no cross-service SQL joins — use IDs + gRPC/events). Shared DB is a pragmatic compromise; split databases only if ops requires it later.
 
@@ -151,7 +151,7 @@ In-house only for v1; manifest/gRPC contracts are designed cleanly so a public m
 MediaPipe embedded client-side (not a third-party app/virtual camera) — processes video locally before publishing to LiveKit. Opt-in, default OFF on mobile/PWA to protect battery/thermals. A separate native macOS project ("GestureCam", Vision framework + CMIOExtension) may later serve as an advanced virtual-camera input option.
 
 ### 6.10 Search
-Elasticsearch, populated asynchronously via a Kafka consumer (decoupled from the chat write path to avoid dual-write failure modes).
+Message search is implemented in **`ms-chat`** (not a separate microservice). Elasticsearch is populated asynchronously via a Kafka consumer in the same process (decoupled from the chat write path to avoid dual-write failure modes).
 
 - **Scope**: global across all channels the user has access to (Teams/Discord-style), with filter operators (`in:channel`, `from:user`, `before:`/`after:date`, `has:file`) rather than search being scoped to only the currently-open channel
 - **Attachment search**: v1 covers filename/metadata search; full-text search of file contents (extracted via a tool like `pdftotext`/Apache Tika in the upload pipeline, then indexed alongside message metadata) is a planned follow-up, not required for v1
@@ -225,7 +225,7 @@ Two separate mechanisms, serving different needs:
 
 ## 10. Observability & Testing
 
-- **Observability**: Prometheus metrics (admin `/metrics`) + Grafana; application logs via slog → Loki (see [metrics.md](metrics.md), [logging.md](logging.md))
+- **Observability** (target): Prometheus metrics + Grafana; application logs via slog → Loki (see [logging.md](logging.md)). Metrics/tracing/health endpoints are **not implemented** in the Go services yet.
 - **Testing**:
   - Unit tests: Go `testing` + `testify`, ~90% coverage target
   - Integration tests: testcontainers (real Postgres/Redis in CI)
@@ -264,7 +264,7 @@ No offline-first support — mobile/web require an active connection. This is a 
 
 - REST for CRUD + existing WebSocket channel for realtime — GraphQL is deferred unless a concrete need for complex nested queries emerges
 - Versioning: URI-based (`/api/v1/`); old versions stay live until all clients (including slower-to-update mobile) migrate
-- Migrations: `golang-migrate`
+- Migrations: [goose](https://github.com/pressly/goose) per service under `backend/<service>/internal/migrations/` (not applied on process startup)
 - i18n: backend emits message codes/keys only, never raw text; frontend resolves via translation files (i18next for web/Electron, go-i18n for backend-generated text like emails); ICU-style interpolation for dynamic values
 - Dark mode is a day-one requirement; a shared design-token system underlies web/desktop/mobile for visual consistency
 - **Error handling**: standard HTTP status codes + JSON body `{ "error": { "code": "<i18n_key>", "params": { ... } } }` — backend emits translation keys only; see [error-handling.md](error-handling.md)

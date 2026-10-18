@@ -1,6 +1,6 @@
 # Error handling (backend)
 
-WiChat services use a shared error model in `backend/wi-shared`: semantic errors at the use-case layer, plain `error` below that, and **response writers** at HTTP/gRPC controller boundaries.
+WiChat services use a shared error model in `backend/wi-shared`: semantic errors at the use-case layer, plain `error` below that, and **response writers** at HTTP/gRPC controller boundaries. Package notes: [exception/README.md](../../backend/wi-shared/exception/README.md), [response/README.md](../../backend/wi-shared/response/README.md).
 
 ## Layers
 
@@ -13,17 +13,9 @@ WiChat services use a shared error model in `backend/wi-shared`: semantic errors
 
 Clients resolve messages with i18n: `t(error.code, error.params)`.
 
-## `exception` package
+## `exception` / `response` packages
 
-- **`Kind`**: maps to HTTP status and gRPC `codes.Code` (see `exception/kind.go`).
-- **`MessageCode`**: stable string keys (e.g. `user.not_found`). Each new code must be added to the frontend locale catalog.
-- **`Error`**: `Kind`, `Code`, `Params`, `Cause` (logs only; never sent to clients).
-
-Constructors: `InvalidInput`, `NotFound`, `Unauthenticated`, `PermissionDenied`, `Conflict`, `StateConflict`, `RateLimited`, `Unavailable`, `DeadlineExceeded`, `Internal(cause)`.
-
-`Params` maps are copied at construction; treat `*Error` as read-only. `ValidMessageCode` enforces allowed i18n key prefixes (`error.`, `auth.`, `user.`).
-
-Unknown or infrastructure errors returned without an `exception.Error` are treated as **internal** at the writer.
+API and constructors: [exception/README.md](../../backend/wi-shared/exception/README.md), writers: [response/README.md](../../backend/wi-shared/response/README.md). Each new `MessageCode` needs a frontend locale key. Errors without `*exception.Error` become **internal** at the writer.
 
 ## HTTP JSON shape
 

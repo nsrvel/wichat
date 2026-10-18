@@ -1,31 +1,8 @@
 # Application logging
 
-WiChat services use **`wi-shared/infra/logger`** (`log/slog`) for structured application logs.
+WiChat services use **`wi-shared/infra/logger`** (`log/slog`) for structured application logs. Module notes: [infra/logger/README.md](../../backend/wi-shared/infra/logger/README.md).
 
-## Output
-
-| Environment | Format | Destination |
-|-------------|--------|-------------|
-| `production` | JSON | stdout |
-| Other (e.g. `development`) | text | stdout |
-
-Default fields on every line: `service`, `env`. Additional fields via `log.Info("msg", "key", value)`.
-
-Container platforms and **Promtail/Alloy → Loki → Grafana** collect stdout; the app does not push logs directly in v1.
-
-## Configuration
-
-Per-service config (e.g. `log_level` in ms-auth) maps to slog levels: `debug`, `info`, `warn`, `error`.
-
-```go
-appLog := logger.New(logger.Options{
-    Service: "ms-auth",
-    Env:     cfg.Env,
-    Level:   cfg.LogLevel,
-})
-```
-
-Inject `logger.Logger` into repository, service, and delivery layers ([wichat-go-layers.mdc](../../.cursor/rules/wichat-go-layers.mdc)).
+Container platforms and **Promtail/Alloy → Loki → Grafana** collect stdout; the app does not push logs directly in v1. `logger.New`, levels, and injection: [infra/logger/README.md](../../backend/wi-shared/infra/logger/README.md).
 
 ## HTTP errors and logging
 
@@ -51,14 +28,12 @@ Client responses stay i18n codes only — see [error-handling.md](error-handling
 
 ## Gateway request ID
 
-`api-gateway/internal/middleware` sets `microservices.RequestIDHeader` (`X-Request-ID`) on every response and stores the value on `r.Context()` via `microservices.WithRequestID`.
+`api-gateway/internal/middleware` sets `correlation.RequestIDHeader` (`X-Request-ID`) on every response and stores the value on `r.Context()` via `correlation.WithRequestID` (`microservices/utils/correlation`).
 
-Outbound gRPC from api-gateway uses `wi-shared/microservices` client interceptors to send `x-request-id` metadata; ms-auth server interceptors read it back into context (recovery logs include `request_id` when present).
+Outbound gRPC from api-gateway uses `wi-shared/microservices` client interceptors to send `x-request-id` metadata; ms-user server interceptors read it back into context (recovery logs include `request_id` when present).
 
 ## Follow-up
 
 - Add `request_id` to slog lines from context (automatic on every log call)
-- HTTP OpenTelemetry (`otelhttp`) on api-gateway
-- Deploy OTLP collector / Tempo in `deploy/` when ops slice lands
 
-See [microservices.md](microservices.md) for CallUnary and retries; [tracing.md](tracing.md) for `wi-shared/infra/otel`.
+See [microservices.md](microservices.md) for CallUnary and retries.

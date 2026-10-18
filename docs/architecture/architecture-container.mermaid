@@ -12,23 +12,19 @@ flowchart TB
     subgraph Edge["Core Backend — monorepo microservices (Go)"]
         direction TB
         Gateway["api-gateway\nHTTP /api/v1, rate limit,\npresigned URLs, export trigger"]
-        Identity["identity\nauth, OAuth, sessions, guest tokens"]
-        Platform["platform\nworkspaces, RBAC, channels metadata"]
-        ChatSvc["chat\nmessages, WS, threads, moderation signals"]
+        UserSvc["ms-user\nauth, sessions, workspaces,\nRBAC, profiles, channel metadata"]
+        ChatSvc["ms-chat\nmessages, WS, search + ES indexer"]
         PresenceSvc["presence\nstatus, activity"]
-        MediaControl["media\nLiveKit tokens, webhooks"]
-        NotifSvc["notify\n@mention dispatch, push"]
-        SearchSvc["search\nquery + ES indexer"]
-        AuditSvc["audit\nKafka → audit log"]
+        MsCore["ms-core\nLiveKit tokens, webhooks"]
+        NotificationSvc["ms-notification\n@mention dispatch, push"]
+        AuditSvc["ms-audit\nKafka → audit log"]
         PluginMgr["plugins\nregistry, gRPC to plugins"]
 
-        Gateway --> Identity
-        Gateway --> Platform
+        Gateway --> UserSvc
         Gateway --> ChatSvc
         Gateway --> PresenceSvc
-        Gateway --> SearchSvc
         Gateway --> PluginMgr
-        Gateway --> MediaControl
+        Gateway --> MsCore
         ChatSvc --> PresenceSvc
     end
 
@@ -70,15 +66,15 @@ flowchart TB
     Mobile -->|WS| ChatSvc
     Mobile --> LiveKit
 
-    Identity --> Postgres
-    Identity -->|guest TTL| Redis
-    Platform --> Postgres
+    UserSvc --> Postgres
+    UserSvc -->|sessions, guest TTL| Redis
     ChatSvc --> Postgres
     ChatSvc --> Redis
     ChatSvc -->|emit| Kafka
-    Kafka --> SearchSvc --> ES
+    Kafka -->|chat-events index| ChatSvc
+    ChatSvc --> ES
     Kafka --> AuditSvc --> Postgres
-    Kafka --> NotifSvc
+    Kafka --> NotificationSvc
     PresenceSvc --> Redis
     PluginMgr --> Postgres
     PluginMgr <-->|gRPC| P1
@@ -88,6 +84,6 @@ flowchart TB
     Gateway -.presigned URL.-> MinIO
     Postgres -.scheduled.-> BackupJob
 
-    LiveKit -->|webhook| MediaControl
-    MediaControl --> LiveKit
+    LiveKit -->|webhook| MsCore
+    MsCore --> LiveKit
     Edge -.logs/metrics.-> Grafana

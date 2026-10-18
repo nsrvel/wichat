@@ -57,18 +57,15 @@ Postgres data volume: `wichat_wichat-postgres` (Compose prefixes volume names wi
 | Redis | **6379** | `redis://localhost:6379/0` |
 | Prometheus | **9090** | UI + API |
 | Grafana | **9000** | Host maps to container **3000** |
-| api-gateway | **3000** | `/health`, `/ready`, `/metrics` on public HTTP |
-| ms-auth | **3001** | gRPC + `/health`, `/ready`, `/metrics` on one port |
-| ms-user | **3002** | gRPC + `/health`, `/ready`, `/metrics` on one port |
+| api-gateway | **3000** | Public HTTP |
+| ms-user | **3001** | gRPC (auth + user/workspace) |
+| ms-chat | **3002** | gRPC (messages, WS fanout, search indexer) — planned |
+| ms-core | **3003** | gRPC (LiveKit tokens, call lifecycle) — planned |
+| ms-plugin | **3004** | gRPC — planned |
+| ms-notification | **3005** | gRPC — planned |
+| ms-audit | **3006** | gRPC — planned |
 
-### Metrics (Prometheus + Grafana)
-
-- Prometheus: http://localhost:9090
-- Grafana: http://localhost:9000
-
-Scrape config expects **ms-auth** on **3001**, **ms-user** on **3002**, and **api-gateway** on **3000** (`host.docker.internal`). Run binaries locally, then check Prometheus → Status → Targets.
-
-See [docs/architecture/metrics.md](../docs/architecture/metrics.md).
+Prometheus/Grafana containers may be present in Compose for future use; Go services do not expose `/metrics` yet.
 
 Instance env: [`deploy/.env.example`](.env.example) (Compose overrides). Go services: each module’s `backend/<service>/.env.example`. See [docs/architecture/monorepo-layout.md](../docs/architecture/monorepo-layout.md).
 
@@ -76,4 +73,4 @@ See `docs/architecture/wichat-system-design.md` §7 and §11.
 
 ### Go services (local, not Docker)
 
-From `backend/`: `make dev-ms-auth` then `make dev-api-gateway` (Air live reload), or `make run-*` without reload. Kuma Shell: working directory `backend/ms-auth` or `backend/api-gateway`, command `make dev`.
+From `backend/`: `make dev-ms-user` then `make dev-api-gateway` (Air live reload), or `make run-*` without reload. Kuma Shell: working directory `backend/ms-user` or `backend/api-gateway`, command `make dev`.

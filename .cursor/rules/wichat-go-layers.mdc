@@ -17,19 +17,36 @@ Readability goal: **open any file once and know its job** — same structural ha
 - **Value receivers** on impl methods unless the receiver must mutate shared state (match suretyship default).
 - **Inject `logger.Logger`** (`wi-shared/infra/logger`) in service, delivery, and repository when I/O errors matter.
 
+## Helper scope (`pkg` vs `wi-shared`)
+
+| Scope | Where |
+|-------|--------|
+| **One microservice** (`ms-*`, `api-gateway`) | `backend/<module>/pkg/` — kebab-case dirs (`auth-http`); see `wichat-go-style.mdc` |
+| **Across services** | `backend/wi-shared/` — see [wi-shared/README.md](../../backend/wi-shared/README.md); **no** domain use cases |
+
+Do not import another service’s `internal/` or `pkg/` from a different `ms-*` module.
+
 ## Folder layout (per domain)
 
 ```text
-backend/ms-auth/internal/auth/
-  repository/          # postgres_*.go, redis_*.go
-  service/             # service.go (interface + impl)
-  delivery/grpc/       # microservice handlers
+backend/ms-user/internal/models/     # <domain>_model.go, <domain>_repository_model.go
+backend/ms-user/internal/migrations/ # goose SQL (not on startup)
+
+backend/ms-user/internal/auth/
+  repository/          # pg_repository.go, sql_queries.go, test/
+  service/
+  delivery/grpc/
+
+backend/ms-user/internal/user/
+  repository/
+  service/
+  delivery/grpc/
 
 backend/api-gateway/internal/auth/
   delivery/http/       # public REST only
 ```
 
-Payload/DTO structs: `internal/auth/model` or colocated with `service` when small.
+Payload/DTO structs: `internal/models/<domain>_model.go` per service (e.g. `ms-user/internal/models/auth_model.go`). Bun table structs: `<domain>_repository_model.go` in the same package — not under `repository/`.
 
 ## Repository
 
@@ -43,11 +60,11 @@ type PgRepository interface {
 }
 
 type pgRepository struct {
-    db  *sql.DB
+    db  *bun.DB
     log logger.Logger // optional
 }
 
-func NewPgRepository(db *sql.DB, log logger.Logger) PgRepository {
+func NewPgRepository(db *bun.DB, log logger.Logger) PgRepository {
     return pgRepository{db: db, log: log}
 }
 
@@ -62,6 +79,8 @@ Checklist:
 
 - `context.Context` first on every method.
 - Name interfaces by store: `PgRepository`, `RedisRepository`.
+- **Postgres hybrid:** Bun (`*bun.DB` over `database/sql` + pgx) for simple CRUD; keep locks, `FOR UPDATE`, joins, and bulk deletes in `sql_queries.go` + `NewRaw` inside `RunInTx`.
+- Contract + `pgRepository` live in `pg_repository.go` (no separate `repository.go`).
 - Sentinel errors OK: `var ErrNotFound = errors.New("...")` — service maps to `exception`.
 - No i18n, no HTTP/gRPC, no `wi-shared/exception`.
 
@@ -150,8 +169,6 @@ func (h handler) Login(w http.ResponseWriter, r *http.Request) {
 }
 ```
 
-Downstream gRPC errors: `responsehttp.WriteErrorFromGRPC(w, r, err, ...)`.
-
 ### gRPC (microservice) — `delivery/grpc`
 
 ```go
@@ -170,8 +187,8 @@ func (s *AuthServer) Login(ctx context.Context, req *pb.LoginRequest) (*pb.Login
 Checklist:
 
 - Same `// Bind` / `// Service` / `// Response` steps.
-- Never `http.Error`, raw `status.Error` with driver text, or skip writers on errors.
-- Cookies, headers, proto mapping stay in delivery — not in service.
+- Errors: `wi-shared/response` writers only — see [error-handling.md](../../docs/architecture/error-handling.md).
+- Cookies/headers in delivery; proto mappers in `ms-*/pkg/*pb`; gRPC `Server` embeds `authv1.*ServiceServer`.
 
 ## Anti-patterns
 
@@ -182,6 +199,5 @@ Checklist:
 
 ## See also
 
-- Tests: `wichat-go.mdc` (`<pkg>/test/`).
-- Comments & spacing: `wichat-go-style.mdc`.
-- Errors: `docs/architecture/error-handling.md`.
+- `wichat-go.mdc`, `wichat-go-style.mdc`.
+- Shared libs: `backend/wi-shared/README.md`.

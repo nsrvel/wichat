@@ -23,11 +23,27 @@ Go workspace: [`backend/go.work`](../../backend/go.work). Each runnable or libra
 | Path | Module role |
 |------|-------------|
 | `backend/api-gateway/` | Public HTTP `/api/v1`; thin delivery — routes to gRPC backends |
-| `backend/ms-user/` | Auth (sessions, OAuth, setup), users/workspaces (domains as `internal/auth`, `internal/user`, …) |
+| `backend/ms-user/` | Auth + users/workspaces: domains under `internal/auth`, `internal/user`, …; shared types in `internal/models/`; SQL in `internal/migrations/` |
 | `backend/ms-chat/`, `ms-core/`, … | Planned services; empty placeholder dirs until the slice lands |
 | `backend/wi-shared/` | Protobuf (`models/`), errors, response helpers, gRPC client/server utilities |
 
 There is **no** separate `ms-auth` service — auth lives in **`ms-user`**. Gateway must not import another service’s Go packages; only **`wi-shared`** generated gRPC clients.
+
+**ms-user internals (pattern for other `ms-*`):**
+
+```text
+internal/models/           # auth_model.go, auth_repository_model.go, …
+internal/migrations/       # goose per service
+internal/<domain>/
+  repository/              # pg_repository.go, sql_queries.go, test/
+  service/
+  delivery/grpc/
+internal/server/           # Run(), bun + pgx pool wiring
+```
+
+Domain packages do **not** own a `model/` subfolder — types live in `internal/models/`.
+
+**Helper placement:** `ms-user/pkg/` for code reused within that service; `wi-shared/` when two or more backend modules need it (proto, errors, HTTP/gRPC writers).
 
 ## Environment files
 
@@ -37,7 +53,7 @@ There is **no** separate `ms-auth` service — auth lives in **`ms-user`**. Gate
 |----------|------|---------|
 | `deploy/` | `.env.example` | Optional Compose overrides (infra); connection hints for local dev |
 | `backend/api-gateway/` | `.env.example` | `PORT`, `MS_*_HOST`, log level |
-| `backend/ms-user/` | `.env.example` | Service `PORT`, future `DATABASE_URL` / `REDIS_URL` when wired |
+| `backend/ms-user/` | `.env.example` | `PORT`, `DATABASE_URL`, auth/OAuth secrets |
 | `frontend/apps/web/` | `.env.example` | `NEXT_PUBLIC_API_URL` (and other `NEXT_PUBLIC_*` only) |
 
 **Local dev:** from the module directory, `cp .env.example .env` (Go) or `.env.local` (Next.js). Never commit `.env`.

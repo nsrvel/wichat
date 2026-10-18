@@ -14,10 +14,12 @@ Readability goal: **ops-friendly scan** — DevOps/SRE and devs should see **wha
 |------|---------|
 | The **package name is the context** — avoid redundant suffixes | Bad: `config/config_models.go`. Good: `config/config.go` |
 | **One primary file** per small package | `config.go`, `logger.go`; split only when ~300+ lines or clear sub-concern (e.g. `repository/postgres_user.go`) |
-| **Split by concern** when still small | Good: `exception/code.go`, `kind.go`, `error.go` (~100 lines each); add `code_<domain>.go` for more `MessageCode`s |
-| **Subpackages by transport** | `response/response.go` (JSON envelope); `response/http/writer.go`; `response/grpc/status.go` — no extra `from_grpc.go` for a single helper |
+| **Split by concern** when still small | Match existing `wi-shared` packages (see each [module README](../../backend/wi-shared/README.md)) |
+| **Subpackages by transport** | e.g. `response/http`, `response/grpc` — no one-off helper files for a single function |
 | Under `internal/server/`, prefer role names **without** repeating `server_` in the filename | Target: `run.go`, `wire.go` (rename when touched; not required in every slice) |
 | Tests in `<pkg>/test/` (`wichat-go.mdc`); test file may describe behavior | `load_test.go` is fine |
+| **Multi-word `pkg/` and helper dirs** use **kebab-case** in the path | Good: `pkg/auth-http`, `services/ms-user/grpc/auth`. Bad: `pkg/authhttp`, `pkg/auth_http` |
+| Go **`package` clause** mirrors kebab dir with **camelCase** (no hyphens/underscores) | Dir `auth-http` → `package authHttp`, file `auth_http.go`; `services/ms-user` → `package msUser`; import path stays kebab. ST1003 off in backend golangci (staticcheck prefers `msuser`). |
 
 Do not copy suretyship `*_models.go` splits for tiny structs — split when the package actually grows.
 
@@ -39,7 +41,7 @@ Do **not** use `//*`, `// *`, or `//!` — they confuse formatters, godoc, and s
 
 **Required** in:
 
-- `cmd/main.go` — Config → Logger → Metrics → Signals → (startup log) → Server → shutdown epilogue.
+- `cmd/main.go` — Config → Logger → Signals → (startup log) → Server → shutdown epilogue.
 - `internal/server/server_wire.go`, `server_handler.go`, `server_run.go`.
 - `wi-shared/config.Load` and other multi-phase loaders (~5+ distinct phases).
 
@@ -56,7 +58,7 @@ Do **not** use `//*`, `// *`, or `//!` — they confuse formatters, godoc, and s
 | **delivery/http** | `Bind` → `Service` → `Response` |
 | **delivery/grpc** | `Bind` (proto → model) → `Service` → `Response` |
 | **service** | `Validation` → `Repository` → extra domain steps only when needed (`Token`, `Session`, …) |
-| **repository** | No step recipe |
+| **repository** | No step recipe; godoc on exported methods with non-obvious rules (locks, rotation, linking) |
 | **wi-shared** | No steps in tiny packages; use `//` phases in `config.Load` and similar multi-step wiring only |
 
 For **service** methods under ~15 lines, step headers are optional (delivery still uses Bind/Service/Response for consistency).
@@ -95,9 +97,6 @@ func main() {
 	// Logger
 	appLog := logger.New(logger.Options{...})
 
-	// Metrics
-	reg := metrics.NewRegistry()
-
 	// Signals
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
@@ -105,7 +104,7 @@ func main() {
 	appLog.Info("api-gateway starting", "port", cfg.Port)
 
 	// Server
-	srv := server.NewServer(cfg, appLog, reg)
+	srv := server.NewServer(cfg, appLog)
 	if err := srv.Run(ctx); err != nil {
 		appLog.Error("api-gateway stopped", "err", err)
 		os.Exit(1)
