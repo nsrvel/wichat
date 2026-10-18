@@ -1,6 +1,3 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
-// Copyright (C) 2026 Garam
-
 // Package auth is the gRPC client for ms-user AuthService.
 package auth
 

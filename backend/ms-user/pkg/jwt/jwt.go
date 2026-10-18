@@ -1,6 +1,3 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
-// Copyright (C) 2026 Garam
-
 // Package jwt issues and validates short-lived HS256 access tokens for auth sessions.
 package jwt
 

@@ -1,6 +1,3 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
-// Copyright (C) 2026 Garam
-
 // Integration tests for auth Postgres repository. Requires Docker; skipped when unavailable.
 
 package repository_test

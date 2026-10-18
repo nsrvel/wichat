@@ -1,6 +1,3 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
-// Copyright (C) 2026 Garam
-
 // Package google implements OAuth2 authorization URL, PKCE, and userinfo fetch for Google sign-in.
 package google
 

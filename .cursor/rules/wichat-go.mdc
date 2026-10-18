@@ -35,6 +35,6 @@ wi-shared/exception/
 
 ## Other
 
-- Match existing AGPL file headers on new `.go` files.
+- License is AGPL at repo root ([LICENSE](../../LICENSE)); do not add per-file SPDX/copyright headers on new `.go` files.
 - Layer layout: `wichat-go-layers.mdc`. Style: `wichat-go-style.mdc`.
 - Cross-service Go libs: [wi-shared/README.md](../../backend/wi-shared/README.md). Architecture: `docs/architecture/error-handling.md`, `microservices.md`, `logging.md`.

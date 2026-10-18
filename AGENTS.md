@@ -41,7 +41,7 @@ Phases in system design §15 — implement in order unless explicitly reprioriti
 
 ## Legal
 
-License: [LICENSE](LICENSE). Preserve AGPL headers on new source files. Do not add proprietary-licensed dependencies without explicit approval.
+License: [LICENSE](LICENSE) (AGPL-3.0-or-later at repo root; no per-file SPDX/copyright headers). Do not add proprietary-licensed dependencies without explicit approval.
 
 ## Cursor rules
 
