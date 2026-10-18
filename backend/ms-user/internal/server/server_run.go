@@ -15,8 +15,9 @@ import (
 	authgrpc "github.com/wichat/wichat/backend/ms-user/internal/auth/delivery/grpc"
 	"github.com/wichat/wichat/backend/ms-user/internal/auth/repository"
 	"github.com/wichat/wichat/backend/ms-user/internal/auth/service"
+	generalgrpc "github.com/wichat/wichat/backend/ms-user/internal/general/delivery/grpc"
 	googleoauth "github.com/wichat/wichat/backend/ms-user/pkg/google"
-	authv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/auth/v1"
+	userv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/user/v1"
 )
 
 const serveShutdownTimeout = 5 * time.Second
@@ -61,7 +62,8 @@ func (s *server) Run(ctx context.Context) error {
 	}
 
 	grpcSrv := newGRPCServer(s.log)
-	authv1.RegisterAuthServiceServer(grpcSrv, authgrpc.NewServer(authSvc))
+	userv1.RegisterAuthServiceServer(grpcSrv, authgrpc.NewServer(authSvc))
+	userv1.RegisterGeneralServiceServer(grpcSrv, generalgrpc.NewServer("ms-user"))
 
 	// Listen
 	errCh := make(chan error, 1)

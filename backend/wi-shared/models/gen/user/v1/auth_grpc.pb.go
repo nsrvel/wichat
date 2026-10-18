@@ -2,9 +2,9 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.2
 // - protoc             (unknown)
-// source: auth/v1/auth.proto
+// source: user/v1/auth.proto
 
-package authv1
+package userv1
 
 import (
 	context "context"
@@ -19,14 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AuthService_SetupStatus_FullMethodName  = "/auth.v1.AuthService/SetupStatus"
-	AuthService_Setup_FullMethodName        = "/auth.v1.AuthService/Setup"
-	AuthService_Login_FullMethodName        = "/auth.v1.AuthService/Login"
-	AuthService_Refresh_FullMethodName      = "/auth.v1.AuthService/Refresh"
-	AuthService_Logout_FullMethodName       = "/auth.v1.AuthService/Logout"
-	AuthService_Me_FullMethodName           = "/auth.v1.AuthService/Me"
-	AuthService_GoogleStart_FullMethodName  = "/auth.v1.AuthService/GoogleStart"
-	AuthService_GoogleFinish_FullMethodName = "/auth.v1.AuthService/GoogleFinish"
+	AuthService_SetupStatus_FullMethodName  = "/user.v1.AuthService/SetupStatus"
+	AuthService_Setup_FullMethodName        = "/user.v1.AuthService/Setup"
+	AuthService_Login_FullMethodName        = "/user.v1.AuthService/Login"
+	AuthService_Refresh_FullMethodName      = "/user.v1.AuthService/Refresh"
+	AuthService_Logout_FullMethodName       = "/user.v1.AuthService/Logout"
+	AuthService_Me_FullMethodName           = "/user.v1.AuthService/Me"
+	AuthService_GoogleStart_FullMethodName  = "/user.v1.AuthService/GoogleStart"
+	AuthService_GoogleFinish_FullMethodName = "/user.v1.AuthService/GoogleFinish"
 )
 
 // AuthServiceClient is the client API for AuthService service.
@@ -366,7 +366,7 @@ func _AuthService_GoogleFinish_Handler(srv interface{}, ctx context.Context, dec
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var AuthService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "auth.v1.AuthService",
+	ServiceName: "user.v1.AuthService",
 	HandlerType: (*AuthServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
@@ -403,5 +403,5 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "auth/v1/auth.proto",
+	Metadata: "user/v1/auth.proto",
 }

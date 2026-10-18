@@ -13,7 +13,7 @@ import (
 	"github.com/wichat/wichat/backend/wi-shared/microservices"
 	msUser "github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-user"
 	"github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-user/grpc/auth"
-	authv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/auth/v1"
+	userv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/user/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -22,12 +22,12 @@ const refreshSecret = "super-secret-refresh"
 
 func TestLoginStripsRefreshFromJSON(t *testing.T) {
 	handler := authdelivery.NewHandler(testClients(fakeAuth{
-		login: func(context.Context, *authv1.LoginRequest) (*authv1.LoginResponse, error) {
-			return &authv1.LoginResponse{Session: &authv1.Session{
+		login: func(context.Context, *userv1.LoginRequest) (*userv1.LoginResponse, error) {
+			return &userv1.LoginResponse{Session: &userv1.Session{
 				AccessToken:  "access-token",
 				ExpiresIn:    900,
 				RefreshToken: refreshSecret,
-				User:         &authv1.User{Id: "u1", Email: "ada@example.com", DisplayName: "Ada"},
+				User:         &userv1.User{Id: "u1", Email: "ada@example.com", DisplayName: "Ada"},
 			}}, nil
 		},
 	}), testLog(), false, "http://localhost:8080")
@@ -72,43 +72,43 @@ func TestLoginStripsRefreshFromJSON(t *testing.T) {
 }
 
 type fakeAuth struct {
-	login        func(context.Context, *authv1.LoginRequest) (*authv1.LoginResponse, error)
-	googleFinish func(context.Context, *authv1.GoogleFinishRequest) (*authv1.GoogleFinishResponse, error)
+	login        func(context.Context, *userv1.LoginRequest) (*userv1.LoginResponse, error)
+	googleFinish func(context.Context, *userv1.GoogleFinishRequest) (*userv1.GoogleFinishResponse, error)
 }
 
 func testClients(authClient auth.Client) *microservices.Clients {
 	return &microservices.Clients{User: msUser.Service{GRPC: msUser.GRPC{Auth: authClient}}}
 }
 
-func (f fakeAuth) SetupStatus(context.Context, *authv1.SetupStatusRequest) (*authv1.SetupStatusResponse, error) {
+func (f fakeAuth) SetupStatus(context.Context, *userv1.SetupStatusRequest) (*userv1.SetupStatusResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
 
-func (f fakeAuth) Setup(context.Context, *authv1.SetupRequest) (*authv1.SetupResponse, error) {
+func (f fakeAuth) Setup(context.Context, *userv1.SetupRequest) (*userv1.SetupResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
 
-func (f fakeAuth) Login(ctx context.Context, in *authv1.LoginRequest) (*authv1.LoginResponse, error) {
+func (f fakeAuth) Login(ctx context.Context, in *userv1.LoginRequest) (*userv1.LoginResponse, error) {
 	return f.login(ctx, in)
 }
 
-func (f fakeAuth) Refresh(context.Context, *authv1.RefreshRequest) (*authv1.RefreshResponse, error) {
+func (f fakeAuth) Refresh(context.Context, *userv1.RefreshRequest) (*userv1.RefreshResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
 
-func (f fakeAuth) Logout(context.Context, *authv1.LogoutRequest) (*authv1.LogoutResponse, error) {
+func (f fakeAuth) Logout(context.Context, *userv1.LogoutRequest) (*userv1.LogoutResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
 
-func (f fakeAuth) Me(context.Context, *authv1.MeRequest) (*authv1.MeResponse, error) {
+func (f fakeAuth) Me(context.Context, *userv1.MeRequest) (*userv1.MeResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
 
-func (f fakeAuth) GoogleStart(context.Context, *authv1.GoogleStartRequest) (*authv1.GoogleStartResponse, error) {
+func (f fakeAuth) GoogleStart(context.Context, *userv1.GoogleStartRequest) (*userv1.GoogleStartResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
 
-func (f fakeAuth) GoogleFinish(ctx context.Context, in *authv1.GoogleFinishRequest) (*authv1.GoogleFinishResponse, error) {
+func (f fakeAuth) GoogleFinish(ctx context.Context, in *userv1.GoogleFinishRequest) (*userv1.GoogleFinishResponse, error) {
 	if f.googleFinish == nil {
 		return nil, status.Error(codes.Unimplemented, "error.internal")
 	}
@@ -119,13 +119,13 @@ func (f fakeAuth) GoogleFinish(ctx context.Context, in *authv1.GoogleFinishReque
 func TestGoogleCallbackRedirectsWithRefreshCookie(t *testing.T) {
 	var verifier string
 	handler := authdelivery.NewHandler(testClients(fakeAuth{
-		googleFinish: func(_ context.Context, in *authv1.GoogleFinishRequest) (*authv1.GoogleFinishResponse, error) {
+		googleFinish: func(_ context.Context, in *userv1.GoogleFinishRequest) (*userv1.GoogleFinishResponse, error) {
 			verifier = in.GetCodeVerifier()
-			return &authv1.GoogleFinishResponse{Session: &authv1.Session{
+			return &userv1.GoogleFinishResponse{Session: &userv1.Session{
 				AccessToken:  "access-token",
 				ExpiresIn:    900,
 				RefreshToken: refreshSecret,
-				User:         &authv1.User{Id: "u1", Email: "ada@example.com", DisplayName: "Ada"},
+				User:         &userv1.User{Id: "u1", Email: "ada@example.com", DisplayName: "Ada"},
 			}}, nil
 		},
 	}), testLog(), false, "http://localhost:8080")
@@ -157,12 +157,12 @@ func TestGoogleCallbackRedirectsWithRefreshCookie(t *testing.T) {
 
 func TestGoogleCallbackAliasPath(t *testing.T) {
 	handler := authdelivery.NewHandler(testClients(fakeAuth{
-		googleFinish: func(_ context.Context, in *authv1.GoogleFinishRequest) (*authv1.GoogleFinishResponse, error) {
-			return &authv1.GoogleFinishResponse{Session: &authv1.Session{
+		googleFinish: func(_ context.Context, in *userv1.GoogleFinishRequest) (*userv1.GoogleFinishResponse, error) {
+			return &userv1.GoogleFinishResponse{Session: &userv1.Session{
 				AccessToken:  "access-token",
 				ExpiresIn:    900,
 				RefreshToken: refreshSecret,
-				User:         &authv1.User{Id: "u1", Email: "ada@example.com", DisplayName: "Ada"},
+				User:         &userv1.User{Id: "u1", Email: "ada@example.com", DisplayName: "Ada"},
 			}}, nil
 		},
 	}), testLog(), false, "http://localhost:8080")
@@ -180,7 +180,7 @@ func TestGoogleCallbackAliasPath(t *testing.T) {
 func TestGoogleCallbackRejectsStateMismatch(t *testing.T) {
 	called := false
 	handler := authdelivery.NewHandler(testClients(fakeAuth{
-		googleFinish: func(context.Context, *authv1.GoogleFinishRequest) (*authv1.GoogleFinishResponse, error) {
+		googleFinish: func(context.Context, *userv1.GoogleFinishRequest) (*userv1.GoogleFinishResponse, error) {
 			called = true
 			return nil, nil
 		},

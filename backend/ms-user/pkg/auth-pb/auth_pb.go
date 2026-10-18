@@ -3,7 +3,7 @@ package authPb
 
 import (
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
-	authv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/auth/v1"
+	userv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/user/v1"
 )
 
 // Meta builds client hints from gRPC request fields.
@@ -12,12 +12,12 @@ func Meta(userAgent, clientIP string) models.ClientMeta {
 }
 
 // Session maps a service session result to protobuf.
-func Session(out *models.SessionResult) *authv1.Session {
+func Session(out *models.SessionResult) *userv1.Session {
 	if out == nil {
 		return nil
 	}
 
-	return &authv1.Session{
+	return &userv1.Session{
 		AccessToken:  out.AccessToken,
 		ExpiresIn:    out.ExpiresIn,
 		RefreshToken: out.RefreshToken,
@@ -26,8 +26,8 @@ func Session(out *models.SessionResult) *authv1.Session {
 }
 
 // User maps a public user to protobuf.
-func User(user models.PublicUser) *authv1.User {
-	return &authv1.User{
+func User(user models.PublicUser) *userv1.User {
+	return &userv1.User{
 		Id:          user.ID,
 		Email:       user.Email,
 		DisplayName: user.DisplayName,

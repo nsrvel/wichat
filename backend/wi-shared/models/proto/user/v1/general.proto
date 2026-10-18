@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package user.v1;
+
+option go_package = "github.com/wichat/wichat/backend/wi-shared/models/gen/user/v1;userv1";
+
+// GeneralService exposes operational RPCs (health, metrics later, …).
+service GeneralService {
+  // Health reports process liveness.
+  rpc Health(HealthRequest) returns (HealthResponse);
+}
+
+// ServingStatus is the liveness result.
+enum ServingStatus {
+  SERVING_STATUS_UNSPECIFIED = 0;
+  SERVING_STATUS_SERVING = 1;
+  SERVING_STATUS_NOT_SERVING = 2;
+}
+
+// HealthRequest is empty for liveness v1.
+message HealthRequest {}
+
+// HealthResponse names the service and its serving state.
+message HealthResponse {
+  ServingStatus status = 1;
+  string service = 2;
+}

@@ -42,9 +42,14 @@ backend/ms-user/internal/user/
   service/
   delivery/grpc/
 
+backend/ms-user/internal/general/   # operational — delivery only (no repository/service)
+  delivery/grpc/       # server.go — userv1.GeneralServiceServer (Health RPC, …)
+
 backend/api-gateway/internal/auth/
   delivery/http/       # public REST only
 ```
+
+**`internal/general`:** cross-cutting ops RPCs (health liveness today). **Delivery only** — no `service/` or `repository/`. Business domains stay under `internal/<domain>/`.
 
 Payload/DTO structs: `internal/models/<domain>_model.go` per service (e.g. `ms-user/internal/models/auth_model.go`). Bun table structs: `<domain>_repository_model.go` in the same package — not under `repository/`.
 
@@ -188,7 +193,7 @@ Checklist:
 
 - Same `// Bind` / `// Service` / `// Response` steps.
 - Errors: `wi-shared/response` writers only — see [error-handling.md](../../docs/architecture/error-handling.md).
-- Cookies/headers in delivery; proto mappers in `ms-*/pkg/*pb`; gRPC `Server` embeds `authv1.*ServiceServer`.
+- Cookies/headers in delivery; proto mappers in `ms-*/pkg/*pb`; gRPC `Server` embeds `userv1.*ServiceServer` (wi-shared `models/proto/user/v1` for ms-user).
 
 ## Anti-patterns
 

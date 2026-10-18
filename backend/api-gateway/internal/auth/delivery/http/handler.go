@@ -10,7 +10,7 @@ import (
 	"github.com/wichat/wichat/backend/wi-shared/exception"
 	"github.com/wichat/wichat/backend/wi-shared/infra/logger"
 	"github.com/wichat/wichat/backend/wi-shared/microservices"
-	authv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/auth/v1"
+	userv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/user/v1"
 	"github.com/wichat/wichat/backend/wi-shared/response"
 	responsehttp "github.com/wichat/wichat/backend/wi-shared/response/http"
 )
@@ -46,7 +46,7 @@ func NewHandler(ms *microservices.Clients, log logger.Logger, secureCookie bool,
 
 func (h handler) SetupStatus(w http.ResponseWriter, r *http.Request) {
 	// Service
-	out, err := h.ms.User.GRPC.Auth.SetupStatus(r.Context(), &authv1.SetupStatusRequest{})
+	out, err := h.ms.User.GRPC.Auth.SetupStatus(r.Context(), &userv1.SetupStatusRequest{})
 	if err != nil {
 		authHttp.WriteOutbound(w, r, h.log, err)
 		return
@@ -65,7 +65,7 @@ func (h handler) Setup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Service
-	out, err := h.ms.User.GRPC.Auth.Setup(r.Context(), &authv1.SetupRequest{
+	out, err := h.ms.User.GRPC.Auth.Setup(r.Context(), &userv1.SetupRequest{
 		Email:       body.Email,
 		Password:    body.Password,
 		DisplayName: body.DisplayName,
@@ -90,7 +90,7 @@ func (h handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Service
-	out, err := h.ms.User.GRPC.Auth.Login(r.Context(), &authv1.LoginRequest{
+	out, err := h.ms.User.GRPC.Auth.Login(r.Context(), &userv1.LoginRequest{
 		Email:     body.Email,
 		Password:  body.Password,
 		UserAgent: middleware.UserAgent(r),
@@ -114,7 +114,7 @@ func (h handler) Refresh(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Service
-	out, err := h.ms.User.GRPC.Auth.Refresh(r.Context(), &authv1.RefreshRequest{
+	out, err := h.ms.User.GRPC.Auth.Refresh(r.Context(), &userv1.RefreshRequest{
 		RefreshToken: token,
 		UserAgent:    middleware.UserAgent(r),
 		ClientIp:     middleware.ClientIP(r),
@@ -132,7 +132,7 @@ func (h handler) Logout(w http.ResponseWriter, r *http.Request) {
 	// Service
 	token := cookie.RefreshToken(r)
 	if token != "" {
-		if _, err := h.ms.User.GRPC.Auth.Logout(r.Context(), &authv1.LogoutRequest{RefreshToken: token}); err != nil {
+		if _, err := h.ms.User.GRPC.Auth.Logout(r.Context(), &userv1.LogoutRequest{RefreshToken: token}); err != nil {
 			cookie.ClearRefresh(w, h.secureCookie)
 			authHttp.WriteOutbound(w, r, h.log, err)
 			return
@@ -153,7 +153,7 @@ func (h handler) Me(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Service
-	out, err := h.ms.User.GRPC.Auth.Me(r.Context(), &authv1.MeRequest{AccessToken: token})
+	out, err := h.ms.User.GRPC.Auth.Me(r.Context(), &userv1.MeRequest{AccessToken: token})
 	if err != nil {
 		authHttp.WriteOutbound(w, r, h.log, err)
 		return
@@ -165,7 +165,7 @@ func (h handler) Me(w http.ResponseWriter, r *http.Request) {
 
 func (h handler) GoogleStart(w http.ResponseWriter, r *http.Request) {
 	// Service
-	out, err := h.ms.User.GRPC.Auth.GoogleStart(r.Context(), &authv1.GoogleStartRequest{})
+	out, err := h.ms.User.GRPC.Auth.GoogleStart(r.Context(), &userv1.GoogleStartRequest{})
 	if err != nil {
 		authHttp.RedirectSignIn(w, r, h.webOrigin, authHttp.GRPCMessageCode(err))
 		return
@@ -196,7 +196,7 @@ func (h handler) GoogleCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Service
-	out, err := h.ms.User.GRPC.Auth.GoogleFinish(r.Context(), &authv1.GoogleFinishRequest{
+	out, err := h.ms.User.GRPC.Auth.GoogleFinish(r.Context(), &userv1.GoogleFinishRequest{
 		Code:         code,
 		CodeVerifier: verifier,
 		UserAgent:    middleware.UserAgent(r),

@@ -22,7 +22,10 @@ ms, err := microservices.Open(microservices.Config{
 })
 defer ms.Close()
 
-out, err := ms.User.GRPC.Auth.Login(ctx, &authv1.LoginRequest{...})
+out, err := ms.User.GRPC.Auth.Login(ctx, &userv1.LoginRequest{...})
+
+// Liveness (process up)
+_, err = ms.User.GRPC.General.Health(ctx, &userv1.HealthRequest{})
 ```
 
 Inject `*microservices.Clients` into HTTP delivery; map gRPC errors with `wi-shared/response/http` and `exception`.

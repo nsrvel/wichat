@@ -10,7 +10,7 @@ import (
 	"github.com/wichat/wichat/backend/api-gateway/pkg/cookie"
 	"github.com/wichat/wichat/backend/wi-shared/exception"
 	"github.com/wichat/wichat/backend/wi-shared/infra/logger"
-	authv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/auth/v1"
+	userv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/user/v1"
 	"github.com/wichat/wichat/backend/wi-shared/response"
 	responsegrpc "github.com/wichat/wichat/backend/wi-shared/response/grpc"
 	responsehttp "github.com/wichat/wichat/backend/wi-shared/response/http"
@@ -77,7 +77,7 @@ func Bearer(r *http.Request) string {
 }
 
 // UserFromPB maps auth user proto to JSON body.
-func UserFromPB(user *authv1.User) UserBody {
+func UserFromPB(user *userv1.User) UserBody {
 	return UserBody{
 		ID:          user.GetId(),
 		Email:       user.GetEmail(),
@@ -86,7 +86,7 @@ func UserFromPB(user *authv1.User) UserBody {
 }
 
 // WriteSession sets the refresh cookie and returns access token + user in JSON.
-func WriteSession(w http.ResponseWriter, sess *authv1.Session, secure bool) {
+func WriteSession(w http.ResponseWriter, sess *userv1.Session, secure bool) {
 	if sess == nil || sess.GetAccessToken() == "" || sess.GetRefreshToken() == "" {
 		responsehttp.WriteError(w, nil, exception.Internal(nil))
 		return

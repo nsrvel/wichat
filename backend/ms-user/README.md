@@ -17,6 +17,7 @@ make check  # fmt, lint, test (repository integration tests need Docker)
 | `internal/models/` | Service-wide types: `<domain>_model.go` + `<domain>_repository_model.go` (Bun rows) |
 | `internal/migrations/` | Goose SQL (not run on startup) |
 | `internal/auth/`, `internal/user/` | Per domain: `repository/`, `service/` (single `service.go`), `delivery/grpc/` |
+| `internal/general/` | Operational gRPC only (e.g. health liveness) — see [`internal/general/README.md`](internal/general/README.md) |
 | `pkg/` | Shared helpers (`password`, `jwt`, `token`, `google`, `auth-pb`, …) — not business use cases |
 | `internal/server/` | gRPC listen, DB (`bun` + pgx), wiring |
 

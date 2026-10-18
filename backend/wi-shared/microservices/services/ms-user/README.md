@@ -8,12 +8,14 @@ Typed **gRPC client** for the [ms-user](../../../../ms-user/README.md) process. 
 |------|------|
 | `ms_user.go` | `Service`, `GRPC` struct, `NewGRPC(conn, settings, log)` |
 | `grpc/auth/client.go` | `auth.Client` — AuthService RPCs wrapped with `utils.CallUnaryResult` |
-| `grpc/auth/test/` | Bufconn retry test for idempotent reads |
+| `grpc/general/client.go` | `general.Client` — `GeneralService/Health` (liveness), `RetryIdempotent` |
+| `grpc/auth/test/`, `grpc/general/test/` | Bufconn client tests |
 
 ## Call surface
 
 ```go
-ms.User.GRPC.Auth.Login(ctx, &authv1.LoginRequest{...})
+ms.User.GRPC.Auth.Login(ctx, &userv1.LoginRequest{...})
+ms.User.GRPC.General.Health(ctx, &userv1.HealthRequest{})
 ```
 
 Interface for tests: `auth.Client` (implement all RPC methods; no `Close`).
@@ -22,7 +24,7 @@ Interface for tests: `auth.Client` (implement all RPC methods; no `Close`).
 
 | RPC | Policy |
 |-----|--------|
-| `SetupStatus`, `Me` | `RetryIdempotent` |
+| `SetupStatus`, `Me`, `General.Health` | `RetryIdempotent` |
 | `Setup`, `Login`, `Refresh`, `Logout`, `GoogleStart`, `GoogleFinish` | `RetryNone` |
 
 ## Add another gRPC domain
