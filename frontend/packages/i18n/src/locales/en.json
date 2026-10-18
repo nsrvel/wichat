@@ -1,0 +1,64 @@
+{
+  "auth": {
+    "invalid_credentials": "Email or password is incorrect.",
+    "unauthorized": "Sign in to continue.",
+    "setup_closed": "The first account has already been created.",
+    "google_denied": "Google sign-in was cancelled or could not be completed.",
+    "google_email_unverified": "That Google account does not have a verified email.",
+    "headline": "Speak freely, stay connected.",
+    "lead": "Your private space for real-time collaboration.",
+    "google": "Continue with Google",
+    "or": "or",
+    "back": "Back",
+    "have_account": "Already have an account?",
+    "to_login": "Sign in",
+    "showcase": "People working together"
+  },
+  "error": {
+    "internal": "Something went wrong.",
+    "invalid_input": "Check the {{field}} field.",
+    "invalid_response": "Unexpected response from the server.",
+    "rate_limited": "Too many attempts. Try again later.",
+    "timeout": "The request timed out.",
+    "unavailable": "The service is unavailable.",
+    "unknown": "Something went wrong."
+  },
+  "user": {
+    "not_found": "That user could not be found."
+  },
+  "login": {
+    "title": "Sign in",
+    "first_time": "First time here?",
+    "sign_up": "Sign up",
+    "email": "Email",
+    "email_placeholder": "Your email",
+    "password": "Password",
+    "password_placeholder": "Password",
+    "submit": "Sign in",
+    "submitting": "Signing in…",
+    "show_password": "Show password",
+    "hide_password": "Hide password"
+  },
+  "setup": {
+    "title": "Sign up",
+    "lead": "This account is the first one on this WiChat instance.",
+    "display_name": "Display name",
+    "display_placeholder": "Display name",
+    "submit": "Sign up",
+    "submitting": "Signing up…"
+  },
+  "validation": {
+    "email": "Enter a valid email.",
+    "password": "Password must be at least 12 characters.",
+    "display_name": "Display name is required."
+  },
+  "locale": {
+    "label": "Language",
+    "en": "English",
+    "id": "Indonesia"
+  },
+  "theme": {
+    "toggle": "Toggle color theme"
+  },
+  "logout": "Sign out"
+}

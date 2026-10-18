@@ -1,0 +1,203 @@
+---
+description: Go backend layer layout — repository, service, delivery
+globs: backend/**/*.go
+alwaysApply: false
+---
+
+# Layer layout (repository → service → delivery)
+
+Readability goal: **open any file once and know its job** — same structural habits as `references/be-suretyship/internal/auth/`, adapted for WiChat (gRPC MS, HTTP gateway, `wi-shared/exception` + `wi-shared/response`). Comment and spacing detail: `wichat-go-style.mdc`.
+
+## Principles
+
+- **Thin delivery** — bind/parse, call service, write response. No business rules.
+- **Service owns domain** — validation, orchestration, map repo errors → `exception`.
+- **Dumb repository** — I/O only; plain `error`; no `exception` import.
+- **Interface at the boundary** — exported `Xxx` interface, unexported `xxx` struct, `NewXxx(...) Xxx`.
+- **Value receivers** on impl methods unless the receiver must mutate shared state (match suretyship default).
+- **Inject `logger.Logger`** (`wi-shared/infra/logger`) in service, delivery, and repository when I/O errors matter.
+
+## Helper scope (`pkg` vs `wi-shared`)
+
+| Scope | Where |
+|-------|--------|
+| **One microservice** (`ms-*`, `api-gateway`) | `backend/<module>/pkg/` — kebab-case dirs (`auth-http`); see `wichat-go-style.mdc` |
+| **Across services** | `backend/wi-shared/` — see [wi-shared/README.md](../../backend/wi-shared/README.md); **no** domain use cases |
+
+Do not import another service’s `internal/` or `pkg/` from a different `ms-*` module.
+
+## Folder layout (per domain)
+
+```text
+backend/ms-user/internal/models/     # <domain>_model.go, <domain>_repository_model.go
+backend/ms-user/internal/migrations/ # goose SQL (not on startup)
+
+backend/ms-user/internal/auth/
+  repository/          # pg_repository.go, sql_queries.go, test/
+  service/
+  delivery/grpc/
+
+backend/ms-user/internal/user/
+  repository/
+  service/
+  delivery/grpc/
+
+backend/api-gateway/internal/auth/
+  delivery/http/       # public REST only
+```
+
+Payload/DTO structs: `internal/models/<domain>_model.go` per service (e.g. `ms-user/internal/models/auth_model.go`). Bun table structs: `<domain>_repository_model.go` in the same package — not under `repository/`.
+
+## Repository
+
+Pattern (one backing store per file is fine):
+
+```go
+package repository
+
+type PgRepository interface {
+    FindUserByID(ctx context.Context, id string) (*User, error)
+}
+
+type pgRepository struct {
+    db  *bun.DB
+    log logger.Logger // optional
+}
+
+func NewPgRepository(db *bun.DB, log logger.Logger) PgRepository {
+    return pgRepository{db: db, log: log}
+}
+
+func (r pgRepository) FindUserByID(ctx context.Context, id string) (*User, error) {
+    // I/O only — no business branching beyond mapping driver errors
+}
+
+func (r pgRepository) userTable() string { return "auth.users" } // private helpers at bottom
+```
+
+Checklist:
+
+- `context.Context` first on every method.
+- Name interfaces by store: `PgRepository`, `RedisRepository`.
+- **Postgres hybrid:** Bun (`*bun.DB` over `database/sql` + pgx) for simple CRUD; keep locks, `FOR UPDATE`, joins, and bulk deletes in `sql_queries.go` + `NewRaw` inside `RunInTx`.
+- Contract + `pgRepository` live in `pg_repository.go` (no separate `repository.go`).
+- Sentinel errors OK: `var ErrNotFound = errors.New("...")` — service maps to `exception`.
+- No i18n, no HTTP/gRPC, no `wi-shared/exception`.
+
+## Service
+
+Package name **`service`** (not `usecase`). Deps are **repository interfaces** (and config/logger), injected via `NewService`.
+
+```go
+package service
+
+type Service interface {
+    Login(ctx context.Context, in *model.LoginInput) (*model.LoginResult, error)
+}
+
+type service struct {
+    users repository.PgRepository
+    log   logger.Logger
+}
+
+func NewService(users repository.PgRepository, log logger.Logger) Service {
+    return service{users: users, log: log}
+}
+
+func (s service) Login(ctx context.Context, in *model.LoginInput) (*model.LoginResult, error) {
+    // Validation
+    if in.Email == "" {
+        return nil, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "email"})
+    }
+
+    // Repository
+    u, err := s.users.FindByEmail(ctx, in.Email)
+    if err != nil {
+        if errors.Is(err, repository.ErrNotFound) {
+            return nil, exception.Unauthenticated(exception.MsgInvalidCredentials, nil)
+        }
+        return nil, err // raw infra → delivery/grpc → 500
+    }
+
+    // Domain logic ...
+    return &model.LoginResult{...}, nil
+}
+```
+
+Checklist:
+
+- Step comments: `// Validation`, `// Repository`, … — same order in every method (`wichat-go-style.mdc`).
+- Return `exception.*` with **`MessageCode` consts** only (no hardcoded user-facing sentences).
+- Constants / magic values at top of file in `const` blocks.
+- Do not import `response/http` or `response/grpc` here.
+
+## Delivery
+
+### HTTP (api-gateway) — `delivery/http`
+
+```go
+type Handler interface {
+    Login(w http.ResponseWriter, r *http.Request)
+}
+
+type handler struct {
+    svc service.Service
+    log logger.Logger
+}
+
+func NewHandler(svc service.Service, log logger.Logger) Handler {
+    return handler{svc: svc, log: log}
+}
+
+func (h handler) Login(w http.ResponseWriter, r *http.Request) {
+    // Bind
+    var in model.LoginInput
+    if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+        responsehttp.WriteError(w, r, exception.InvalidInput(exception.MsgInvalidInput, nil))
+        return
+    }
+
+    // Service
+    out, err := h.svc.Login(r.Context(), &in)
+    if err != nil {
+        responsehttp.WriteError(w, r, err, responsehttp.WithLogger(h.log))
+        return
+    }
+
+    // Response
+    responsehttp.WriteJSON(w, http.StatusOK, map[string]any{"data": out})
+}
+```
+
+### gRPC (microservice) — `delivery/grpc`
+
+```go
+func (s *AuthServer) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
+    // Bind (proto → model)
+    // Service
+    out, err := s.svc.Login(ctx, toLoginInput(req))
+    if err != nil {
+        return nil, responsegrpc.ToStatus(err)
+    }
+    // Response
+    return toLoginPB(out), nil
+}
+```
+
+Checklist:
+
+- Same `// Bind` / `// Service` / `// Response` steps.
+- Errors: `wi-shared/response` writers only — see [error-handling.md](../../docs/architecture/error-handling.md).
+- Cookies/headers in delivery; proto mappers in `ms-*/pkg/*pb`; gRPC `Server` embeds `authv1.*ServiceServer`.
+
+## Anti-patterns
+
+- SQL/Redis calls in handler.
+- `exception` in repository.
+- 200-line handlers or services — split by use case file only when interface is still one `Service`.
+- Leaking `err.Error()` from bind/DB to JSON on 5xx.
+
+## See also
+
+- `wichat-go.mdc`, `wichat-go-style.mdc`.
+- Shared libs: `backend/wi-shared/README.md`.

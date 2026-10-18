@@ -1,0 +1,108 @@
+---
+description: WiChat web client — API client, Zod, TanStack Query services, i18n errors, SSR provider
+globs: frontend/apps/web/**,frontend/packages/**
+alwaysApply: false
+---
+
+# Web client data layer
+
+## HTTP
+
+- All REST through app **`integrations/api-client`** (singleton over `@wichat/api-client`) → `NEXT_PUBLIC_API_URL` + `/api/v1/`.
+- `credentials: 'include'` when using cookie sessions; attach `Authorization` when using bearer tokens.
+- Parse success as `{ data: T }` and errors as `{ error: { code, params } }` — map `code` to **i18next** (never show raw backend sentences). See [error-handling.md](../../docs/architecture/error-handling.md).
+
+## Per domain (`src/services/<domain>/`)
+
+| File | Purpose |
+|------|---------|
+| `*.key.ts` | Stable query key strings |
+| `*.service.ts` | Async functions: call `api-client` only (no React) |
+| `*.query.ts` | `queryOptions({ queryKey, queryFn, staleTime, enabled })` |
+| `*.mutation.ts` | `useMutation` hooks; **`onSuccess` → `invalidateQueries`** for affected list/detail keys |
+| `index.ts` | `export * as authKey`, `authQuery`, `authMutation` |
+
+**Zod:** define requests/responses in **`@wichat/contracts`**; **parse at the trust boundary** in `.service.ts` via `api` + schemas.
+
+**Forms:** **react-hook-form** + `@hookform/resolvers/zod` + shadcn Form (do not mix TanStack Form in the same app).
+
+More copy-paste templates: `.cursor/skills/wichat-web-client/examples.md`.
+
+## Examples (minimal)
+
+```ts
+// services/auth/auth.key.ts
+export const Q_SESSION = 'auth-session';
+```
+
+```ts
+// services/auth/auth.service.ts
+import { api } from '@/integrations/api-client';
+import { SessionSchema, type LoginRequest } from '@/schemas/auth';
+
+export async function login(payload: LoginRequest) {
+  return api.post('/auth/login', SessionSchema, payload);
+}
+```
+
+```ts
+// services/auth/auth.query.ts
+import { queryOptions } from '@tanstack/react-query';
+import { Q_SESSION } from './auth.key';
+import { getSession } from './auth.service';
+
+export const sessionQueryOpts = () =>
+  queryOptions({
+    queryKey: [Q_SESSION],
+    queryFn: () => getSession(),
+    staleTime: 60_000,
+  });
+```
+
+```ts
+// services/auth/auth.mutation.ts
+'use client';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Q_SESSION } from './auth.key';
+import { login } from './auth.service';
+
+export function useLoginMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: login,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [Q_SESSION] }),
+  });
+}
+```
+
+```tsx
+// features/auth/login/login-page.tsx — 'use client'
+import { useQuery } from '@tanstack/react-query';
+import { authQuery } from '@/services/auth';
+import { useLoginMutation } from '@/services/auth/auth.mutation';
+
+export function LoginPage() {
+  const { data: session } = useQuery(authQuery.sessionQueryOpts());
+  const login = useLoginMutation();
+  // … form calls login.mutate(payload)
+}
+```
+
+## TanStack Query + Next App Router
+
+- **`getQueryClient()`**: new client per server request, browser singleton — not `useState(() => new QueryClient())`. See [Advanced SSR](https://tanstack.com/query/latest/docs/framework/react/guides/advanced-ssr).
+- `app/providers.tsx` (`'use client'`): `QueryClientProvider` + devtools in dev.
+
+## Realtime vs Query
+
+- **Query:** REST snapshots (channels, message pages, session).
+- **WebSocket:** `integrations/realtime/`; `setQueryData` / targeted `invalidateQueries`.
+
+## Env
+
+- `@t3-oss/env-nextjs`: `NEXT_PUBLIC_*` on client only.
+
+## Forbidden
+
+- `createServerFn`, FE DB access, `references/react-tanstack` `repositories/` / Drizzle.
+- Default BFF Route Handlers (gateway is the edge).

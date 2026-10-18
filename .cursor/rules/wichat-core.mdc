@@ -9,15 +9,15 @@ Self-hosted AGPL team chat with plugins. **Source of truth:** `docs/architecture
 
 ## Stack (fixed for v1)
 
-Go modular monolith + LiveKit + Postgres/Redis/ES/MinIO/Kafka; Next.js web/PWA, Electron, RN Android.
+Go monorepo microservices + LiveKit + Postgres/Redis/ES/MinIO/Kafka; Next.js web/PWA, Electron, RN Android.
 
 ## When implementing
 
 - Match phased roadmap (§15); do not build deferred non-goals (federation, E2E, SaaS multi-tenant, marketplace).
 - Plugins: separate process, permission manifest, gRPC to core; heavy UX in plugin UI (iframe/postMessage).
 - Prefer boring ops: `docker compose`, single-tenant instance, 2–500 users/workspace without sharding.
-- Production sale quality: tests at trust boundaries, rate limits, audit-worthy changes documented, no secrets in git.
+- Production quality: tests at trust boundaries, rate limits, no secrets in git.
 
 ## Repo layout target
 
-`apps/`, `services/`, `plugins/`, `deploy/`, `docs/` — extend existing patterns before inventing new top-level folders.
+`backend/`, `frontend/`, `deploy/`, `docs/` — do not add parallel top-level app folders.

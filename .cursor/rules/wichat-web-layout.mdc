@@ -1,0 +1,55 @@
+---
+description: WiChat web client — Next.js app structure, features vs app routing, shared components
+globs: frontend/apps/web/**
+alwaysApply: false
+---
+
+# Web client layout (`frontend/apps/web`)
+
+**Canonical app path:** `frontend/apps/web/` (pnpm package name `web-client`). Shared API/i18n: `frontend/packages/@wichat/*`. Electron/RN apps attach later.
+
+## Client architecture (do not drift)
+
+- **One Next.js app** for core chat — no micro-frontends / Module Federation.
+- **Plugin UI:** iframe/WebView + `postMessage` (spec §6.8) — not routes that import plugin bundles into the React tree.
+- **Backend from the browser:** REST via **api-gateway** (`/api/v1/`); realtime chat/presence via **WebSocket** (ms-chat, URL per spec). No Drizzle/Postgres/Redis in the frontend.
+
+## Folder map (`src/`)
+
+| Path | Role |
+|------|------|
+| `app/` | **Routing only** — `page.tsx`, `layout.tsx`, loading/error, metadata. Thin: import a feature screen and render. |
+| `features/<domain>/` | Screens and **domain-only** UI (e.g. `features/auth/login/`). |
+| `features/<domain>/components/` | Shared **within that domain** (login + register shell). |
+| `components/ui/` | shadcn primitives. |
+| `components/layout/` | Cross-feature shell (sidebar, header). |
+| `services/` | TanStack Query layer — see `wichat-web-data.mdc`. |
+| `integrations/` | App wiring (api singleton, tanstack-query, locale cookie, MSW, LiveKit later). |
+| `hooks/` | Generic UI helpers only (`use-mobile`, dialogs) — not domain fetch. |
+| `lib/` | `cn`, dates, small pure helpers. |
+
+**Do not** put feature-specific components in root `components/<feature>/` if they belong in `features/<feature>/`. Root `components/` = shared across features.
+
+## `app/` pattern
+
+```tsx
+// app/(auth)/login/page.tsx
+import { LoginPage } from '@/features/auth/login';
+export default function Page() {
+  return <LoginPage />;
+}
+```
+
+Prefer route groups: `(auth)`, `(app)` or workspace layouts. Keep `'use client'` in features when using hooks/Query; metadata stays in server `page.tsx` when needed.
+
+## UI-only slices
+
+Allowed before gateway endpoints exist: **MSW or fixtures** under `integrations/msw` / `fixtures/`. Shapes must match planned `/api/v1/` + error envelope (i18n `code` keys) — no invented API.
+
+## Reference
+
+Pattern inspiration (not runtime): `references/react-tanstack/` — copy **folder habits** (`services/*.{key,service,query,mutation}`), not TanStack Start `createServerFn`, `repositories/`, or Drizzle.
+
+Full templates: `.cursor/skills/wichat-web-client/examples.md`.
+
+Spec: [wichat-system-design.md](../../docs/architecture/wichat-system-design.md) § clients & API.

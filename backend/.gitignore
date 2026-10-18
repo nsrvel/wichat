@@ -1,0 +1,5 @@
+# Backend workspace — build/runtime noise (see each module for .env policy)
+
+**/tmp/
+**/coverage.out
+**/coverage.html

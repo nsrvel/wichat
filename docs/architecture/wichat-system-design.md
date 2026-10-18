@@ -44,15 +44,40 @@ The project originated from a real gap: an internal team found existing tools ei
 
 See [`architecture-context.mermaid`](architecture-context.mermaid) for the C4 Context-level view (users, WiChat, external systems) and [`architecture-container.mermaid`](architecture-container.mermaid) for the Container-level view (internal services, data stores, plugins). Summary of major building blocks:
 
-- **Core Backend**: single Go binary, modular monolith (Auth, Workspace, Chat, Presence, Notification, Plugin Manager, Search, Audit Log modules)
+- **Core Backend**: **monorepo microservices** — multiple Go binaries under `backend/` (`api-gateway`, `ms-*`, `wi-shared`; see §5.1)
 - **Media Layer**: LiveKit (self-hosted SFU) as a genuinely separate process
-- **Plugin Layer**: separate processes per plugin, communicating with core via gRPC; frontend plugin UI via iframe/WebView + postMessage
+- **Plugin Layer**: separate processes per plugin, communicating with platform/plugin services via gRPC; frontend plugin UI via iframe/WebView + postMessage
 - **Data Layer**: PostgreSQL (primary store), Redis (ephemeral/real-time), Elasticsearch (search), MinIO (file storage)
 - **Event Backbone**: Kafka for durable, replayable events (audit log, notifications, async search indexing, future analytics)
 - **Clients**: Next.js web app (also serves as iOS PWA), Electron desktop (wraps web core), React Native Android app
 
-### 5.1 Why Modular Monolith, not Microservices
-Core domain modules (Auth, Chat, Workspace, Presence) run as one Go binary with clean internal interfaces — not separate containers. This keeps self-hosted deployment simple (`docker compose up`) while preserving the option to peel out any module into a real microservice later if load demands it. Only Plugins and LiveKit are genuinely separate processes, because they have independent lifecycles (install/uninstall, third-party software).
+### 5.1 Monorepo microservices (core backend)
+
+**Decision:** Core runs as **separate deployable Go modules** in `backend/` (workspace [`backend/go.work`](../../backend/go.work)): **`api-gateway/`** (public HTTP) and **`ms-<domain>/`** gRPC services (e.g. `ms-user`, `ms-chat`), plus **`wi-shared/`** for protobuf and cross-cutting libs. Services talk **gRPC** internally and **Kafka** for async work.
+
+**Why not one binary:** Keeps each runtime small and lets teams evolve/chat scale/realtime paths independently without one growing “god binary.”
+
+**Tradeoff (explicit):** Self-host runs **more containers** than a monolith — mitigated by a single `docker compose` stack and shared infra (one Postgres cluster, one Redis, one Kafka).
+
+**Service set (v1 — seven deployable core services; repo paths match module names under `backend/`):**
+
+| Service | Responsibility |
+|---------|----------------|
+| **api-gateway** | Public HTTP `/api/v1`, rate limits, JWT validation (via ms-user), routes to gRPC backends, presigned URL issuance, export job trigger |
+| **ms-user** | Auth (OAuth, email/password, sessions, refresh rotation, first-run admin, guest tokens when enabled) **and** workspaces, membership, RBAC, channels/categories/DM metadata, workspace settings, lobby/onboarding, user profiles — one gRPC process, separate domain packages (`internal/auth`, `internal/user`) |
+| **ms-chat** | Messages, threads, reactions, pins, typing, read receipts, WebSocket fanout, presence/activity status, chat-side moderation signals, **and** message search (query API + Elasticsearch indexing via Kafka `chat-events` consumer, RBAC-scoped per §6.10) — one gRPC process, separate domain package `internal/search` when implemented |
+| **ms-core** | LiveKit room tokens, webhooks, call lifecycle (realtime voice/video/screen share control — not auth, chat messages, or plugins) |
+| **ms-plugin** | Plugin registry, install lifecycle, gRPC to plugin processes in `backend/plugins/` |
+| **ms-notification** | @mention and notification dispatch (Kafka `notif-events` in → FCM/Web Push out) |
+| **ms-audit** | Audit log writer (Kafka consumer → Postgres) |
+
+**Default local listen ports** (gRPC unless noted): api-gateway **3000** (HTTP), ms-user **3001**, ms-chat **3002**, ms-core **3003**, ms-plugin **3004**, ms-notification **3005**, ms-audit **3006**. See [deploy/README.md](../../deploy/README.md).
+
+**Data ownership:** One **PostgreSQL cluster** at launch; each service owns its **tables** (no cross-service SQL joins — use IDs + gRPC/events). Shared DB is a pragmatic compromise; split databases only if ops requires it later.
+
+**Shared code:** `backend/wi-shared/` for protobuf contracts (`models/`), shared error types, and small utilities only — **not** shared domain logic (avoid distributed monolith).
+
+**Clients:** live under `frontend/` (web first). Talk only to **api-gateway** (REST) and **ms-chat** (WebSocket via api-gateway or documented WS URL).
 
 ## 6. Core Domains
 
@@ -126,7 +151,7 @@ In-house only for v1; manifest/gRPC contracts are designed cleanly so a public m
 MediaPipe embedded client-side (not a third-party app/virtual camera) — processes video locally before publishing to LiveKit. Opt-in, default OFF on mobile/PWA to protect battery/thermals. A separate native macOS project ("GestureCam", Vision framework + CMIOExtension) may later serve as an advanced virtual-camera input option.
 
 ### 6.10 Search
-Elasticsearch, populated asynchronously via a Kafka consumer (decoupled from the chat write path to avoid dual-write failure modes).
+Message search is implemented in **`ms-chat`** (not a separate microservice). Elasticsearch is populated asynchronously via a Kafka consumer in the same process (decoupled from the chat write path to avoid dual-write failure modes).
 
 - **Scope**: global across all channels the user has access to (Teams/Discord-style), with filter operators (`in:channel`, `from:user`, `before:`/`after:date`, `has:file`) rather than search being scoped to only the currently-open channel
 - **Attachment search**: v1 covers filename/metadata search; full-text search of file contents (extracted via a tool like `pdftotext`/Apache Tika in the upload pipeline, then indexed alongside message metadata) is a planned follow-up, not required for v1
@@ -200,7 +225,7 @@ Two separate mechanisms, serving different needs:
 
 ## 10. Observability & Testing
 
-- **Observability**: Grafana + Loki for metrics/logs (matches the team's existing tooling experience)
+- **Observability** (target): Prometheus metrics + Grafana; application logs via slog → Loki (see [logging.md](logging.md)). Metrics/tracing/health endpoints are **not implemented** in the Go services yet.
 - **Testing**:
   - Unit tests: Go `testing` + `testify`, ~90% coverage target
   - Integration tests: testcontainers (real Postgres/Redis in CI)
@@ -239,10 +264,10 @@ No offline-first support — mobile/web require an active connection. This is a 
 
 - REST for CRUD + existing WebSocket channel for realtime — GraphQL is deferred unless a concrete need for complex nested queries emerges
 - Versioning: URI-based (`/api/v1/`); old versions stay live until all clients (including slower-to-update mobile) migrate
-- Migrations: `golang-migrate`
+- Migrations: [goose](https://github.com/pressly/goose) per service under `backend/<service>/internal/migrations/` (not applied on process startup)
 - i18n: backend emits message codes/keys only, never raw text; frontend resolves via translation files (i18next for web/Electron, go-i18n for backend-generated text like emails); ICU-style interpolation for dynamic values
 - Dark mode is a day-one requirement; a shared design-token system underlies web/desktop/mobile for visual consistency
-- **Error handling**: standard HTTP status codes + a human-readable error message string; no custom machine-readable error code taxonomy for v1 (kept simple deliberately, can be added later if frontend error-handling needs grow)
+- **Error handling**: standard HTTP status codes + JSON body `{ "error": { "code": "<i18n_key>", "params": { ... } } }` — backend emits translation keys only; see [error-handling.md](error-handling.md)
 - **Sessions**: JWT access token (15 min expiry) + refresh token (30 days, httpOnly cookie, rotated on every use — the old refresh token is invalidated as soon as a new one is issued)
 - **Message & upload limits** (workspace-configurable, defaults below):
   - Message length: 4,000 characters
@@ -253,7 +278,7 @@ No offline-first support — mobile/web require an active connection. This is a 
 
 ## 14. Scale Assumptions
 
-Target: **2–500 people per workspace**. At this scale, a single instance each of PostgreSQL, Redis (optionally with Sentinel), Elasticsearch, and a single well-provisioned LiveKit node is sufficient — no sharding or clustering is required at launch. Module boundaries within the Go monolith are kept clean specifically so that any component can be extracted into an independent (and potentially polyglot — Python for ML, Node.js for JS-ecosystem plugins, Rust reserved for low-level media optimization if ever needed) service later without a redesign.
+Target: **2–500 people per workspace**. At this scale, a single instance each of PostgreSQL, Redis (optionally with Sentinel), Elasticsearch, and a single well-provisioned LiveKit node is sufficient — no sharding or clustering is required at launch. Core **microservices** scale horizontally only when metrics justify it (typically **chat** and **api-gateway** first); other services stay single-instance at this tier. Polyglot extraction (Python ML, etc.) remains possible via new services without redesigning domain boundaries.
 
 **Workspaces per instance**: no fixed cap is set for v1. The real constraint is total concurrent load — particularly voice/video (LiveKit) and active WebSocket connections — not raw workspace count; Postgres/Redis/Elasticsearch handle many workspaces comfortably before that becomes a bottleneck. Grafana observability (already planned) is the intended signal for when scaling action is needed, rather than a number decided upfront.
 
@@ -263,7 +288,7 @@ Target: **2–500 people per workspace**. At this scale, a single instance each 
 
 | Phase | Scope |
 |---|---|
-| 0 | Foundation: repo, docker-compose, Go skeleton, CI |
+| 0 | Foundation: repo, docker-compose, Go **service** skeletons + gRPC contracts, CI |
 | 1 | Auth & Workspace: registration modes, login, roles, multi-workspace |
 | 2 | Core Chat: channels, messaging, reactions, read receipts, sync |
 | 3 | Voice/Video: LiveKit integration, call controls |

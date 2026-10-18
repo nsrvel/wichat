@@ -1,0 +1,6 @@
+# api-gateway — local config (template: .env.example)
+.env
+.env.local
+.env.*.local
+
+tmp/

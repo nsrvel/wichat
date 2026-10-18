@@ -1,0 +1,131 @@
+syntax = "proto3";
+
+package auth.v1;
+
+option go_package = "github.com/wichat/wichat/backend/wi-shared/models/gen/auth/v1;authv1";
+
+// AuthService issues browser sessions for the instance account.
+service AuthService {
+  // SetupStatus reports whether the first account still needs to be created.
+  rpc SetupStatus(SetupStatusRequest) returns (SetupStatusResponse);
+  // Setup creates the first account and a session.
+  rpc Setup(SetupRequest) returns (SetupResponse);
+  // Login checks email and password and opens a session.
+  rpc Login(LoginRequest) returns (LoginResponse);
+  // Refresh rotates the refresh token and issues a new access token.
+  rpc Refresh(RefreshRequest) returns (RefreshResponse);
+  // Logout revokes the session that owns the refresh token.
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
+  // Me returns the account for a valid access token.
+  rpc Me(MeRequest) returns (MeResponse);
+  // GoogleStart builds the Google authorization redirect.
+  rpc GoogleStart(GoogleStartRequest) returns (GoogleStartResponse);
+  // GoogleFinish exchanges the authorization code and opens a session.
+  rpc GoogleFinish(GoogleFinishRequest) returns (GoogleFinishResponse);
+}
+
+// User is the public account view.
+message User {
+  string id = 1;
+  string email = 2;
+  string display_name = 3;
+}
+
+// Session is the credential pair returned to the gateway.
+// The gateway keeps refresh_token in an httpOnly cookie and omits it from JSON.
+message Session {
+  string access_token = 1;
+  int32 expires_in = 2;
+  string refresh_token = 3;
+  User user = 4;
+}
+
+// SetupStatusRequest is empty.
+message SetupStatusRequest {}
+
+// SetupStatusResponse reports first-run state.
+message SetupStatusResponse {
+  bool needs_setup = 1;
+}
+
+// SetupRequest is the first-account form.
+message SetupRequest {
+  string email = 1;
+  string password = 2;
+  string display_name = 3;
+  string user_agent = 4;
+  string client_ip = 5;
+}
+
+// SetupResponse carries the new session.
+message SetupResponse {
+  Session session = 1;
+}
+
+// LoginRequest is an email and password login.
+message LoginRequest {
+  string email = 1;
+  string password = 2;
+  string user_agent = 3;
+  string client_ip = 4;
+}
+
+// LoginResponse carries the new session.
+message LoginResponse {
+  Session session = 1;
+}
+
+// RefreshRequest presents the current refresh token.
+message RefreshRequest {
+  string refresh_token = 1;
+  string user_agent = 2;
+  string client_ip = 3;
+}
+
+// RefreshResponse carries the rotated session.
+message RefreshResponse {
+  Session session = 1;
+}
+
+// LogoutRequest presents the refresh token to revoke.
+message LogoutRequest {
+  string refresh_token = 1;
+}
+
+// LogoutResponse acknowledges a logout.
+message LogoutResponse {
+  bool ok = 1;
+}
+
+// MeRequest presents an access token.
+message MeRequest {
+  string access_token = 1;
+}
+
+// MeResponse is the account for that token.
+message MeResponse {
+  User user = 1;
+}
+
+// GoogleStartRequest is empty. The client id stays in ms-user.
+message GoogleStartRequest {}
+
+// GoogleStartResponse is the browser redirect and the PKCE transaction.
+message GoogleStartResponse {
+  string authorization_url = 1;
+  string state = 2;
+  string code_verifier = 3;
+}
+
+// GoogleFinishRequest is the callback after Google redirects back.
+message GoogleFinishRequest {
+  string code = 1;
+  string code_verifier = 2;
+  string user_agent = 3;
+  string client_ip = 4;
+}
+
+// GoogleFinishResponse carries the new session.
+message GoogleFinishResponse {
+  Session session = 1;
+}

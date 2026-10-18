@@ -1,0 +1,143 @@
+---
+description: Go readability — step comments, section banners, spacing
+globs: backend/**/*.go
+alwaysApply: false
+---
+
+# Go style (comments & spacing)
+
+Readability goal: **ops-friendly scan** — DevOps/SRE and devs should see **what runs in which phase** from comments and blank lines alone. Match the rhythm of `references/be-suretyship/` (phases + spacing); step labels use plain `//` (see below). Layer rules: `wichat-go-layers.mdc`. Formatting: **gofumpt** via `wichat-go.mdc`.
+
+## File naming
+
+| Rule | Example |
+|------|---------|
+| The **package name is the context** — avoid redundant suffixes | Bad: `config/config_models.go`. Good: `config/config.go` |
+| **One primary file** per small package | `config.go`, `logger.go`; split only when ~300+ lines or clear sub-concern (e.g. `repository/postgres_user.go`) |
+| **Split by concern** when still small | Match existing `wi-shared` packages (see each [module README](../../backend/wi-shared/README.md)) |
+| **Subpackages by transport** | e.g. `response/http`, `response/grpc` — no one-off helper files for a single function |
+| Under `internal/server/`, prefer role names **without** repeating `server_` in the filename | Target: `run.go`, `wire.go` (rename when touched; not required in every slice) |
+| Tests in `<pkg>/test/` (`wichat-go.mdc`); test file may describe behavior | `load_test.go` is fine |
+| **Multi-word `pkg/` and helper dirs** use **kebab-case** in the path | Good: `pkg/auth-http`, `services/ms-user/grpc/auth`. Bad: `pkg/authhttp`, `pkg/auth_http` |
+| Go **`package` clause** mirrors kebab dir with **camelCase** (no hyphens/underscores) | Dir `auth-http` → `package authHttp`, file `auth_http.go`; `services/ms-user` → `package msUser`; import path stays kebab. ST1003 off in backend golangci (staticcheck prefers `msuser`). |
+
+Do not copy suretyship `*_models.go` splits for tiny structs — split when the package actually grows.
+
+## Comments (one prefix: `//`)
+
+Do **not** use `//*`, `// *`, or `//!` — they confuse formatters, godoc, and staticcheck. Use normal `//` only.
+
+| Use | Form | Example |
+|-----|------|---------|
+| **Wiring step** (inside `main`, `Run`, handlers) | `// Label` on its own line before the block | `// Config`, `// Listen` |
+| **Exported API** (above type/func) | Godoc: `// SymbolName …` | `// Load reads …` |
+| **Inline note** | `// …` | rare |
+
+- Step labels in **English**. User-facing text stays i18n `MessageCode`s, not comments.
+- Replace placeholders like `// add comment` with a real step label (`// Request ID`); do not delete the comment line. No bare `//TODO` without an issue link.
+- Canonical wiring example: `backend/api-gateway/cmd/main.go`.
+
+## Section steps (bootstrap & wiring)
+
+**Required** in:
+
+- `cmd/main.go` — Config → Logger → Signals → (startup log) → Server → shutdown epilogue.
+- `internal/server/server_wire.go`, `server_handler.go`, `server_run.go`.
+- `wi-shared/config.Load` and other multi-phase loaders (~5+ distinct phases).
+
+**Format:**
+
+```go
+// Config
+```
+
+## Step comments (by layer)
+
+| Layer | Steps (order) |
+|-------|----------------|
+| **delivery/http** | `Bind` → `Service` → `Response` |
+| **delivery/grpc** | `Bind` (proto → model) → `Service` → `Response` |
+| **service** | `Validation` → `Repository` → extra domain steps only when needed (`Token`, `Session`, …) |
+| **repository** | No step recipe; godoc on exported methods with non-obvious rules (locks, rotation, linking) |
+| **wi-shared** | No steps in tiny packages; use `//` phases in `config.Load` and similar multi-step wiring only |
+
+For **service** methods under ~15 lines, step headers are optional (delivery still uses Bind/Service/Response for consistency).
+
+Extra service step names only when the method has **three or more** distinct phases — do not add filler labels.
+
+## Spacing
+
+- `func main() {` opens with the first `//` step on the next line (no leading `log.Println`).
+- **One blank line** between step blocks; no blank line required immediately after `{`.
+- After the `// Server` block (`Run` returns), **one blank line** before `appLog.Info("… shutdown complete")`.
+- No double blank lines inside a single step.
+- Unrelated `const (` groups at file top: separate with one blank line.
+
+## Bootstrap logs (`cmd/main.go`)
+
+- **One** structured startup line: `appLog.Info("<service> starting", …)` after Signals, before `// Server`. No duplicate `log.Println("Starting …")`.
+- Before Logger exists, `log.Printf` / `os.Exit` for config errors only.
+
+## What not to comment
+
+- The next function or method name (`// Find user` above `FindUserByID`).
+- Obvious `return` / nil checks.
+- `wi-shared/models/gen/**` (generated; do not edit).
+
+## Examples
+
+**main / bootstrap:**
+
+```go
+func main() {
+	// Config
+	cfg, err := config.Load(".env")
+	...
+
+	// Logger
+	appLog := logger.New(logger.Options{...})
+
+	// Signals
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	appLog.Info("api-gateway starting", "port", cfg.Port)
+
+	// Server
+	srv := server.NewServer(cfg, appLog)
+	if err := srv.Run(ctx); err != nil {
+		appLog.Error("api-gateway stopped", "err", err)
+		os.Exit(1)
+	}
+
+	appLog.Info("api-gateway shutdown complete")
+}
+```
+
+**service:**
+
+```go
+func (s service) Login(ctx context.Context, in *model.LoginInput) (*model.LoginResult, error) {
+	// Validation
+	if in.Email == "" {
+		return nil, exception.InvalidInput(...)
+	}
+
+	// Repository
+	u, err := s.users.FindByEmail(ctx, in.Email)
+	...
+}
+```
+
+## Anti-patterns
+
+- Indonesian (or mixed) step labels
+- `//*`, `// *`, or `//!` prefixes
+- Step banners inside repository packages (except multi-step loaders like `config.Load`)
+- `log.Fatalf` inside server listen goroutines — return errors to `Run(ctx)` (`wichat-go.mdc`)
+
+## See also
+
+- `wichat-go-layers.mdc` — handlers, services, repositories
+- `wichat-go.mdc` — tests, lint, proto
+- `references/be-suretyship/` — phase order and spacing (translate suretyship `//*` to WiChat `//` when porting)

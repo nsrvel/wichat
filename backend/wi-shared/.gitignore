@@ -1,0 +1,4 @@
+# wi-shared — library module (no runtime .env)
+
+coverage.out
+coverage.html

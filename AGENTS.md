@@ -4,13 +4,13 @@ Guidance for humans and coding agents working in this repository.
 
 ## Product
 
-WiChat is a **self-hosted**, **AGPL-3.0** team communication platform with a **plugin architecture**. Commercial positioning: sell support, hosting, and proprietary plugins on top of the open core — quality and operability matter.
+WiChat is a **self-hosted**, **AGPL-3.0** team communication platform with a **plugin architecture** — a **major product** built for real daily use. Operability, security, and deployability are part of the application, not optional polish.
 
 **Canonical spec:** [docs/architecture/wichat-system-design.md](docs/architecture/wichat-system-design.md)
 
 ## Architecture constraints (do not drift)
 
-- Core backend: **one Go modular monolith** (not microservices at launch).
+- Core backend: **Go monorepo microservices** under `backend/` — `api-gateway/`, `ms-<domain>/`, `wi-shared/` (gRPC + Kafka between services).
 - Separate processes: **LiveKit**, **plugins (gRPC)**, not core domains.
 - Data: PostgreSQL, Redis, Elasticsearch, MinIO, Kafka.
 - Clients: Next.js (web + iOS PWA), Electron, React Native (Android).
@@ -19,12 +19,15 @@ WiChat is a **self-hosted**, **AGPL-3.0** team communication platform with a **p
 ## Repository layout (target)
 
 ```
-apps/          # web, desktop, mobile clients
-services/      # core Go binary
-plugins/       # optional plugin services + bundles
+backend/       # Go: api-gateway/, ms-*/, wi-shared/, plugins/ (plugin servers, later)
+frontend/      # apps/web (Next.js) + packages/@wichat/*
 deploy/        # docker compose, env templates
-docs/          # architecture & ops (system design lives here)
+docs/          # architecture & ops
 ```
+
+Monorepo boundaries: [docs/architecture/monorepo-layout.md](docs/architecture/monorepo-layout.md).
+
+**Go services (`ms-*`):** repository → service → delivery; models and migrations per `wichat-go-layers.mdc`. Shared backend libs: [backend/wi-shared/README.md](backend/wi-shared/README.md).
 
 Phases in system design §15 — implement in order unless explicitly reprioritized.
 
@@ -42,4 +45,18 @@ License: [LICENSE](LICENSE). Preserve AGPL headers on new source files. Do not a
 
 ## Cursor rules
 
-See `.cursor/rules/` for file-specific conventions as code lands.
+**Always-on:** program + core. **File-scoped:** Go and web when touching those paths.
+
+| Rule | Scope |
+|------|--------|
+| `wichat-program.mdc` | How we work: `release`, micro-steps, vertical slices |
+| `wichat-core.mdc` | Product + architecture guardrails |
+| `wichat-go.mdc` | Go backend: tests under `<pkg>/test/`, per-module `make check`, wi-shared patterns |
+| `wichat-go-layers.mdc` | Go backend: repository / service / delivery layout |
+| `wichat-go-style.mdc` | Go backend: `//` step comments, wiring spacing |
+| `wichat-web-layout.mdc` | `frontend/apps/web/**` — app vs features, components, no micro-FE |
+| `wichat-web-data.mdc` | `frontend/apps/web/**` + `frontend/packages/**` — `@wichat/*`, TanStack Query services, WS vs Query |
+
+**Skill:** `.cursor/skills/wichat-web-client/` — scaffold and feature slices for web-client.
+
+Detail standards: [system design](docs/architecture/wichat-system-design.md) and this file.

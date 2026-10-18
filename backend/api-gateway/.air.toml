@@ -1,0 +1,13 @@
+# Live reload for local dev (make dev). Watches wi-shared via go.work replace.
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  cmd = "go build -o ./tmp/api-gateway ./cmd"
+  bin = "./tmp/api-gateway"
+  include_ext = ["go", "mod", "sum"]
+  include_dir = [".", "../wi-shared"]
+  exclude_dir = ["tmp", "testdata"]
+  exclude_regex = ["_test\\.go"]
+  send_interrupt = true
+  kill_delay = "2s"

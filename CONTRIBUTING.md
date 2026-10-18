@@ -2,6 +2,11 @@
 
 Thank you for helping make WiChat production-grade. This project is pre-implementation in places; when in doubt, follow [docs/architecture/wichat-system-design.md](docs/architecture/wichat-system-design.md).
 
+## Branches
+
+- **`release`** — active development (default branch; open PRs here).
+- **`main`** — stable line; updated from `release` when we cut a shipped version (not day-to-day commits).
+
 ## Before you start
 
 1. Open an issue for non-trivial work (feature, breaking change, new dependency).
@@ -10,15 +15,37 @@ Thank you for helping make WiChat production-grade. This project is pre-implemen
 
 ## Development setup
 
-Documented as each phase lands (Phase 0: `docker compose`, Go toolchain, Node for clients). Until then, architecture docs are the source of truth.
+- **Go 1.26** (see `backend/go.work`). Each deployable module (`wi-shared`, `ms-user`, `api-gateway`) is self-contained for a future split into separate repos.
+- Checks (monorepo orchestrator or per module):
+
+```bash
+cd backend/ms-user && make check      # fmt + lint + test (same for api-gateway, wi-shared)
+cd backend/wi-shared && make proto    # regenerate protobuf (requires buf)
+```
+
+- Services depend on **wi-shared** (errors, config, and `models/gen` gRPC types). When repos split, use a tagged wi-shared module instead of `replace` in `go.mod`.
+
+- **Environment:** no root `.env.example`. Use `deploy/.env.example` for Compose overrides; copy `backend/<service>/.env.example` → `.env` inside that service; `frontend/apps/web/.env.example` → `.env.local` for Next.js. Details: [docs/architecture/monorepo-layout.md](docs/architecture/monorepo-layout.md).
+
+- Optional editor: enable format on save with **gofumpt** (gopls `go.formatTool`).
+
+**Frontend** (`frontend/` pnpm workspace — `apps/web`, `packages/@wichat/*`): Node **22+**, pnpm **10**.
+
+```bash
+cd frontend && pnpm install    # Husky hooks at repo root
+cp apps/web/.env.example apps/web/.env.local
+pnpm --filter web-client check
+```
+
+Pre-commit runs lint-staged from `frontend/` (ESLint/Prettier on staged app and package files).
+
+**Local reference clones:** optional pattern repos under `references/` are gitignored and not shipped; delete that folder anytime to reclaim disk (~1GB+ if you cloned examples).
+
+Infra: `docker compose -f deploy/docker-compose.yml up -d`. Architecture docs remain the source of truth for product behavior.
 
 ## Code standards
 
-- **Go (core):** idiomatic Go, table-driven tests, `testify` where it helps readability; target ~90% unit coverage on core modules over time.
-- **TypeScript (clients):** strict typing, shadcn/Radix patterns for UI; match existing folder layout.
-- **API:** REST under `/api/v1/`; realtime via WebSocket; errors use standard HTTP status + human-readable message (see system design §13).
-- **i18n:** backend emits message keys; user-facing strings live in translation files.
-- **Security:** no secrets in git; rate limits at the gateway; validate at trust boundaries.
+Follow [system design](docs/architecture/wichat-system-design.md) and `.cursor/rules/wichat-*.mdc`. Narrower Cursor rules are added only when matching code lands (Go services, web app, etc.).
 
 ## Pull requests
 

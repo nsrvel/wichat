@@ -1,0 +1,3 @@
+# Deploy — local compose overrides (template: .env.example)
+.env
+.env.local

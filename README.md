@@ -16,9 +16,20 @@ WiChat sits between casual chat (Discord, WhatsApp) and rigid enterprise suites 
 
 Target scale: **2–500 people per workspace** on a single instance (`docker compose`), without sharding at launch.
 
+## Repository layout
+
+```
+backend/     # Go microservices + wi-shared (see backend/README.md)
+frontend/    # apps/web + @wichat packages (see frontend/README.md)
+deploy/      # Docker Compose & ops
+docs/        # Architecture & product spec
+```
+
+Monorepo ownership (env, gitignore, modules): [docs/architecture/monorepo-layout.md](docs/architecture/monorepo-layout.md).
+
 ## Architecture (short)
 
-- **Core:** Go modular monolith (auth, workspace, chat/WebSocket, presence, notifications, plugins, search, audit)
+- **Core:** `backend/` — Go monorepo microservices — see system design §5.1
 - **Realtime media:** [LiveKit](https://livekit.io/) (self-hosted SFU)
 - **Data:** PostgreSQL, Redis, Elasticsearch, MinIO, Kafka
 - **Clients:** Next.js (web + iOS PWA), Electron (desktop), React Native (Android APK)

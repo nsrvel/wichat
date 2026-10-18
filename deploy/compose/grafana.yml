@@ -1,0 +1,7 @@
+services:
+  grafana:
+    image: grafana/grafana-oss:11.5.2
+    ports:
+      - "9000:3000"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro

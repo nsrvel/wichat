@@ -9,27 +9,23 @@ flowchart TB
         MP["MediaPipe (embedded)\nopt-in, default OFF on mobile"]
     end
 
-    subgraph Monolith["Core Backend — 1 Go binary (Modular Monolith)"]
+    subgraph Edge["Core Backend — monorepo microservices (Go)"]
         direction TB
-        Gateway["API Gateway (Gin/Fiber)\nrate limiting, presigned URL issuer,\nLiveKit webhook receiver, data export job trigger"]
-        Auth["Auth module\nregistration modes, Google OAuth,\nguest session, first-run admin setup"]
-        ChatSvc["Chat module (WebSocket)\nunified channel, threads, reactions,\nread receipts, catch-up sync"]
-        WorkspaceSvc["Workspace module\nmulti-workspace, roles, private channels"]
-        PresenceSvc["Presence module"]
-        NotifSvc["Notification module\n@mention -> Kafka, Web Push/FCM"]
-        PluginMgr["Plugin Manager module\nregistry + gRPC contracts"]
-        SearchSvc["Search module"]
-        AuditSvc["Audit Log module"]
-        MediaControl["LiveKit Controller\nroom tokens, lifecycle webhooks"]
+        Gateway["api-gateway\nHTTP /api/v1, rate limit,\npresigned URLs, export trigger"]
+        UserSvc["ms-user\nauth, sessions, workspaces,\nRBAC, profiles, channel metadata"]
+        ChatSvc["ms-chat\nmessages, WS, search + ES indexer"]
+        PresenceSvc["presence\nstatus, activity"]
+        MsCore["ms-core\nLiveKit tokens, webhooks"]
+        NotificationSvc["ms-notification\n@mention dispatch, push"]
+        AuditSvc["ms-audit\nKafka → audit log"]
+        PluginMgr["plugins\nregistry, gRPC to plugins"]
 
-        Gateway --> Auth
-        Gateway --> WorkspaceSvc
+        Gateway --> UserSvc
+        Gateway --> ChatSvc
         Gateway --> PresenceSvc
         Gateway --> PluginMgr
-        Gateway --> ChatSvc
-        Gateway --> SearchSvc
-        Gateway --> MediaControl
-        ChatSvc --> NotifSvc
+        Gateway --> MsCore
+        ChatSvc --> PresenceSvc
     end
 
     subgraph EventBackbone["Event Backbone"]
@@ -37,7 +33,7 @@ flowchart TB
     end
 
     subgraph Data["Data Layer (TLS in-transit)"]
-        Postgres[("PostgreSQL + JSONB\nusers, workspaces, channels,\nmessages, audit logs, emoji")]
+        Postgres[("PostgreSQL + JSONB\nlogical table ownership per service")]
         Redis[("Redis\npresence, guest TTL, typing,\nWS fanout, pub-sub")]
         ES[("Elasticsearch\nmessage search index")]
         MinIO[("MinIO (S3-compatible)\nfiles, avatars, soundboard\npresigned PUT/GET")]
@@ -51,55 +47,43 @@ flowchart TB
         Grafana["Grafana + Loki"]
     end
 
-    subgraph Testing["Testing (CI)"]
-        Unit["Unit: Go testing + testify (~90%)"]
-        Integ["Integration: testcontainers"]
-        E2E["E2E: Playwright (critical paths)"]
-    end
-
-    subgraph External["Separate processes (independent lifecycle)"]
-        LiveKit["LiveKit Server (SFU)\nself-hosted, Apache 2.0\n1 well-provisioned node (4-8 vCPU)\nfits 2-500 people/workspace\nAEC/noise suppression via libwebrtc (free)\nDTLN/RNNoise plugin optional (Krisp = paid/cloud, excluded)"]
-        Registry["Plugin Registry\nmanifest: name, version, permissions, bundle URL"]
+    subgraph External["Separate processes"]
+        LiveKit["LiveKit Server (SFU)\nself-hosted"]
         P1["Task Board Plugin - gRPC"]
         P2["Whiteboard Plugin - gRPC"]
-        P3["Virtual Office Plugin - gRPC\n(spatial map, proximity voice, private zones)\noptional / nice-to-have"]
-        P4["Interactive Activities Plugin - gRPC"]
-        P5["Analytics Plugin (future)\nconsumes Kafka feed"]
-        P6["AI/ML Service (future, Python)\nWhisper transcription etc - gRPC"]
+        P3["Virtual Office Plugin - gRPC\noptional"]
+        P4["Other plugins - gRPC"]
     end
 
     Web --> MP
     MP -->|processed video track| LiveKit
-    Web -->|REST/WS, TLS| Gateway
+    Web -->|REST, TLS| Gateway
+    Web -->|WebSocket via api-gateway| ChatSvc
     Web -->|connect/publish/subscribe| LiveKit
-    Web -->|browse/install| Registry
     Web -.direct upload (presigned).-> MinIO
     Desktop -.wraps.-> Web
-    Mobile -->|REST/WS, TLS| Gateway
+    Mobile -->|REST| Gateway
+    Mobile -->|WS| ChatSvc
     Mobile --> LiveKit
 
-    Auth --> Postgres
-    Auth -->|guest session TTL| Redis
-    ChatSvc --> Redis
+    UserSvc --> Postgres
+    UserSvc -->|sessions, guest TTL| Redis
     ChatSvc --> Postgres
-    ChatSvc -->|emit event| Kafka
-    Kafka --> SearchSvc --> ES
+    ChatSvc --> Redis
+    ChatSvc -->|emit| Kafka
+    Kafka -->|chat-events index| ChatSvc
+    ChatSvc --> ES
     Kafka --> AuditSvc --> Postgres
-    WorkspaceSvc --> Postgres
+    Kafka --> NotificationSvc
     PresenceSvc --> Redis
-    PluginMgr --> Registry
-    PluginMgr <-->|gRPC, dynamic install| P1
+    PluginMgr --> Postgres
+    PluginMgr <-->|gRPC| P1
     PluginMgr <-->|gRPC| P2
     PluginMgr <-->|gRPC| P3
     PluginMgr <-->|gRPC| P4
-    PluginMgr -.gRPC (future).-> P6
-    Kafka -.future.-> P5
-    Gateway -.issues presigned URL.-> MinIO
-    Gateway -.generates export archive.-> MinIO
-    Postgres -.read for export.-> Gateway
+    Gateway -.presigned URL.-> MinIO
     Postgres -.scheduled.-> BackupJob
 
-    LiveKit --> Redis
-    LiveKit -->|webhook: room lifecycle| MediaControl
-    MediaControl --> LiveKit
-    Monolith -.logs/metrics.-> Grafana
+    LiveKit -->|webhook| MsCore
+    MsCore --> LiveKit
+    Edge -.logs/metrics.-> Grafana

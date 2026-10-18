@@ -1,0 +1,8 @@
+# Dev all-in-one: same stack as running each file under compose/ separately with -p wichat.
+name: wichat
+
+include:
+  - path: compose/postgres.yml
+  - path: compose/redis.yml
+  - path: compose/prometheus.yml
+  - path: compose/grafana.yml
