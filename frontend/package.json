@@ -1,0 +1,13 @@
+{
+	"name": "wichat-frontend",
+	"private": true,
+	"scripts": {
+		"prepare": "cd .. && husky",
+		"check:web": "pnpm --filter web-client check"
+	},
+	"devDependencies": {
+		"husky": "^9.1.7",
+		"lint-staged": "^15.5.0"
+	},
+	"packageManager": "pnpm@10.12.2"
+}

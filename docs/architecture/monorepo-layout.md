@@ -9,10 +9,25 @@ One git repository; **clear boundaries** so env, build artifacts, and docs do no
 | `deploy/` | Docker Compose, infra ports, optional compose env | Go service config, app secrets in repo root |
 | `backend/wi-shared/` | Shared Go libs, protobuf contracts | Runnable `.env`, service ports |
 | `backend/api-gateway/` | Public HTTP, gateway `.env` | Postgres credentials (unless documented for local dev) |
-| `backend/ms-auth/`, `ms-user/` | Domain service config & `.env` | Frontend API URLs |
-| `frontend/web-client/` | Next.js, `NEXT_PUBLIC_*`, Node artifacts | Backend gRPC, DB URLs (except public API base URL) |
+| `backend/ms-user/` | Domain service config & `.env` | Frontend API URLs |
+| `frontend/` | pnpm workspace root (`package.json`, `pnpm-lock.yaml`, Husky via `prepare`) | Backend Go modules |
+| `frontend/apps/web/` | Next.js app (`web-client`), `NEXT_PUBLIC_*`, Node artifacts | Backend gRPC, DB URLs (except public API base URL) |
+| `frontend/packages/*` | `@wichat/contracts`, `@wichat/api-client`, `@wichat/i18n` | Next env, UI components |
 | `docs/` | Product & architecture spec | Runtime config |
 | `references/` | Local clones for patterns (gitignored) | Shipped product code |
+
+## Backend module paths
+
+Go workspace: [`backend/go.work`](../../backend/go.work). Each runnable or library module is a **top-level directory under `backend/`** (not `backend/services/`):
+
+| Path | Module role |
+|------|-------------|
+| `backend/api-gateway/` | Public HTTP `/api/v1`; thin delivery — routes to gRPC backends |
+| `backend/ms-user/` | Auth (sessions, OAuth, setup), users/workspaces (domains as `internal/auth`, `internal/user`, …) |
+| `backend/ms-chat/`, `ms-core/`, … | Planned services; empty placeholder dirs until the slice lands |
+| `backend/wi-shared/` | Protobuf (`models/`), errors, response helpers, gRPC client/server utilities |
+
+There is **no** separate `ms-auth` service — auth lives in **`ms-user`**. Gateway must not import another service’s Go packages; only **`wi-shared`** generated gRPC clients.
 
 ## Environment files
 
@@ -22,12 +37,12 @@ One git repository; **clear boundaries** so env, build artifacts, and docs do no
 |----------|------|---------|
 | `deploy/` | `.env.example` | Optional Compose overrides (infra); connection hints for local dev |
 | `backend/api-gateway/` | `.env.example` | `PORT`, `MS_*_HOST`, log level |
-| `backend/ms-auth/`, `ms-user/` | `.env.example` | Service `PORT`, future `DATABASE_URL` / `REDIS_URL` when wired |
-| `frontend/web-client/` | `.env.example` | `NEXT_PUBLIC_API_URL` (and other `NEXT_PUBLIC_*` only) |
+| `backend/ms-user/` | `.env.example` | Service `PORT`, future `DATABASE_URL` / `REDIS_URL` when wired |
+| `frontend/apps/web/` | `.env.example` | `NEXT_PUBLIC_API_URL` (and other `NEXT_PUBLIC_*` only) |
 
 **Local dev:** from the module directory, `cp .env.example .env` (Go) or `.env.local` (Next.js). Never commit `.env`.
 
-**Frontend workspace:** repo root `pnpm install` (pnpm workspace + Husky). Quality: `pnpm --filter web-client check`. Pre-commit: lint-staged on `frontend/web-client/**` only.
+**Frontend workspace:** [`frontend/package.json`](../../frontend/package.json) + `frontend/pnpm-lock.yaml` (no Node toolchain at repo root). Run `cd frontend && pnpm install` (installs Husky at git root). Quality: `pnpm --filter web-client check` from `frontend/`. Pre-commit: lint-staged on `apps/web/**` and Prettier on `packages/**`.
 
 **Infra URLs** (Postgres/Redis defaults): documented in [deploy/README.md](../../deploy/README.md), not duplicated as a second root env file.
 
@@ -37,24 +52,38 @@ Git merges ignore rules from root downward.
 
 1. **Root `.gitignore`** — repo-wide: `references/`, OS/editors, all `.env` files, `!.env.example`, generic Go/Node/mobile patterns.
 2. **`backend/.gitignore`** — Air `tmp/`, workspace-wide backend noise.
-3. **Per module** (`api-gateway/`, `ms-auth/`, `ms-user/`, `wi-shared/`, `frontend/web-client/`) — short file stating **this module’s** local overrides and build dirs (even when root already covers them, for on-call clarity).
+3. **Per module** (`api-gateway/`, `ms-user/`, `wi-shared/`, `frontend/apps/web/`) — short file stating **this module’s** local overrides and build dirs (even when root already covers them, for on-call clarity).
 
 Do not put service-specific secrets or `node_modules` policy only in root without a module stub when that module exists.
 
 ## CI & PR scope
 
 - Backend change → `cd backend/<module> && make check` (see [CONTRIBUTING.md](../../CONTRIBUTING.md)).
-- Frontend change → lint/test in `frontend/web-client/` when present.
-- Compose/metrics → `deploy/` + `docs/architecture/metrics.md`.
+- Frontend change → `cd frontend && pnpm --filter web-client check` when `frontend/apps/web` or `frontend/packages` change.
+- Compose / infra → `deploy/`.
 
 Keep PRs **one concern** to reduce merge noise (see `wichat-program.mdc`).
 
 ## Future split (optional)
 
-Go modules are already separate under `backend/go.work`. Extracting to multiple git repos later means tagged **`wi-shared`** modules and copied deploy docs — not required for MVP.
+Go modules are already separate under `backend/go.work`. Extracting to multiple git repos later — not required for MVP:
+
+1. Publish **`wi-shared`** (semver tag or private module proxy).
+2. Publish each **`ms-*`** / **`api-gateway`** repo; depend on a pinned `wi-shared` version (drop `replace => ../wi-shared` in `go.mod`).
+3. Copy deploy/CI docs per repo.
+
+Services must keep importing **`github.com/wichat/wichat/backend/wi-shared`** (or the published module path after split), never `../ms-user/internal/...`.
+
+**Frontend packages** (`frontend/packages/*`) are each a candidate git repo. Split order:
+
+1. Publish **`@wichat/contracts`** (semver tag or private registry).
+2. Publish **`@wichat/api-client`** and **`@wichat/i18n`** (depend on contracts version).
+3. Point **`apps/web`**, future **`apps/mobile`**, etc. at published versions instead of `workspace:*`.
+
+Until then, apps depend on packages only via **`import … from "@wichat/…"`** and **`"workspace:*"`** in `package.json` — no `../../packages` paths. Add `dist/` builds when a consumer lives outside this workspace.
 
 ## See also
 
 - [wichat-system-design.md](wichat-system-design.md) §5.1 (services)
-- [frontend/README.md](../../frontend/README.md) (web-client)
+- [frontend/README.md](../../frontend/README.md)
 - `.cursor/rules/wichat-web-*.mdc` (frontend boundaries)

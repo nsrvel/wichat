@@ -38,7 +38,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        module: [wi-shared, ms-auth, ms-user, api-gateway]
+        module: [wi-shared, ms-user, api-gateway]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -66,7 +66,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        module: [wi-shared, ms-auth, ms-user, api-gateway]
+        module: [wi-shared, ms-user, api-gateway]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -89,9 +89,12 @@ jobs:
         with:
           node-version: "22"
           cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
       - name: Install dependencies
+        working-directory: frontend
         run: pnpm install --frozen-lockfile
       - name: Copy env for build
-        run: cp frontend/web-client/.env.example frontend/web-client/.env.local
+        run: cp frontend/apps/web/.env.example frontend/apps/web/.env.local
       - name: check
+        working-directory: frontend
         run: pnpm --filter web-client check

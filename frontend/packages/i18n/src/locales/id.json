@@ -1,0 +1,64 @@
+{
+  "auth": {
+    "invalid_credentials": "Email atau kata sandi salah.",
+    "unauthorized": "Masuk untuk melanjutkan.",
+    "setup_closed": "Akun pertama sudah dibuat.",
+    "google_denied": "Masuk dengan Google dibatalkan atau gagal.",
+    "google_email_unverified": "Akun Google itu belum memiliki email terverifikasi.",
+    "headline": "Bicara bebas, tetap terhubung.",
+    "lead": "Ruang privat untuk kolaborasi waktu nyata.",
+    "google": "Lanjutkan dengan Google",
+    "or": "atau",
+    "back": "Kembali",
+    "have_account": "Sudah punya akun?",
+    "to_login": "Masuk",
+    "showcase": "Orang-orang yang bekerja bersama"
+  },
+  "error": {
+    "internal": "Terjadi kesalahan.",
+    "invalid_input": "Periksa kolom {{field}}.",
+    "invalid_response": "Respons server tidak sesuai.",
+    "rate_limited": "Terlalu banyak percobaan. Coba lagi nanti.",
+    "timeout": "Permintaan habis waktu.",
+    "unavailable": "Layanan sedang tidak tersedia.",
+    "unknown": "Terjadi kesalahan."
+  },
+  "user": {
+    "not_found": "Pengguna itu tidak ditemukan."
+  },
+  "login": {
+    "title": "Masuk",
+    "first_time": "Pertama kali di sini?",
+    "sign_up": "Daftar",
+    "email": "Email",
+    "email_placeholder": "Email kamu",
+    "password": "Kata sandi",
+    "password_placeholder": "Kata sandi",
+    "submit": "Masuk",
+    "submitting": "Sedang masuk…",
+    "show_password": "Tampilkan kata sandi",
+    "hide_password": "Sembunyikan kata sandi"
+  },
+  "setup": {
+    "title": "Daftar",
+    "lead": "Akun ini adalah akun pertama di instance WiChat ini.",
+    "display_name": "Nama tampilan",
+    "display_placeholder": "Nama tampilan",
+    "submit": "Daftar",
+    "submitting": "Sedang mendaftar…"
+  },
+  "validation": {
+    "email": "Masukkan email yang valid.",
+    "password": "Kata sandi minimal 12 karakter.",
+    "display_name": "Nama tampilan wajib diisi."
+  },
+  "locale": {
+    "label": "Bahasa",
+    "en": "English",
+    "id": "Indonesia"
+  },
+  "theme": {
+    "toggle": "Ganti tema warna"
+  },
+  "logout": "Keluar"
+}

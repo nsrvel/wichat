@@ -15,21 +15,31 @@ Thank you for helping make WiChat production-grade. This project is pre-implemen
 
 ## Development setup
 
-- **Go 1.26** (see `backend/go.work`). Each deployable module (`wi-shared`, `ms-auth`, `ms-user`, `api-gateway`) is self-contained for a future split into separate repos.
+- **Go 1.26** (see `backend/go.work`). Each deployable module (`wi-shared`, `ms-user`, `api-gateway`) is self-contained for a future split into separate repos.
 - Checks (monorepo orchestrator or per module):
 
 ```bash
-cd backend/ms-auth && make check      # fmt + lint + test (same for ms-user, api-gateway, wi-shared)
+cd backend/ms-user && make check      # fmt + lint + test (same for api-gateway, wi-shared)
 cd backend/wi-shared && make proto    # regenerate protobuf (requires buf)
 ```
 
 - Services depend on **wi-shared** (errors, config, and `models/gen` gRPC types). When repos split, use a tagged wi-shared module instead of `replace` in `go.mod`.
 
-- **Environment:** no root `.env.example`. Use `deploy/.env.example` for Compose overrides; copy `backend/<service>/.env.example` → `.env` inside that service; `frontend/web-client/.env.example` → `.env.local` for Next.js. Details: [docs/architecture/monorepo-layout.md](docs/architecture/monorepo-layout.md).
+- **Environment:** no root `.env.example`. Use `deploy/.env.example` for Compose overrides; copy `backend/<service>/.env.example` → `.env` inside that service; `frontend/apps/web/.env.example` → `.env.local` for Next.js. Details: [docs/architecture/monorepo-layout.md](docs/architecture/monorepo-layout.md).
 
 - Optional editor: enable format on save with **gofumpt** (gopls `go.formatTool`).
 
-**Frontend (`frontend/web-client`):** Node **22+**, pnpm **10**. From repo root: `pnpm install` (workspace + Husky), then `cp frontend/web-client/.env.example frontend/web-client/.env.local`. Checks: `pnpm --filter web-client check` (Prettier, ESLint, `tsc`, production build). Pre-commit hooks format/lint staged web-client files via lint-staged.
+**Frontend** (`frontend/` pnpm workspace — `apps/web`, `packages/@wichat/*`): Node **22+**, pnpm **10**.
+
+```bash
+cd frontend && pnpm install    # Husky hooks at repo root
+cp apps/web/.env.example apps/web/.env.local
+pnpm --filter web-client check
+```
+
+Pre-commit runs lint-staged from `frontend/` (ESLint/Prettier on staged app and package files).
+
+**Local reference clones:** optional pattern repos under `references/` are gitignored and not shipped; delete that folder anytime to reclaim disk (~1GB+ if you cloned examples).
 
 Infra: `docker compose -f deploy/docker-compose.yml up -d`. Architecture docs remain the source of truth for product behavior.
 

@@ -42,7 +42,7 @@ coverage.out
 coverage.html
 /vendor/
 
-# Node / JS (web-client/.gitignore is canonical for the app)
+# Node / JS (frontend/apps/web/.gitignore is canonical for the Next app)
 node_modules/
 .next/
 out/
