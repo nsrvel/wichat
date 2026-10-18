@@ -8,7 +8,7 @@ import (
 	"net/http"
 
 	"github.com/wichat/wichat/backend/wi-shared/exception"
-	"github.com/wichat/wichat/backend/wi-shared/microservices"
+	"github.com/wichat/wichat/backend/wi-shared/microservices/utils"
 	"github.com/wichat/wichat/backend/wi-shared/response"
 	responsegrpc "github.com/wichat/wichat/backend/wi-shared/response/grpc"
 )
@@ -104,7 +104,7 @@ func WriteOutboundError(w http.ResponseWriter, r *http.Request, err error, opts 
 		return
 	}
 
-	if microservices.IsOutboundUnavailable(err) {
+	if utils.IsOutboundUnavailable(err) {
 		WriteJSON(w, http.StatusServiceUnavailable, response.NewErrorEnvelope(string(exception.MsgUnavailable), nil))
 		return
 	}

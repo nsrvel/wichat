@@ -18,3 +18,13 @@ type Envelope struct {
 func NewErrorEnvelope(code string, params map[string]any) Envelope {
 	return Envelope{Error: ErrorBody{Code: code, Params: params}}
 }
+
+// DataEnvelope is the client-facing success payload.
+type DataEnvelope struct {
+	Data any `json:"data"`
+}
+
+// NewDataEnvelope wraps a successful response body.
+func NewDataEnvelope(data any) DataEnvelope {
+	return DataEnvelope{Data: data}
+}

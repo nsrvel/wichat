@@ -14,9 +14,13 @@ const (
 	MsgInvalidInput MessageCode = "error.invalid_input"
 	MsgUnavailable  MessageCode = "error.unavailable"
 	MsgTimeout      MessageCode = "error.timeout"
+	MsgRateLimited  MessageCode = "error.rate_limited"
 
-	MsgUnauthorized       MessageCode = "auth.unauthorized"
-	MsgInvalidCredentials MessageCode = "auth.invalid_credentials"
+	MsgUnauthorized          MessageCode = "auth.unauthorized"
+	MsgInvalidCredentials    MessageCode = "auth.invalid_credentials"
+	MsgSetupClosed           MessageCode = "auth.setup_closed"
+	MsgGoogleDenied          MessageCode = "auth.google_denied"
+	MsgGoogleEmailUnverified MessageCode = "auth.google_email_unverified"
 
 	MsgUserNotFound MessageCode = "user.not_found"
 )
