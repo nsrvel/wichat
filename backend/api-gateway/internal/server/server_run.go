@@ -9,13 +9,26 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/wichat/wichat/backend/wi-shared/microservices"
 )
 
 const httpShutdownTimeout = 5 * time.Second
 
 func (s *server) Run(ctx context.Context) error {
+	// User service
+	ms, err := microservices.Open(microservices.Config{
+		Log:      s.log,
+		Settings: s.cfg.Microservices,
+		UserAddr: s.cfg.UserHost,
+	})
+	if err != nil {
+		return err
+	}
+	defer func() { _ = ms.Close() }()
+
 	// Handler
-	handler, err := s.buildHandler()
+	handler, err := s.buildHandler(ms)
 	if err != nil {
 		return err
 	}

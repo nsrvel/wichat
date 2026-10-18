@@ -13,8 +13,6 @@ import (
 	"github.com/wichat/wichat/backend/api-gateway/internal/config"
 	"github.com/wichat/wichat/backend/api-gateway/internal/server"
 	"github.com/wichat/wichat/backend/wi-shared/infra/logger"
-	"github.com/wichat/wichat/backend/wi-shared/infra/metrics"
-	"github.com/wichat/wichat/backend/wi-shared/infra/otel"
 )
 
 func main() {
@@ -32,17 +30,6 @@ func main() {
 		Level:   cfg.LogLevel,
 	})
 
-	// Metrics
-	reg := metrics.NewRegistry()
-
-	// Tracing
-	shutdownTracer, err := otel.InstallTracer(context.Background(), "api-gateway")
-	if err != nil {
-		appLog.Error("otel init failed", "err", err)
-		os.Exit(1)
-	}
-	defer func() { _ = shutdownTracer(context.Background()) }()
-
 	// Signals
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
@@ -50,7 +37,7 @@ func main() {
 	appLog.Info("api-gateway starting", "port", cfg.Port)
 
 	// Server
-	srv := server.NewServer(cfg, appLog, reg)
+	srv := server.NewServer(cfg, appLog)
 	if err := srv.Run(ctx); err != nil {
 		appLog.Error("api-gateway stopped", "err", err)
 		os.Exit(1)

@@ -9,7 +9,7 @@ import (
 	"net/http"
 
 	"github.com/wichat/wichat/backend/wi-shared/exception"
-	"github.com/wichat/wichat/backend/wi-shared/microservices"
+	"github.com/wichat/wichat/backend/wi-shared/microservices/utils/correlation"
 	responsehttp "github.com/wichat/wichat/backend/wi-shared/response/http"
 )
 
@@ -21,13 +21,13 @@ func Chain(next http.Handler) http.Handler {
 // Request ID
 func requestID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		id := r.Header.Get(microservices.RequestIDHeader)
+		id := r.Header.Get(correlation.RequestIDHeader)
 		if id == "" {
 			id = newRequestID()
 		}
 
-		w.Header().Set(microservices.RequestIDHeader, id)
-		r = r.WithContext(microservices.WithRequestID(r.Context(), id))
+		w.Header().Set(correlation.RequestIDHeader, id)
+		r = r.WithContext(correlation.WithRequestID(r.Context(), id))
 		next.ServeHTTP(w, r)
 	})
 }

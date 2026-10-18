@@ -5,11 +5,10 @@ package server
 
 import (
 	"github.com/wichat/wichat/backend/wi-shared/infra/logger"
-	"github.com/wichat/wichat/backend/wi-shared/infra/otel"
-	msgrpc "github.com/wichat/wichat/backend/wi-shared/microservices/grpc"
+	msgrpc "github.com/wichat/wichat/backend/wi-shared/microservices/utils/grpc"
 	"google.golang.org/grpc"
 )
 
 func newGRPCServer(log logger.Logger) *grpc.Server {
-	return msgrpc.NewServer(log, otel.GRPCServerOptions()...)
+	return msgrpc.NewServer(log)
 }

@@ -6,42 +6,24 @@ package server
 import (
 	"encoding/json"
 	"net/http"
-	"strings"
 
+	authdelivery "github.com/wichat/wichat/backend/api-gateway/internal/auth/delivery/http"
 	"github.com/wichat/wichat/backend/api-gateway/internal/middleware"
-	"github.com/wichat/wichat/backend/wi-shared/infra/metrics"
-	"github.com/wichat/wichat/backend/wi-shared/infra/ops"
+	"github.com/wichat/wichat/backend/wi-shared/microservices"
 )
 
-func (s *server) buildHandler() (http.Handler, error) {
+func (s *server) buildHandler(ms *microservices.Clients) (http.Handler, error) {
 	// Routes
 	mux := http.NewServeMux()
-	s.mapHandlers(mux)
+	s.mapHandlers(mux, ms)
 
 	// Middleware
-	root := middleware.Chain(mux)
-
-	// HTTP metrics
-	httpMetrics, err := metrics.NewHTTPMetrics(metrics.HTTPOptions{
-		Service:  "api-gateway",
-		Registry: s.reg,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return httpMetrics.Middleware(root), nil
+	return middleware.CORS(s.cfg.WebOrigin, middleware.Chain(mux)), nil
 }
 
-func (s *server) mapHandlers(mux *http.ServeMux) {
-	var readyChecks []ops.ReadyCheck
-	if host := strings.TrimSpace(s.cfg.AuthHost); host != "" {
-		readyChecks = append(readyChecks, ops.HTTPGetReadyCheck(nil, ops.ServiceReadyURL(host)))
-	}
-	ops.RegisterWithReady(mux, s.reg, readyChecks...)
-
+func (s *server) mapHandlers(mux *http.ServeMux, ms *microservices.Clients) {
 	// APIs
-	// Auth routes register here when internal/auth/delivery/http exists.
+	authdelivery.Register(mux, authdelivery.NewHandler(ms, s.log, s.cfg.SecureCookies(), s.cfg.WebOrigin))
 
 	// Root
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

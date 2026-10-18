@@ -28,6 +28,7 @@ linters:
       checks:
         - all
         - -ST1000
+        - -ST1003 # WiChat camelCase multi-word packages (msUser, authHttp, authPb)
     gosec:
       excludes:
         - G104

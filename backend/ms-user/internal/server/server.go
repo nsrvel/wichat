@@ -6,13 +6,11 @@ package server
 import (
 	"context"
 
-	"github.com/prometheus/client_golang/prometheus"
-
 	"github.com/wichat/wichat/backend/ms-user/internal/config"
 	"github.com/wichat/wichat/backend/wi-shared/infra/logger"
 )
 
-// Server runs ms-user gRPC and ops HTTP (health/metrics).
+// Server runs ms-user gRPC.
 type Server interface {
 	Run(ctx context.Context) error
 }
@@ -20,10 +18,9 @@ type Server interface {
 type server struct {
 	cfg config.Config
 	log logger.Logger
-	reg *prometheus.Registry
 }
 
 // NewServer constructs the process composition root.
-func NewServer(cfg config.Config, log logger.Logger, reg *prometheus.Registry) Server {
-	return &server{cfg: cfg, log: log, reg: reg}
+func NewServer(cfg config.Config, log logger.Logger) Server {
+	return &server{cfg: cfg, log: log}
 }
