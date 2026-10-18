@@ -9,7 +9,7 @@ Full env defaults and retry rules: [docs/architecture/microservices.md](../../..
 | Path | Role |
 |------|------|
 | `config.go` | `Settings`, `CallConfig`, `RetryPolicy`, `DefaultSettings` |
-| `call.go` | `CallUnary` — per-attempt + overall timeout, retries |
+| `call.go` | `CallUnary`, `CallUnaryResult` — per-attempt + overall timeout, retries |
 | `retry.go`, `breaker.go`, `outbound.go` | Retry classification, breaker, `IsOutboundUnavailable` (gateway 503) |
 | `correlation/` | `RequestIDHeader`, `WithRequestID`, `RequestIDFromContext` |
 | `grpc/` | `Dial`, `NewServer`, client/server request-ID interceptors |
@@ -33,9 +33,11 @@ Squash into caller config (e.g. api-gateway `Config.Microservices`).
 ```go
 cfg := utils.CallConfigFromSettings(settings, utils.RetryIdempotent)
 cfg.Breaker = utils.NewBreaker(settings)
-err := utils.CallUnary(ctx, cfg, log, "service.Method/Name", func(callCtx context.Context) error {
+out, err := utils.CallUnaryResult(ctx, cfg, log, "service.Method/Name", func(callCtx context.Context) (*pb.Response, error) {
     return stub.DoSomething(callCtx, req)
 })
 ```
+
+Use `CallUnary` only when the RPC has no meaningful return value beyond `error`.
 
 Inbound gRPC servers (e.g. ms-user) use `utils/grpc.NewServer(log)` for recovery and request ID on the server side.

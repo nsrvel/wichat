@@ -68,6 +68,21 @@ func TestCallUnaryRetriesUnavailable(t *testing.T) {
 	}
 }
 
+func TestCallUnaryResultReturnsValue(t *testing.T) {
+	cfg := utils.CallConfig{
+		PerAttemptTimeout: 50 * time.Millisecond,
+		OverallTimeout:    200 * time.Millisecond,
+		MaxRetries:        0,
+		RetryPolicy:       utils.RetryNone,
+	}
+	out, err := utils.CallUnaryResult(context.Background(), cfg, nil, "test.Method", func(context.Context) (string, error) {
+		return "ok", nil
+	})
+	if err != nil || out != "ok" {
+		t.Fatalf("unexpected out=%q err=%v", out, err)
+	}
+}
+
 func TestCallConfigFromSettings(t *testing.T) {
 	cfg := utils.CallConfigFromSettings(utils.DefaultSettings, utils.RetryIdempotent)
 	if cfg.MaxRetries != 3 || cfg.PerAttemptTimeout != 5*time.Second {

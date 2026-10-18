@@ -10,7 +10,7 @@ Canonical architecture: [docs/architecture/microservices.md](../../../docs/archi
 |------|------|
 | `clients.go` | `Config`, `Open`, `Close`, `Clients` |
 | `services/<ms-name>/` | Typed facade per downstream service — see [services/ms-user/README.md](services/ms-user/README.md) |
-| `utils/` | Shared `CallUnary`, `Settings`, dial/server helpers — see [utils/README.md](utils/README.md) |
+| `utils/` | Shared `CallUnary` / `CallUnaryResult`, `Settings`, dial/server helpers — see [utils/README.md](utils/README.md) |
 
 ## Usage (api-gateway)
 

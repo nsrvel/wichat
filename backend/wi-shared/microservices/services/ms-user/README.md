@@ -7,7 +7,7 @@ Typed **gRPC client** for the [ms-user](../../../../ms-user/README.md) process. 
 | Path | Role |
 |------|------|
 | `ms_user.go` | `Service`, `GRPC` struct, `NewGRPC(conn, settings, log)` |
-| `grpc/auth/client.go` | `auth.Client` — AuthService RPCs wrapped with `utils.CallUnary` |
+| `grpc/auth/client.go` | `auth.Client` — AuthService RPCs wrapped with `utils.CallUnaryResult` |
 | `grpc/auth/test/` | Bufconn retry test for idempotent reads |
 
 ## Call surface

@@ -81,3 +81,19 @@ func CallUnary(ctx context.Context, cfg CallConfig, log logger.Logger, method st
 
 	return lastErr
 }
+
+// CallUnaryResult runs fn like CallUnary and returns the response value on success.
+func CallUnaryResult[T any](ctx context.Context, cfg CallConfig, log logger.Logger, method string, fn func(context.Context) (T, error)) (T, error) {
+	var out T
+	err := CallUnary(ctx, cfg, log, method, func(callCtx context.Context) error {
+		resp, err := fn(callCtx)
+		if err != nil {
+			return err
+		}
+		out = resp
+
+		return nil
+	})
+
+	return out, err
+}
