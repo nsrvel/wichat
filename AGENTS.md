@@ -49,7 +49,7 @@ License: [LICENSE](LICENSE) (AGPL-3.0-or-later at repo root; no per-file SPDX/co
 
 | Rule | Scope |
 |------|--------|
-| `wichat-program.mdc` | How we work: `release`, micro-steps, vertical slices |
+| `wichat-program.mdc` | How we work: `main` (prod) / `release` (staging), micro-steps, vertical slices |
 | `wichat-core.mdc` | Product + architecture guardrails |
 | `wichat-go.mdc` | Go backend: tests under `<pkg>/test/`, per-module `make check`, wi-shared patterns |
 | `wichat-go-layers.mdc` | Go backend: repository / service / delivery layout |

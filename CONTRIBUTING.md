@@ -4,8 +4,8 @@ Thank you for helping make WiChat production-grade. This project is pre-implemen
 
 ## Branches
 
-- **`release`** — active development (default branch; open PRs here).
-- **`main`** — stable line; updated from `release` when we cut a shipped version (not day-to-day commits).
+- **`main`** — production (repository default branch on GitHub).
+- **`release`** — staging; open PRs and integrate features here, then merge **`release` → `main`** when ready to ship.
 
 ## Before you start
 
