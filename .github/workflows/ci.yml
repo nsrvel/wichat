@@ -15,7 +15,7 @@ jobs:
     name: Repository baseline
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Required project files
         run: |
@@ -40,8 +40,8 @@ jobs:
       matrix:
         module: [wi-shared, ms-user, api-gateway]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version: "1.26"
           cache-dependency-path: backend/${{ matrix.module }}/go.sum
@@ -53,7 +53,7 @@ jobs:
     name: Proto lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: bufbuild/buf-action@v1
         with:
           setup_only: true
@@ -70,8 +70,8 @@ jobs:
       matrix:
         module: [wi-shared, ms-user, api-gateway]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version: "1.26"
           cache-dependency-path: backend/${{ matrix.module }}/go.sum
@@ -83,11 +83,11 @@ jobs:
     name: Web client (lint, types, build)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
         with:
           version: 10.12.2
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: pnpm
