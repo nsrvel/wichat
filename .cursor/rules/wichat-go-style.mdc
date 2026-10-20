@@ -18,10 +18,27 @@ Readability goal: **ops-friendly scan** — DevOps/SRE and devs should see **wha
 | **Subpackages by transport** | e.g. `response/http`, `response/grpc` — no one-off helper files for a single function |
 | Under `internal/server/`, prefer role names **without** repeating `server_` in the filename | Target: `run.go`, `wire.go` (rename when touched; not required in every slice) |
 | Tests in `<pkg>/test/` (`wichat-go.mdc`); test file may describe behavior | `load_test.go` is fine |
-| **Multi-word `pkg/` and helper dirs** use **kebab-case** in the path | Good: `pkg/auth-http`, `services/ms-user/grpc/auth`. Bad: `pkg/authhttp`, `pkg/auth_http` |
-| Go **`package` clause** mirrors kebab dir with **camelCase** (no hyphens/underscores) | Dir `auth-http` → `package authHttp`, file `auth_http.go`; `services/ms-user` → `package msUser`; import path stays kebab. ST1003 off in backend golangci (staticcheck prefers `msuser`). |
+| **Dir** (`pkg/`, `internal/…`) | **kebab-case** for multi-word segments: `auth-http`, `auth-pb`, `auth-redis`, `test-support`, `ms-user`. Single-word dirs stay lowercase (`password`, `validate`). |
+| **File** | **snake_case** `.go`: `auth_http.go`, `auth_pb.go`, `ms_user.go`, `redis_email_auth.go`. |
+| **Production `package`** | **camelCase** when the dir is kebab-case multi-word: `auth-http` → `authHttp`, `auth-pb` → `authPb`, `auth-redis` → `authRedis`, `ms-user` (wi-shared client) → `msUser`. Single-word dirs use a matching lowercase name (`service`, `validate`, `constants`). |
+| **External tests** (`<pkg>/test/`) | **`package {pkgname}_test`** only (`service_test`, `authHttp_test` if testing `authHttp`). |
+| **Lint** | ST1003 disabled in module `.golangci.yml` — camelCase packages are intentional. |
 
 Do not copy suretyship `*_models.go` splits for tiny structs — split when the package actually grows.
+
+### `pg_repository.go` layout
+
+Applies to each `internal/<domain>/repository/pg_repository.go` (see `wichat-go-layers.mdc`):
+
+| Section | Contents |
+|---------|----------|
+| Top | `PgRepository` interface, struct, `NewPgRepository` |
+| Middle | Interface methods only, **in interface declaration order** |
+| Bottom | Unexported helpers used **only in this file** (e.g. `findUserBy`, tx-scoped lookups) |
+
+Put cross-file Postgres helpers in `ms-*/pkg/db` (`pgErr`; driver → `pkg/constants`). Group other `pkg/` code by role folder with files at that level (`oauth/google.go`, `jwt/`, `validator/`, …) per `ms-user/pkg/README.md`. Put shared sentinel errors in `pkg/constants` — never `internal/.../errors.go` re-exports.
+
+**No micro-helpers in `pkg/`:** if a helper is a thin wrapper or used from one call site, inline at the caller or keep an unexported func in the owning `internal/*/service` file. Reserve `pkg/` for real reuse (crypto, validation rules, proto mapping, Redis OTP primitives).
 
 ## Comments (one prefix: `//`)
 

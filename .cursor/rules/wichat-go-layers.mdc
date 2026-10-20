@@ -19,12 +19,29 @@ Readability goal: **open any file once and know its job** — same structural ha
 
 ## Helper scope (`pkg` vs `wi-shared`)
 
-| Scope | Where |
-|-------|--------|
-| **One microservice** (`ms-*`, `api-gateway`) | `backend/<module>/pkg/` — kebab-case dirs (`auth-http`); see `wichat-go-style.mdc` |
-| **Across services** | `backend/wi-shared/` — see [wi-shared/README.md](../../backend/wi-shared/README.md); **no** domain use cases |
+| Scope                                        | Where                                                                                                        |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| **One microservice** (`ms-*`, `api-gateway`) | `backend/<module>/pkg/` — group by role (`auth/`, `validator/`, `utils/`, …); kebab-case leaf dirs; camelCase `package`; see `wichat-go-style.mdc` + `ms-user/pkg/README.md` |
+| **Across services**                          | `backend/wi-shared/` — see [wi-shared/README.md](../../backend/wi-shared/README.md); **no** domain use cases |
+
+**ms-user `pkg/`:** flat role folders — [`backend/ms-user/pkg/README.md`](../../backend/ms-user/pkg/README.md). One level deep (`oauth/google.go`, `db/map.go`); no `oauth/google/google.go` nesting. Import paths directly; **no** re-export from `internal/`.
 
 Do not import another service’s `internal/` or `pkg/` from a different `ms-*` module.
+
+### No re-exports
+
+**Never** add a shim file that re-exports another package’s symbols so callers can keep a shorter import path.
+
+Forbidden:
+
+```go
+// internal/auth/repository/errors.go — DO NOT
+var ErrNotFound = constants.ErrNotFound
+```
+
+Import the **canonical** package everywhere (`pkg/constants`, `wi-shared/exception`, `pkg/db`, …). Do not duplicate `var` / `const` / `func` aliases across packages for “backward compatibility” or “stable API” — update call sites instead.
+
+Allowed in the **same** package only: `type Repository = PgRepository` (interface alias), private helpers, constructors.
 
 ## Folder layout (per domain)
 
@@ -33,12 +50,12 @@ backend/ms-user/internal/models/     # <domain>_model.go, <domain>_repository_mo
 backend/ms-user/internal/migrations/ # goose SQL (not on startup)
 
 backend/ms-user/internal/auth/
-  repository/          # pg_repository.go, sql_queries.go, test/
+  repository/          # pg_repository.go, redis_*.go, mock/ (Pg only), test/
   service/
   delivery/grpc/
 
 backend/ms-user/internal/user/
-  repository/
+  repository/          # pg_repository.go, mock/ (Pg only), test/
   service/
   delivery/grpc/
 
@@ -52,6 +69,31 @@ backend/api-gateway/internal/auth/
 **`internal/general`:** cross-cutting ops RPCs (health liveness today). **Delivery only** — no `service/` or `repository/`. Business domains stay under `internal/<domain>/`.
 
 Payload/DTO structs: `internal/models/<domain>_model.go` per service (e.g. `ms-user/internal/models/auth_model.go`). Bun table structs: `<domain>_repository_model.go` in the same package — not under `repository/`.
+
+### No domain `const` / `type` in repository, service, or delivery
+
+| Kind | Location |
+|------|----------|
+| Domain / policy **constants** (modes, roles, limits, SQL literals, channel names) | `<module>/pkg/constants/` |
+| Domain **models** (DTOs, Redis JSON payloads, service inputs) | `<module>/internal/models/` |
+| **Sentinel errors** | `pkg/constants` (ms-user) or `wi-shared/exception` — never a local `errors.go` re-export |
+
+**Forbidden** in `internal/<domain>/{repository,service,delivery}/`: `const` blocks and exported domain struct types. **Allowed:** unexported wiring structs (`service`, `pgRepository`, `server`), repository `PgRepository` / store **interfaces** + constructors, `repository/mock` test state, `_test.go` fixtures.
+
+`internal/config` and `internal/server` wiring may keep operational constants (shutdown timeouts) when not domain-facing.
+
+### ms-user: split `auth` vs `user` repositories
+
+One `PgRepository` per **domain + store**, not one god-file for the whole microservice. Same `*bun.DB` may back multiple repos — wire both in `internal/server/server_run.go`.
+
+| Package | `PgRepository` owns |
+|---------|---------------------|
+| `internal/user/repository/` | Users, identities (Google link), groups, instance settings |
+| `internal/auth/repository/` | Sessions, refresh tokens; Redis stores (`EmailAuthStore`, `PasswordResetStore`) in separate files |
+
+Auth **service** today orchestrates both: inject `userrepo.PgRepository` and `authrepo.PgRepository` as separate deps (`s.users`, `s.sessions`). Do not merge back into a single mega-interface unless the domain boundary changes.
+
+See [ms-user/internal/auth/README.md](../../backend/ms-user/internal/auth/README.md) and [ms-user/internal/user/README.md](../../backend/ms-user/internal/user/README.md).
 
 ## Repository
 
@@ -77,21 +119,56 @@ func (r pgRepository) FindUserByID(ctx context.Context, id string) (*User, error
     // I/O only — no business branching beyond mapping driver errors
 }
 
-func (r pgRepository) userTable() string { return "auth.users" } // private helpers at bottom
+}
+// private helpers for this file only — below all interface methods (see wichat-go-style.mdc)
 ```
+
+**`pg_repository.go` file order (required):**
+
+1. `PgRepository` interface (+ `NewPgRepository`, struct)
+2. Every interface method, **same order as the interface**
+3. File-local private helpers only (`findUserBy`, tx helpers, …) — **nothing** off-interface between public methods
+4. Driver error mapping → `pkg/db` (`pgErr`) (not private `mapNotFound` in the repo file when shared across repos)
 
 Checklist:
 
 - `context.Context` first on every method.
-- Name interfaces by store: `PgRepository`, `RedisRepository`.
+- Name interfaces by store: `PgRepository`, `RedisRepository` (or `EmailAuthStore`, … for Redis).
 - **Postgres hybrid:** Bun (`*bun.DB` over `database/sql` + pgx) for simple CRUD; keep locks, `FOR UPDATE`, joins, and bulk deletes in `sql_queries.go` + `NewRaw` inside `RunInTx`.
 - Contract + `pgRepository` live in `pg_repository.go` (no separate `repository.go`).
-- Sentinel errors OK: `var ErrNotFound = errors.New("...")` — service maps to `exception`.
+- Sentinel errors: define in `ms-*/pkg/constants` (or domain-specific `pkg`); repositories and services use `errors.Is(err, constants.ErrNotFound)` — service maps to `exception`.
 - No i18n, no HTTP/gRPC, no `wi-shared/exception`.
+
+### Repository mocks and Redis in tests
+
+| Store | In-memory test double | Where |
+| ----- | --------------------- | ----- |
+| **Postgres** (`PgRepository`) | Yes — `repository/mock/pg_repository_mock.go` + shared `State` when needed | Service tests and any caller that must avoid Docker/testcontainers |
+| **Redis** (`EmailAuthStore`, `PasswordResetStore`, …) | **No** `repository/mock/` | Use **[miniredis](https://github.com/alicebob/miniredis)** + the **real** `NewRedis*Store(rdb)` implementation |
+
+- Mock file pairs with production: `pg_repository.go` → `mock/pg_repository_mock.go`; constructor `NewPgRepositoryMock` mirrors `NewPgRepository`.
+- Do **not** add Redis “mock” structs that reimplement OTP/TTL/strike logic — that duplicates `redis_*.go`. Do **not** put miniredis wiring in `repository/mock/` (misleading name); use helpers in `repository/test/` or `service/test/`.
+- **Do not** put fat fakes in `service/test/` (e.g. `fake_repository.go`) — import `user/repository/mock` and `auth/repository/mock` instead.
+- Postgres **integration** tests stay in `repository/test/` (testcontainers when Docker is available).
 
 ## Service
 
-Package name **`service`** (not `usecase`). Deps are **repository interfaces** (and config/logger), injected via `NewService`.
+Package name **`service`** (not `usecase`). One **domain** per folder under `internal/<domain>/service/` (e.g. `auth`, `user`, `group` in ms-user). Deps are **repository interfaces** (and config/logger), injected via `NewService`.
+
+### Service folder layout (required)
+
+```text
+internal/<domain>/service/
+  service.go           # only production Go file in this folder
+  test/
+    service_test.go    # only test file (package <domain>_test or service_test)
+```
+
+- **No** sibling `register.go`, `groups.go`, … next to `service.go` — merge into `service.go` or split by **domain package**, not by file in one package.
+- **No** `helpers_test.go`, `groups_test.go`, … — one `service_test.go` per domain; shared test wiring → `ms-*/pkg/test-support` (`testSupport`; import only from `*_test`).
+- DTOs → `internal/models/`; sentinels and shared limits → `ms-*/pkg/constants`; reusable pure logic → `ms-*/pkg/` (or `wi-shared/` when cross-service).
+
+**ms-user (reference):** `auth/service` (credentials, sessions, OAuth, password reset); `user/service` (instance setup, guest user creation); `group/service` (membership). gRPC `AuthService` delivery may inject all three; proto unchanged.
 
 ```go
 package service
@@ -101,12 +178,13 @@ type Service interface {
 }
 
 type service struct {
-    users repository.PgRepository
-    log   logger.Logger
+    users    userrepo.PgRepository
+    sessions authrepo.PgRepository
+    log      logger.Logger
 }
 
-func NewService(users repository.PgRepository, log logger.Logger) Service {
-    return service{users: users, log: log}
+func NewService(users userrepo.PgRepository, sessions authrepo.PgRepository, log logger.Logger) Service {
+    return service{users: users, sessions: sessions, log: log}
 }
 
 func (s service) Login(ctx context.Context, in *model.LoginInput) (*model.LoginResult, error) {
@@ -118,7 +196,7 @@ func (s service) Login(ctx context.Context, in *model.LoginInput) (*model.LoginR
     // Repository
     u, err := s.users.FindByEmail(ctx, in.Email)
     if err != nil {
-        if errors.Is(err, repository.ErrNotFound) {
+        if errors.Is(err, constants.ErrNotFound) {
             return nil, exception.Unauthenticated(exception.MsgInvalidCredentials, nil)
         }
         return nil, err // raw infra → delivery/grpc → 500
@@ -197,9 +275,13 @@ Checklist:
 
 ## Anti-patterns
 
+- Re-export files (`var X = otherpkg.X`) — import `otherpkg` directly.
+- One `pg_repository.go` spanning unrelated domains (users + sessions + groups) — split by `internal/<domain>/repository/`.
+- Private helpers or off-interface methods **between** exported repo methods.
 - SQL/Redis calls in handler.
 - `exception` in repository.
-- 200-line handlers or services — split by use case file only when interface is still one `Service`.
+- Extra `*.go` files beside `service/service.go` in the same domain — use another `internal/<domain>/service/` instead.
+- 200-line **delivery** handlers — split by RPC/handler file; service logic stays in single `service.go` per domain unless the domain itself splits.
 - Leaking `err.Error()` from bind/DB to JSON on 5xx.
 
 ## See also

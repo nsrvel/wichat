@@ -16,12 +16,16 @@ make check  # fmt, lint, test (repository integration tests need Docker)
 |------|------|
 | `internal/models/` | Service-wide types: `<domain>_model.go` + `<domain>_repository_model.go` (Bun rows) |
 | `internal/migrations/` | Goose SQL (not run on startup) |
-| `internal/auth/`, `internal/user/` | Per domain: `repository/`, `service/` (single `service.go`), `delivery/grpc/` |
+| `internal/auth/` | Auth use cases + gRPC; `repository/` = sessions/refresh + Redis challenges |
+| `internal/user/` | User/workspace repo + [`service/service.go`](internal/user/service/service.go) (setup, guest) |
+| `internal/group/` | Group membership [`service/service.go`](internal/group/service/service.go) |
 | `internal/general/` | Operational gRPC only (e.g. health liveness) — see [`internal/general/README.md`](internal/general/README.md) |
-| `pkg/` | Shared helpers (`password`, `jwt`, `token`, `google`, `auth-pb`, …) — not business use cases |
+| `pkg/` | Grouped by role (`auth/`, `validator/`, `converter/`, `utils/`, …) — see [`pkg/README.md`](pkg/README.md) |
 | `internal/server/` | gRPC listen, DB (`bun` + pgx), wiring |
 
-Postgres: **Bun** for simple CRUD, raw SQL in `repository/sql_queries.go` for locks / `FOR UPDATE` / joins. See [`internal/auth/README.md`](internal/auth/README.md) and [`internal/models/README.md`](internal/models/README.md).
+Postgres: **Bun** for simple CRUD, raw SQL in each domain’s `repository/sql_queries.go`. Wire **two** repos from one DB in `server_run.go`: `user/repository.NewPgRepository(db)` + `auth/repository.NewPgRepository(db)`. See [`internal/auth/README.md`](internal/auth/README.md), [`internal/user/README.md`](internal/user/README.md), [`pkg/README.md`](pkg/README.md).
+
+**Testing:** `repository/mock/pg_repository_mock.go` for fast service tests (no Postgres). Redis OTP stores — **miniredis** + `NewRedisEmailAuthStore` / `NewRedisPasswordResetStore`, not `repository/mock`.
 
 Schema files: `internal/migrations/*.sql`. Goose tracks versions in `goose_db_version`.
 

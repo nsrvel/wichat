@@ -23,14 +23,14 @@ Read before implementing under `frontend/apps/web/` (shared packages: `frontend/
 3. `@/` alias → `src/`
 4. `integrations/api-client`, `integrations/tanstack-query` (`get-query-client.ts`, `providers.tsx`)
 5. `env.ts` (`NEXT_PUBLIC_API_URL`)
-6. One domain end-to-end in UI: e.g. `@wichat/contracts` auth schemas, `services/auth/*`, `features/auth/login`, thin `app/(auth)/login/page.tsx`
+6. One domain end-to-end in UI: e.g. `@wichat/contracts`, `services/auth/*`, `features/auth/login/login-page.tsx` + `login-form.tsx`, thin `app/(auth)/sign-in/page.tsx`
 7. Optional: `integrations/msw` for mock until gateway routes exist
 
 ## New feature slice (repeatable)
 
 1. Zod in `schemas/<domain>/`
 2. `services/<domain>/*.service.ts` → api-client
-3. `*.query.ts` / `*.mutation.ts` + `*.key.ts` + `index.ts`
+3. `*.query.ts` / `*.mutation.ts` + `*.key.ts` (no re-export `index.ts` — see `wichat-no-export-barrels.mdc`)
 4. Screen under `features/<domain>/<slice>/`
 5. Wire route in `app/` only
 6. Mutations invalidate the correct query keys

@@ -18,12 +18,14 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
-	"github.com/wichat/wichat/backend/ms-user/internal/auth/repository"
+	authrepo "github.com/wichat/wichat/backend/ms-user/internal/auth/repository"
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
+	userrepo "github.com/wichat/wichat/backend/ms-user/internal/user/repository"
+	"github.com/wichat/wichat/backend/ms-user/pkg/constants"
 )
 
 func TestCreateFirstUserConflict(t *testing.T) {
-	repo, cleanup := newPgRepository(t)
+	users, _, cleanup := newPgRepositories(t)
 	defer cleanup()
 	ctx := context.Background()
 	now := time.Now().UTC().Truncate(time.Microsecond)
@@ -36,11 +38,11 @@ func TestCreateFirstUserConflict(t *testing.T) {
 		CreatedAt:    now,
 		UpdatedAt:    now,
 	}
-	if err := repo.CreateFirstUser(ctx, user); err != nil {
+	if err := users.CreateFirstUser(ctx, user); err != nil {
 		t.Fatalf("CreateFirstUser: %v", err)
 	}
 
-	got, err := repo.FindUserByEmail(ctx, "ada@example.com")
+	got, err := users.FindUserByEmail(ctx, "ada@example.com")
 	if err != nil {
 		t.Fatalf("FindUserByEmail: %v", err)
 	}
@@ -50,13 +52,13 @@ func TestCreateFirstUserConflict(t *testing.T) {
 
 	dup := user
 	dup.ID = "user-2"
-	if err := repo.CreateFirstUser(ctx, dup); !errors.Is(err, repository.ErrConflict) {
+	if err := users.CreateFirstUser(ctx, dup); !errors.Is(err, constants.ErrConflict) {
 		t.Fatalf("expected ErrConflict, got %v", err)
 	}
 }
 
 func TestMarkRefreshUsedTwice(t *testing.T) {
-	repo, cleanup := newPgRepository(t)
+	users, sessions, cleanup := newPgRepositories(t)
 	defer cleanup()
 	ctx := context.Background()
 	now := time.Now().UTC().Truncate(time.Microsecond)
@@ -69,7 +71,7 @@ func TestMarkRefreshUsedTwice(t *testing.T) {
 		CreatedAt:    now,
 		UpdatedAt:    now,
 	}
-	if err := repo.CreateFirstUser(ctx, user); err != nil {
+	if err := users.CreateFirstUser(ctx, user); err != nil {
 		t.Fatalf("CreateFirstUser: %v", err)
 	}
 
@@ -89,23 +91,23 @@ func TestMarkRefreshUsedTwice(t *testing.T) {
 		TokenHash: hash,
 		CreatedAt: now,
 	}
-	if err := repo.InsertSession(ctx, session, refresh); err != nil {
+	if err := sessions.InsertSession(ctx, session, refresh); err != nil {
 		t.Fatalf("InsertSession: %v", err)
 	}
 
 	nextHash := []byte("refresh-hash-two")
 	expires := now.Add(30 * 24 * time.Hour)
-	if err := repo.MarkRefreshUsed(ctx, hash, nextHash, "rt-2", session.ID, expires, now); err != nil {
+	if err := sessions.MarkRefreshUsed(ctx, hash, nextHash, "rt-2", session.ID, expires, now); err != nil {
 		t.Fatalf("first MarkRefreshUsed: %v", err)
 	}
-	err := repo.MarkRefreshUsed(ctx, hash, []byte("refresh-hash-three"), "rt-3", session.ID, expires, now.Add(time.Second))
-	if !errors.Is(err, repository.ErrAlreadyUsed) {
+	err := sessions.MarkRefreshUsed(ctx, hash, []byte("refresh-hash-three"), "rt-3", session.ID, expires, now.Add(time.Second))
+	if !errors.Is(err, constants.ErrAlreadyUsed) {
 		t.Fatalf("expected ErrAlreadyUsed, got %v", err)
 	}
 }
 
 func TestSaveGoogleUserLinksExistingEmail(t *testing.T) {
-	repo, cleanup := newPgRepository(t)
+	users, _, cleanup := newPgRepositories(t)
 	defer cleanup()
 	ctx := context.Background()
 	now := time.Now().UTC().Truncate(time.Microsecond)
@@ -118,7 +120,7 @@ func TestSaveGoogleUserLinksExistingEmail(t *testing.T) {
 		CreatedAt:    now,
 		UpdatedAt:    now,
 	}
-	if err := repo.CreateFirstUser(ctx, existing); err != nil {
+	if err := users.CreateFirstUser(ctx, existing); err != nil {
 		t.Fatalf("CreateFirstUser: %v", err)
 	}
 
@@ -130,7 +132,7 @@ func TestSaveGoogleUserLinksExistingEmail(t *testing.T) {
 		CreatedAt:    now,
 		UpdatedAt:    now,
 	}
-	got, err := repo.SaveGoogleUser(ctx, incoming, "id-1", "google", "google-subject-1")
+	got, err := users.SaveGoogleUser(ctx, incoming, "id-1", "google", "google-subject-1")
 	if err != nil {
 		t.Fatalf("SaveGoogleUser: %v", err)
 	}
@@ -138,7 +140,7 @@ func TestSaveGoogleUserLinksExistingEmail(t *testing.T) {
 		t.Fatalf("expected linked user %q, got %q", existing.ID, got.ID)
 	}
 
-	again, err := repo.SaveGoogleUser(ctx, incoming, "id-1", "google", "google-subject-1")
+	again, err := users.SaveGoogleUser(ctx, incoming, "id-1", "google", "google-subject-1")
 	if err != nil {
 		t.Fatalf("SaveGoogleUser again: %v", err)
 	}
@@ -147,7 +149,7 @@ func TestSaveGoogleUserLinksExistingEmail(t *testing.T) {
 	}
 }
 
-func newPgRepository(t *testing.T) (repository.PgRepository, func()) {
+func newPgRepositories(t *testing.T) (userrepo.PgRepository, authrepo.PgRepository, func()) {
 	t.Helper()
 	ctx := context.Background()
 
@@ -189,7 +191,7 @@ func newPgRepository(t *testing.T) (repository.PgRepository, func()) {
 		}
 	}
 
-	return repository.NewPgRepository(db), cleanup
+	return userrepo.NewPgRepository(db), authrepo.NewPgRepository(db), cleanup
 }
 
 func runMigrations(dsn string) error {

@@ -19,7 +19,7 @@ alwaysApply: false
 | Path | Role |
 |------|------|
 | `app/` | **Routing only** — `page.tsx`, `layout.tsx`, loading/error, metadata. Thin: import a feature screen and render. |
-| `features/<domain>/` | Screens and **domain-only** UI (e.g. `features/auth/login/`). |
+| `features/<domain>/` | Screens and **domain-only** UI (e.g. `features/auth/login/`). Per slice: `*-page.tsx` (shell, copy, layout) + `*-form.tsx` (Zod + fields + submit) — see below. |
 | `features/<domain>/components/` | Shared **within that domain** (login + register shell). |
 | `components/ui/` | shadcn primitives. |
 | `components/layout/` | Cross-feature shell (sidebar, header). |
@@ -33,12 +33,16 @@ alwaysApply: false
 ## `app/` pattern
 
 ```tsx
-// app/(auth)/login/page.tsx
-import { LoginPage } from '@/features/auth/login';
+// app/(auth)/sign-in/page.tsx
+import { LoginPage } from '@/features/auth/login/login-page';
 export default function Page() {
   return <LoginPage />;
 }
 ```
+
+**Feature slice files (TSX folders):** keep UI folders **`.tsx` only** — do not add sibling `*-form.ts` for schemas. Colocate Zod + `to*Request` at the top of `login-form.tsx` (module-private). Split **page** vs **form**: `login-page.tsx` (shell) + `login-form.tsx` (RHF + mutation). When moving schema from `*-form.ts` to `*-form.tsx`, **delete the `.ts` file in the same commit** — TypeScript resolves `./login-form` to `.ts` before `.tsx`. Page imports: `import { LoginForm } from './login-form'`.
+
+Import from the **defining file** — no `index.ts` re-export barrels (see `wichat-no-export-barrels.mdc`). Pure `.ts` is fine under `services/`, `lib/`, `integrations/` — not mixed into a slice folder that is otherwise components.
 
 Prefer route groups: `(auth)`, `(app)` or workspace layouts. Keep `'use client'` in features when using hooks/Query; metadata stays in server `page.tsx` when needed.
 

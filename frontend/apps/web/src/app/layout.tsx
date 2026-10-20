@@ -33,7 +33,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 			suppressHydrationWarning
 			className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
 		>
-			<body className="flex h-dvh min-h-0 flex-col overflow-hidden">
+			<body
+				className="flex h-dvh min-h-0 flex-col overflow-hidden"
+				suppressHydrationWarning
+			>
 				<ThemeProvider attribute="class" defaultTheme="system" enableSystem>
 					<I18nProvider locale={locale}>
 						<AppProviders>

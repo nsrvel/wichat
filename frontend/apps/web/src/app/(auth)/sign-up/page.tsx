@@ -1,12 +1,26 @@
-import { safeNotice } from "@/features/auth/notice";
-import { SetupPage } from "@/features/auth/setup";
+import { RegisterPage } from "@/features/auth/register/register-page";
+import {
+	pickInviteToken,
+	pickServerName,
+	type AuthSearchParams,
+} from "@/lib/auth-invite";
+import { safeNotice } from "@/lib/auth-notice";
 
 export default async function Page({
 	searchParams,
 }: {
-	searchParams: Promise<{ error?: string }>;
+	searchParams: Promise<AuthSearchParams & { error?: string }>;
 }) {
-	const { error } = await searchParams;
+	const params = await searchParams;
+	const { error, ...rest } = params;
+	const inviteToken = pickInviteToken(rest);
+	const serverName = pickServerName(rest);
 
-	return <SetupPage notice={safeNotice(error)} />;
+	return (
+		<RegisterPage
+			inviteToken={inviteToken}
+			serverName={serverName}
+			notice={safeNotice(error)}
+		/>
+	);
 }

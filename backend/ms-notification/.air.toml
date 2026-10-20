@@ -1,0 +1,12 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  cmd = "go build -o ./tmp/ms-notification ./cmd"
+  bin = "./tmp/ms-notification"
+  include_ext = ["go", "mod", "sum", "html", "txt"]
+  include_dir = [".", "../wi-shared"]
+  exclude_dir = ["tmp", "testdata"]
+  exclude_regex = ["_test\\.go"]
+  send_interrupt = true
+  kill_delay = "2s"

@@ -1,0 +1,43 @@
+---
+description: No re-export-only index.ts or barrel files — import from the defining module
+globs: frontend/**
+alwaysApply: false
+---
+
+# No export-only barrels
+
+Do **not** add `index.ts` (or any file) whose only job is re-exporting from sibling modules.
+
+## Forbidden
+
+```ts
+// features/auth/login/index.ts — ❌ delete; import login-page directly
+export { LoginPage } from './login-page';
+
+// services/auth/index.ts — ❌
+export * as authQuery from './auth.query';
+
+// components/form/index.ts — ❌
+export { TextField } from './text-field';
+```
+
+## Do instead
+
+```ts
+// app/(auth)/sign-in/page.tsx
+import { LoginPage } from '@/features/auth/login/login-page';
+
+// feature code
+import * as authQuery from '@/services/auth/auth.query';
+import { TextField } from '@/components/form/text-field';
+```
+
+## Workspace packages (`@wichat/*`)
+
+- Point `package.json` `"exports"` at the **implementation file** (`provider.tsx`, `create-api-client.ts`, …), not a re-export shim.
+- Use subpath exports when consumers need another module (`@wichat/i18n/locale`, `@wichat/api-client/api-error`).
+- **`@wichat/contracts`:** `src/index.ts` is allowed only because it **defines** schemas/types in place (not a passthrough barrel).
+
+## App integrations
+
+- Prefer a named file (e.g. `integrations/api-client.ts`) over `integrations/api-client/index.ts` when the module is a single singleton.

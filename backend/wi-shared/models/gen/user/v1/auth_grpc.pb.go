@@ -19,14 +19,28 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AuthService_SetupStatus_FullMethodName  = "/user.v1.AuthService/SetupStatus"
-	AuthService_Setup_FullMethodName        = "/user.v1.AuthService/Setup"
-	AuthService_Login_FullMethodName        = "/user.v1.AuthService/Login"
-	AuthService_Refresh_FullMethodName      = "/user.v1.AuthService/Refresh"
-	AuthService_Logout_FullMethodName       = "/user.v1.AuthService/Logout"
-	AuthService_Me_FullMethodName           = "/user.v1.AuthService/Me"
-	AuthService_GoogleStart_FullMethodName  = "/user.v1.AuthService/GoogleStart"
-	AuthService_GoogleFinish_FullMethodName = "/user.v1.AuthService/GoogleFinish"
+	AuthService_SetupStatus_FullMethodName           = "/user.v1.AuthService/SetupStatus"
+	AuthService_Setup_FullMethodName                 = "/user.v1.AuthService/Setup"
+	AuthService_Register_FullMethodName              = "/user.v1.AuthService/Register"
+	AuthService_RegisterGuest_FullMethodName         = "/user.v1.AuthService/RegisterGuest"
+	AuthService_Login_FullMethodName                 = "/user.v1.AuthService/Login"
+	AuthService_VerifyRegister_FullMethodName        = "/user.v1.AuthService/VerifyRegister"
+	AuthService_VerifyLogin_FullMethodName           = "/user.v1.AuthService/VerifyLogin"
+	AuthService_ResendRegisterCode_FullMethodName    = "/user.v1.AuthService/ResendRegisterCode"
+	AuthService_ResendLoginCode_FullMethodName       = "/user.v1.AuthService/ResendLoginCode"
+	AuthService_Refresh_FullMethodName               = "/user.v1.AuthService/Refresh"
+	AuthService_Logout_FullMethodName                = "/user.v1.AuthService/Logout"
+	AuthService_Me_FullMethodName                    = "/user.v1.AuthService/Me"
+	AuthService_CompleteInstanceSetup_FullMethodName = "/user.v1.AuthService/CompleteInstanceSetup"
+	AuthService_GoogleStart_FullMethodName           = "/user.v1.AuthService/GoogleStart"
+	AuthService_GoogleFinish_FullMethodName          = "/user.v1.AuthService/GoogleFinish"
+	AuthService_RequestPasswordReset_FullMethodName  = "/user.v1.AuthService/RequestPasswordReset"
+	AuthService_VerifyPasswordReset_FullMethodName   = "/user.v1.AuthService/VerifyPasswordReset"
+	AuthService_CompletePasswordReset_FullMethodName = "/user.v1.AuthService/CompletePasswordReset"
+	AuthService_ListMyGroups_FullMethodName          = "/user.v1.AuthService/ListMyGroups"
+	AuthService_ListJoinableGroups_FullMethodName    = "/user.v1.AuthService/ListJoinableGroups"
+	AuthService_CreateGroup_FullMethodName           = "/user.v1.AuthService/CreateGroup"
+	AuthService_JoinGroup_FullMethodName             = "/user.v1.AuthService/JoinGroup"
 )
 
 // AuthServiceClient is the client API for AuthService service.
@@ -35,22 +49,50 @@ const (
 //
 // AuthService issues browser sessions for the instance account.
 type AuthServiceClient interface {
-	// SetupStatus reports whether the first account still needs to be created.
+	// SetupStatus reports instance policy flags for the auth UI.
 	SetupStatus(ctx context.Context, in *SetupStatusRequest, opts ...grpc.CallOption) (*SetupStatusResponse, error)
-	// Setup creates the first account and a session.
+	// Setup is deprecated; use Register. Kept for older clients.
 	Setup(ctx context.Context, in *SetupRequest, opts ...grpc.CallOption) (*SetupResponse, error)
-	// Login checks email and password and opens a session.
+	// Register creates a member account and opens a session.
+	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error)
+	// RegisterGuest creates a guest account and opens a session.
+	RegisterGuest(ctx context.Context, in *RegisterGuestRequest, opts ...grpc.CallOption) (*RegisterGuestResponse, error)
+	// Login checks login identifier and password, then starts email OTP.
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
+	// VerifyRegister completes signup after email OTP.
+	VerifyRegister(ctx context.Context, in *VerifyRegisterRequest, opts ...grpc.CallOption) (*VerifyRegisterResponse, error)
+	// VerifyLogin completes password login after email OTP.
+	VerifyLogin(ctx context.Context, in *VerifyLoginRequest, opts ...grpc.CallOption) (*VerifyLoginResponse, error)
+	// ResendRegisterCode sends a new signup OTP for a challenge.
+	ResendRegisterCode(ctx context.Context, in *ResendRegisterCodeRequest, opts ...grpc.CallOption) (*ResendRegisterCodeResponse, error)
+	// ResendLoginCode sends a new login OTP for a challenge.
+	ResendLoginCode(ctx context.Context, in *ResendLoginCodeRequest, opts ...grpc.CallOption) (*ResendLoginCodeResponse, error)
 	// Refresh rotates the refresh token and issues a new access token.
 	Refresh(ctx context.Context, in *RefreshRequest, opts ...grpc.CallOption) (*RefreshResponse, error)
 	// Logout revokes the session that owns the refresh token.
 	Logout(ctx context.Context, in *LogoutRequest, opts ...grpc.CallOption) (*LogoutResponse, error)
 	// Me returns the account for a valid access token.
 	Me(ctx context.Context, in *MeRequest, opts ...grpc.CallOption) (*MeResponse, error)
+	// CompleteInstanceSetup is deprecated; use CreateGroup and future admin settings APIs.
+	CompleteInstanceSetup(ctx context.Context, in *CompleteInstanceSetupRequest, opts ...grpc.CallOption) (*CompleteInstanceSetupResponse, error)
 	// GoogleStart builds the Google authorization redirect.
 	GoogleStart(ctx context.Context, in *GoogleStartRequest, opts ...grpc.CallOption) (*GoogleStartResponse, error)
 	// GoogleFinish exchanges the authorization code and opens a session.
 	GoogleFinish(ctx context.Context, in *GoogleFinishRequest, opts ...grpc.CallOption) (*GoogleFinishResponse, error)
+	// RequestPasswordReset emails a reset code when the account exists.
+	RequestPasswordReset(ctx context.Context, in *RequestPasswordResetRequest, opts ...grpc.CallOption) (*RequestPasswordResetResponse, error)
+	// VerifyPasswordReset checks the code and returns a one-time reset token.
+	VerifyPasswordReset(ctx context.Context, in *VerifyPasswordResetRequest, opts ...grpc.CallOption) (*VerifyPasswordResetResponse, error)
+	// CompletePasswordReset sets a new password and revokes sessions.
+	CompletePasswordReset(ctx context.Context, in *CompletePasswordResetRequest, opts ...grpc.CallOption) (*CompletePasswordResetResponse, error)
+	// ListMyGroups returns groups the caller belongs to.
+	ListMyGroups(ctx context.Context, in *ListMyGroupsRequest, opts ...grpc.CallOption) (*ListMyGroupsResponse, error)
+	// ListJoinableGroups returns instance groups the caller is not in.
+	ListJoinableGroups(ctx context.Context, in *ListJoinableGroupsRequest, opts ...grpc.CallOption) (*ListJoinableGroupsResponse, error)
+	// CreateGroup creates a group; caller becomes owner.
+	CreateGroup(ctx context.Context, in *CreateGroupRequest, opts ...grpc.CallOption) (*CreateGroupResponse, error)
+	// JoinGroup adds the caller as a member.
+	JoinGroup(ctx context.Context, in *JoinGroupRequest, opts ...grpc.CallOption) (*JoinGroupResponse, error)
 }
 
 type authServiceClient struct {
@@ -81,10 +123,70 @@ func (c *authServiceClient) Setup(ctx context.Context, in *SetupRequest, opts ..
 	return out, nil
 }
 
+func (c *authServiceClient) Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RegisterResponse)
+	err := c.cc.Invoke(ctx, AuthService_Register_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) RegisterGuest(ctx context.Context, in *RegisterGuestRequest, opts ...grpc.CallOption) (*RegisterGuestResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RegisterGuestResponse)
+	err := c.cc.Invoke(ctx, AuthService_RegisterGuest_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *authServiceClient) Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(LoginResponse)
 	err := c.cc.Invoke(ctx, AuthService_Login_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) VerifyRegister(ctx context.Context, in *VerifyRegisterRequest, opts ...grpc.CallOption) (*VerifyRegisterResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(VerifyRegisterResponse)
+	err := c.cc.Invoke(ctx, AuthService_VerifyRegister_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) VerifyLogin(ctx context.Context, in *VerifyLoginRequest, opts ...grpc.CallOption) (*VerifyLoginResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(VerifyLoginResponse)
+	err := c.cc.Invoke(ctx, AuthService_VerifyLogin_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) ResendRegisterCode(ctx context.Context, in *ResendRegisterCodeRequest, opts ...grpc.CallOption) (*ResendRegisterCodeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ResendRegisterCodeResponse)
+	err := c.cc.Invoke(ctx, AuthService_ResendRegisterCode_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) ResendLoginCode(ctx context.Context, in *ResendLoginCodeRequest, opts ...grpc.CallOption) (*ResendLoginCodeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ResendLoginCodeResponse)
+	err := c.cc.Invoke(ctx, AuthService_ResendLoginCode_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -121,6 +223,16 @@ func (c *authServiceClient) Me(ctx context.Context, in *MeRequest, opts ...grpc.
 	return out, nil
 }
 
+func (c *authServiceClient) CompleteInstanceSetup(ctx context.Context, in *CompleteInstanceSetupRequest, opts ...grpc.CallOption) (*CompleteInstanceSetupResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CompleteInstanceSetupResponse)
+	err := c.cc.Invoke(ctx, AuthService_CompleteInstanceSetup_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *authServiceClient) GoogleStart(ctx context.Context, in *GoogleStartRequest, opts ...grpc.CallOption) (*GoogleStartResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GoogleStartResponse)
@@ -141,28 +253,126 @@ func (c *authServiceClient) GoogleFinish(ctx context.Context, in *GoogleFinishRe
 	return out, nil
 }
 
+func (c *authServiceClient) RequestPasswordReset(ctx context.Context, in *RequestPasswordResetRequest, opts ...grpc.CallOption) (*RequestPasswordResetResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RequestPasswordResetResponse)
+	err := c.cc.Invoke(ctx, AuthService_RequestPasswordReset_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) VerifyPasswordReset(ctx context.Context, in *VerifyPasswordResetRequest, opts ...grpc.CallOption) (*VerifyPasswordResetResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(VerifyPasswordResetResponse)
+	err := c.cc.Invoke(ctx, AuthService_VerifyPasswordReset_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) CompletePasswordReset(ctx context.Context, in *CompletePasswordResetRequest, opts ...grpc.CallOption) (*CompletePasswordResetResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CompletePasswordResetResponse)
+	err := c.cc.Invoke(ctx, AuthService_CompletePasswordReset_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) ListMyGroups(ctx context.Context, in *ListMyGroupsRequest, opts ...grpc.CallOption) (*ListMyGroupsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListMyGroupsResponse)
+	err := c.cc.Invoke(ctx, AuthService_ListMyGroups_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) ListJoinableGroups(ctx context.Context, in *ListJoinableGroupsRequest, opts ...grpc.CallOption) (*ListJoinableGroupsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListJoinableGroupsResponse)
+	err := c.cc.Invoke(ctx, AuthService_ListJoinableGroups_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) CreateGroup(ctx context.Context, in *CreateGroupRequest, opts ...grpc.CallOption) (*CreateGroupResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateGroupResponse)
+	err := c.cc.Invoke(ctx, AuthService_CreateGroup_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) JoinGroup(ctx context.Context, in *JoinGroupRequest, opts ...grpc.CallOption) (*JoinGroupResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(JoinGroupResponse)
+	err := c.cc.Invoke(ctx, AuthService_JoinGroup_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AuthServiceServer is the server API for AuthService service.
 // All implementations must embed UnimplementedAuthServiceServer
 // for forward compatibility.
 //
 // AuthService issues browser sessions for the instance account.
 type AuthServiceServer interface {
-	// SetupStatus reports whether the first account still needs to be created.
+	// SetupStatus reports instance policy flags for the auth UI.
 	SetupStatus(context.Context, *SetupStatusRequest) (*SetupStatusResponse, error)
-	// Setup creates the first account and a session.
+	// Setup is deprecated; use Register. Kept for older clients.
 	Setup(context.Context, *SetupRequest) (*SetupResponse, error)
-	// Login checks email and password and opens a session.
+	// Register creates a member account and opens a session.
+	Register(context.Context, *RegisterRequest) (*RegisterResponse, error)
+	// RegisterGuest creates a guest account and opens a session.
+	RegisterGuest(context.Context, *RegisterGuestRequest) (*RegisterGuestResponse, error)
+	// Login checks login identifier and password, then starts email OTP.
 	Login(context.Context, *LoginRequest) (*LoginResponse, error)
+	// VerifyRegister completes signup after email OTP.
+	VerifyRegister(context.Context, *VerifyRegisterRequest) (*VerifyRegisterResponse, error)
+	// VerifyLogin completes password login after email OTP.
+	VerifyLogin(context.Context, *VerifyLoginRequest) (*VerifyLoginResponse, error)
+	// ResendRegisterCode sends a new signup OTP for a challenge.
+	ResendRegisterCode(context.Context, *ResendRegisterCodeRequest) (*ResendRegisterCodeResponse, error)
+	// ResendLoginCode sends a new login OTP for a challenge.
+	ResendLoginCode(context.Context, *ResendLoginCodeRequest) (*ResendLoginCodeResponse, error)
 	// Refresh rotates the refresh token and issues a new access token.
 	Refresh(context.Context, *RefreshRequest) (*RefreshResponse, error)
 	// Logout revokes the session that owns the refresh token.
 	Logout(context.Context, *LogoutRequest) (*LogoutResponse, error)
 	// Me returns the account for a valid access token.
 	Me(context.Context, *MeRequest) (*MeResponse, error)
+	// CompleteInstanceSetup is deprecated; use CreateGroup and future admin settings APIs.
+	CompleteInstanceSetup(context.Context, *CompleteInstanceSetupRequest) (*CompleteInstanceSetupResponse, error)
 	// GoogleStart builds the Google authorization redirect.
 	GoogleStart(context.Context, *GoogleStartRequest) (*GoogleStartResponse, error)
 	// GoogleFinish exchanges the authorization code and opens a session.
 	GoogleFinish(context.Context, *GoogleFinishRequest) (*GoogleFinishResponse, error)
+	// RequestPasswordReset emails a reset code when the account exists.
+	RequestPasswordReset(context.Context, *RequestPasswordResetRequest) (*RequestPasswordResetResponse, error)
+	// VerifyPasswordReset checks the code and returns a one-time reset token.
+	VerifyPasswordReset(context.Context, *VerifyPasswordResetRequest) (*VerifyPasswordResetResponse, error)
+	// CompletePasswordReset sets a new password and revokes sessions.
+	CompletePasswordReset(context.Context, *CompletePasswordResetRequest) (*CompletePasswordResetResponse, error)
+	// ListMyGroups returns groups the caller belongs to.
+	ListMyGroups(context.Context, *ListMyGroupsRequest) (*ListMyGroupsResponse, error)
+	// ListJoinableGroups returns instance groups the caller is not in.
+	ListJoinableGroups(context.Context, *ListJoinableGroupsRequest) (*ListJoinableGroupsResponse, error)
+	// CreateGroup creates a group; caller becomes owner.
+	CreateGroup(context.Context, *CreateGroupRequest) (*CreateGroupResponse, error)
+	// JoinGroup adds the caller as a member.
+	JoinGroup(context.Context, *JoinGroupRequest) (*JoinGroupResponse, error)
 	mustEmbedUnimplementedAuthServiceServer()
 }
 
@@ -179,8 +389,26 @@ func (UnimplementedAuthServiceServer) SetupStatus(context.Context, *SetupStatusR
 func (UnimplementedAuthServiceServer) Setup(context.Context, *SetupRequest) (*SetupResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Setup not implemented")
 }
+func (UnimplementedAuthServiceServer) Register(context.Context, *RegisterRequest) (*RegisterResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Register not implemented")
+}
+func (UnimplementedAuthServiceServer) RegisterGuest(context.Context, *RegisterGuestRequest) (*RegisterGuestResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RegisterGuest not implemented")
+}
 func (UnimplementedAuthServiceServer) Login(context.Context, *LoginRequest) (*LoginResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Login not implemented")
+}
+func (UnimplementedAuthServiceServer) VerifyRegister(context.Context, *VerifyRegisterRequest) (*VerifyRegisterResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method VerifyRegister not implemented")
+}
+func (UnimplementedAuthServiceServer) VerifyLogin(context.Context, *VerifyLoginRequest) (*VerifyLoginResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method VerifyLogin not implemented")
+}
+func (UnimplementedAuthServiceServer) ResendRegisterCode(context.Context, *ResendRegisterCodeRequest) (*ResendRegisterCodeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ResendRegisterCode not implemented")
+}
+func (UnimplementedAuthServiceServer) ResendLoginCode(context.Context, *ResendLoginCodeRequest) (*ResendLoginCodeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ResendLoginCode not implemented")
 }
 func (UnimplementedAuthServiceServer) Refresh(context.Context, *RefreshRequest) (*RefreshResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Refresh not implemented")
@@ -191,11 +419,35 @@ func (UnimplementedAuthServiceServer) Logout(context.Context, *LogoutRequest) (*
 func (UnimplementedAuthServiceServer) Me(context.Context, *MeRequest) (*MeResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Me not implemented")
 }
+func (UnimplementedAuthServiceServer) CompleteInstanceSetup(context.Context, *CompleteInstanceSetupRequest) (*CompleteInstanceSetupResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CompleteInstanceSetup not implemented")
+}
 func (UnimplementedAuthServiceServer) GoogleStart(context.Context, *GoogleStartRequest) (*GoogleStartResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GoogleStart not implemented")
 }
 func (UnimplementedAuthServiceServer) GoogleFinish(context.Context, *GoogleFinishRequest) (*GoogleFinishResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GoogleFinish not implemented")
+}
+func (UnimplementedAuthServiceServer) RequestPasswordReset(context.Context, *RequestPasswordResetRequest) (*RequestPasswordResetResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RequestPasswordReset not implemented")
+}
+func (UnimplementedAuthServiceServer) VerifyPasswordReset(context.Context, *VerifyPasswordResetRequest) (*VerifyPasswordResetResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method VerifyPasswordReset not implemented")
+}
+func (UnimplementedAuthServiceServer) CompletePasswordReset(context.Context, *CompletePasswordResetRequest) (*CompletePasswordResetResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CompletePasswordReset not implemented")
+}
+func (UnimplementedAuthServiceServer) ListMyGroups(context.Context, *ListMyGroupsRequest) (*ListMyGroupsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListMyGroups not implemented")
+}
+func (UnimplementedAuthServiceServer) ListJoinableGroups(context.Context, *ListJoinableGroupsRequest) (*ListJoinableGroupsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListJoinableGroups not implemented")
+}
+func (UnimplementedAuthServiceServer) CreateGroup(context.Context, *CreateGroupRequest) (*CreateGroupResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateGroup not implemented")
+}
+func (UnimplementedAuthServiceServer) JoinGroup(context.Context, *JoinGroupRequest) (*JoinGroupResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method JoinGroup not implemented")
 }
 func (UnimplementedAuthServiceServer) mustEmbedUnimplementedAuthServiceServer() {}
 func (UnimplementedAuthServiceServer) testEmbeddedByValue()                     {}
@@ -254,6 +506,42 @@ func _AuthService_Setup_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthService_Register_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RegisterRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).Register(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_Register_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).Register(ctx, req.(*RegisterRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_RegisterGuest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RegisterGuestRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).RegisterGuest(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_RegisterGuest_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).RegisterGuest(ctx, req.(*RegisterGuestRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AuthService_Login_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(LoginRequest)
 	if err := dec(in); err != nil {
@@ -268,6 +556,78 @@ func _AuthService_Login_Handler(srv interface{}, ctx context.Context, dec func(i
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AuthServiceServer).Login(ctx, req.(*LoginRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_VerifyRegister_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(VerifyRegisterRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).VerifyRegister(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_VerifyRegister_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).VerifyRegister(ctx, req.(*VerifyRegisterRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_VerifyLogin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(VerifyLoginRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).VerifyLogin(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_VerifyLogin_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).VerifyLogin(ctx, req.(*VerifyLoginRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_ResendRegisterCode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResendRegisterCodeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).ResendRegisterCode(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_ResendRegisterCode_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).ResendRegisterCode(ctx, req.(*ResendRegisterCodeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_ResendLoginCode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResendLoginCodeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).ResendLoginCode(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_ResendLoginCode_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).ResendLoginCode(ctx, req.(*ResendLoginCodeRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -326,6 +686,24 @@ func _AuthService_Me_Handler(srv interface{}, ctx context.Context, dec func(inte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthService_CompleteInstanceSetup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CompleteInstanceSetupRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).CompleteInstanceSetup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_CompleteInstanceSetup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).CompleteInstanceSetup(ctx, req.(*CompleteInstanceSetupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AuthService_GoogleStart_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GoogleStartRequest)
 	if err := dec(in); err != nil {
@@ -362,6 +740,132 @@ func _AuthService_GoogleFinish_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthService_RequestPasswordReset_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RequestPasswordResetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).RequestPasswordReset(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_RequestPasswordReset_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).RequestPasswordReset(ctx, req.(*RequestPasswordResetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_VerifyPasswordReset_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(VerifyPasswordResetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).VerifyPasswordReset(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_VerifyPasswordReset_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).VerifyPasswordReset(ctx, req.(*VerifyPasswordResetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_CompletePasswordReset_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CompletePasswordResetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).CompletePasswordReset(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_CompletePasswordReset_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).CompletePasswordReset(ctx, req.(*CompletePasswordResetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_ListMyGroups_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListMyGroupsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).ListMyGroups(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_ListMyGroups_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).ListMyGroups(ctx, req.(*ListMyGroupsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_ListJoinableGroups_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListJoinableGroupsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).ListJoinableGroups(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_ListJoinableGroups_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).ListJoinableGroups(ctx, req.(*ListJoinableGroupsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_CreateGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateGroupRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).CreateGroup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_CreateGroup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).CreateGroup(ctx, req.(*CreateGroupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_JoinGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(JoinGroupRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).JoinGroup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_JoinGroup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).JoinGroup(ctx, req.(*JoinGroupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AuthService_ServiceDesc is the grpc.ServiceDesc for AuthService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -378,8 +882,32 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AuthService_Setup_Handler,
 		},
 		{
+			MethodName: "Register",
+			Handler:    _AuthService_Register_Handler,
+		},
+		{
+			MethodName: "RegisterGuest",
+			Handler:    _AuthService_RegisterGuest_Handler,
+		},
+		{
 			MethodName: "Login",
 			Handler:    _AuthService_Login_Handler,
+		},
+		{
+			MethodName: "VerifyRegister",
+			Handler:    _AuthService_VerifyRegister_Handler,
+		},
+		{
+			MethodName: "VerifyLogin",
+			Handler:    _AuthService_VerifyLogin_Handler,
+		},
+		{
+			MethodName: "ResendRegisterCode",
+			Handler:    _AuthService_ResendRegisterCode_Handler,
+		},
+		{
+			MethodName: "ResendLoginCode",
+			Handler:    _AuthService_ResendLoginCode_Handler,
 		},
 		{
 			MethodName: "Refresh",
@@ -394,12 +922,44 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AuthService_Me_Handler,
 		},
 		{
+			MethodName: "CompleteInstanceSetup",
+			Handler:    _AuthService_CompleteInstanceSetup_Handler,
+		},
+		{
 			MethodName: "GoogleStart",
 			Handler:    _AuthService_GoogleStart_Handler,
 		},
 		{
 			MethodName: "GoogleFinish",
 			Handler:    _AuthService_GoogleFinish_Handler,
+		},
+		{
+			MethodName: "RequestPasswordReset",
+			Handler:    _AuthService_RequestPasswordReset_Handler,
+		},
+		{
+			MethodName: "VerifyPasswordReset",
+			Handler:    _AuthService_VerifyPasswordReset_Handler,
+		},
+		{
+			MethodName: "CompletePasswordReset",
+			Handler:    _AuthService_CompletePasswordReset_Handler,
+		},
+		{
+			MethodName: "ListMyGroups",
+			Handler:    _AuthService_ListMyGroups_Handler,
+		},
+		{
+			MethodName: "ListJoinableGroups",
+			Handler:    _AuthService_ListJoinableGroups_Handler,
+		},
+		{
+			MethodName: "CreateGroup",
+			Handler:    _AuthService_CreateGroup_Handler,
+		},
+		{
+			MethodName: "JoinGroup",
+			Handler:    _AuthService_JoinGroup_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

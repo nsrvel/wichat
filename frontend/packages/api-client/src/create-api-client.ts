@@ -6,6 +6,9 @@ type Schema<T> = { parse: (input: unknown) => T };
 
 const noRefresh = new Set([
 	"/auth/login",
+	"/auth/login/verify",
+	"/auth/register",
+	"/auth/register/verify",
 	"/auth/setup",
 	"/auth/refresh",
 	"/auth/logout",

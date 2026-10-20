@@ -3,9 +3,9 @@ package middleware
 import (
 	"net"
 	"net/http"
-)
 
-const maxUserAgentLen = 512
+	"github.com/wichat/wichat/backend/api-gateway/pkg/constants"
+)
 
 // ClientIP returns the remote host without a port.
 func ClientIP(r *http.Request) string {
@@ -20,9 +20,9 @@ func ClientIP(r *http.Request) string {
 // UserAgent returns the request user agent, capped for storage.
 func UserAgent(r *http.Request) string {
 	ua := r.UserAgent()
-	if len(ua) <= maxUserAgentLen {
+	if len(ua) <= constants.MaxUserAgentLen {
 		return ua
 	}
 
-	return ua[:maxUserAgentLen]
+	return ua[:constants.MaxUserAgentLen]
 }

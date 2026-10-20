@@ -1,6 +1,6 @@
-import type { AppLocale } from "@wichat/i18n";
+import type { AppLocale } from "@wichat/i18n/locale";
 
-export type { AppLocale } from "@wichat/i18n";
+export type { AppLocale } from "@wichat/i18n/locale";
 
 export const LOCALE_COOKIE = "wichat_locale";
 

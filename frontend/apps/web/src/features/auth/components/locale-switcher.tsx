@@ -15,7 +15,7 @@ export function LocaleSwitcher() {
 	}
 
 	return (
-		<div className="flex items-center gap-2" role="group" aria-label={t("locale.label")}>
+		<div className="flex items-center gap-1 sm:gap-2" role="group" aria-label={t("locale.label")}>
 			{(["en", "id"] as const).map((locale) => {
 				const selected = i18n.resolvedLanguage === locale || i18n.language.startsWith(locale);
 				return (
@@ -26,8 +26,8 @@ export function LocaleSwitcher() {
 						onClick={() => choose(locale)}
 						className={
 							selected
-								? "bg-primary text-primary-foreground rounded-lg px-2.5 py-1 text-xs font-medium"
-								: "text-muted-foreground hover:bg-muted rounded-lg px-2.5 py-1 text-xs font-medium"
+								? "bg-primary text-primary-foreground rounded-lg px-2 py-1 text-xs font-medium sm:px-2.5"
+								: "text-muted-foreground hover:bg-muted rounded-lg px-2 py-1 text-xs font-medium sm:px-2.5"
 						}
 					>
 						{t(`locale.${locale}`)}

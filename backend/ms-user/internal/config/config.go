@@ -14,13 +14,17 @@ type Config struct {
 	GoogleClientID     string `mapstructure:"google_client_id"`
 	GoogleClientSecret string `mapstructure:"google_client_secret"`
 	GoogleRedirectURL  string `mapstructure:"google_redirect_url"`
+	RedisURL           string `mapstructure:"redis_url"`
+	NotificationHost   string `mapstructure:"ms_notification_host"`
 }
 
 // Defaults are applied when env / .env do not set a value.
 var Defaults = Config{
-	Env:      "development",
-	LogLevel: "info",
-	Port:     "3001",
+	Env:              "development",
+	LogLevel:         "info",
+	Port:             "3001",
+	RedisURL:         "redis://localhost:6379/0",
+	NotificationHost: "localhost:3005",
 }
 
 // Load reads configuration from defaults, optional envFile, and environment.

@@ -6,22 +6,50 @@ option go_package = "github.com/wichat/wichat/backend/wi-shared/models/gen/user/
 
 // AuthService issues browser sessions for the instance account.
 service AuthService {
-  // SetupStatus reports whether the first account still needs to be created.
+  // SetupStatus reports instance policy flags for the auth UI.
   rpc SetupStatus(SetupStatusRequest) returns (SetupStatusResponse);
-  // Setup creates the first account and a session.
+  // Setup is deprecated; use Register. Kept for older clients.
   rpc Setup(SetupRequest) returns (SetupResponse);
-  // Login checks email and password and opens a session.
+  // Register creates a member account and opens a session.
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+  // RegisterGuest creates a guest account and opens a session.
+  rpc RegisterGuest(RegisterGuestRequest) returns (RegisterGuestResponse);
+  // Login checks login identifier and password, then starts email OTP.
   rpc Login(LoginRequest) returns (LoginResponse);
+  // VerifyRegister completes signup after email OTP.
+  rpc VerifyRegister(VerifyRegisterRequest) returns (VerifyRegisterResponse);
+  // VerifyLogin completes password login after email OTP.
+  rpc VerifyLogin(VerifyLoginRequest) returns (VerifyLoginResponse);
+  // ResendRegisterCode sends a new signup OTP for a challenge.
+  rpc ResendRegisterCode(ResendRegisterCodeRequest) returns (ResendRegisterCodeResponse);
+  // ResendLoginCode sends a new login OTP for a challenge.
+  rpc ResendLoginCode(ResendLoginCodeRequest) returns (ResendLoginCodeResponse);
   // Refresh rotates the refresh token and issues a new access token.
   rpc Refresh(RefreshRequest) returns (RefreshResponse);
   // Logout revokes the session that owns the refresh token.
   rpc Logout(LogoutRequest) returns (LogoutResponse);
   // Me returns the account for a valid access token.
   rpc Me(MeRequest) returns (MeResponse);
+  // CompleteInstanceSetup is deprecated; use CreateGroup and future admin settings APIs.
+  rpc CompleteInstanceSetup(CompleteInstanceSetupRequest) returns (CompleteInstanceSetupResponse);
   // GoogleStart builds the Google authorization redirect.
   rpc GoogleStart(GoogleStartRequest) returns (GoogleStartResponse);
   // GoogleFinish exchanges the authorization code and opens a session.
   rpc GoogleFinish(GoogleFinishRequest) returns (GoogleFinishResponse);
+  // RequestPasswordReset emails a reset code when the account exists.
+  rpc RequestPasswordReset(RequestPasswordResetRequest) returns (RequestPasswordResetResponse);
+  // VerifyPasswordReset checks the code and returns a one-time reset token.
+  rpc VerifyPasswordReset(VerifyPasswordResetRequest) returns (VerifyPasswordResetResponse);
+  // CompletePasswordReset sets a new password and revokes sessions.
+  rpc CompletePasswordReset(CompletePasswordResetRequest) returns (CompletePasswordResetResponse);
+  // ListMyGroups returns groups the caller belongs to.
+  rpc ListMyGroups(ListMyGroupsRequest) returns (ListMyGroupsResponse);
+  // ListJoinableGroups returns instance groups the caller is not in.
+  rpc ListJoinableGroups(ListJoinableGroupsRequest) returns (ListJoinableGroupsResponse);
+  // CreateGroup creates a group; caller becomes owner.
+  rpc CreateGroup(CreateGroupRequest) returns (CreateGroupResponse);
+  // JoinGroup adds the caller as a member.
+  rpc JoinGroup(JoinGroupRequest) returns (JoinGroupResponse);
 }
 
 // User is the public account view.
@@ -29,6 +57,8 @@ message User {
   string id = 1;
   string email = 2;
   string display_name = 3;
+  string username = 4;
+  bool is_guest = 5;
 }
 
 // Session is the credential pair returned to the gateway.
@@ -43,12 +73,31 @@ message Session {
 // SetupStatusRequest is empty.
 message SetupStatusRequest {}
 
-// SetupStatusResponse reports first-run state.
+// SetupStatusResponse reports instance policy for the auth UI.
 message SetupStatusResponse {
-  bool needs_setup = 1;
+  reserved 1, 2, 6;
+  reserved "needs_account", "needs_instance_setup", "group_name";
+  string registration_mode = 3;
+  bool guest_enabled = 4;
+  bool username_enabled = 5;
 }
 
-// SetupRequest is the first-account form.
+// CompleteInstanceSetupRequest is the owner setup wizard payload.
+message CompleteInstanceSetupRequest {
+  string access_token = 1;
+  string name = 2;
+  string logo_url = 3;
+  bool username_enabled = 4;
+  string registration_mode = 5;
+  bool guest_enabled = 6;
+}
+
+// CompleteInstanceSetupResponse acknowledges saved settings.
+message CompleteInstanceSetupResponse {
+  bool ok = 1;
+}
+
+// SetupRequest is the legacy first-account form (alias of Register).
 message SetupRequest {
   string email = 1;
   string password = 2;
@@ -62,17 +111,92 @@ message SetupResponse {
   Session session = 1;
 }
 
-// LoginRequest is an email and password login.
-message LoginRequest {
+// AuthChallenge is the email OTP step before a session is issued.
+message AuthChallenge {
+  string challenge_id = 1;
+  string email_hint = 2;
+  int32 resend_cooldown_seconds = 3;
+  bool otp_required = 4;
+}
+
+// RegisterRequest is the member registration form.
+message RegisterRequest {
   string email = 1;
   string password = 2;
+  string display_name = 3;
+  reserved 4;
+  string birth_date = 5;
+  string user_agent = 6;
+  string client_ip = 7;
+  string locale = 8;
+}
+
+// RegisterResponse carries a session or an email OTP challenge.
+message RegisterResponse {
+  Session session = 1;
+  AuthChallenge challenge = 2;
+}
+
+// RegisterGuestRequest is the guest registration form.
+message RegisterGuestRequest {
+  string display_name = 1;
+  string birth_date = 2;
   string user_agent = 3;
   string client_ip = 4;
 }
 
-// LoginResponse carries the new session.
+// RegisterGuestResponse carries the new session.
+message RegisterGuestResponse {
+  Session session = 1;
+}
+
+// LoginRequest is a login identifier and password.
+message LoginRequest {
+  string login = 1;
+  string password = 2;
+  string user_agent = 3;
+  string client_ip = 4;
+  string locale = 5;
+}
+
+// LoginResponse carries a session or an email OTP challenge.
 message LoginResponse {
   Session session = 1;
+  AuthChallenge challenge = 2;
+}
+
+message VerifyRegisterRequest {
+  string challenge_id = 1;
+  string code = 2;
+}
+
+message VerifyRegisterResponse {
+  Session session = 1;
+}
+
+message VerifyLoginRequest {
+  string challenge_id = 1;
+  string code = 2;
+}
+
+message VerifyLoginResponse {
+  Session session = 1;
+}
+
+message ResendRegisterCodeRequest {
+  string challenge_id = 1;
+}
+
+message ResendRegisterCodeResponse {
+  int32 resend_cooldown_seconds = 1;
+}
+
+message ResendLoginCodeRequest {
+  string challenge_id = 1;
+}
+
+message ResendLoginCodeResponse {
+  int32 resend_cooldown_seconds = 1;
 }
 
 // RefreshRequest presents the current refresh token.
@@ -128,4 +252,73 @@ message GoogleFinishRequest {
 // GoogleFinishResponse carries the new session.
 message GoogleFinishResponse {
   Session session = 1;
+}
+
+message RequestPasswordResetRequest {
+  string email = 1;
+  string locale = 2;
+}
+
+message RequestPasswordResetResponse {
+  bool ok = 1;
+  int32 resend_cooldown_seconds = 2;
+}
+
+message VerifyPasswordResetRequest {
+  string email = 1;
+  string code = 2;
+}
+
+message VerifyPasswordResetResponse {
+  string reset_token = 1;
+}
+
+message CompletePasswordResetRequest {
+  string reset_token = 1;
+  string password = 2;
+}
+
+message CompletePasswordResetResponse {
+  bool ok = 1;
+}
+
+// GroupSummary is a public group row.
+message GroupSummary {
+  string id = 1;
+  string name = 2;
+  string logo_url = 3;
+}
+
+message ListMyGroupsRequest {
+  string access_token = 1;
+}
+
+message ListMyGroupsResponse {
+  repeated GroupSummary groups = 1;
+}
+
+message ListJoinableGroupsRequest {
+  string access_token = 1;
+}
+
+message ListJoinableGroupsResponse {
+  repeated GroupSummary groups = 1;
+}
+
+message CreateGroupRequest {
+  string access_token = 1;
+  string name = 2;
+}
+
+message CreateGroupResponse {
+  GroupSummary group = 1;
+}
+
+message JoinGroupRequest {
+  string access_token = 1;
+  string group_id = 2;
+}
+
+message JoinGroupResponse {
+  bool ok = 1;
 }

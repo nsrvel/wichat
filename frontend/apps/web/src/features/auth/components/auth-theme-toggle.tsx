@@ -3,7 +3,7 @@
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useTranslation } from "react-i18next";
-import { useMounted } from "@/features/auth/use-mounted";
+import { useMounted } from "@/hooks/use-mounted";
 
 export function AuthThemeToggle() {
 	const { t } = useTranslation();

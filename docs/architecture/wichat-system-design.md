@@ -26,7 +26,7 @@ The project originated from a real gap: an internal team found existing tools ei
 - Public plugin marketplace / third-party plugin developers — in-house only for v1
 - End-to-end encryption — explicitly deferred; TLS + at-rest encryption is the baseline
 - Native iOS app — PWA only, to avoid Apple Developer Program costs
-- 2FA — deferred to a later phase
+- Email OTP on password register/login (v1); TOTP 2FA — later phase
 - Bot/webhook integration ecosystem — deferred, separate concern from the plugin system
 - Custom role builder UI — the 4 preset roles (Owner/Admin/Member/Guest) cover the 2–500-person target; the underlying RBAC schema (§6.2) is designed to support this later without a breaking migration, but the UI itself is not built for v1
 - **Cross-instance federation** (Matrix/ActivityPub-style) — explicitly rejected, not just deferred: it contradicts WiChat's core value proposition of per-organization data sovereignty and isolation. No mainstream closed team-chat product (Slack, Teams, Mattermost, Rocket.Chat) federates, for the same reason.
@@ -82,13 +82,15 @@ See [`architecture-context.mermaid`](architecture-context.mermaid) for the C4 Co
 ## 6. Core Domains
 
 ### 6.1 Auth & Identity
-- Registration mode is workspace-configurable: `open` (community) / `invite_only` / `approval_required` (corporate)
-- Login: Google OAuth + email/password (bcrypt/argon2 hashing). Generic enterprise SSO (SAML/OIDC against IdPs like Azure AD/Okta) is explicitly deferred — added only if/when a concrete enterprise client requests it, not built preemptively
-- Guest access: Google Meet-style — join via link, no account, short-lived session (JWT + Redis TTL), scoped to a single channel, cannot see message history from before joining, upload quota capped (e.g. 5MB / 3 files)
+- **Registration**: `open`, `invite_only`, and `approval_required` live on **instance settings** (`auth.instance_settings`). **v1 web flow:** email/password and Google sign-up/sign-in stay open; after login, users with no group membership see a **create or join group** chooser. `registration_mode` is stored for future enforcement (lobby/invite redeem in §6.13) — it does **not** block `POST /auth/register` until those slices ship. **`invite_only` means group invite**, not closed sign-up pages. Instance **guest** accounts are off by default and gated by `guest_enabled`.
+- **Display name:** UTF-8 text, up to 80 Unicode code points (any script/emoji); stored as-is after trim. Not restricted to ASCII.
+- **Username (handle):** assigned by the server at register from the email local-part (unique per instance, collision suffix); used for @mention and optional password login. User-editable in profile settings (later slice). ASCII letters, digits, `_`, `.` only.
+- Login: Google OAuth + email/password (username or email identifier for password login). Generic enterprise SSO (SAML/OIDC against IdPs like Azure AD/Okta) is explicitly deferred — added only if/when a concrete enterprise client requests it, not built preemptively
+- **Guest (two tracks):** (1) **Instance guest account** (v1): register without email/password, `is_guest` on the user row — aligned with community onboarding. (2) **Channel guest link** (deferred): Google Meet-style join via link, short-lived JWT + Redis TTL, scoped to one channel, no pre-join history, upload quota capped — separate from instance guest accounts.
 - Multi-device login supported from the start; incoming calls ring all active devices, answering on one dismisses the others
 - **Session management**: an `active_sessions` record (device info, refresh token ID, last-active time) per login, allowing an Admin to force-revoke a specific device/session (e.g. lost laptop, sudden employee departure) without affecting the user's other active sessions
-- First-run: a "Create First Admin Account" form (not a full setup wizard) prevents reliance on a hardcoded default password
-- 2FA and full E2E encryption are deferred
+- **First-run:** no blocking wizard. Anyone can register; the home route prompts for **group membership** when the user has none. `GET /auth/setup-status` exposes instance policy (`registration_mode`, `guest_enabled`, `username_enabled`) for the auth UI (e.g. guest sign-in). Deprecated: `POST /auth/instance-setup` (owner one-shot wizard) — superseded by `POST /groups` and future admin settings.
+- **Email OTP (v1):** password **register** and **login** require a 6-character code emailed after the password step; **Google** and **guest** sign-in skip OTP. TOTP/app authenticator and full E2E encryption remain deferred.
 - **Account deletion**: same pattern as Discord/Slack — the account is anonymized ("Deleted User", generic avatar; email/password hash scrubbed permanently), but their past messages remain intact for conversation context rather than leaving gaps in channel history
 
 ### 6.2 Roles & Permissions (RBAC)
@@ -107,7 +109,7 @@ Some rules layered on top of this RBAC base are attribute-based rather than pure
 ### 6.3 Workspace Model
 - Single-tenant per instance, but **multi-workspace within an instance** — a user must be explicitly added to a workspace to access it
 - Single domain with a workspace picker (Slack-style), not per-workspace subdomains
-- Config is split: instance-level (env/file, set before run — DB, secrets, domain) vs. workspace-level (DB-stored, admin-editable — upload limits, registration mode, retention, branding), with workspace settings overriding instance defaults
+- Config is split: instance-level env/file (DB, secrets, domain) plus **DB-backed instance settings** (registration mode, guest/username flags); **Groups** (product name; workspace in spec) hold name/logo and membership — users create or join groups after sign-in. Per-group settings (upload limits, retention) build on that foundation later
 
 ### 6.4 Channels & Messaging
 - Flat channel structure (Discord-style), not Teams' Team→Channel hierarchy, but with Teams-like professional UI
@@ -174,6 +176,8 @@ A dedicated "Moderator" role (kick/ban/delete but not manage plugins/settings) i
 **Automated abuse detection**: lives in **Core** (Chat module), not a plugin — this is treated as foundational safety infrastructure, the same category as rate limiting, not an optional feature. Behavior-pattern detection (e.g. flood: N messages within a short window) triggers a **temporary auto-mute/rate-limit + a flagged item in an admin review queue** — deliberately not an automatic permanent ban, since a false positive shouldn't be able to unilaterally ban someone, especially in a corporate context. Final punitive action (ban) stays a human admin decision.
 
 ### 6.13 Onboarding & Lobby
+**Group onboarding (v1):** after sign-in, users without membership create a group (`POST /groups`) or join an existing one. Instance policy flags remain on `instance_settings`; changing registration mode or guest access is a future admin-settings slice. **Invite redeem** and **approval queue** are follow-up slices — until then, `registration_mode` is informational only for register gating.
+
 New members land in a default **Lobby/waiting-room channel** on join:
 - `approval_required` mode: user sees a "waiting for admin approval" state, no workspace access yet
 - Once approved (or under `open`/`invite_only` mode): user auto-joins a default channel (e.g. `#general` or `#lobby`), and can browse/join other public channels manually — no complex channel-discovery UI needed for v1
@@ -234,7 +238,7 @@ Two separate mechanisms, serving different needs:
 ## 11. Deployment & Operations
 
 - Target: local/self-hosted, single `docker-compose.yml` orchestrating Postgres, Redis, MinIO, Kafka, Elasticsearch, LiveKit, and the WiChat core binary (`docker compose up -d`)
-- No setup wizard beyond env/config-file setup + the first-run admin account form
+- Env/config-file bootstrap for infra; web client uses open sign-up/sign-in plus post-login group chooser. Fresh dev databases are reset when auth schema changes.
 - Updates:
   - Server: new Docker image
   - Desktop: `electron-updater` auto-update (same pattern as Discord/Slack/VS Code)
@@ -282,7 +286,7 @@ Target: **2–500 people per workspace**. At this scale, a single instance each 
 
 **Workspaces per instance**: no fixed cap is set for v1. The real constraint is total concurrent load — particularly voice/video (LiveKit) and active WebSocket connections — not raw workspace count; Postgres/Redis/Elasticsearch handle many workspaces comfortably before that becomes a bottleneck. Grafana observability (already planned) is the intended signal for when scaling action is needed, rather than a number decided upfront.
 
-**Workspace branding**: default light/dark design tokens only for v1 (no custom logo/color per workspace yet) — deferred until the product's visual identity is settled; adding it later is a small addition (`logo_url`, `primary_color` fields on the existing `workspaces` table), not a redesign.
+**Group branding**: group **name** and **logo URL** on `auth.groups` (set at create time). Per-group custom colors remain deferred (`primary_color` later). Instance policy stays on `auth.instance_settings`.
 
 ## 15. Build Roadmap (Phase Summary)
 

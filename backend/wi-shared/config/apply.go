@@ -57,13 +57,17 @@ func walkConfigFields(v *viper.Viper, dst, defaults reflect.Value) {
 		dstField := dst.Field(i)
 		defField := defaults.Field(i)
 
+		if field.Type.Kind() == reflect.String && strings.TrimSpace(dstField.String()) != "" {
+			continue
+		}
+
 		if !wasExplicitlyProvided(v, key, envKey) {
 			slog.Warn("config: env unset, using default", "key", envKey, "default", defField.Interface())
 			dstField.Set(defField)
 			continue
 		}
 
-		if isEmptyValue(v, key, field.Type) {
+		if isEmptyValue(v, key, envKey, field.Type) {
 			slog.Warn("config: env empty, using default", "key", envKey, "default", defField.Interface())
 			dstField.Set(defField)
 		}
@@ -77,9 +81,15 @@ func wasExplicitlyProvided(v *viper.Viper, key, envKey string) bool {
 	return v.InConfig(key)
 }
 
-func isEmptyValue(v *viper.Viper, key string, typ reflect.Type) bool {
+func isEmptyValue(v *viper.Viper, key, envKey string, typ reflect.Type) bool {
 	if typ.Kind() != reflect.String {
 		return false
 	}
-	return strings.TrimSpace(v.GetString(key)) == ""
+	if s := strings.TrimSpace(v.GetString(key)); s != "" {
+		return false
+	}
+	if s := strings.TrimSpace(v.GetString(envKey)); s != "" {
+		return false
+	}
+	return strings.TrimSpace(os.Getenv(envKey)) == ""
 }

@@ -15,9 +15,10 @@ const httpShutdownTimeout = 5 * time.Second
 func (s *server) Run(ctx context.Context) error {
 	// User service
 	ms, err := microservices.Open(microservices.Config{
-		Log:      s.log,
-		Settings: s.cfg.Microservices,
-		UserAddr: s.cfg.UserHost,
+		Log:              s.log,
+		Settings:         s.cfg.Microservices,
+		UserAddr:         s.cfg.UserHost,
+		NotificationAddr: s.cfg.NotificationHost,
 	})
 	if err != nil {
 		return err

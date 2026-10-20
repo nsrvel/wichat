@@ -6,7 +6,7 @@ import { cloneElement, isValidElement, useState, type ReactElement, type ReactNo
 import { ChannelSidebar } from "@/components/layout/channel-sidebar";
 import { IconRail } from "@/components/layout/icon-rail";
 import { MemberPanel } from "@/components/layout/member-panel";
-import { authQuery } from "@/services/auth";
+import * as authQuery from "@/services/auth/auth.query";
 import { useLogoutMutation } from "@/services/auth/auth.mutation";
 
 type AppShellProps = {

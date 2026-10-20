@@ -1,4 +1,4 @@
-import { ApiError } from "@wichat/api-client";
+import { ApiError } from "@wichat/api-client/api-error";
 import type { TFunction } from "i18next";
 
 export function translateError(t: TFunction, error: unknown): string {

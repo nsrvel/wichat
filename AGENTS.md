@@ -27,7 +27,7 @@ docs/          # architecture & ops
 
 Monorepo boundaries: [docs/architecture/monorepo-layout.md](docs/architecture/monorepo-layout.md).
 
-**Go services (`ms-*`):** repository → service → delivery; models and migrations per `wichat-go-layers.mdc`. Shared backend libs: [backend/wi-shared/README.md](backend/wi-shared/README.md).
+**Go services (`ms-*`):** repository → service → delivery; models and migrations per `wichat-go-layers.mdc`. Shared backend libs: [backend/wi-shared/README.md](backend/wi-shared/README.md). **ms-user:** split Postgres repos (`internal/user/repository` vs `internal/auth/repository`); domain models in `internal/models`, constants in `pkg/constants` (not in repository/service/delivery); `pkg/db` (`pgErr`); no cross-package re-exports (`wichat-go.mdc`). **Tests:** Postgres in-memory mocks in `repository/mock/` only; Redis stores tested with miniredis + real repo code, not `repository/mock`. **Service:** one `service.go` + `service/test/service_test.go` per domain package; shared test helpers in `pkg/test-support` (`testSupport`).
 
 Phases in system design §15 — implement in order unless explicitly reprioritized.
 
@@ -47,15 +47,16 @@ License: [LICENSE](LICENSE) (AGPL-3.0-or-later at repo root; no per-file SPDX/co
 
 **Always-on:** program + core. **File-scoped:** Go and web when touching those paths.
 
-| Rule | Scope |
-|------|--------|
-| `wichat-program.mdc` | How we work: `main` (prod) / `release` (staging), micro-steps, vertical slices |
-| `wichat-core.mdc` | Product + architecture guardrails |
-| `wichat-go.mdc` | Go backend: tests under `<pkg>/test/`, per-module `make check`, wi-shared patterns |
-| `wichat-go-layers.mdc` | Go backend: repository / service / delivery layout |
-| `wichat-go-style.mdc` | Go backend: `//` step comments, wiring spacing |
-| `wichat-web-layout.mdc` | `frontend/apps/web/**` — app vs features, components, no micro-FE |
-| `wichat-web-data.mdc` | `frontend/apps/web/**` + `frontend/packages/**` — `@wichat/*`, TanStack Query services, WS vs Query |
+| Rule                           | Scope                                                                                               |
+| ------------------------------ | --------------------------------------------------------------------------------------------------- |
+| `wichat-program.mdc`           | How we work: `main` (prod) / `release` (staging), micro-steps, vertical slices                      |
+| `wichat-core.mdc`              | Product + architecture guardrails                                                                   |
+| `wichat-go.mdc`                | Go backend: tests under `<pkg>/test/`, per-module `make check`, wi-shared patterns                  |
+| `wichat-go-layers.mdc`         | Go backend: repository / service / delivery layout                                                  |
+| `wichat-go-style.mdc`          | Go backend: `//` step comments, wiring spacing                                                      |
+| `wichat-web-layout.mdc`        | `frontend/apps/web/**` — app vs features, components, no micro-FE                                   |
+| `wichat-web-data.mdc`          | `frontend/apps/web/**` + `frontend/packages/**` — `@wichat/*`, TanStack Query services, WS vs Query |
+| `wichat-no-export-barrels.mdc` | `frontend/**` — no re-export-only `index.ts`; import defining modules directly                      |
 
 **Skill:** `.cursor/skills/wichat-web-client/` — scaffold and feature slices for web-client.
 

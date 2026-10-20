@@ -19,7 +19,7 @@ wi-shared/exception/
     kind_test.go
 ```
 
-- Test package name: **`{pkgname}_test`** (e.g. `exception_test` for `exception/`).
+- Test package name: **`{pkgname}_test`** only (e.g. `service_test`). Production packages: **lowercase** per Effective Go (see `wichat-go-style.mdc`); not camelCase (`serviceTest`, `authHttp`).
 - Import the module under test; tests are **black-box** (exported API only).
 - Run: `go test ./...` from the module root (includes `.../test` packages).
 
@@ -32,6 +32,19 @@ wi-shared/exception/
 - Local dev: `cd backend && make dev-ms-user` / `make dev-api-gateway` (Air), or `make run-*` without reload; see `backend/Makefile`.
 - gRPC contracts: edit `backend/wi-shared/models/**.proto`; run `make proto` from `wi-shared/`; never hand-edit `models/gen/`.
 - In `Run(ctx)` and server goroutines: return errors to `main` — no `log.Fatalf` in listeners.
+
+## No re-exports
+
+Do not create proxy packages or files that re-export another package’s API (`var ErrFoo = constants.ErrFoo`, `type T = othertype.T` across packages, barrel `errors.go` shims). Import the defining package. Details: `wichat-go-layers.mdc` § “No re-exports”.
+
+## ms-user repository split (do not regress)
+
+- `internal/user/repository` — users, groups, instance policy, Google identity rows.
+- `internal/auth/repository` — sessions/refresh Postgres; Redis OTP/password-reset stores.
+- Shared sentinels: `pkg/constants`; PG row/unique mapping: `pkg/db` (`pgErr`). Group other helpers under flat `pkg/<role>/` (see `ms-user/pkg/README.md`).
+- Auth `service.NewService` takes **two** `PgRepository` deps (`userrepo`, `authrepo`), not one combined repo.
+- **Mocks:** only Postgres under `internal/<domain>/repository/mock/` (`pg_repository_mock.go`). Redis tests use **miniredis** + production store constructors — no `repository/mock` for Redis (`wichat-go-layers.mdc`).
+- **Service:** one `service.go` per `internal/<domain>/service/`; tests only `service/test/service_test.go`; split domains (`auth`, `user`, `group`) not extra files in one package (`wichat-go-layers.mdc`).
 
 ## Other
 
