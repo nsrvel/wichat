@@ -28,16 +28,15 @@ type PasswordResetView struct {
 
 // EmailCodeView is template data for auth.email_code.
 type EmailCodeView struct {
-	DisplayName    string
-	CodeFormatted  string
-	ExpiresMinutes string
-	Headline       string
-	Lead           string
-	SubjectTitle   string
+	DisplayName   string
+	CodeFormatted string
+	Headline      string
+	Lead          string
+	SubjectTitle  string
 }
 
 // RenderEmailCode returns subject and HTML for sign-up or sign-in OTP mail.
-func RenderEmailCode(locale, displayName, code, expiresMinutes, purpose string) (subject, html string, err error) {
+func RenderEmailCode(locale, displayName, code, purpose string) (subject, html string, err error) {
 	loc := normalizeLocale(locale)
 	htmlBytes, err := files.ReadFile(fmt.Sprintf("%s/auth_email_code.html", loc))
 	if err != nil {
@@ -46,18 +45,14 @@ func RenderEmailCode(locale, displayName, code, expiresMinutes, purpose string) 
 
 	headline, lead, subjectTitle := emailCodeCopy(loc, purpose)
 	view := EmailCodeView{
-		DisplayName:    strings.TrimSpace(displayName),
-		CodeFormatted:  formatCode(code),
-		ExpiresMinutes: strings.TrimSpace(expiresMinutes),
-		Headline:       headline,
-		Lead:           lead,
-		SubjectTitle:   subjectTitle,
+		DisplayName:   strings.TrimSpace(displayName),
+		CodeFormatted: formatCode(code),
+		Headline:      headline,
+		Lead:          lead,
+		SubjectTitle:  subjectTitle,
 	}
 	if view.DisplayName == "" {
 		view.DisplayName = "there"
-	}
-	if view.ExpiresMinutes == "" {
-		view.ExpiresMinutes = "10"
 	}
 
 	html, err = executeTemplate(string(htmlBytes), view)

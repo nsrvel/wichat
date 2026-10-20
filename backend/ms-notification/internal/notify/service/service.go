@@ -71,13 +71,12 @@ func (s service) sendPasswordReset(ctx context.Context, to, locale string, vars 
 func (s service) sendEmailCode(ctx context.Context, to, locale string, vars map[string]string) error {
 	code := vars["code"]
 	displayName := vars["display_name"]
-	expires := vars["expires_minutes"]
 	purpose := vars["purpose"]
 	if strings.TrimSpace(code) == "" {
 		return exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "vars.code"})
 	}
 
-	subject, html, err := templates.RenderEmailCode(locale, displayName, code, expires, purpose)
+	subject, html, err := templates.RenderEmailCode(locale, displayName, code, purpose)
 	if err != nil {
 		return exception.Internal(err)
 	}

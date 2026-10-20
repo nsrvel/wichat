@@ -170,6 +170,9 @@ func (s service) Register(ctx context.Context, in models.RegisterInput) (*models
 		_ = s.emailAuth.DeleteRegisterPending(ctx, ch.ChallengeID)
 		return nil, err
 	}
+	if err := s.markEmailCodeSent(ctx, ch, email); err != nil {
+		return nil, err
+	}
 
 	return &models.PasswordAuthResult{Challenge: ch}, nil
 }
@@ -300,6 +303,9 @@ func (s service) Login(ctx context.Context, in models.LoginInput) (*models.Passw
 		_ = s.emailAuth.DeleteLoginChallenge(ctx, ch.ChallengeID)
 		return nil, err
 	}
+	if err := s.markEmailCodeSent(ctx, ch, user.Email); err != nil {
+		return nil, err
+	}
 
 	return &models.PasswordAuthResult{Challenge: ch}, nil
 }
@@ -326,10 +332,9 @@ func (s service) sendEmailCode(ctx context.Context, to, displayName, locale, pur
 		TemplateId: "auth.email_code",
 		Locale:     locale,
 		Vars: map[string]string{
-			"code":            code,
-			"display_name":    displayName,
-			"expires_minutes": "10",
-			"purpose":         purpose,
+			"code":         code,
+			"display_name": displayName,
+			"purpose":      purpose,
 		},
 		Email: &notificationv1.EmailRecipient{To: to},
 	})
@@ -376,11 +381,6 @@ func (s service) beginEmailChallenge(ctx context.Context, email, displayName, lo
 		return nil, "", exception.Internal(err)
 	}
 
-	wait, err := s.emailAuth.RecordEmailCodeSent(ctx, email)
-	if err != nil {
-		return nil, "", err
-	}
-
 	emailHint := "***"
 	if at := strings.LastIndex(email, "@"); at > 1 {
 		local, domain := email[:at], email[at:]
@@ -392,12 +392,21 @@ func (s service) beginEmailChallenge(ctx context.Context, email, displayName, lo
 	}
 
 	ch := &models.AuthChallenge{
-		ChallengeID:           challengeID,
-		EmailHint:             emailHint,
-		ResendCooldownSeconds: resendCooldownInt32(wait),
+		ChallengeID: challengeID,
+		EmailHint:   emailHint,
 	}
 
 	return ch, code, nil
+}
+
+func (s service) markEmailCodeSent(ctx context.Context, ch *models.AuthChallenge, email string) error {
+	wait, err := s.emailAuth.RecordEmailCodeSent(ctx, strings.TrimSpace(email))
+	if err != nil {
+		return err
+	}
+	ch.ResendCooldownSeconds = resendCooldownInt32(wait)
+
+	return nil
 }
 
 func (s service) resendEmailCode(
