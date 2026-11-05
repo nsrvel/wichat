@@ -1,14 +1,14 @@
 -- +goose Up
-CREATE TABLE auth.identities (
-    id text PRIMARY KEY,
-    user_id text NOT NULL REFERENCES auth.users (id),
+CREATE TABLE identities (
+    id uuid PRIMARY KEY,
+    user_id uuid NOT NULL REFERENCES users (id),
     provider text NOT NULL,
     subject text NOT NULL,
     created_at timestamptz NOT NULL
 );
 
 CREATE UNIQUE INDEX identities_provider_subject
-    ON auth.identities (provider, subject);
+    ON identities (provider, subject);
 
 -- +goose Down
-DROP TABLE IF EXISTS auth.identities;
+DROP TABLE IF EXISTS identities;

@@ -9,8 +9,8 @@ WiChat is a **major product** — build and spec it seriously, not as a throwawa
 
 ## Workflow
 
-- Default branch: **`release`** — day-to-day commits and PRs land here, not `main`.
-- **`main`** updates only when cutting a stable release line.
+- Default branch: **`main`** — production line (GitHub default; what we ship).
+- **`release`** — staging; day-to-day commits and PRs land here first. Promote **`release` → `main`** when staging is validated for production.
 - **Spec wins:** `docs/architecture/wichat-system-design.md` unless Garam explicitly overrides in chat.
 
 ## Focus

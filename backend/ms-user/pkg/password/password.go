@@ -1,6 +1,3 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
-// Copyright (C) 2026 Garam
-
 // Package password hashes and verifies credentials with argon2id PHC strings.
 package password
 
@@ -13,6 +10,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/wichat/wichat/backend/ms-user/pkg/constants"
+	"github.com/wichat/wichat/backend/wi-shared/exception"
 	"golang.org/x/crypto/argon2"
 )
 
@@ -62,6 +61,20 @@ func Verify(encoded, password string) bool {
 	got := argon2.IDKey([]byte(password), salt, timeCost, memory, threads, argonKeyLen)
 
 	return subtle.ConstantTimeCompare(got, sum) == 1
+}
+
+// ValidLength reports whether pass meets configured min/max byte length.
+func ValidLength(pass string) bool {
+	return len(pass) >= constants.MinPasswordLen && len(pass) <= constants.MaxPasswordLen
+}
+
+// Validate returns an invalid-input error when password policy fails.
+func Validate(pass string) error {
+	if !ValidLength(pass) {
+		return exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "password"})
+	}
+
+	return nil
 }
 
 // DummyHash is a stable hash used when the account is unknown so login timing does not leak existence.

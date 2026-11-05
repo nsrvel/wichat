@@ -1,6 +1,3 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
-// Copyright (C) 2026 Garam
-
 package response
 
 // ErrorBody is the client-facing error payload (i18n code + interpolation params).

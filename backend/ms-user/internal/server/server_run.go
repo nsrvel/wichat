@@ -1,6 +1,3 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
-// Copyright (C) 2026 Garam
-
 package server
 
 import (
@@ -13,13 +10,26 @@ import (
 	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/redis/go-redis/v9"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
 	authgrpc "github.com/wichat/wichat/backend/ms-user/internal/auth/delivery/grpc"
-	"github.com/wichat/wichat/backend/ms-user/internal/auth/repository"
-	"github.com/wichat/wichat/backend/ms-user/internal/auth/service"
-	googleoauth "github.com/wichat/wichat/backend/ms-user/pkg/google"
-	authv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/auth/v1"
+	authrepo "github.com/wichat/wichat/backend/ms-user/internal/auth/repository"
+	authservice "github.com/wichat/wichat/backend/ms-user/internal/auth/service"
+	channelrepo "github.com/wichat/wichat/backend/ms-user/internal/channel/repository"
+	channelservice "github.com/wichat/wichat/backend/ms-user/internal/channel/service"
+	generalgrpc "github.com/wichat/wichat/backend/ms-user/internal/general/delivery/grpc"
+	grouprepo "github.com/wichat/wichat/backend/ms-user/internal/group/repository"
+	groupservice "github.com/wichat/wichat/backend/ms-user/internal/group/service"
+	userrepo "github.com/wichat/wichat/backend/ms-user/internal/user/repository"
+	userservice "github.com/wichat/wichat/backend/ms-user/internal/user/service"
+	googleoauth "github.com/wichat/wichat/backend/ms-user/pkg/oauth"
+	"github.com/wichat/wichat/backend/wi-shared/infra/minio"
+	msNotification "github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-notification"
+	"github.com/wichat/wichat/backend/wi-shared/microservices/utils"
+	msgrpc "github.com/wichat/wichat/backend/wi-shared/microservices/utils/grpc"
+	userv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/user/v1"
+	"google.golang.org/grpc"
 )
 
 const serveShutdownTimeout = 5 * time.Second
@@ -46,12 +56,64 @@ func (s *server) Run(ctx context.Context) error {
 	db := bun.NewDB(sqldb, pgdialect.New())
 	defer func() { _ = db.Close() }()
 
-	// Auth
-	authSvc, err := service.NewService(repository.NewPgRepository(db), []byte(s.cfg.AuthJWTSecret), s.log, googleoauth.Config{
+	// Redis
+	redisURL := strings.TrimSpace(s.cfg.RedisURL)
+	if redisURL == "" {
+		return errors.New("redis url empty")
+	}
+	redisOpts, err := redis.ParseURL(redisURL)
+	if err != nil {
+		return fmt.Errorf("redis: %w", err)
+	}
+	rdb := redis.NewClient(redisOpts)
+	defer func() { _ = rdb.Close() }()
+	if err := rdb.Ping(ctx).Err(); err != nil {
+		return fmt.Errorf("redis ping: %w", err)
+	}
+
+	// Notification
+	var notifConn *grpc.ClientConn
+	var notifyClient authservice.Notifier
+	if strings.TrimSpace(s.cfg.NotificationHost) != "" {
+		notifConn, err = msgrpc.Dial(s.cfg.NotificationHost, msgrpc.DefaultDialOptions)
+		if err != nil {
+			return fmt.Errorf("ms-notification dial: %w", err)
+		}
+		defer func() { _ = notifConn.Close() }()
+		notifyClient = msNotification.NewGRPC(notifConn, utils.DefaultSettings, s.log).Notify
+	}
+
+	// Services
+	userPg := userrepo.NewPgRepository(db)
+	groupPg := grouprepo.NewPgRepository(db, s.log)
+	minioClient, err := minio.New(minio.Config{
+		Endpoint:      s.cfg.MinioEndpoint,
+		AccessKey:     s.cfg.MinioAccessKey,
+		SecretKey:     s.cfg.MinioSecretKey,
+		Bucket:        s.cfg.MinioBucket,
+		PublicBaseURL: s.cfg.MinioPublicBaseURL,
+		UseSSL:        s.cfg.MinioUseSSL,
+		Region:        s.cfg.MinioRegion,
+	}, s.log)
+	if err != nil {
+		return fmt.Errorf("minio: %w", err)
+	}
+	if err := minio.EnsurePublicReadBucket(ctx, minioClient); err != nil {
+		return fmt.Errorf("minio bootstrap: %w", err)
+	}
+	groupMinio := grouprepo.NewMinioRepository(minioClient)
+	channelPg := channelrepo.NewPgRepository(db, s.log)
+	authSessions := authrepo.NewSessionRepository(db)
+	authRefresh := authrepo.NewRedisRefreshStore(rdb)
+	secret := []byte(s.cfg.AuthJWTSecret)
+	userSvc := userservice.NewService(userPg, authSessions, secret, s.log)
+	groupSvc := groupservice.NewService(groupPg, userPg, groupMinio, authSessions, secret, s.log)
+	channelSvc := channelservice.NewService(channelPg, groupPg, authSessions, secret, s.log)
+	authSvc, err := authservice.NewService(userPg, authSessions, authRefresh, secret, s.log, googleoauth.Config{
 		ClientID:     s.cfg.GoogleClientID,
 		ClientSecret: s.cfg.GoogleClientSecret,
 		RedirectURL:  s.cfg.GoogleRedirectURL,
-	})
+	}, authrepo.NewRedisPasswordResetStore(rdb), authrepo.NewRedisEmailAuthStore(rdb), notifyClient, userSvc, nil)
 	if err != nil {
 		return err
 	}
@@ -64,7 +126,8 @@ func (s *server) Run(ctx context.Context) error {
 	}
 
 	grpcSrv := newGRPCServer(s.log)
-	authv1.RegisterAuthServiceServer(grpcSrv, authgrpc.NewServer(authSvc))
+	userv1.RegisterAuthServiceServer(grpcSrv, authgrpc.NewServer(authSvc, userSvc, groupSvc, channelSvc))
+	userv1.RegisterGeneralServiceServer(grpcSrv, generalgrpc.NewServer("ms-user"))
 
 	// Listen
 	errCh := make(chan error, 1)

@@ -5,8 +5,8 @@ Use with `.cursor/rules/wichat-web-layout.mdc` and `wichat-web-data.mdc`. Paths 
 ## Thin route
 
 ```tsx
-// app/(auth)/login/page.tsx
-import { LoginPage } from '@/features/auth/login';
+// app/(auth)/sign-in/page.tsx
+import { LoginPage } from '@/features/auth/login/login-page';
 
 export default function Page() {
   return <LoginPage />;
@@ -56,15 +56,6 @@ export async function post<T>(
   if (!res.ok) throw ApiError.fromEnvelope(json);
   return schema.parse(json.data);
 }
-```
-
-## Service barrel
-
-```ts
-// services/auth/index.ts
-export * as authKey from './auth.key';
-export * as authQuery from './auth.query';
-export * as authMutation from './auth.mutation';
 ```
 
 ## Form + mutation

@@ -27,7 +27,7 @@ docs/          # architecture & ops
 
 Monorepo boundaries: [docs/architecture/monorepo-layout.md](docs/architecture/monorepo-layout.md).
 
-**Go services (`ms-*`):** repository → service → delivery; models and migrations per `wichat-go-layers.mdc`. Shared backend libs: [backend/wi-shared/README.md](backend/wi-shared/README.md).
+**Go services (`ms-*`):** repository → service → delivery; **layout is mandatory** — see `.cursor/rules/wichat-go-layers.mdc` and `wichat-go.mdc` (`alwaysApply`). Repository dirs allow only `pg_repository.go`, `minio_repository.go`, `redis_*.go`, plus `mock/` and `test/`; MinIO SDK lives in `wi-shared/infra/minio` only. Models in `internal/models`, constants in `pkg/constants`; `pkg/db` (`pgErr`); no re-exports. **ms-user:** `user`, `group`, and `auth` each own their `internal/<domain>/repository/`. **Tests:** `repository/mock/` for Postgres only; Redis via miniredis + real `redis_*.go`. **Service:** one `service.go` + `service/test/service_test.go` per domain; helpers in `pkg/test-support`. Run `make check` in every touched backend module before merge.
 
 Phases in system design §15 — implement in order unless explicitly reprioritized.
 
@@ -41,21 +41,23 @@ Phases in system design §15 — implement in order unless explicitly reprioriti
 
 ## Legal
 
-License: [LICENSE](LICENSE). Preserve AGPL headers on new source files. Do not add proprietary-licensed dependencies without explicit approval.
+License: [LICENSE](LICENSE) (AGPL-3.0-or-later at repo root; no per-file SPDX/copyright headers). Do not add proprietary-licensed dependencies without explicit approval.
 
 ## Cursor rules
 
 **Always-on:** program + core. **File-scoped:** Go and web when touching those paths.
 
-| Rule | Scope |
-|------|--------|
-| `wichat-program.mdc` | How we work: `release`, micro-steps, vertical slices |
-| `wichat-core.mdc` | Product + architecture guardrails |
-| `wichat-go.mdc` | Go backend: tests under `<pkg>/test/`, per-module `make check`, wi-shared patterns |
-| `wichat-go-layers.mdc` | Go backend: repository / service / delivery layout |
-| `wichat-go-style.mdc` | Go backend: `//` step comments, wiring spacing |
-| `wichat-web-layout.mdc` | `frontend/apps/web/**` — app vs features, components, no micro-FE |
-| `wichat-web-data.mdc` | `frontend/apps/web/**` + `frontend/packages/**` — `@wichat/*`, TanStack Query services, WS vs Query |
+| Rule                           | Scope                                                                                               |
+| ------------------------------ | --------------------------------------------------------------------------------------------------- |
+| `wichat-program.mdc`           | How we work: `main` (prod) / `release` (staging), micro-steps, vertical slices                      |
+| `wichat-folder-grouping.mdc`   | Crowded folders → subfolders by shared feature/prefix (always on)                                   |
+| `wichat-core.mdc`              | Product + architecture guardrails                                                                   |
+| `wichat-go.mdc`                | Go backend: tests under `<pkg>/test/`, per-module `make check`, wi-shared patterns                  |
+| `wichat-go-layers.mdc`         | Go backend: repository / service / delivery layout                                                  |
+| `wichat-go-style.mdc`          | Go backend: `//` step comments, wiring spacing                                                      |
+| `wichat-web-layout.mdc`        | `frontend/apps/web/**` — app vs features, TSX-only UI folders, no micro-FE                          |
+| `wichat-web-data.mdc`          | `frontend/apps/web/**` + `frontend/packages/**` — `@wichat/*`, TanStack Query services, WS vs Query |
+| `wichat-no-export-barrels.mdc` | `frontend/**` — no re-export-only `index.ts`; import defining modules directly                      |
 
 **Skill:** `.cursor/skills/wichat-web-client/` — scaffold and feature slices for web-client.
 

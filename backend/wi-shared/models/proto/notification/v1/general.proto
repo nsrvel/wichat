@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package notification.v1;
+
+option go_package = "github.com/wichat/wichat/backend/wi-shared/models/gen/notification/v1;notificationv1";
+
+// GeneralService exposes operational RPCs.
+service GeneralService {
+  rpc Health(HealthRequest) returns (HealthResponse);
+}
+
+enum ServingStatus {
+  SERVING_STATUS_UNSPECIFIED = 0;
+  SERVING_STATUS_SERVING = 1;
+  SERVING_STATUS_NOT_SERVING = 2;
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  ServingStatus status = 1;
+  string service = 2;
+}

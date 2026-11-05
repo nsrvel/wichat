@@ -1,6 +1,3 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
-// Copyright (C) 2026 Garam
-
 package grpc
 
 import (
@@ -20,6 +17,10 @@ func ToStatus(err error) error {
 	}
 	ex, ok := exception.As(err)
 	if !ok {
+		// Downstream gRPC services already attach client-safe codes; preserve them.
+		if st, ok := status.FromError(err); ok {
+			return st.Err()
+		}
 		return status.New(exception.GRPCCode(exception.KindInternal), string(exception.MsgInternal)).Err()
 	}
 

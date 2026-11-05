@@ -8,7 +8,7 @@ alwaysApply: false
 
 ## HTTP
 
-- All REST through app **`integrations/api-client`** (singleton over `@wichat/api-client`) → `NEXT_PUBLIC_API_URL` + `/api/v1/`.
+- All REST through app **`integrations/api-client.ts`** (singleton over `@wichat/api-client`) → `NEXT_PUBLIC_API_URL` + `/api/v1/`.
 - `credentials: 'include'` when using cookie sessions; attach `Authorization` when using bearer tokens.
 - Parse success as `{ data: T }` and errors as `{ error: { code, params } }` — map `code` to **i18next** (never show raw backend sentences). See [error-handling.md](../../docs/architecture/error-handling.md).
 
@@ -20,7 +20,8 @@ alwaysApply: false
 | `*.service.ts` | Async functions: call `api-client` only (no React) |
 | `*.query.ts` | `queryOptions({ queryKey, queryFn, staleTime, enabled })` |
 | `*.mutation.ts` | `useMutation` hooks; **`onSuccess` → `invalidateQueries`** for affected list/detail keys |
-| `index.ts` | `export * as authKey`, `authQuery`, `authMutation` |
+
+Import query helpers with `import * as authQuery from '@/services/auth/auth.query'` — no service `index.ts` barrel.
 
 **Zod:** define requests/responses in **`@wichat/contracts`**; **parse at the trust boundary** in `.service.ts` via `api` + schemas.
 
@@ -78,7 +79,7 @@ export function useLoginMutation() {
 ```tsx
 // features/auth/login/login-page.tsx — 'use client'
 import { useQuery } from '@tanstack/react-query';
-import { authQuery } from '@/services/auth';
+import * as authQuery from '@/services/auth/auth.query';
 import { useLoginMutation } from '@/services/auth/auth.mutation';
 
 export function LoginPage() {

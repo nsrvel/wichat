@@ -1,10 +1,20 @@
 ---
-description: Go backend conventions (backend/, wi-shared, services)
+description: Go backend conventions (backend/, wi-shared, services) — mandatory
 globs: backend/**/*.go
-alwaysApply: false
+alwaysApply: true
 ---
 
 # Go (WiChat backend)
+
+**Strict layout:** `wichat-go-layers.mdc` is authoritative for repository / service / delivery. Agents and humans **must** conform — no alternate naming or extra repository files. When touching `backend/**/*.go`, read layers first; verify with `make check` in each affected module.
+
+## Agent checklist (before done)
+
+1. Repository folder matches the **whitelist** (`pg_repository.go`, `minio_repository.go`, `redis_*.go`, `mock/`, `test/` only).
+2. Models in `internal/models/<domain>_model.go` + `<domain>_repository_model.go` — not mixed into auth files for other domains.
+3. Tests under `test/`, package `*_test` — not beside production `.go`.
+4. `cd backend/<module> && make check` passes for every module you changed.
+5. README under the domain still describes the real file names (update if you renamed/moved).
 
 ## Tests live under `test/`
 
@@ -19,7 +29,7 @@ wi-shared/exception/
     kind_test.go
 ```
 
-- Test package name: **`{pkgname}_test`** (e.g. `exception_test` for `exception/`).
+- Test package name: **`{pkgname}_test`** only (e.g. `service_test`). Production packages: **lowercase** per Effective Go (see `wichat-go-style.mdc`); not camelCase (`serviceTest`, `authHttp`).
 - Import the module under test; tests are **black-box** (exported API only).
 - Run: `go test ./...` from the module root (includes `.../test` packages).
 
@@ -33,8 +43,22 @@ wi-shared/exception/
 - gRPC contracts: edit `backend/wi-shared/models/**.proto`; run `make proto` from `wi-shared/`; never hand-edit `models/gen/`.
 - In `Run(ctx)` and server goroutines: return errors to `main` — no `log.Fatalf` in listeners.
 
+## No re-exports
+
+Do not create proxy packages or files that re-export another package’s API (`var ErrFoo = constants.ErrFoo`, `type T = othertype.T` across packages, barrel `errors.go` shims). Import the defining package. Details: `wichat-go-layers.mdc` § “No re-exports”.
+
+## ms-user repository split (do not regress)
+
+- `internal/user/repository` — **only** `pg_repository.go` (+ mock/test).
+- `internal/group/repository` — **only** `pg_repository.go`, `minio_repository.go` (+ mock/test).
+- `internal/auth/repository` — `pg_repository.go` (sessions), `redis_*.go` (+ mock/test); no extra production siblings.
+- Shared sentinels: `pkg/constants`; PG row/unique mapping: `pkg/db` (`pgErr`). Group other helpers under flat `pkg/<role>/` (see `ms-user/pkg/README.md`).
+- Auth `service.NewService` takes **two** `PgRepository` deps (`userrepo`, `authrepo`), not one combined repo.
+- **Mocks:** only Postgres under `internal/<domain>/repository/mock/` (`pg_repository_mock.go`). Redis tests use **miniredis** + production store constructors — no `repository/mock` for Redis (`wichat-go-layers.mdc`).
+- **Service:** one `service.go` per `internal/<domain>/service/`; tests only `service/test/service_test.go`; split domains (`auth`, `user`, `group`) not extra files in one package (`wichat-go-layers.mdc`).
+
 ## Other
 
-- Match existing AGPL file headers on new `.go` files.
+- License is AGPL at repo root ([LICENSE](../../LICENSE)); do not add per-file SPDX/copyright headers on new `.go` files.
 - Layer layout: `wichat-go-layers.mdc`. Style: `wichat-go-style.mdc`.
 - Cross-service Go libs: [wi-shared/README.md](../../backend/wi-shared/README.md). Architecture: `docs/architecture/error-handling.md`, `microservices.md`, `logging.md`.

@@ -1,6 +1,3 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
-// Copyright (C) 2026 Garam
-
 package config
 
 import (
@@ -17,13 +14,24 @@ type Config struct {
 	GoogleClientID     string `mapstructure:"google_client_id"`
 	GoogleClientSecret string `mapstructure:"google_client_secret"`
 	GoogleRedirectURL  string `mapstructure:"google_redirect_url"`
+	RedisURL           string `mapstructure:"redis_url"`
+	NotificationHost   string `mapstructure:"ms_notification_host"`
+	MinioEndpoint      string `mapstructure:"minio_endpoint"`
+	MinioAccessKey     string `mapstructure:"minio_access_key"`
+	MinioSecretKey     string `mapstructure:"minio_secret_key"`
+	MinioBucket        string `mapstructure:"minio_bucket"`
+	MinioPublicBaseURL string `mapstructure:"minio_public_base_url"`
+	MinioUseSSL        bool   `mapstructure:"minio_use_ssl"`
+	MinioRegion        string `mapstructure:"minio_region"`
 }
 
 // Defaults are applied when env / .env do not set a value.
 var Defaults = Config{
-	Env:      "development",
-	LogLevel: "info",
-	Port:     "3001",
+	Env:              "development",
+	LogLevel:         "info",
+	Port:             "3001",
+	RedisURL:         "redis://localhost:6379/0",
+	NotificationHost: "localhost:3005",
 }
 
 // Load reads configuration from defaults, optional envFile, and environment.

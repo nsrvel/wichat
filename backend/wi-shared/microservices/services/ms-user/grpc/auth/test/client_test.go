@@ -1,6 +1,3 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
-// Copyright (C) 2026 Garam
-
 package auth_test
 
 import (
@@ -12,7 +9,7 @@ import (
 
 	"github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-user/grpc/auth"
 	"github.com/wichat/wichat/backend/wi-shared/microservices/utils"
-	authv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/auth/v1"
+	userv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/user/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -21,23 +18,23 @@ import (
 )
 
 type setupStatusServer struct {
-	authv1.UnimplementedAuthServiceServer
+	userv1.UnimplementedAuthServiceServer
 	calls atomic.Int32
 }
 
-func (s *setupStatusServer) SetupStatus(context.Context, *authv1.SetupStatusRequest) (*authv1.SetupStatusResponse, error) {
+func (s *setupStatusServer) SetupStatus(context.Context, *userv1.SetupStatusRequest) (*userv1.SetupStatusResponse, error) {
 	if s.calls.Add(1) == 1 {
 		return nil, status.Error(codes.Unavailable, "try again")
 	}
 
-	return &authv1.SetupStatusResponse{NeedsSetup: true}, nil
+	return &userv1.SetupStatusResponse{GuestEnabled: true}, nil
 }
 
 func TestSetupStatusRetriesIdempotent(t *testing.T) {
 	const bufSize = 1024 * 1024
 	lis := bufconn.Listen(bufSize)
 	srv := grpc.NewServer()
-	authv1.RegisterAuthServiceServer(srv, &setupStatusServer{})
+	userv1.RegisterAuthServiceServer(srv, &setupStatusServer{})
 	go func() { _ = srv.Serve(lis) }()
 	t.Cleanup(func() { srv.Stop() })
 
@@ -64,11 +61,11 @@ func TestSetupStatusRetriesIdempotent(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	out, err := grpcClient.SetupStatus(ctx, &authv1.SetupStatusRequest{})
+	out, err := grpcClient.SetupStatus(ctx, &userv1.SetupStatusRequest{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !out.GetNeedsSetup() {
+	if !out.GetGuestEnabled() {
 		t.Fatalf("unexpected response: %+v", out)
 	}
 }

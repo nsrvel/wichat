@@ -1,8 +1,6 @@
 -- +goose Up
-CREATE SCHEMA IF NOT EXISTS auth;
-
-CREATE TABLE auth.users (
-    id text PRIMARY KEY,
+CREATE TABLE users (
+    id uuid PRIMARY KEY,
     email text NOT NULL UNIQUE,
     password_hash text NOT NULL,
     display_name text NOT NULL,
@@ -10,9 +8,9 @@ CREATE TABLE auth.users (
     updated_at timestamptz NOT NULL
 );
 
-CREATE TABLE auth.sessions (
-    id text PRIMARY KEY,
-    user_id text NOT NULL REFERENCES auth.users (id),
+CREATE TABLE sessions (
+    id uuid PRIMARY KEY,
+    user_id uuid NOT NULL REFERENCES users (id),
     expires_at timestamptz NOT NULL,
     revoked_at timestamptz,
     user_agent text NOT NULL DEFAULT '',
@@ -21,20 +19,19 @@ CREATE TABLE auth.sessions (
     created_at timestamptz NOT NULL
 );
 
-CREATE TABLE auth.refresh_tokens (
-    id text PRIMARY KEY,
-    session_id text NOT NULL REFERENCES auth.sessions (id) ON DELETE CASCADE,
+CREATE TABLE refresh_tokens (
+    id uuid PRIMARY KEY,
+    session_id uuid NOT NULL REFERENCES sessions (id) ON DELETE CASCADE,
     token_hash bytea NOT NULL UNIQUE,
     used_at timestamptz,
     created_at timestamptz NOT NULL
 );
 
 CREATE UNIQUE INDEX refresh_tokens_one_active
-    ON auth.refresh_tokens (session_id)
+    ON refresh_tokens (session_id)
     WHERE used_at IS NULL;
 
 -- +goose Down
-DROP TABLE IF EXISTS auth.refresh_tokens;
-DROP TABLE IF EXISTS auth.sessions;
-DROP TABLE IF EXISTS auth.users;
-DROP SCHEMA IF EXISTS auth;
+DROP TABLE IF EXISTS refresh_tokens;
+DROP TABLE IF EXISTS sessions;
+DROP TABLE IF EXISTS users;

@@ -4,5 +4,4 @@ name: wichat
 include:
   - path: compose/postgres.yml
   - path: compose/redis.yml
-  - path: compose/prometheus.yml
-  - path: compose/grafana.yml
+  - path: compose/minio.yml

@@ -1,5 +1,5 @@
-import { ChannelView } from "@/features/chat/components/channel-view";
+import { RootRedirectPage } from "@/features/app/root-redirect-page";
 
-export default function AppHomePage() {
-	return <ChannelView />;
+export default function AppRootPage() {
+	return <RootRedirectPage />;
 }

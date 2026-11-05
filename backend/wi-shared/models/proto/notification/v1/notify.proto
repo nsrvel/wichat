@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package notification.v1;
+
+option go_package = "github.com/wichat/wichat/backend/wi-shared/models/gen/notification/v1;notificationv1";
+
+// NotifyService dispatches outbound notifications (email v1).
+service NotifyService {
+  rpc Send(SendRequest) returns (SendResponse);
+}
+
+message SendRequest {
+  string channel = 1;
+  string template_id = 2;
+  string locale = 3;
+  map<string, string> vars = 4;
+  EmailRecipient email = 5;
+}
+
+message EmailRecipient {
+  string to = 1;
+}
+
+message SendResponse {
+  bool ok = 1;
+}

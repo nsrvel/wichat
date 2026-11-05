@@ -1,6 +1,3 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
-// Copyright (C) 2026 Garam
-
 package exception
 
 import "strings"
@@ -19,8 +16,17 @@ const (
 	MsgUnauthorized          MessageCode = "auth.unauthorized"
 	MsgInvalidCredentials    MessageCode = "auth.invalid_credentials"
 	MsgSetupClosed           MessageCode = "auth.setup_closed"
+	MsgRegistrationClosed    MessageCode = "auth.registration_closed"
+	MsgGuestDisabled         MessageCode = "auth.guest_disabled"
+	MsgInstanceSetupRequired MessageCode = "auth.instance_setup_required"
+	MsgForbidden             MessageCode = "auth.forbidden"
+	MsgEmailTaken            MessageCode = "auth.email_taken"
+	MsgUsernameTaken         MessageCode = "auth.username_taken"
+	MsgAgeRestricted         MessageCode = "auth.age_restricted"
 	MsgGoogleDenied          MessageCode = "auth.google_denied"
 	MsgGoogleEmailUnverified MessageCode = "auth.google_email_unverified"
+	MsgResetCodeInvalid      MessageCode = "auth.reset_code_invalid"
+	MsgResetRateLimited      MessageCode = "auth.reset_rate_limited"
 
 	MsgUserNotFound MessageCode = "user.not_found"
 )

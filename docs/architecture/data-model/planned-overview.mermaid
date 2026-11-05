@@ -1,0 +1,63 @@
+%% WiChat — planned schemas (draft; see planned-overview.dbml)
+
+erDiagram
+  auth_groups ||--o{ auth_channel_categories : "has"
+  auth_groups ||--o{ auth_channels : "has"
+  auth_channel_categories ||--o{ auth_channels : "groups"
+  auth_channels ||--o{ auth_channel_members : "has"
+  auth_channels ||--o{ auth_dm_participants : "dm"
+  auth_channels ||--o{ chat_messages : "timeline"
+  chat_messages ||--o{ chat_message_reactions : "has"
+  auth_channels ||--o{ chat_channel_pins : "pins"
+  chat_messages ||--o{ chat_messages : "reply thread"
+  auth_groups ||--o{ audit_events : "scoped"
+
+  auth_channel_categories {
+    text id PK
+    text group_id FK
+    text name
+    int position
+  }
+
+  auth_channels {
+    text id PK
+    text group_id FK
+    text category_id FK
+    text type "public|private|dm"
+    text name
+    timestamptz archived_at
+  }
+
+  auth_channel_members {
+    text channel_id PK_FK
+    text user_id PK_FK
+    text last_read_message_id
+  }
+
+  chat_messages {
+    text id PK "UUIDv7"
+    text channel_id FK
+    text author_id
+    jsonb body
+    text reply_to_message_id FK
+    text root_message_id FK
+    timestamptz deleted_at
+  }
+
+  chat_message_reactions {
+    text message_id PK_FK
+    text user_id PK_FK
+    text emoji PK
+  }
+
+  chat_channel_pins {
+    text channel_id PK_FK
+    text message_id PK_FK
+  }
+
+  audit_events {
+    text id PK
+    text group_id
+    text action
+    jsonb metadata
+  }

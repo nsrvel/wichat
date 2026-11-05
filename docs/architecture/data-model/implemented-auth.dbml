@@ -1,0 +1,123 @@
+// WiChat — IMPLEMENTED (ms-user migrations 00001–00008)
+// PostgreSQL: public schema (no custom schema prefix)
+// Preview: https://dbdiagram.io (import this file)
+// Refresh token hashes: Redis (ms-user:rt:*), not Postgres
+
+Project WiChatImplemented {
+  database_type: 'PostgreSQL'
+  Note: '''
+    Shipped schema only. Product "workspace" = tables groups + group_settings.
+    Last synced: migrations through 00010_group_public_id.sql
+  '''
+}
+
+TableGroup ms_user_core {
+  users
+  user_credentials
+  user_connections
+  user_sessions
+}
+
+TableGroup ms_user_instance {
+  instance_settings
+}
+
+TableGroup ms_user_workspace {
+  groups
+  group_settings
+  group_members
+}
+
+Table users {
+  id uuid [pk, note: 'Public user id (app-generated UUID)']
+  email text [null, note: 'Partial unique index when non-empty']
+  display_name text [not null]
+  username text [null, note: 'Mention handle; partial unique when set']
+  birth_date date [null]
+  is_guest boolean [not null, default: false]
+  is_instance_owner boolean [not null, default: false]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  Note: 'Password hash in user_credentials; OAuth via user_connections'
+}
+
+Table user_credentials {
+  user_id uuid [pk, ref: > users.id]
+  password_hash text [not null]
+  updated_at timestamptz [not null]
+}
+
+Table user_connections {
+  id uuid [pk]
+  user_id uuid [not null, ref: > users.id]
+  kind text [not null, note: 'login | integration']
+  provider text [not null, note: 'e.g. google']
+  subject text [not null]
+  scopes text[] [not null, default: '{}']
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  indexes {
+    (provider, subject) [unique, name: 'user_connections_login_provider_subject', note: 'WHERE kind = login']
+  }
+}
+
+Table user_sessions {
+  id uuid [pk]
+  user_id uuid [not null, ref: > users.id]
+  expires_at timestamptz [not null]
+  revoked_at timestamptz [null]
+  user_agent text [not null, default: '']
+  client_ip text [not null, default: '']
+  device_label text [not null, default: '']
+  platform text [not null, default: '']
+  location_label text [not null, default: '']
+  refresh_id text [not null, default: '', note: 'Current refresh row id; secret hash in Redis']
+  last_used_at timestamptz [not null]
+  created_at timestamptz [not null]
+}
+
+Table instance_settings {
+  id smallint [pk, note: 'Singleton row id = 1']
+  username_enabled boolean [not null, default: true]
+  registration_mode text [not null, default: 'invite_only', note: 'invite_only | approval_required | open']
+  guest_enabled boolean [not null, default: false]
+  setup_completed boolean [not null, default: false]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  Note: 'Instance policy only; workspace branding in group_settings'
+}
+
+Table groups {
+  id uuid [pk, note: 'Internal FK target; not exposed in REST/URLs']
+  public_id text [not null, unique, note: '24-char lowercase hex; client id']
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  Note: 'Product workspace; display name/logo in group_settings'
+}
+
+Table group_settings {
+  group_id uuid [pk, ref: > groups.id]
+  name text [not null]
+  logo_url text [not null, default: '']
+  retention_days int [not null, default: 0]
+  trash_retention_days int [not null, default: 30]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+}
+
+Table group_members {
+  group_id uuid [not null, ref: > groups.id]
+  user_id uuid [not null, ref: > users.id]
+  role text [not null, note: 'owner | admin | member | guest']
+  created_at timestamptz [not null]
+
+  indexes {
+    (group_id, user_id) [pk]
+  }
+}
+
+Ref: group_members.group_id > groups.id [delete: cascade]

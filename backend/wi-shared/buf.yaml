@@ -1,6 +1,6 @@
 version: v2
 modules:
-  - path: models
+  - path: models/proto
 lint:
   use:
     - STANDARD

@@ -6,6 +6,9 @@ type Schema<T> = { parse: (input: unknown) => T };
 
 const noRefresh = new Set([
 	"/auth/login",
+	"/auth/login/verify",
+	"/auth/register",
+	"/auth/register/verify",
 	"/auth/setup",
 	"/auth/refresh",
 	"/auth/logout",
@@ -36,15 +39,27 @@ export function createApiClient({
 		if (!json || typeof json !== "object" || !("data" in json)) {
 			throw new ApiError("error.invalid_response");
 		}
-		return schema.parse((json as { data: unknown }).data);
+		try {
+			return schema.parse((json as { data: unknown }).data);
+		} catch {
+			throw new ApiError("error.invalid_response");
+		}
+	}
+
+	async function fetchApi(path: string, init: RequestInit): Promise<Response> {
+		try {
+			return await fetch(`${getBaseUrl()}${path}`, {
+				...init,
+				credentials,
+			});
+		} catch {
+			throw new ApiError("error.network");
+		}
 	}
 
 	async function refreshAccess(): Promise<string | null> {
 		return refreshAccessToken(async () => {
-			const res = await fetch(`${getBaseUrl()}/auth/refresh`, {
-				method: "POST",
-				credentials,
-			});
+			const res = await fetchApi("/auth/refresh", { method: "POST" });
 			if (!res.ok) {
 				setAccessToken(null);
 				return null;
@@ -83,11 +98,7 @@ export function createApiClient({
 			headers.set("Authorization", `Bearer ${token}`);
 		}
 
-		const res = await fetch(`${getBaseUrl()}${path}`, {
-			...init,
-			headers,
-			credentials,
-		});
+		const res = await fetchApi(path, { ...init, headers });
 
 		if (res.status === 401 && allowRefresh && !noRefresh.has(path)) {
 			const next = await refreshAccess();
@@ -115,6 +126,14 @@ export function createApiClient({
 				},
 				true,
 			);
+		},
+
+		async postForm<T>(
+			path: string,
+			schema: Schema<T>,
+			formData: FormData,
+		): Promise<T> {
+			return send(path, schema, { method: "POST", body: formData }, true);
 		},
 	};
 

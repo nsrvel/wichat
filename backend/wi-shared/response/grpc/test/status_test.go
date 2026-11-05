@@ -1,6 +1,3 @@
-// SPDX-License-Identifier: AGPL-3.0-or-later
-// Copyright (C) 2026 Garam
-
 package grpc_test
 
 import (
@@ -67,6 +64,18 @@ func TestParseStatusRejectsInvalidMessageCode(t *testing.T) {
 	}
 	if parsed.Kind != exception.KindInternal || parsed.Code != exception.MsgInternal {
 		t.Fatalf("kind=%v code=%s", parsed.Kind, parsed.Code)
+	}
+}
+
+func TestToStatusPassThroughGRPC(t *testing.T) {
+	downstream := status.New(codes.Unavailable, string(exception.MsgUnavailable)).Err()
+	stErr := responsegrpc.ToStatus(downstream)
+	st, ok := status.FromError(stErr)
+	if !ok || st.Code() != codes.Unavailable {
+		t.Fatalf("code %v", st.Code())
+	}
+	if st.Message() != string(exception.MsgUnavailable) {
+		t.Fatalf("message %q", st.Message())
 	}
 }
 

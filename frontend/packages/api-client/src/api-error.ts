@@ -1,3 +1,5 @@
+import { isClientErrorCode } from "./client-error-code";
+
 export class ApiError extends Error {
 	readonly code: string;
 	readonly params: Record<string, unknown> | undefined;
@@ -19,13 +21,17 @@ export class ApiError extends Error {
 			"code" in body.error &&
 			typeof body.error.code === "string"
 		) {
+			const code = body.error.code;
+			if (!isClientErrorCode(code)) {
+				return new ApiError("error.unknown");
+			}
 			const params =
 				"params" in body.error &&
 				body.error.params &&
 				typeof body.error.params === "object"
 					? (body.error.params as Record<string, unknown>)
 					: undefined;
-			return new ApiError(body.error.code, params);
+			return new ApiError(code, params);
 		}
 		return new ApiError("error.unknown");
 	}

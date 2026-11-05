@@ -3,8 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "scripts": {
+    "test": "node --experimental-strip-types --test test/*.test.ts"
+  },
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/create-api-client.ts",
+    "./api-error": "./src/api-error.ts",
+    "./client-error-code": "./src/client-error-code.ts",
+    "./token-storage": "./src/token-storage.ts"
   },
   "dependencies": {
     "@wichat/contracts": "workspace:*"

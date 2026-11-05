@@ -6,5 +6,6 @@ Cross-service code belongs in [`wi-shared`](../../wi-shared/).
 
 | Package | Role |
 |---------|------|
+| `constants` | Gateway-only constants (e.g. `MaxUserAgentLen`) — not in delivery/middleware |
 | `cookie` | HttpOnly refresh and OAuth PKCE cookies |
-| `auth-http` (`package authHttp`) | JSON bodies, `WriteSession`, `WriteOutbound`, OAuth `RedirectSignIn`, `GRPCMessageCode` |
+| `auth-http` (`authHttp`, `auth_http.go`) | JSON bodies, `WriteSession`, `WriteOutbound`, OAuth `RedirectSignIn`, `GRPCMessageCode` |

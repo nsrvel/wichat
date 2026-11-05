@@ -1,44 +1,43 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { useMounted } from "@/features/auth/use-mounted";
-import { translateError } from "@/integrations/i18n/translate-error";
-import { authQuery } from "@/services/auth";
-import { useTranslation } from "react-i18next";
+import { useMounted } from "@/hooks/use-mounted";
+import * as authQuery from "@/services/auth/auth.query";
+import { ensureAccessToken } from "@/integrations/api-client";
+import { prefetchMyGroups } from "@/services/group/prefetch-my-groups";
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
-	const { t } = useTranslation();
 	const router = useRouter();
+	const queryClient = useQueryClient();
 	const mounted = useMounted();
-	const status = useQuery({ ...authQuery.setupStatusQueryOpts(), enabled: mounted });
-	const session = useQuery({
-		...authQuery.sessionQueryOpts(),
-		enabled: mounted && status.data?.needs_setup === false,
-	});
+	const session = useQuery({ ...authQuery.sessionQueryOpts(), enabled: mounted });
 
 	useEffect(() => {
-		if (!status.data) {
+		if (!mounted) {
 			return;
 		}
-		if (status.data.needs_setup) {
-			router.replace("/sign-up");
-			return;
-		}
-		if (session.isError) {
-			router.replace("/sign-in");
-		}
-	}, [router, session.isError, status.data]);
+		void ensureAccessToken().then((token) => {
+			if (token) {
+				void prefetchMyGroups(queryClient);
+			}
+		});
+	}, [mounted, queryClient]);
 
-	if (status.isError) {
-		return <p className="text-destructive p-6 text-sm">{translateError(t, status.error)}</p>;
-	}
-	if (!mounted || status.isPending || (status.data?.needs_setup === false && session.isPending)) {
-		return <div className="flex-1" />;
-	}
-	if (!session.data) {
-		return <div className="flex-1" />;
+	useEffect(() => {
+		if (!mounted || session.isPending) {
+			return;
+		}
+		if (!session.data) {
+			router.replace("/sign-in");
+			return;
+		}
+		void prefetchMyGroups(queryClient);
+	}, [mounted, queryClient, router, session.data, session.isPending]);
+
+	if (!mounted || session.isPending || !session.data) {
+		return <div className="flex-1" suppressHydrationWarning />;
 	}
 
 	return children;

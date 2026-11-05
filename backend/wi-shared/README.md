@@ -10,6 +10,7 @@ Shared libraries for WiChat backend services.
 | [exception/README.md](exception/README.md) | Semantic errors, i18n codes, HTTP/gRPC kinds |
 | [response/README.md](response/README.md) | JSON envelopes; `http` and `grpc` writers |
 | [infra/logger/README.md](infra/logger/README.md) | `slog` logger (`Logger`, `New`) |
+| [infra/minio/README.md](infra/minio/README.md) | S3/MinIO `Client` (upload, get, copy, delete) |
 | [models/README.md](models/README.md) | Protobuf contracts, `make proto` |
 | [microservices/README.md](microservices/README.md) | Outbound `Open`, `User.GRPC.*`, `utils` |
 
