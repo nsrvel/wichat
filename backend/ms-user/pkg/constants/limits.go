@@ -16,12 +16,15 @@ const (
 const (
 	MaxGroupNameRunes = 80
 	MaxLogoURLRunes   = 2048
+	MaxGroupIconBytes = 2 * 1024 * 1024
 )
 
 // Session token lifetimes.
 const (
 	AccessTokenTTL  = 15 * time.Minute
 	RefreshTokenTTL = 30 * 24 * time.Hour
+	// RefreshReuseRevokeGrace: parallel tab refresh or a failed response after Rotate must not revoke the session.
+	RefreshReuseRevokeGrace = 30 * time.Second
 )
 
 // Email OTP and password-reset Redis TTLs and attempt caps.

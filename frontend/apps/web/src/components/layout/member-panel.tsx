@@ -107,7 +107,7 @@ function Member({
 
 export function MemberPanel({ onClose }: { onClose?: () => void }) {
 	return (
-		<div className="flex h-full w-[300px] shrink-0 flex-col border-l border-[#EEEEEF] bg-[#F9F9F9]">
+		<div className="flex h-full w-[300px] shrink-0 flex-col border-l border-sidebar-border bg-sidebar text-sidebar-foreground">
 			<div className="flex shrink-0 items-center gap-2 px-3.5 pt-2.5 pb-1">
 				<div className="flex flex-1 rounded-full bg-[#EFEFEF] p-[3px]">
 					{tabs.map((tab) => (

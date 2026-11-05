@@ -67,6 +67,18 @@ func TestParseStatusRejectsInvalidMessageCode(t *testing.T) {
 	}
 }
 
+func TestToStatusPassThroughGRPC(t *testing.T) {
+	downstream := status.New(codes.Unavailable, string(exception.MsgUnavailable)).Err()
+	stErr := responsegrpc.ToStatus(downstream)
+	st, ok := status.FromError(stErr)
+	if !ok || st.Code() != codes.Unavailable {
+		t.Fatalf("code %v", st.Code())
+	}
+	if st.Message() != string(exception.MsgUnavailable) {
+		t.Fatalf("message %q", st.Message())
+	}
+}
+
 func TestUnavailableRoundTrip(t *testing.T) {
 	stErr := responsegrpc.ToStatus(exception.Unavailable(exception.MsgUnavailable, nil))
 	st, ok := status.FromError(stErr)

@@ -1,0 +1,93 @@
+package service
+
+import (
+	"context"
+	"errors"
+	"time"
+
+	authrepo "github.com/wichat/wichat/backend/ms-user/internal/auth/repository"
+	channelrepo "github.com/wichat/wichat/backend/ms-user/internal/channel/repository"
+	grouprepo "github.com/wichat/wichat/backend/ms-user/internal/group/repository"
+	"github.com/wichat/wichat/backend/ms-user/internal/models"
+	"github.com/wichat/wichat/backend/ms-user/pkg/access"
+	"github.com/wichat/wichat/backend/ms-user/pkg/constants"
+	"github.com/wichat/wichat/backend/ms-user/pkg/validator"
+	"github.com/wichat/wichat/backend/wi-shared/exception"
+	"github.com/wichat/wichat/backend/wi-shared/infra/logger"
+)
+
+// Service lists channels for members of a group.
+type Service interface {
+	ListGroupChannels(ctx context.Context, accessToken, groupPublicID string) ([]models.PublicChannel, error)
+}
+
+type service struct {
+	channels channelrepo.PgRepository
+	groups   grouprepo.PgRepository
+	sessions authrepo.SessionRepository
+	secret   []byte
+	log      logger.Logger
+	now      func() time.Time
+}
+
+// NewService builds channel use cases.
+func NewService(
+	channels channelrepo.PgRepository,
+	groups grouprepo.PgRepository,
+	sessions authrepo.SessionRepository,
+	secret []byte,
+	log logger.Logger,
+) Service {
+	copied := make([]byte, len(secret))
+	copy(copied, secret)
+
+	return service{
+		channels: channels,
+		groups:   groups,
+		sessions: sessions,
+		secret:   copied,
+		log:      log,
+		now:      func() time.Time { return time.Now().UTC() },
+	}
+}
+
+func (s service) ListGroupChannels(ctx context.Context, accessToken, groupPublicID string) ([]models.PublicChannel, error) {
+	userID, err := access.UserIDFromAccessToken(ctx, accessToken, s.secret, s.sessions, s.now())
+	if err != nil {
+		return nil, err
+	}
+
+	publicID, err := validator.GroupPublicID(groupPublicID)
+	if err != nil {
+		return nil, err
+	}
+
+	group, err := s.groups.FindGroupByPublicID(ctx, publicID)
+	if err != nil {
+		if errors.Is(err, constants.ErrNotFound) {
+			return nil, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "group_id"})
+		}
+
+		return nil, err
+	}
+
+	if _, err := s.groups.FindGroupMember(ctx, group.ID, userID); err != nil {
+		if errors.Is(err, constants.ErrNotFound) {
+			return nil, exception.PermissionDenied(exception.MsgForbidden, nil)
+		}
+
+		return nil, err
+	}
+
+	channels, err := s.channels.ListByGroupID(ctx, group.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]models.PublicChannel, len(channels))
+	for i, ch := range channels {
+		out[i] = ch.Public()
+	}
+
+	return out, nil
+}

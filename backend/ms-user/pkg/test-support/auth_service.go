@@ -3,12 +3,15 @@ package testSupport
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/alicebob/miniredis/v2"
 	"github.com/redis/go-redis/v9"
 	authrepo "github.com/wichat/wichat/backend/ms-user/internal/auth/repository"
 	authmock "github.com/wichat/wichat/backend/ms-user/internal/auth/repository/mock"
 	"github.com/wichat/wichat/backend/ms-user/internal/auth/service"
+	grouprepo "github.com/wichat/wichat/backend/ms-user/internal/group/repository"
+	groupmock "github.com/wichat/wichat/backend/ms-user/internal/group/repository/mock"
 	groupservice "github.com/wichat/wichat/backend/ms-user/internal/group/service"
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
 	userrepo "github.com/wichat/wichat/backend/ms-user/internal/user/repository"
@@ -37,8 +40,8 @@ func (f *FakeNotifier) Send(_ context.Context, in *notificationv1.SendRequest) (
 }
 
 // TestRepos returns in-memory Postgres repository mocks sharing state.
-func TestRepos(st *usermock.State) (userrepo.PgRepository, authrepo.PgRepository) {
-	return usermock.NewPgRepositoryMock(st), authmock.NewPgRepositoryMock(st)
+func TestRepos(st *usermock.State) (userrepo.PgRepository, grouprepo.PgRepository, authrepo.SessionRepository) {
+	return usermock.NewPgRepositoryMock(st), groupmock.NewPgRepositoryMock(st), authmock.NewPgRepositoryMock(st)
 }
 
 // RedisClient starts miniredis and returns a go-redis client tied to test cleanup.
@@ -56,10 +59,10 @@ func RedisClient(t *testing.T) *redis.Client {
 // NewAuthService wires auth + user services with miniredis OTP stores.
 // NewAuthService wires auth, user, and group services with a shared miniredis OTP backend.
 // The returned Miniredis handle supports FastForward in rate-limit tests.
-func NewAuthService(t *testing.T, st *usermock.State) (service.Service, *FakeNotifier, userrepo.PgRepository, userservice.Service, groupservice.Service, *miniredis.Miniredis) {
+func NewAuthService(t *testing.T, st *usermock.State, now func() time.Time) (service.Service, *FakeNotifier, userrepo.PgRepository, userservice.Service, groupservice.Service, *miniredis.Miniredis) {
 	t.Helper()
 
-	users, sessions := TestRepos(st)
+	users, groups, sessions := TestRepos(st)
 	notify := &FakeNotifier{}
 
 	mr, err := miniredis.Run()
@@ -71,8 +74,13 @@ func NewAuthService(t *testing.T, st *usermock.State) (service.Service, *FakeNot
 	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
 	log := logger.New(logger.Options{Service: "auth-test", Env: "test", Level: "error"})
 	userSvc := userservice.NewService(users, sessions, []byte(TestJWTSecret), log)
-	groupSvc := groupservice.NewService(users, sessions, []byte(TestJWTSecret), log)
-	svc, err := service.NewService(users, sessions, []byte(TestJWTSecret), log, googleoauth.Config{}, authrepo.NewRedisPasswordResetStore(rdb), authrepo.NewRedisEmailAuthStore(rdb), notify, userSvc)
+	groupSvc := groupservice.NewService(groups, users, disabledGroupMinio(log), sessions, []byte(TestJWTSecret), log)
+	refresh := authrepo.NewRedisRefreshStore(rdb)
+	var opts *service.Options
+	if now != nil {
+		opts = &service.Options{Now: now}
+	}
+	svc, err := service.NewService(users, sessions, refresh, []byte(TestJWTSecret), log, googleoauth.Config{}, authrepo.NewRedisPasswordResetStore(rdb), authrepo.NewRedisEmailAuthStore(rdb), notify, userSvc, opts)
 	if err != nil {
 		t.Fatal(err)
 	}

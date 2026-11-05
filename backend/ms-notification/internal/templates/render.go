@@ -136,12 +136,7 @@ func normalizeLocale(locale string) string {
 }
 
 func formatCode(code string) string {
-	code = strings.ToUpper(strings.TrimSpace(code))
-	if len(code) == 6 {
-		return code[:3] + "-" + code[3:]
-	}
-
-	return code
+	return strings.ToUpper(strings.TrimSpace(code))
 }
 
 func executeTemplate(body string, data any) (string, error) {

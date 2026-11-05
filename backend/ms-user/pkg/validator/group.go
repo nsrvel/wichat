@@ -17,3 +17,16 @@ func GroupName(name string) (string, error) {
 
 	return trimmed, nil
 }
+
+// GroupIconUpload validates group icon upload metadata.
+func GroupIconUpload(contentType string, size int64) error {
+	if size <= 0 || size > constants.MaxGroupIconBytes {
+		return exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "file"})
+	}
+	switch strings.TrimSpace(strings.ToLower(contentType)) {
+	case "image/png", "image/jpeg", "image/webp":
+		return nil
+	default:
+		return exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "file"})
+	}
+}

@@ -15,14 +15,14 @@ export default function PrivacyPage() {
 				related metadata).
 			</p>
 			<p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-				WiChat is self-hosted communication software. Policy wording, contact details, retention, and
-				subprocessors are defined by the team that runs your instance—not by the WiChat project
+				WiChat is self-hosted communication software. Policy wording, contact details, retention,
+				and subprocessors are defined by the team that runs your instance—not by the WiChat project
 				alone.
 			</p>
 			<p className="mt-4 text-sm leading-relaxed text-muted-foreground">
 				Operators can adapt the repository&apos;s{" "}
-				<code className="rounded bg-muted px-1 py-0.5 text-xs">PRIVACY_TEMPLATE.md</code> for a
-				full policy published on their site.
+				<code className="rounded bg-muted px-1 py-0.5 text-xs">PRIVACY_TEMPLATE.md</code> for a full
+				policy published on their site.
 			</p>
 			<p className="mt-8">
 				<Link href="/sign-in" className="text-sm font-medium underline underline-offset-4">

@@ -18,13 +18,14 @@ type Service interface {
 }
 
 type service struct {
-	mail mail.Sender
-	log  logger.Logger
+	mail       mail.Sender
+	log        logger.Logger
+	devRelaxed bool
 }
 
 // NewService builds the notify use cases.
-func NewService(mailSender mail.Sender, log logger.Logger) Service {
-	return service{mail: mailSender, log: log}
+func NewService(mailSender mail.Sender, log logger.Logger, devRelaxed bool) Service {
+	return service{mail: mailSender, log: log, devRelaxed: devRelaxed}
 }
 
 func (s service) Send(ctx context.Context, in models.SendInput) error {
@@ -61,8 +62,11 @@ func (s service) sendPasswordReset(ctx context.Context, to, locale string, vars 
 	}
 
 	if err := s.mail.SendHTML(ctx, to, subject, html); err != nil {
-		s.log.Error("smtp send failed", "err", err, "template", templates.TemplatePasswordReset)
-		return exception.Unavailable(exception.MsgUnavailable, nil)
+		s.log.Error("smtp send failed", "err", err, "template", templates.TemplatePasswordReset, "to", to)
+		if s.devRelaxed {
+			s.log.Warn("dev: email not delivered; auth flow continues", "to", to)
+		}
+		return nil
 	}
 
 	return nil
@@ -82,8 +86,11 @@ func (s service) sendEmailCode(ctx context.Context, to, locale string, vars map[
 	}
 
 	if err := s.mail.SendHTML(ctx, to, subject, html); err != nil {
-		s.log.Error("smtp send failed", "err", err, "template", templates.TemplateEmailCode)
-		return exception.Unavailable(exception.MsgUnavailable, nil)
+		s.log.Error("smtp send failed", "err", err, "template", templates.TemplateEmailCode, "to", to)
+		if s.devRelaxed {
+			s.log.Warn("dev: email not delivered; use OTP from log", "to", to, "code", code)
+		}
+		return nil
 	}
 
 	return nil

@@ -82,7 +82,7 @@ See [`architecture-context.mermaid`](architecture-context.mermaid) for the C4 Co
 ## 6. Core Domains
 
 ### 6.1 Auth & Identity
-- **Registration**: `open`, `invite_only`, and `approval_required` live on **instance settings** (`auth.instance_settings`). **v1 web flow:** email/password and Google sign-up/sign-in stay open; after login, users with no group membership see a **create or join group** chooser. `registration_mode` is stored for future enforcement (lobby/invite redeem in §6.13) — it does **not** block `POST /auth/register` until those slices ship. **`invite_only` means group invite**, not closed sign-up pages. Instance **guest** accounts are off by default and gated by `guest_enabled`.
+- **Registration**: `open`, `invite_only`, and `approval_required` live on **instance settings** (`instance_settings`). **v1 web flow:** email/password and Google sign-up/sign-in stay open; after login, users with no group membership see a **create or join group** chooser. `registration_mode` is stored for future enforcement (lobby/invite redeem in §6.13) — it does **not** block `POST /auth/register` until those slices ship. **`invite_only` means group invite**, not closed sign-up pages. Instance **guest** accounts are off by default and gated by `guest_enabled`.
 - **Display name:** UTF-8 text, up to 80 Unicode code points (any script/emoji); stored as-is after trim. Not restricted to ASCII.
 - **Username (handle):** assigned by the server at register from the email local-part (unique per instance, collision suffix); used for @mention and optional password login. User-editable in profile settings (later slice). ASCII letters, digits, `_`, `.` only.
 - Login: Google OAuth + email/password (username or email identifier for password login). Generic enterprise SSO (SAML/OIDC against IdPs like Azure AD/Okta) is explicitly deferred — added only if/when a concrete enterprise client requests it, not built preemptively
@@ -189,6 +189,10 @@ New members land in a default **Lobby/waiting-room channel** on join:
 
 ## 7. Data Layer
 
+**Public identifiers:** Rows that appear in REST JSON and client URLs (groups now; channels/messages later) use a **`public_id`** column — 24 lowercase hex characters (12 random bytes), unique per instance. Postgres primary keys stay **`uuid`** for FKs and service-to-service references; internal UUIDs are not shown in the web UI or browser path. JSON field name remains `id` on API resources.
+
+**ERD (entity-relationship):** [`docs/architecture/data-model/README.md`](data-model/README.md) — implemented ms-user tables in Postgres `public` schema (DBML + Mermaid preview); planned channel/message/RBAC in separate DBML (not migrated yet).
+
 | Store | Purpose |
 |---|---|
 | PostgreSQL (+ JSONB) | Primary store: users, workspaces, channels, messages, roles, audit logs, custom emoji metadata. Chosen for ACID + relational RBAC, and because the team is strongest in Go + PostgreSQL. |
@@ -272,7 +276,7 @@ No offline-first support — mobile/web require an active connection. This is a 
 - i18n: backend emits message codes/keys only, never raw text; frontend resolves via translation files (i18next for web/Electron, go-i18n for backend-generated text like emails); ICU-style interpolation for dynamic values
 - Dark mode is a day-one requirement; a shared design-token system underlies web/desktop/mobile for visual consistency
 - **Error handling**: standard HTTP status codes + JSON body `{ "error": { "code": "<i18n_key>", "params": { ... } } }` — backend emits translation keys only; see [error-handling.md](error-handling.md)
-- **Sessions**: JWT access token (15 min expiry) + refresh token (30 days, httpOnly cookie, rotated on every use — the old refresh token is invalidated as soon as a new one is issued)
+- **Sessions**: JWT access token (15 min expiry) + refresh token (30 days, httpOnly cookie, rotated on every use). Session metadata and the **active** refresh token hash live in Postgres (`user_sessions`); Redis (`ms-user:rt:*`) mirrors hashes for fast lookup and rotation/reuse detection. If Redis is empty (restart), refresh still succeeds when the cookie matches the Postgres hash. Reuse of a rotated refresh token (detected via Redis) revokes the session.
 - **Message & upload limits** (workspace-configurable, defaults below):
   - Message length: 4,000 characters
   - Image upload: 10 MB
@@ -286,7 +290,7 @@ Target: **2–500 people per workspace**. At this scale, a single instance each 
 
 **Workspaces per instance**: no fixed cap is set for v1. The real constraint is total concurrent load — particularly voice/video (LiveKit) and active WebSocket connections — not raw workspace count; Postgres/Redis/Elasticsearch handle many workspaces comfortably before that becomes a bottleneck. Grafana observability (already planned) is the intended signal for when scaling action is needed, rather than a number decided upfront.
 
-**Group branding**: group **name** and **logo URL** on `auth.groups` (set at create time). Per-group custom colors remain deferred (`primary_color` later). Instance policy stays on `auth.instance_settings`.
+**Group branding**: group **name** and **logo URL** on `group_settings` (1:1 with `groups`). Per-group custom colors remain deferred (`primary_color` later). Instance policy stays on `instance_settings`.
 
 ## 15. Build Roadmap (Phase Summary)
 

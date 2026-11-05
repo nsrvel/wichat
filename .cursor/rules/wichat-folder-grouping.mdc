@@ -1,0 +1,33 @@
+---
+description: Group related files into subfolders when a directory gets crowded
+alwaysApply: true
+---
+
+# Folder grouping
+
+When a directory accumulates many siblings, **cluster files that belong to the same feature or prefix** into a **subfolder** instead of growing a flat list.
+
+## When to split
+
+- **~5+ files** in one folder and **2+ clear clusters** (shared name prefix, one UI surface, one domain, or one layer).
+- You are adding another file to an **existing cluster** (e.g. third `shell-rail-*` next to `icon-rail-*`) — move the cluster first, then add the file inside the subfolder.
+- **Not** for a single pair of files, one-off helpers, or layers that already have a home (Go `repository/` / `service/` / `delivery/`, `features/<domain>/lib/`, `services/<domain>/`).
+- Pure helpers that outgrow a flat UI folder → **`features/<domain>/lib/`** (`.ts`), not a new sibling `.ts` in the component folder — see `wichat-web-layout.mdc`.
+
+## How to name
+
+- Subfolder = **feature or component family** (`shell-rail/`, `channel-sidebar/`, `auth/`).
+- Keep **flat files** at the parent only for true one-offs or the folder’s single entry point.
+- **No export-only barrels** — import defining modules directly (`wichat-no-export-barrels.mdc`).
+
+## Examples
+
+| Before (too flat) | After |
+|-------------------|--------|
+| `components/layout/shell-rail-track.tsx`, `shell-rail-aside.tsx`, `icon-rail.tsx`, … (flat) | `components/layout/shell-rail/` (track, aside, icon tiles, rows) |
+| `features/shell/shell-group-rail.tsx` + more shell chrome | `features/shell/components/` or `features/shell/rail/` when the set grows |
+
+## When moving
+
+- Do it in the **same slice** as the new work that triggered it (or a dedicated `refactor` commit), and **update all imports** in one pass.
+- Prefer **move + rename** over copy-paste duplicates.

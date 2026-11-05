@@ -13,25 +13,29 @@ type pgRepositoryMock struct {
 	st *usermock.State
 }
 
-// NewPgRepositoryMock is an in-memory PgRepository backed by shared state.
-func NewPgRepositoryMock(st *usermock.State) repository.PgRepository {
+// NewPgRepositoryMock is an in-memory SessionRepository backed by shared state.
+func NewPgRepositoryMock(st *usermock.State) repository.SessionRepository {
 	return &pgRepositoryMock{st: st}
 }
 
-func (m *pgRepositoryMock) InsertSession(_ context.Context, session models.Session, refresh models.RefreshToken) error {
-	return m.st.InsertSessionRecord(session, refresh)
-}
-
-func (m *pgRepositoryMock) FindRefreshByHash(_ context.Context, hash []byte) (models.RefreshToken, error) {
-	return m.st.FindRefreshByHash(hash)
+func (m *pgRepositoryMock) InsertSession(_ context.Context, session models.Session) error {
+	return m.st.InsertSessionRecord(session)
 }
 
 func (m *pgRepositoryMock) FindSession(_ context.Context, id string) (models.Session, error) {
 	return m.st.FindSession(id)
 }
 
-func (m *pgRepositoryMock) MarkRefreshUsed(_ context.Context, currentHash, nextHash []byte, nextID, sessionID string, expiresAt, now time.Time) error {
-	return m.st.MarkRefreshUsed(currentHash, nextHash, nextID, sessionID, expiresAt, now)
+func (m *pgRepositoryMock) FindSessionByRefreshHash(_ context.Context, hash []byte, now time.Time) (models.Session, error) {
+	return m.st.FindSessionByRefreshHash(hash, now)
+}
+
+func (m *pgRepositoryMock) TouchSession(_ context.Context, sessionID, refreshID string, refreshTokenHash []byte, expiresAt, lastUsedAt time.Time) error {
+	return m.st.TouchSession(sessionID, refreshID, refreshTokenHash, expiresAt, lastUsedAt)
+}
+
+func (m *pgRepositoryMock) ListSessionIDsForUser(_ context.Context, userID string) ([]string, error) {
+	return m.st.ListSessionIDsForUser(userID)
 }
 
 func (m *pgRepositoryMock) RevokeSession(_ context.Context, sessionID string, now time.Time) error {

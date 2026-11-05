@@ -1,6 +1,7 @@
 package http
 
 import (
+	"io"
 	"net/http"
 	"strings"
 
@@ -39,6 +40,9 @@ type Handler interface {
 	ListJoinableGroups(w http.ResponseWriter, r *http.Request)
 	CreateGroup(w http.ResponseWriter, r *http.Request)
 	JoinGroup(w http.ResponseWriter, r *http.Request)
+	LeaveGroup(w http.ResponseWriter, r *http.Request)
+	ListGroupChannels(w http.ResponseWriter, r *http.Request)
+	UploadGroupIcon(w http.ResponseWriter, r *http.Request)
 }
 
 type handler struct {
@@ -502,9 +506,15 @@ func (h handler) CreateGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	name := strings.TrimSpace(body.Name)
+	if name == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "name"}))
+		return
+	}
+
 	out, err := h.ms.User.GRPC.Auth.CreateGroup(r.Context(), &userv1.CreateGroupRequest{
 		AccessToken: token,
-		Name:        body.Name,
+		Name:        name,
 	})
 	if err != nil {
 		authHttp.WriteOutbound(w, r, h.log, err)
@@ -537,4 +547,111 @@ func (h handler) JoinGroup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(authHttp.OKBody{OK: true}))
+}
+
+func (h handler) LeaveGroup(w http.ResponseWriter, r *http.Request) {
+	token := authHttp.Bearer(r)
+	if token == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.Unauthenticated(exception.MsgUnauthorized, nil))
+		return
+	}
+
+	groupID := strings.TrimSpace(r.PathValue("id"))
+	if groupID == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "id"}))
+		return
+	}
+
+	_, err := h.ms.User.GRPC.Auth.LeaveGroup(r.Context(), &userv1.LeaveGroupRequest{
+		AccessToken: token,
+		GroupId:     groupID,
+	})
+	if err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(authHttp.OKBody{OK: true}))
+}
+
+func (h handler) ListGroupChannels(w http.ResponseWriter, r *http.Request) {
+	token := authHttp.Bearer(r)
+	if token == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.Unauthenticated(exception.MsgUnauthorized, nil))
+		return
+	}
+
+	groupID := strings.TrimSpace(r.PathValue("id"))
+	if groupID == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "id"}))
+		return
+	}
+
+	out, err := h.ms.User.GRPC.Auth.ListGroupChannels(r.Context(), &userv1.ListGroupChannelsRequest{
+		AccessToken: token,
+		GroupId:     groupID,
+	})
+	if err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(authHttp.ChannelsListBody{
+		Channels: authHttp.ChannelsFromPB(out.GetChannels()),
+	}))
+}
+
+func (h handler) UploadGroupIcon(w http.ResponseWriter, r *http.Request) {
+	token := authHttp.Bearer(r)
+	if token == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.Unauthenticated(exception.MsgUnauthorized, nil))
+		return
+	}
+
+	groupID := strings.TrimSpace(r.PathValue("id"))
+	if groupID == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "id"}))
+		return
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, authHttp.MaxGroupIconBytes+(1<<20))
+	if err := r.ParseMultipartForm(authHttp.MaxGroupIconBytes + (1 << 10)); err != nil {
+		authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "file"}))
+		return
+	}
+
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "file"}))
+		return
+	}
+	defer func() { _ = file.Close() }()
+
+	data, err := io.ReadAll(io.LimitReader(file, authHttp.MaxGroupIconBytes+1))
+	if err != nil {
+		authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "file"}))
+		return
+	}
+	if len(data) == 0 || len(data) > authHttp.MaxGroupIconBytes {
+		authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "file"}))
+		return
+	}
+
+	contentType := header.Header.Get("Content-Type")
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
+
+	out, err := h.ms.User.GRPC.Auth.UploadGroupIcon(r.Context(), &userv1.UploadGroupIconRequest{
+		AccessToken: token,
+		GroupId:     groupID,
+		ContentType: contentType,
+		Data:        data,
+	})
+	if err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(authHttp.GroupFromPB(out.GetGroup())))
 }

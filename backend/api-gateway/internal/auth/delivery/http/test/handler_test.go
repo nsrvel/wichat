@@ -105,6 +105,7 @@ type fakeAuth struct {
 	setupStatus  func(context.Context, *userv1.SetupStatusRequest) (*userv1.SetupStatusResponse, error)
 	createGroup  func(context.Context, *userv1.CreateGroupRequest) (*userv1.CreateGroupResponse, error)
 	joinGroup    func(context.Context, *userv1.JoinGroupRequest) (*userv1.JoinGroupResponse, error)
+	leaveGroup   func(context.Context, *userv1.LeaveGroupRequest) (*userv1.LeaveGroupResponse, error)
 }
 
 func testClients(authClient auth.Client) *microservices.Clients {
@@ -212,6 +213,21 @@ func (f fakeAuth) JoinGroup(ctx context.Context, in *userv1.JoinGroupRequest) (*
 	if f.joinGroup != nil {
 		return f.joinGroup(ctx, in)
 	}
+	return nil, status.Error(codes.Unimplemented, "error.internal")
+}
+
+func (f fakeAuth) LeaveGroup(ctx context.Context, in *userv1.LeaveGroupRequest) (*userv1.LeaveGroupResponse, error) {
+	if f.leaveGroup != nil {
+		return f.leaveGroup(ctx, in)
+	}
+	return nil, status.Error(codes.Unimplemented, "error.internal")
+}
+
+func (f fakeAuth) ListGroupChannels(context.Context, *userv1.ListGroupChannelsRequest) (*userv1.ListGroupChannelsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "error.internal")
+}
+
+func (f fakeAuth) UploadGroupIcon(context.Context, *userv1.UploadGroupIconRequest) (*userv1.UploadGroupIconResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
 
@@ -325,12 +341,29 @@ func TestCreateGroupRequiresBearer(t *testing.T) {
 	}
 }
 
+const testGroupPublicID = "507f1f77bcf86cd799439011"
+
+func TestCreateGroupRejectsEmptyName(t *testing.T) {
+	handler := authdelivery.NewHandler(testClients(fakeAuth{}), testLog(), false, "http://localhost:8080")
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/groups", strings.NewReader(`{"name":"   "}`))
+	req.Header.Set("Authorization", "Bearer access-token")
+	rec := httptest.NewRecorder()
+	handler.CreateGroup(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status %d body %s", rec.Code, rec.Body.String())
+	}
+}
+
 func TestCreateGroupWithBearer(t *testing.T) {
 	var token string
 	handler := authdelivery.NewHandler(testClients(fakeAuth{
 		createGroup: func(_ context.Context, in *userv1.CreateGroupRequest) (*userv1.CreateGroupResponse, error) {
 			token = in.GetAccessToken()
-			return &userv1.CreateGroupResponse{Group: &userv1.GroupSummary{Id: "g1", Name: in.GetName()}}, nil
+			return &userv1.CreateGroupResponse{
+				Group: &userv1.GroupSummary{Id: testGroupPublicID, Name: in.GetName()},
+			}, nil
 		},
 	}), testLog(), false, "http://localhost:8080")
 
@@ -351,7 +384,7 @@ func TestCreateGroupWithBearer(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
 		t.Fatal(err)
 	}
-	if body.Data.ID != "g1" || body.Data.Name != "Acme" {
+	if body.Data.ID != testGroupPublicID || body.Data.Name != "Acme" {
 		t.Fatalf("group: %+v", body.Data)
 	}
 }
@@ -366,13 +399,13 @@ func TestJoinGroupWithBearer(t *testing.T) {
 		},
 	}), testLog(), false, "http://localhost:8080")
 
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/groups/g1/join", nil)
-	req.SetPathValue("id", "g1")
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/groups/"+testGroupPublicID+"/join", nil)
+	req.SetPathValue("id", testGroupPublicID)
 	req.Header.Set("Authorization", "Bearer access-token")
 	rec := httptest.NewRecorder()
 	handler.JoinGroup(rec, req)
 
-	if rec.Code != http.StatusOK || gotToken != "access-token" || gotID != "g1" {
+	if rec.Code != http.StatusOK || gotToken != "access-token" || gotID != testGroupPublicID {
 		t.Fatalf("status %d token %q id %q body %s", rec.Code, gotToken, gotID, rec.Body.String())
 	}
 }

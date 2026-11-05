@@ -25,4 +25,14 @@ export async function joinGroup(groupId: string) {
 	return api.post(`/groups/${encodeURIComponent(groupId)}/join`, OkSchema, {});
 }
 
+export async function leaveGroup(groupId: string) {
+	return api.post(`/groups/${encodeURIComponent(groupId)}/leave`, OkSchema, {});
+}
+
+export async function uploadGroupIcon(groupId: string, file: File) {
+	const form = new FormData();
+	form.append("file", file);
+	return api.postForm(`/groups/${encodeURIComponent(groupId)}/icon`, GroupSchema, form);
+}
+
 export type { Group };

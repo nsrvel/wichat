@@ -18,6 +18,9 @@ import (
 
 const maxBodyBytes = 1 << 20
 
+// MaxGroupIconBytes is the largest accepted group icon upload.
+const MaxGroupIconBytes = 2 * 1024 * 1024
+
 // SetupBody is the deprecated JSON body for POST /api/v1/auth/setup.
 type SetupBody = RegisterBody
 
@@ -107,9 +110,22 @@ type OKBody struct {
 
 // GroupBody is a public group in JSON responses.
 type GroupBody struct {
-	ID      string `json:"id"`
-	Name    string `json:"name"`
-	LogoURL string `json:"logo_url"`
+	ID               string `json:"id"`
+	Name             string `json:"name"`
+	LogoURL          string `json:"logo_url"`
+	DefaultChannelID string `json:"default_channel_id"`
+}
+
+// ChannelBody is channel metadata in JSON responses.
+type ChannelBody struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Type string `json:"type"`
+}
+
+// ChannelsListBody wraps a channel list.
+type ChannelsListBody struct {
+	Channels []ChannelBody `json:"channels"`
 }
 
 // GroupsListBody wraps a group list.
@@ -179,10 +195,34 @@ func GroupFromPB(g *userv1.GroupSummary) GroupBody {
 	}
 
 	return GroupBody{
-		ID:      g.GetId(),
-		Name:    g.GetName(),
-		LogoURL: g.GetLogoUrl(),
+		ID:               g.GetId(),
+		Name:             g.GetName(),
+		LogoURL:          g.GetLogoUrl(),
+		DefaultChannelID: g.GetDefaultChannelId(),
 	}
+}
+
+// ChannelFromPB maps a channel summary proto to JSON.
+func ChannelFromPB(c *userv1.ChannelSummary) ChannelBody {
+	if c == nil {
+		return ChannelBody{}
+	}
+
+	return ChannelBody{
+		ID:   c.GetId(),
+		Name: c.GetName(),
+		Type: c.GetType(),
+	}
+}
+
+// ChannelsFromPB maps channel summary protos to JSON bodies.
+func ChannelsFromPB(channels []*userv1.ChannelSummary) []ChannelBody {
+	out := make([]ChannelBody, len(channels))
+	for i, c := range channels {
+		out[i] = ChannelFromPB(c)
+	}
+
+	return out
 }
 
 // GroupsFromPB maps group summary protos to JSON bodies.

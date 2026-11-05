@@ -10,23 +10,34 @@ type ForgotPasswordResendCodeProps = {
 	onResend?: () => void;
 	/** Seconds before resend is allowed (from API after each send). */
 	cooldownSec?: number;
+	isResending?: boolean;
 };
 
 export function ForgotPasswordResendCode({
 	onResend,
 	cooldownSec = DEFAULT_RESEND_COOLDOWN_SEC,
+	isResending = false,
 }: ForgotPasswordResendCodeProps) {
+	const effectiveCooldown = cooldownSec > 0 ? cooldownSec : DEFAULT_RESEND_COOLDOWN_SEC;
+
 	return (
-		<ResendCooldownTimer key={cooldownSec} cooldownSec={cooldownSec} onResend={onResend} />
+		<ResendCooldownTimer
+			key={effectiveCooldown}
+			cooldownSec={effectiveCooldown}
+			onResend={onResend}
+			isResending={isResending}
+		/>
 	);
 }
 
 function ResendCooldownTimer({
 	onResend,
 	cooldownSec,
+	isResending,
 }: {
 	onResend?: () => void;
 	cooldownSec: number;
+	isResending: boolean;
 }) {
 	const { t } = useTranslation();
 	const [secondsLeft, setSecondsLeft] = useState(cooldownSec);
@@ -42,27 +53,31 @@ function ResendCooldownTimer({
 	}, [secondsLeft]);
 
 	const handleResend = () => {
-		if (secondsLeft > 0) {
+		if (secondsLeft > 0 || isResending) {
 			return;
 		}
+		setSecondsLeft(cooldownSec);
 		onResend?.();
 	};
 
+	const canResend = secondsLeft <= 0 && !isResending;
+
 	return (
-		<div className="flex justify-center pt-1 text-center sm:pt-1.5">
+		<div className="relative z-10 flex justify-center pt-1 text-center sm:pt-1.5">
 			{secondsLeft > 0 ? (
-				<p className="text-xs font-light text-[#6d6d6d] sm:text-sm dark:text-[#a3a3a3]">
+				<p className="text-xs font-light text-muted-foreground sm:text-sm">
 					{t("forgot_password.resend_wait", { seconds: secondsLeft })}
 				</p>
 			) : (
-				<p className="text-xs font-light text-[#6d6d6d] sm:text-sm dark:text-[#a3a3a3]">
+				<p className="text-xs font-light text-muted-foreground sm:text-sm">
 					{t("forgot_password.resend_prompt")}{" "}
 					<button
 						type="button"
-						className={`${authLinkClass} cursor-pointer border-0 bg-transparent p-0 font-inherit text-xs sm:text-sm`}
+						disabled={!canResend}
+						className={`${authLinkClass} cursor-pointer border-0 bg-transparent p-0 font-inherit text-xs sm:text-sm disabled:cursor-not-allowed disabled:opacity-50`}
 						onClick={handleResend}
 					>
-						{t("forgot_password.resend_action")}
+						{isResending ? t("forgot_password.sending_code") : t("forgot_password.resend_action")}
 					</button>
 				</p>
 			)}

@@ -7,11 +7,7 @@ import { useMounted } from "@/hooks/use-mounted";
 import * as authQuery from "@/services/auth/auth.query";
 import { AuthInviteBanner } from "@/features/auth/components/auth-invite-banner";
 import { AuthPrivacyNotice } from "@/features/auth/components/auth-privacy-notice";
-import {
-	AuthOr,
-	authLeadSwitchClass,
-	authLinkClass,
-} from "@/features/auth/components/auth-shell";
+import { AuthOr, authLeadSwitchClass, authLinkClass } from "@/features/auth/components/auth-shell";
 import { AuthSessionLayout } from "@/features/auth/components/auth-session-layout";
 import { GoogleButton } from "@/features/auth/components/google-button";
 import { LoginForm } from "./login-form";

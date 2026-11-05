@@ -2,12 +2,7 @@
 
 import { FieldLabelContent } from "@/components/form/field-label";
 import { CustomSelect } from "@/components/ui/custom-select";
-import {
-	FormControl,
-	FormField,
-	FormItem,
-	FormMessage,
-} from "@/components/ui/form";
+import { FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { birthDateMonthOptions } from "@/lib/birth-date-options";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
@@ -58,9 +53,7 @@ export function BirthDateField<T extends FieldValues>({
 			<span className={labelClassName}>
 				<FieldLabelContent required={required}>{label}</FieldLabelContent>
 			</span>
-			<div
-				className="grid min-w-0 grid-cols-[minmax(0,0.8fr)_minmax(0,1.4fr)_minmax(0,0.95fr)] gap-1 sm:gap-2"
-			>
+			<div className="grid min-w-0 grid-cols-[minmax(0,0.8fr)_minmax(0,1.4fr)_minmax(0,0.95fr)] gap-1 sm:gap-2">
 				<FormField
 					control={control}
 					name={dayName}

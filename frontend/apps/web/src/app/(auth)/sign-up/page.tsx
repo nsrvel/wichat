@@ -1,9 +1,5 @@
 import { RegisterPage } from "@/features/auth/register/register-page";
-import {
-	pickInviteToken,
-	pickServerName,
-	type AuthSearchParams,
-} from "@/lib/auth-invite";
+import { pickInviteToken, pickServerName, type AuthSearchParams } from "@/lib/auth-invite";
 import { safeNotice } from "@/lib/auth-notice";
 
 export default async function Page({
@@ -17,10 +13,6 @@ export default async function Page({
 	const serverName = pickServerName(rest);
 
 	return (
-		<RegisterPage
-			inviteToken={inviteToken}
-			serverName={serverName}
-			notice={safeNotice(error)}
-		/>
+		<RegisterPage inviteToken={inviteToken} serverName={serverName} notice={safeNotice(error)} />
 	);
 }

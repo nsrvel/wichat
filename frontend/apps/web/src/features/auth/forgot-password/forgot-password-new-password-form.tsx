@@ -72,9 +72,7 @@ export function ForgotPasswordNewPasswordForm({
 					inputClassName={authInputClass}
 				/>
 				{error ? (
-					<p className="text-destructive text-[11px] font-medium">
-						{translateError(t, error)}
-					</p>
+					<p className="text-destructive text-[11px] font-medium">{translateError(t, error)}</p>
 				) : null}
 				<Button type="submit" disabled={isPending} className={`mt-2 ${authSubmitClass}`}>
 					{isPending ? t("forgot_password.resetting") : t("forgot_password.reset_submit")}

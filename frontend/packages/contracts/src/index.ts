@@ -60,10 +60,24 @@ export const OkSchema = z.object({
 	ok: z.boolean(),
 });
 
+/** Client-facing entity id (24 lowercase hex), used in REST and web URLs. */
+export const publicEntityIdSchema = z.string().regex(/^[0-9a-f]{24}$/);
+
+export const ChannelSchema = z.object({
+	id: publicEntityIdSchema,
+	name: z.string(),
+	type: z.string(),
+});
+
+export const ChannelsListSchema = z.object({
+	channels: z.array(ChannelSchema),
+});
+
 export const GroupSchema = z.object({
-	id: z.string(),
+	id: publicEntityIdSchema,
 	name: z.string(),
 	logo_url: z.string(),
+	default_channel_id: publicEntityIdSchema,
 });
 
 export const GroupsListSchema = z.object({
@@ -136,8 +150,14 @@ export type LoginRequest = z.infer<typeof LoginRequestSchema>;
 export type RegisterRequest = z.infer<typeof RegisterRequestSchema>;
 export type GuestRegisterRequest = z.infer<typeof GuestRegisterRequestSchema>;
 export type SetupRequest = RegisterRequest;
+export type Channel = z.infer<typeof ChannelSchema>;
+export type ChannelsList = z.infer<typeof ChannelsListSchema>;
 export type Group = z.infer<typeof GroupSchema>;
 export type GroupsList = z.infer<typeof GroupsListSchema>;
+
+export function isPublicEntityId(value: string): boolean {
+	return publicEntityIdSchema.safeParse(value).success;
+}
 export type CreateGroupRequest = z.infer<typeof CreateGroupRequestSchema>;
 
 export const ForgotPasswordRequestSchema = z.object({

@@ -14,9 +14,7 @@ import { ForgotPasswordResendCode } from "./forgot-password-resend-code";
 const OTP_LENGTH = 6;
 
 const ForgotPasswordOtpSchema = z.object({
-	code: z
-		.string()
-		.regex(new RegExp(`^[A-Z0-9]{${OTP_LENGTH}}$`), "validation.otp"),
+	code: z.string().regex(new RegExp(`^[A-Z0-9]{${OTP_LENGTH}}$`), "validation.otp"),
 });
 
 export type ForgotPasswordOtpValues = z.infer<typeof ForgotPasswordOtpSchema>;
@@ -54,17 +52,12 @@ export function ForgotPasswordOtpForm({
 					hideLabel
 				/>
 				{error ? (
-					<p className="text-destructive text-[11px] font-medium">
-						{translateError(t, error)}
-					</p>
+					<p className="text-destructive text-[11px] font-medium">{translateError(t, error)}</p>
 				) : null}
 				<Button type="submit" disabled={isPending} className={`mt-2 ${authSubmitClass}`}>
 					{isPending ? t("forgot_password.confirming_code") : t("forgot_password.confirm_code")}
 				</Button>
-				<ForgotPasswordResendCode
-					cooldownSec={resendCooldownSec}
-					onResend={onResend}
-				/>
+				<ForgotPasswordResendCode cooldownSec={resendCooldownSec} onResend={onResend} />
 			</form>
 		</Form>
 	);

@@ -1,10 +1,20 @@
 ---
-description: Go backend conventions (backend/, wi-shared, services)
+description: Go backend conventions (backend/, wi-shared, services) — mandatory
 globs: backend/**/*.go
-alwaysApply: false
+alwaysApply: true
 ---
 
 # Go (WiChat backend)
+
+**Strict layout:** `wichat-go-layers.mdc` is authoritative for repository / service / delivery. Agents and humans **must** conform — no alternate naming or extra repository files. When touching `backend/**/*.go`, read layers first; verify with `make check` in each affected module.
+
+## Agent checklist (before done)
+
+1. Repository folder matches the **whitelist** (`pg_repository.go`, `minio_repository.go`, `redis_*.go`, `mock/`, `test/` only).
+2. Models in `internal/models/<domain>_model.go` + `<domain>_repository_model.go` — not mixed into auth files for other domains.
+3. Tests under `test/`, package `*_test` — not beside production `.go`.
+4. `cd backend/<module> && make check` passes for every module you changed.
+5. README under the domain still describes the real file names (update if you renamed/moved).
 
 ## Tests live under `test/`
 
@@ -39,8 +49,9 @@ Do not create proxy packages or files that re-export another package’s API (`v
 
 ## ms-user repository split (do not regress)
 
-- `internal/user/repository` — users, groups, instance policy, Google identity rows.
-- `internal/auth/repository` — sessions/refresh Postgres; Redis OTP/password-reset stores.
+- `internal/user/repository` — **only** `pg_repository.go` (+ mock/test).
+- `internal/group/repository` — **only** `pg_repository.go`, `minio_repository.go` (+ mock/test).
+- `internal/auth/repository` — `pg_repository.go` (sessions), `redis_*.go` (+ mock/test); no extra production siblings.
 - Shared sentinels: `pkg/constants`; PG row/unique mapping: `pkg/db` (`pgErr`). Group other helpers under flat `pkg/<role>/` (see `ms-user/pkg/README.md`).
 - Auth `service.NewService` takes **two** `PgRepository` deps (`userrepo`, `authrepo`), not one combined repo.
 - **Mocks:** only Postgres under `internal/<domain>/repository/mock/` (`pg_repository_mock.go`). Redis tests use **miniredis** + production store constructors — no `repository/mock` for Redis (`wichat-go-layers.mdc`).

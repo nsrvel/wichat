@@ -1,8 +1,8 @@
 -- +goose Up
-ALTER TABLE auth.users
+ALTER TABLE users
     ADD COLUMN is_instance_owner boolean NOT NULL DEFAULT false;
 
-CREATE TABLE auth.instance_settings (
+CREATE TABLE instance_settings (
     id smallint PRIMARY KEY CHECK (id = 1),
     name text NOT NULL DEFAULT '',
     logo_url text NOT NULL DEFAULT '',
@@ -15,14 +15,14 @@ CREATE TABLE auth.instance_settings (
     updated_at timestamptz NOT NULL
 );
 
-INSERT INTO auth.instance_settings (
+INSERT INTO instance_settings (
     id, name, logo_url, username_enabled, registration_mode, guest_enabled, setup_completed, created_at, updated_at
 ) VALUES (
     1, '', '', true, 'invite_only', false, false, now() AT TIME ZONE 'utc', now() AT TIME ZONE 'utc'
 );
 
 -- +goose Down
-DROP TABLE IF EXISTS auth.instance_settings;
+DROP TABLE IF EXISTS instance_settings;
 
-ALTER TABLE auth.users
+ALTER TABLE users
     DROP COLUMN IF EXISTS is_instance_owner;

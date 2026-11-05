@@ -1,0 +1,170 @@
+// WiChat — PLANNED (architecture spec §6; NOT migrated yet)
+// Pair with implemented-auth.dbml for full picture.
+// Changes here are design drafts until goose migrations exist.
+
+Project WiChatPlanned {
+  database_type: 'PostgreSQL'
+  Note: '''
+    Target relational model for Phase 1–2+.
+    FKs across service boundaries are logical IDs only at runtime (gRPC/events).
+  '''
+}
+
+// --- ms-user: workspace structure (metadata) ---
+
+TableGroup workspace_structure {
+  auth.channel_categories
+  auth.channels
+  auth.channel_members
+  auth.dm_participants
+}
+
+Table auth.channel_categories {
+  id text [pk]
+  group_id text [not null, note: 'FK auth.groups.id']
+  name text [not null]
+  position int [not null, default: 0]
+  collapsed boolean [not null, default: false]
+  created_at timestamptz [not null]
+}
+
+Table auth.channels {
+  id text [pk]
+  group_id text [not null]
+  category_id text [null]
+  type text [not null, note: 'public | private | dm']
+  name text [not null]
+  topic text [null]
+  archived_at timestamptz [null]
+  created_by text [not null, note: 'auth.users.id']
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+
+  Note: 'Unified channel; voice is LiveKit room per channel session (ms-core)'
+}
+
+Table auth.channel_members {
+  channel_id text [not null]
+  user_id text [not null]
+  joined_at timestamptz [not null]
+  last_read_message_id text [null, note: 'UUIDv7; chat.messages.id']
+
+  indexes {
+    (channel_id, user_id) [pk]
+  }
+}
+
+Table auth.dm_participants {
+  channel_id text [not null, note: 'auth.channels where type=dm']
+  user_id text [not null]
+
+  indexes {
+    (channel_id, user_id) [pk]
+  }
+}
+
+// --- ms-user: RBAC evolution (§6.2) — v1 still uses group_members.role text ---
+
+TableGroup rbac_future {
+  auth.roles
+  auth.permissions
+  auth.group_member_roles
+}
+
+Table auth.permissions {
+  key text [pk, note: 'e.g. channel.create, message.delete_any']
+  label text [not null]
+  category text [not null]
+  source_plugin_id text [null]
+}
+
+Table auth.roles {
+  id text [pk]
+  group_id text [not null]
+  name text [not null]
+  permissions text[] [not null, note: 'Validated against permissions catalog in app layer']
+  is_preset boolean [not null, default: false]
+  is_system boolean [not null, default: false]
+  position int [not null, default: 0]
+}
+
+Table auth.group_member_roles {
+  group_id text [not null]
+  user_id text [not null]
+  role_id text [not null]
+
+  indexes {
+    (group_id, user_id, role_id) [pk]
+  }
+}
+
+// --- ms-chat: messaging (own schema) ---
+
+TableGroup chat_core {
+  chat.messages
+  chat.message_reactions
+  chat.channel_pins
+}
+
+Table chat.messages {
+  id text [pk, note: 'UUIDv7']
+  channel_id text [not null]
+  author_id text [not null, note: 'auth.users.id']
+  body jsonb [not null, note: 'TipTap / ProseMirror document JSON']
+  reply_to_message_id text [null]
+  root_message_id text [null]
+  reply_count int [not null, default: 0]
+  edited_at timestamptz [null]
+  deleted_at timestamptz [null, note: 'Soft delete / trash per workspace policy']
+  created_at timestamptz [not null]
+
+  indexes {
+    (channel_id, created_at) [name: 'messages_channel_timeline']
+    (root_message_id, created_at) [name: 'messages_thread']
+  }
+}
+
+Table chat.message_reactions {
+  message_id text [not null]
+  user_id text [not null]
+  emoji text [not null, note: 'Unicode or :custom: id']
+  created_at timestamptz [not null]
+
+  indexes {
+    (message_id, user_id, emoji) [pk]
+  }
+}
+
+Table chat.channel_pins {
+  channel_id text [not null]
+  message_id text [not null]
+  pinned_by text [not null]
+  pinned_at timestamptz [not null]
+
+  indexes {
+    (channel_id, message_id) [pk]
+  }
+}
+
+// --- ms-audit ---
+
+Table audit.events {
+  id text [pk]
+  group_id text [null]
+  actor_id text [null]
+  action text [not null]
+  resource_type text [not null]
+  resource_id text [null]
+  metadata jsonb [not null, default: '{}']
+  created_at timestamptz [not null]
+
+  indexes {
+    (group_id, created_at)
+  }
+}
+
+Ref: auth.channels.group_id > auth.groups.id
+Ref: auth.channels.category_id > auth.channel_categories.id
+Ref: chat.messages.channel_id > auth.channels.id
+Ref: chat.messages.reply_to_message_id > chat.messages.id
+Ref: chat.messages.root_message_id > chat.messages.id

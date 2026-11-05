@@ -34,6 +34,9 @@ type Client interface {
 	ListJoinableGroups(ctx context.Context, in *userv1.ListJoinableGroupsRequest) (*userv1.ListJoinableGroupsResponse, error)
 	CreateGroup(ctx context.Context, in *userv1.CreateGroupRequest) (*userv1.CreateGroupResponse, error)
 	JoinGroup(ctx context.Context, in *userv1.JoinGroupRequest) (*userv1.JoinGroupResponse, error)
+	LeaveGroup(ctx context.Context, in *userv1.LeaveGroupRequest) (*userv1.LeaveGroupResponse, error)
+	ListGroupChannels(ctx context.Context, in *userv1.ListGroupChannelsRequest) (*userv1.ListGroupChannelsResponse, error)
+	UploadGroupIcon(ctx context.Context, in *userv1.UploadGroupIconRequest) (*userv1.UploadGroupIconResponse, error)
 }
 
 type client struct {
@@ -188,5 +191,23 @@ func (c *client) CreateGroup(ctx context.Context, in *userv1.CreateGroupRequest)
 func (c *client) JoinGroup(ctx context.Context, in *userv1.JoinGroupRequest) (*userv1.JoinGroupResponse, error) {
 	return utils.CallUnaryResult(ctx, c.none, c.log, "auth.AuthService/JoinGroup", func(callCtx context.Context) (*userv1.JoinGroupResponse, error) {
 		return c.stub.JoinGroup(callCtx, in)
+	})
+}
+
+func (c *client) LeaveGroup(ctx context.Context, in *userv1.LeaveGroupRequest) (*userv1.LeaveGroupResponse, error) {
+	return utils.CallUnaryResult(ctx, c.none, c.log, "auth.AuthService/LeaveGroup", func(callCtx context.Context) (*userv1.LeaveGroupResponse, error) {
+		return c.stub.LeaveGroup(callCtx, in)
+	})
+}
+
+func (c *client) ListGroupChannels(ctx context.Context, in *userv1.ListGroupChannelsRequest) (*userv1.ListGroupChannelsResponse, error) {
+	return utils.CallUnaryResult(ctx, c.read, c.log, "auth.AuthService/ListGroupChannels", func(callCtx context.Context) (*userv1.ListGroupChannelsResponse, error) {
+		return c.stub.ListGroupChannels(callCtx, in)
+	})
+}
+
+func (c *client) UploadGroupIcon(ctx context.Context, in *userv1.UploadGroupIconRequest) (*userv1.UploadGroupIconResponse, error) {
+	return utils.CallUnaryResult(ctx, c.none, c.log, "auth.AuthService/UploadGroupIcon", func(callCtx context.Context) (*userv1.UploadGroupIconResponse, error) {
+		return c.stub.UploadGroupIcon(callCtx, in)
 	})
 }

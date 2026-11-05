@@ -267,19 +267,19 @@ func (s redisEmailAuthStore) UpdateLoginCode(ctx context.Context, challengeID, c
 }
 
 func emailCodeCooldownKey(email string) string {
-	return "auth:emailcode:cooldown:" + authRedis.EmailKey(email)
+	return authRedis.KeyPrefix + "emailcode:cooldown:" + authRedis.EmailKey(email)
 }
 
 func emailCodeStrikesKey(email string) string {
-	return "auth:emailcode:strikes:" + authRedis.EmailKey(email)
+	return authRedis.KeyPrefix + "emailcode:strikes:" + authRedis.EmailKey(email)
 }
 
 func registerPendingKey(challengeID string) string {
-	return "auth:register:pending:" + challengeID
+	return authRedis.KeyPrefix + "register:pending:" + challengeID
 }
 
 func loginChallengeKey(challengeID string) string {
-	return "auth:login:challenge:" + challengeID
+	return authRedis.KeyPrefix + "login:challenge:" + challengeID
 }
 
 func (s redisEmailAuthStore) bumpEmailStrikes(ctx context.Context, email string) (int, error) {

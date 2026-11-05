@@ -1,17 +1,13 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist_Mono } from "next/font/google";
 import { cookies } from "next/headers";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { LOCALE_COOKIE, localeFromCookie } from "@/integrations/i18n/locale";
-import { I18nProvider } from "@wichat/i18n";
 import { AppProviders } from "@/integrations/tanstack-query/providers";
+import { appSans } from "@/lib/fonts/app-sans";
+import { I18nProvider } from "@wichat/i18n";
 import "./globals.css";
-
-const geistSans = Geist({
-	variable: "--font-geist-sans",
-	subsets: ["latin"],
-});
 
 const geistMono = Geist_Mono({
 	variable: "--font-geist-mono",
@@ -31,13 +27,19 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 		<html
 			lang={locale}
 			suppressHydrationWarning
-			className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+			className={`${appSans.variable} ${geistMono.variable} h-full antialiased`}
 		>
 			<body
-				className="flex h-dvh min-h-0 flex-col overflow-hidden"
+				className={`${appSans.className} flex h-dvh min-h-0 flex-col overflow-hidden bg-background font-sans text-foreground`}
 				suppressHydrationWarning
 			>
-				<ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+				<ThemeProvider
+					attribute="class"
+					defaultTheme="light"
+					enableSystem={false}
+					storageKey="wichat-theme"
+					disableTransitionOnChange
+				>
 					<I18nProvider locale={locale}>
 						<AppProviders>
 							{children}

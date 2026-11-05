@@ -1,0 +1,87 @@
+%% WiChat — implemented ms-user tables (PostgreSQL public schema)
+%% Refresh token hashes live in Redis (ms-user:rt:*), not Postgres
+
+erDiagram
+  users ||--o| user_credentials : password
+  users ||--o{ user_connections : has
+  users ||--o{ user_sessions : has
+  groups ||--|| group_settings : settings
+  groups ||--o{ group_members : has
+  users ||--o{ group_members : member
+
+  users {
+    text id PK
+    text email
+    text display_name
+    text username
+    date birth_date
+    boolean is_guest
+    boolean is_instance_owner
+    timestamptz created_at
+    timestamptz updated_at
+  }
+
+  user_credentials {
+    text user_id PK
+    text password_hash
+    timestamptz updated_at
+  }
+
+  user_connections {
+    text id PK
+    text user_id FK
+    text kind
+    text provider
+    text subject
+    text scopes
+    timestamptz created_at
+    timestamptz updated_at
+  }
+
+  user_sessions {
+    text id PK
+    text user_id FK
+    timestamptz expires_at
+    timestamptz revoked_at
+    text user_agent
+    text client_ip
+    text device_label
+    text platform
+    text location_label
+    text refresh_id
+    timestamptz last_used_at
+    timestamptz created_at
+  }
+
+  instance_settings {
+    smallint id PK
+    boolean username_enabled
+    text registration_mode
+    boolean guest_enabled
+    boolean setup_completed
+    timestamptz created_at
+    timestamptz updated_at
+  }
+
+  groups {
+    text id PK
+    timestamptz created_at
+    timestamptz updated_at
+  }
+
+  group_settings {
+    text group_id PK
+    text name
+    text logo_url
+    int retention_days
+    int trash_retention_days
+    timestamptz created_at
+    timestamptz updated_at
+  }
+
+  group_members {
+    text group_id PK
+    text user_id PK
+    text role
+    timestamptz created_at
+  }

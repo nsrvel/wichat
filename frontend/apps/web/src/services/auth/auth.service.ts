@@ -91,11 +91,7 @@ export async function forgotPasswordRequest(payload: ForgotPasswordRequest) {
 }
 
 export async function forgotPasswordVerify(payload: ForgotPasswordVerify) {
-	return api.post(
-		"/auth/forgot-password/verify",
-		ForgotPasswordVerifyResponseSchema,
-		payload,
-	);
+	return api.post("/auth/forgot-password/verify", ForgotPasswordVerifyResponseSchema, payload);
 }
 
 export async function forgotPasswordReset(payload: ForgotPasswordReset) {
@@ -111,6 +107,14 @@ export async function getSession(): Promise<User | null> {
 		return await api.get("/auth/me", UserSchema);
 	} catch (error) {
 		if (error instanceof ApiError && error.code === "auth.unauthorized") {
+			setAccessToken(null);
+			return null;
+		}
+		// Stale access token, gateway blip, or refresh cookie out of sync — treat as signed out.
+		if (
+			error instanceof ApiError &&
+			(error.code === "error.unknown" || error.code === "error.invalid_response")
+		) {
 			setAccessToken(null);
 			return null;
 		}

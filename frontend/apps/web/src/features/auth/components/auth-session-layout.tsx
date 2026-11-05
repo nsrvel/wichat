@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { AuthShell } from "@/features/auth/components/auth-shell";
+import { AuthShell, authPageBackdropClass } from "@/features/auth/components/auth-shell";
 import { AuthFormSkeleton } from "@/features/auth/components/auth-form-skeleton";
 import { useMounted } from "@/hooks/use-mounted";
 import { translateError } from "@/integrations/i18n/translate-error";
@@ -52,17 +52,15 @@ export function AuthSessionLayout({
 	const authLoading = !mounted || session.isPending;
 
 	if (session.data) {
-		return <div className="flex-1" aria-hidden suppressHydrationWarning />;
+		return <div className={authPageBackdropClass} aria-hidden suppressHydrationWarning />;
 	}
 
 	if (redirectIfUnauthenticated && !session.isPending && !session.data) {
-		return <div className="flex-1" aria-hidden suppressHydrationWarning />;
+		return <div className={authPageBackdropClass} aria-hidden suppressHydrationWarning />;
 	}
 
-	if (session.isError) {
-		return (
-			<p className="text-destructive p-6 text-sm">{translateError(t, session.error)}</p>
-		);
+	if (session.isError && redirectIfUnauthenticated) {
+		return <p className="text-destructive p-6 text-sm">{translateError(t, session.error)}</p>;
 	}
 
 	return (

@@ -9,7 +9,9 @@ import { OtpField } from "@/components/form/otp-field";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { authFormClass, authSubmitClass } from "@/features/auth/components/auth-shell";
+import { ApiError } from "@wichat/api-client/api-error";
 import { translateError } from "@/integrations/i18n/translate-error";
+import { effectiveResendCooldownSec } from "@/features/auth/lib/resend-cooldown";
 import { ForgotPasswordResendCode } from "@/features/auth/forgot-password/forgot-password-resend-code";
 
 const OTP_LENGTH = 6;
@@ -20,6 +22,16 @@ const OtpSchema = z.object({
 
 type OtpValues = z.infer<typeof OtpSchema>;
 
+function sameApiError(a: unknown, b: unknown): boolean {
+	if (!(a instanceof ApiError) || !(b instanceof ApiError)) {
+		return false;
+	}
+	if (a.code !== b.code) {
+		return false;
+	}
+	return JSON.stringify(a.params ?? null) === JSON.stringify(b.params ?? null);
+}
+
 type AuthEmailOtpStepProps = {
 	challenge: AuthChallenge;
 	leadKey: string;
@@ -27,6 +39,8 @@ type AuthEmailOtpStepProps = {
 	submittingKey: string;
 	isPending?: boolean;
 	error?: unknown;
+	resendError?: unknown;
+	isResendPending?: boolean;
 	onSubmit: (code: string) => void;
 	onResend: () => void;
 	resendCooldownSec?: number;
@@ -39,15 +53,22 @@ export function AuthEmailOtpStep({
 	submittingKey,
 	isPending = false,
 	error,
+	resendError,
+	isResendPending = false,
 	onSubmit,
 	onResend,
-	resendCooldownSec,
+	resendCooldownSec = 0,
 }: AuthEmailOtpStepProps) {
 	const { t } = useTranslation();
+	const resendCooldown = effectiveResendCooldownSec(
+		resendCooldownSec,
+		challenge.resend_after_seconds,
+	);
 	const form = useForm<OtpValues>({
 		resolver: zodResolver(OtpSchema),
 		defaultValues: { code: "" },
 	});
+	const showVerifyError = error != null && !sameApiError(error, resendError);
 
 	return (
 		<Form {...form}>
@@ -55,7 +76,7 @@ export function AuthEmailOtpStep({
 				className={authFormClass}
 				onSubmit={form.handleSubmit((values) => onSubmit(values.code))}
 			>
-				<p className="text-center text-xs font-light text-[#6d6d6d] sm:text-sm dark:text-[#a3a3a3]">
+				<p className="text-center text-xs font-light text-muted-foreground sm:text-sm">
 					{t(leadKey, { email: challenge.email_hint })}
 				</p>
 				<OtpField
@@ -67,19 +88,19 @@ export function AuthEmailOtpStep({
 					hideLabel
 				/>
 				<ForgotPasswordResendCode
-					cooldownSec={resendCooldownSec ?? challenge.resend_after_seconds}
+					cooldownSec={resendCooldown}
 					onResend={onResend}
+					isResending={isResendPending}
 				/>
-				{error ? (
+				{resendError ? (
 					<p className="text-destructive text-[11px] font-medium">
-						{translateError(t, error)}
+						{translateError(t, resendError)}
 					</p>
 				) : null}
-				<Button
-					type="submit"
-					disabled={isPending}
-					className={`mt-2 ${authSubmitClass}`}
-				>
+				{showVerifyError ? (
+					<p className="text-destructive text-[11px] font-medium">{translateError(t, error)}</p>
+				) : null}
+				<Button type="submit" disabled={isPending} className={`mt-2 ${authSubmitClass}`}>
 					{isPending ? t(submittingKey) : t(submitKey)}
 				</Button>
 			</form>

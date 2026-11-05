@@ -1,10 +1,12 @@
 ---
-description: Go backend layer layout — repository, service, delivery
+description: Go backend layer layout — repository, service, delivery (mandatory)
 globs: backend/**/*.go
-alwaysApply: false
+alwaysApply: true
 ---
 
 # Layer layout (repository → service → delivery)
+
+**Compliance is non-negotiable.** These rules are the contract for `backend/` — not suggestions. Before adding or changing Go in a microservice or `wi-shared`, match the layout here and in `wichat-go.mdc`. Do **not** introduce alternate file names, extra repository siblings, or SDK imports that bypass `wi-shared`. If a shortcut conflicts with this file, **follow the rules** unless Garam explicitly overrides in chat. After backend edits: `cd backend/<module> && make check`.
 
 Readability goal: **open any file once and know its job** — same structural habits as `references/be-suretyship/internal/auth/`, adapted for WiChat (gRPC MS, HTTP gateway, `wi-shared/exception` + `wi-shared/response`). Comment and spacing detail: `wichat-go-style.mdc`.
 
@@ -50,12 +52,12 @@ backend/ms-user/internal/models/     # <domain>_model.go, <domain>_repository_mo
 backend/ms-user/internal/migrations/ # goose SQL (not on startup)
 
 backend/ms-user/internal/auth/
-  repository/          # pg_repository.go, redis_*.go, mock/ (Pg only), test/
+  repository/          # pg_repository.go, minio_repository.go, redis_*.go, mock/, test/ — no other production .go
   service/
   delivery/grpc/
 
 backend/ms-user/internal/user/
-  repository/          # pg_repository.go, mock/ (Pg only), test/
+  repository/          # pg_repository.go, minio_repository.go, redis_*.go, mock/, test/ — no other production .go
   service/
   delivery/grpc/
 
@@ -88,7 +90,8 @@ One `PgRepository` per **domain + store**, not one god-file for the whole micros
 
 | Package | `PgRepository` owns |
 |---------|---------------------|
-| `internal/user/repository/` | Users, identities (Google link), groups, instance settings |
+| `internal/user/repository/` | Users, identities (Google link), instance settings |
+| `internal/group/repository/` | Groups, membership; `minio_repository.go` over `wi-shared/infra/minio` |
 | `internal/auth/repository/` | Sessions, refresh tokens; Redis stores (`EmailAuthStore`, `PasswordResetStore`) in separate files |
 
 Auth **service** today orchestrates both: inject `userrepo.PgRepository` and `authrepo.PgRepository` as separate deps (`s.users`, `s.sessions`). Do not merge back into a single mega-interface unless the domain boundary changes.
@@ -97,7 +100,27 @@ See [ms-user/internal/auth/README.md](../../backend/ms-user/internal/auth/README
 
 ## Repository
 
-Pattern (one backing store per file is fine):
+### Whitelist (production `.go` in `internal/<domain>/repository/`)
+
+| Allowed | Purpose |
+|---------|---------|
+| `pg_repository.go` | Postgres — `PgRepository` (or domain name e.g. `SessionRepository` in this file only) |
+| `minio_repository.go` | Object storage for the domain — `MinioRepository`, `NewMinioRepository`; calls `wi-shared/infra/minio.Client` only |
+| `redis_<concern>.go` | One Redis store per file (e.g. `redis_refresh.go`, `redis_email_auth.go`) |
+| `mock/` | Postgres in-memory mocks only (`pg_repository_mock.go`) |
+| `test/` | Black-box / integration tests (`{pkgname}_test`) |
+
+**Nothing else** at the repository root — no `repository.go`, `errors.go`, `store.go`, `object_store.go`, `pg_bundle_tx.go`, `*_tx.go`, `bundle_*.go`, or ad-hoc splits.
+
+| Forbidden pattern | Do instead |
+|-------------------|------------|
+| `object_store.go`, `ObjectStore`, `NewObjectStore` | `minio_repository.go`, `MinioRepository`, `NewMinioRepository` |
+| `pg_bundle_tx.go` / tx-only files | Unexported helpers + rare **exported** tx entrypoints at **bottom** of `pg_repository.go` |
+| `github.com/minio/minio-go` in `ms-*` / `api-gateway` | `wi-shared/infra/minio` + domain `minio_repository.go` |
+| Domain `const` / sentinel `errors` in repository | `pkg/constants`, `pkg/db`, `wi-shared/exception` |
+| `exception` import in repository | Plain `error`; service maps to `exception` |
+
+Pattern (one backing store per file):
 
 ```go
 package repository
@@ -275,14 +298,20 @@ Checklist:
 
 ## Anti-patterns
 
+Treat these as **blockers** — fix before commit/PR, not “cleanup later”:
+
 - Re-export files (`var X = otherpkg.X`) — import `otherpkg` directly.
+- Any repository production file **outside the whitelist** (see § Repository).
+- Renaming stores to dodge the whitelist (`object_store`, `file_store`, `s3_repository` at repo root without aligning to `minio_repository.go`).
 - One `pg_repository.go` spanning unrelated domains (users + sessions + groups) — split by `internal/<domain>/repository/`.
 - Private helpers or off-interface methods **between** exported repo methods.
-- SQL/Redis calls in handler.
+- SQL/Redis/MinIO SDK calls in delivery or service (belongs in repository or `wi-shared`).
 - `exception` in repository.
 - Extra `*.go` files beside `service/service.go` in the same domain — use another `internal/<domain>/service/` instead.
+- `*_test.go` siblings in production package folders — use `<pkg>/test/` (`wichat-go.mdc`).
 - 200-line **delivery** handlers — split by RPC/handler file; service logic stays in single `service.go` per domain unless the domain itself splits.
 - Leaking `err.Error()` from bind/DB to JSON on 5xx.
+- Skipping `make check` after backend changes.
 
 ## See also
 

@@ -12,3 +12,9 @@ const (
 	GroupRoleOwner  = "owner"
 	GroupRoleMember = "member"
 )
+
+// Default group_settings retention when creating a workspace.
+const (
+	DefaultGroupRetentionDays      = 0
+	DefaultGroupTrashRetentionDays = 30
+)

@@ -41,6 +41,9 @@ const (
 	AuthService_ListJoinableGroups_FullMethodName    = "/user.v1.AuthService/ListJoinableGroups"
 	AuthService_CreateGroup_FullMethodName           = "/user.v1.AuthService/CreateGroup"
 	AuthService_JoinGroup_FullMethodName             = "/user.v1.AuthService/JoinGroup"
+	AuthService_LeaveGroup_FullMethodName            = "/user.v1.AuthService/LeaveGroup"
+	AuthService_ListGroupChannels_FullMethodName     = "/user.v1.AuthService/ListGroupChannels"
+	AuthService_UploadGroupIcon_FullMethodName       = "/user.v1.AuthService/UploadGroupIcon"
 )
 
 // AuthServiceClient is the client API for AuthService service.
@@ -79,7 +82,7 @@ type AuthServiceClient interface {
 	GoogleStart(ctx context.Context, in *GoogleStartRequest, opts ...grpc.CallOption) (*GoogleStartResponse, error)
 	// GoogleFinish exchanges the authorization code and opens a session.
 	GoogleFinish(ctx context.Context, in *GoogleFinishRequest, opts ...grpc.CallOption) (*GoogleFinishResponse, error)
-	// RequestPasswordReset emails a reset code when the account exists.
+	// RequestPasswordReset emails a reset code when the account exists (uniform response either way).
 	RequestPasswordReset(ctx context.Context, in *RequestPasswordResetRequest, opts ...grpc.CallOption) (*RequestPasswordResetResponse, error)
 	// VerifyPasswordReset checks the code and returns a one-time reset token.
 	VerifyPasswordReset(ctx context.Context, in *VerifyPasswordResetRequest, opts ...grpc.CallOption) (*VerifyPasswordResetResponse, error)
@@ -93,6 +96,12 @@ type AuthServiceClient interface {
 	CreateGroup(ctx context.Context, in *CreateGroupRequest, opts ...grpc.CallOption) (*CreateGroupResponse, error)
 	// JoinGroup adds the caller as a member.
 	JoinGroup(ctx context.Context, in *JoinGroupRequest, opts ...grpc.CallOption) (*JoinGroupResponse, error)
+	// LeaveGroup removes the caller's membership in a group.
+	LeaveGroup(ctx context.Context, in *LeaveGroupRequest, opts ...grpc.CallOption) (*LeaveGroupResponse, error)
+	// ListGroupChannels returns channels in a group the caller belongs to.
+	ListGroupChannels(ctx context.Context, in *ListGroupChannelsRequest, opts ...grpc.CallOption) (*ListGroupChannelsResponse, error)
+	// UploadGroupIcon stores a group logo and updates group_settings.logo_url.
+	UploadGroupIcon(ctx context.Context, in *UploadGroupIconRequest, opts ...grpc.CallOption) (*UploadGroupIconResponse, error)
 }
 
 type authServiceClient struct {
@@ -323,6 +332,36 @@ func (c *authServiceClient) JoinGroup(ctx context.Context, in *JoinGroupRequest,
 	return out, nil
 }
 
+func (c *authServiceClient) LeaveGroup(ctx context.Context, in *LeaveGroupRequest, opts ...grpc.CallOption) (*LeaveGroupResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LeaveGroupResponse)
+	err := c.cc.Invoke(ctx, AuthService_LeaveGroup_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) ListGroupChannels(ctx context.Context, in *ListGroupChannelsRequest, opts ...grpc.CallOption) (*ListGroupChannelsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListGroupChannelsResponse)
+	err := c.cc.Invoke(ctx, AuthService_ListGroupChannels_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) UploadGroupIcon(ctx context.Context, in *UploadGroupIconRequest, opts ...grpc.CallOption) (*UploadGroupIconResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UploadGroupIconResponse)
+	err := c.cc.Invoke(ctx, AuthService_UploadGroupIcon_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AuthServiceServer is the server API for AuthService service.
 // All implementations must embed UnimplementedAuthServiceServer
 // for forward compatibility.
@@ -359,7 +398,7 @@ type AuthServiceServer interface {
 	GoogleStart(context.Context, *GoogleStartRequest) (*GoogleStartResponse, error)
 	// GoogleFinish exchanges the authorization code and opens a session.
 	GoogleFinish(context.Context, *GoogleFinishRequest) (*GoogleFinishResponse, error)
-	// RequestPasswordReset emails a reset code when the account exists.
+	// RequestPasswordReset emails a reset code when the account exists (uniform response either way).
 	RequestPasswordReset(context.Context, *RequestPasswordResetRequest) (*RequestPasswordResetResponse, error)
 	// VerifyPasswordReset checks the code and returns a one-time reset token.
 	VerifyPasswordReset(context.Context, *VerifyPasswordResetRequest) (*VerifyPasswordResetResponse, error)
@@ -373,6 +412,12 @@ type AuthServiceServer interface {
 	CreateGroup(context.Context, *CreateGroupRequest) (*CreateGroupResponse, error)
 	// JoinGroup adds the caller as a member.
 	JoinGroup(context.Context, *JoinGroupRequest) (*JoinGroupResponse, error)
+	// LeaveGroup removes the caller's membership in a group.
+	LeaveGroup(context.Context, *LeaveGroupRequest) (*LeaveGroupResponse, error)
+	// ListGroupChannels returns channels in a group the caller belongs to.
+	ListGroupChannels(context.Context, *ListGroupChannelsRequest) (*ListGroupChannelsResponse, error)
+	// UploadGroupIcon stores a group logo and updates group_settings.logo_url.
+	UploadGroupIcon(context.Context, *UploadGroupIconRequest) (*UploadGroupIconResponse, error)
 	mustEmbedUnimplementedAuthServiceServer()
 }
 
@@ -448,6 +493,15 @@ func (UnimplementedAuthServiceServer) CreateGroup(context.Context, *CreateGroupR
 }
 func (UnimplementedAuthServiceServer) JoinGroup(context.Context, *JoinGroupRequest) (*JoinGroupResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method JoinGroup not implemented")
+}
+func (UnimplementedAuthServiceServer) LeaveGroup(context.Context, *LeaveGroupRequest) (*LeaveGroupResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method LeaveGroup not implemented")
+}
+func (UnimplementedAuthServiceServer) ListGroupChannels(context.Context, *ListGroupChannelsRequest) (*ListGroupChannelsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListGroupChannels not implemented")
+}
+func (UnimplementedAuthServiceServer) UploadGroupIcon(context.Context, *UploadGroupIconRequest) (*UploadGroupIconResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UploadGroupIcon not implemented")
 }
 func (UnimplementedAuthServiceServer) mustEmbedUnimplementedAuthServiceServer() {}
 func (UnimplementedAuthServiceServer) testEmbeddedByValue()                     {}
@@ -866,6 +920,60 @@ func _AuthService_JoinGroup_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthService_LeaveGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LeaveGroupRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).LeaveGroup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_LeaveGroup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).LeaveGroup(ctx, req.(*LeaveGroupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_ListGroupChannels_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListGroupChannelsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).ListGroupChannels(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_ListGroupChannels_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).ListGroupChannels(ctx, req.(*ListGroupChannelsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_UploadGroupIcon_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UploadGroupIconRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).UploadGroupIcon(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_UploadGroupIcon_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).UploadGroupIcon(ctx, req.(*UploadGroupIconRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AuthService_ServiceDesc is the grpc.ServiceDesc for AuthService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -960,6 +1068,18 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "JoinGroup",
 			Handler:    _AuthService_JoinGroup_Handler,
+		},
+		{
+			MethodName: "LeaveGroup",
+			Handler:    _AuthService_LeaveGroup_Handler,
+		},
+		{
+			MethodName: "ListGroupChannels",
+			Handler:    _AuthService_ListGroupChannels_Handler,
+		},
+		{
+			MethodName: "UploadGroupIcon",
+			Handler:    _AuthService_UploadGroupIcon_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

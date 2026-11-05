@@ -16,7 +16,7 @@ docker compose -f deploy/docker-compose.yml down
 
 ## Per-component compose (infra / partial install)
 
-Files live in [`deploy/compose/`](compose/). Config trees: `compose/prometheus/`, `compose/grafana/`. Use project name **`wichat`** when starting stacks separately.
+Files live in [`deploy/compose/`](compose/). Use project name **`wichat`** when starting stacks separately.
 
 From repo root:
 
@@ -24,27 +24,13 @@ From repo root:
 # Data stores
 docker compose -p wichat -f deploy/compose/postgres.yml up -d
 docker compose -p wichat -f deploy/compose/redis.yml up -d
-
-# Observability (both files, or one Kuma service per file — start Prometheus first)
-docker compose -p wichat -f deploy/compose/prometheus.yml -f deploy/compose/grafana.yml up -d
-```
-
-Kuma (Shell), working directory = repo root:
-
-```bash
-# Prometheus
-docker compose -p wichat -f deploy/compose/prometheus.yml up
-
-# Grafana (after Prometheus is up, same -p wichat)
-docker compose -p wichat -f deploy/compose/grafana.yml up
+docker compose -p wichat -f deploy/compose/minio.yml up -d
 ```
 
 Stop one component (example):
 
 ```bash
 docker compose -p wichat -f deploy/compose/redis.yml down
-docker compose -p wichat -f deploy/compose/prometheus.yml down
-docker compose -p wichat -f deploy/compose/grafana.yml down
 ```
 
 Postgres data volume: `wichat_wichat-postgres` (Compose prefixes volume names with the project name).
@@ -55,8 +41,7 @@ Postgres data volume: `wichat_wichat-postgres` (Compose prefixes volume names wi
 |---------|-----------|--------|
 | Postgres | **5432** | `postgres://wichat:wichat@localhost:5432/wichat` |
 | Redis | **6379** | `redis://localhost:6379/0` |
-| Prometheus | **9090** | UI + API |
-| Grafana | **9000** | Host maps to container **3000** |
+| MinIO | **9000** (API), **9001** (console) | optional — group icons when `MINIO_*` set on ms-user |
 | api-gateway | **3000** | Public HTTP |
 | ms-user | **3001** | gRPC (auth + user/workspace) |
 | ms-chat | **3002** | gRPC (messages, WS fanout, search indexer) — planned |
@@ -65,7 +50,7 @@ Postgres data volume: `wichat_wichat-postgres` (Compose prefixes volume names wi
 | ms-notification | **3005** | gRPC — planned |
 | ms-audit | **3006** | gRPC — planned |
 
-Prometheus/Grafana containers may be present in Compose for future use; Go services do not expose `/metrics` yet.
+Prometheus/Grafana are not in Compose until Go services expose metrics (see `docs/architecture/wichat-system-design.md` observability).
 
 Instance env: [`deploy/.env.example`](.env.example) (Compose overrides). Go services: each module’s `backend/<service>/.env.example`. See [docs/architecture/monorepo-layout.md](../docs/architecture/monorepo-layout.md).
 

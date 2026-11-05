@@ -29,35 +29,6 @@ type InstanceSettings struct {
 	SetupCompleted   bool
 }
 
-// Group is a workspace-equivalent chat unit (product name: Group).
-type Group struct {
-	ID        string
-	Name      string
-	LogoURL   string
-	CreatedAt time.Time
-	UpdatedAt time.Time
-}
-
-// PublicGroup is the group view returned to clients.
-type PublicGroup struct {
-	ID      string
-	Name    string
-	LogoURL string
-}
-
-// Public returns client-safe group fields.
-func (g Group) Public() PublicGroup {
-	return PublicGroup{ID: g.ID, Name: g.Name, LogoURL: g.LogoURL}
-}
-
-// GroupMember links a user to a group with a preset role.
-type GroupMember struct {
-	GroupID   string
-	UserID    string
-	Role      string
-	CreatedAt time.Time
-}
-
 // SetupStatus is the public instance policy snapshot for the auth UI.
 type SetupStatus struct {
 	RegistrationMode string
@@ -77,6 +48,7 @@ type CompleteInstanceSetupInput struct {
 // InstanceSetupPayload is the validated wizard data passed to the repository.
 type InstanceSetupPayload struct {
 	GroupID          string
+	GroupPublicID    string
 	GroupName        string
 	GroupLogoURL     string
 	UsernameEnabled  bool
@@ -106,8 +78,11 @@ type PublicUser struct {
 
 // ClientMeta is the device hint stored on a session.
 type ClientMeta struct {
-	UserAgent string
-	ClientIP  string
+	UserAgent     string
+	ClientIP      string
+	DeviceLabel   string
+	Platform      string
+	LocationLabel string
 }
 
 // SetupInput is the legacy first-account form (alias of RegisterInput fields).
@@ -145,14 +120,19 @@ type LoginInput struct {
 
 // Session is one device login. Its id stays stable across refresh rotation.
 type Session struct {
-	ID         string
-	UserID     string
-	ExpiresAt  time.Time
-	RevokedAt  *time.Time
-	UserAgent  string
-	ClientIP   string
-	LastUsedAt time.Time
-	CreatedAt  time.Time
+	ID               string
+	UserID           string
+	ExpiresAt        time.Time
+	RevokedAt        *time.Time
+	UserAgent        string
+	ClientIP         string
+	DeviceLabel      string
+	Platform         string
+	LocationLabel    string
+	RefreshID        string
+	RefreshTokenHash []byte
+	LastUsedAt       time.Time
+	CreatedAt        time.Time
 }
 
 // RefreshToken is a stored refresh secret. Only the hash is persisted.

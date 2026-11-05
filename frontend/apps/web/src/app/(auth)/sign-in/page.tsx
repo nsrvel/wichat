@@ -21,9 +21,7 @@ export default async function Page({
 	const notice = safeNotice(error);
 
 	if (mode === "guest") {
-		return (
-			<GuestPage inviteToken={inviteToken} serverName={serverName} notice={notice} />
-		);
+		return <GuestPage inviteToken={inviteToken} serverName={serverName} notice={notice} />;
 	}
 
 	return <LoginPage inviteToken={inviteToken} serverName={serverName} notice={notice} />;

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"strings"
 	"time"
 
 	generalgrpc "github.com/wichat/wichat/backend/ms-notification/internal/general/delivery/grpc"
@@ -17,13 +18,19 @@ const serveShutdownTimeout = 5 * time.Second
 
 func (s *server) Run(ctx context.Context) error {
 	// Mail
-	mailSender, err := mail.NewSender(s.cfg)
-	if err != nil {
-		return fmt.Errorf("mail: %w", err)
+	var mailSender mail.Sender
+	if s.cfg.Env == "development" && strings.TrimSpace(s.cfg.SMTPUser) == "" {
+		mailSender = mail.NewLogSender(s.log)
+	} else {
+		sender, err := mail.NewSender(s.cfg)
+		if err != nil {
+			return fmt.Errorf("mail: %w", err)
+		}
+		mailSender = sender
 	}
 
 	// Notify
-	notifySvc := service.NewService(mailSender, s.log)
+	notifySvc := service.NewService(mailSender, s.log, s.cfg.Env == "development")
 
 	// gRPC
 	addr := s.cfg.ListenAddr()

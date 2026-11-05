@@ -158,19 +158,19 @@ func (s redisPasswordResetStore) ConsumeResetToken(ctx context.Context, token st
 }
 
 func pwResetCooldownKey(email string) string {
-	return "auth:pwreset:cooldown:" + authRedis.EmailKey(email)
+	return authRedis.KeyPrefix + "pwreset:cooldown:" + authRedis.EmailKey(email)
 }
 
 func pwResetStrikesKey(email string) string {
-	return "auth:pwreset:strikes:" + authRedis.EmailKey(email)
+	return authRedis.KeyPrefix + "pwreset:strikes:" + authRedis.EmailKey(email)
 }
 
 func pwResetOTPKey(email string) string {
-	return "auth:pwreset:otp:" + authRedis.EmailKey(email)
+	return authRedis.KeyPrefix + "pwreset:otp:" + authRedis.EmailKey(email)
 }
 
 func pwResetTokenKey(token string) string {
-	return "auth:pwreset:token:" + token
+	return authRedis.KeyPrefix + "pwreset:token:" + token
 }
 
 func (s redisPasswordResetStore) bumpStrikes(ctx context.Context, email string) (int, error) {

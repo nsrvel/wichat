@@ -1,6 +1,6 @@
 "use client";
 
-import { ApiError } from "@wichat/api-client/api-error";
+import { resendRateLimitCooldownSec } from "@/features/auth/lib/resend-cooldown";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -51,11 +51,9 @@ export function ForgotPasswordPage({ notice }: { notice?: string }) {
 	};
 
 	const applyResendRateLimit = (error: unknown) => {
-		if (error instanceof ApiError) {
-			const raw = error.params?.retry_after_seconds;
-			if (typeof raw === "number" && raw > 0) {
-				setResendCooldownSec(raw);
-			}
+		const wait = resendRateLimitCooldownSec(error);
+		if (wait !== null) {
+			setResendCooldownSec(wait);
 		}
 	};
 

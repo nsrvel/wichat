@@ -65,10 +65,30 @@ func User(user models.PublicUser) *userv1.User {
 // GroupSummary maps a public group to protobuf.
 func GroupSummary(g models.PublicGroup) *userv1.GroupSummary {
 	return &userv1.GroupSummary{
-		Id:      g.ID,
-		Name:    g.Name,
-		LogoUrl: g.LogoURL,
+		Id:               g.ID,
+		Name:             g.Name,
+		LogoUrl:          g.LogoURL,
+		DefaultChannelId: g.DefaultChannelID,
 	}
+}
+
+// ChannelSummary maps a public channel to protobuf.
+func ChannelSummary(c models.PublicChannel) *userv1.ChannelSummary {
+	return &userv1.ChannelSummary{
+		Id:   c.ID,
+		Name: c.Name,
+		Type: c.Type,
+	}
+}
+
+// ChannelSummaries maps a slice of public channels.
+func ChannelSummaries(channels []models.PublicChannel) []*userv1.ChannelSummary {
+	out := make([]*userv1.ChannelSummary, len(channels))
+	for i, c := range channels {
+		out[i] = ChannelSummary(c)
+	}
+
+	return out
 }
 
 // GroupSummaries maps a slice of public groups.

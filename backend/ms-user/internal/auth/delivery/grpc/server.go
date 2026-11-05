@@ -1,9 +1,11 @@
 package grpc
 
 import (
+	"bytes"
 	"context"
 
 	authservice "github.com/wichat/wichat/backend/ms-user/internal/auth/service"
+	channelservice "github.com/wichat/wichat/backend/ms-user/internal/channel/service"
 	groupservice "github.com/wichat/wichat/backend/ms-user/internal/group/service"
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
 	userservice "github.com/wichat/wichat/backend/ms-user/internal/user/service"
@@ -19,14 +21,20 @@ type Server interface {
 
 type server struct {
 	userv1.UnimplementedAuthServiceServer
-	auth  authservice.Service
-	user  userservice.Service
-	group groupservice.Service
+	auth    authservice.Service
+	user    userservice.Service
+	group   groupservice.Service
+	channel channelservice.Service
 }
 
-// NewServer binds auth, user, and group services to the Auth gRPC surface.
-func NewServer(auth authservice.Service, user userservice.Service, group groupservice.Service) Server {
-	return &server{auth: auth, user: user, group: group}
+// NewServer binds auth, user, group, and channel services to the Auth gRPC surface.
+func NewServer(
+	auth authservice.Service,
+	user userservice.Service,
+	group groupservice.Service,
+	channel channelservice.Service,
+) Server {
+	return &server{auth: auth, user: user, group: group, channel: channel}
 }
 
 func (s *server) SetupStatus(ctx context.Context, _ *userv1.SetupStatusRequest) (*userv1.SetupStatusResponse, error) {
@@ -308,4 +316,37 @@ func (s *server) JoinGroup(ctx context.Context, req *userv1.JoinGroupRequest) (*
 	}
 
 	return &userv1.JoinGroupResponse{Ok: true}, nil
+}
+
+func (s *server) LeaveGroup(ctx context.Context, req *userv1.LeaveGroupRequest) (*userv1.LeaveGroupResponse, error) {
+	if err := s.group.LeaveGroup(ctx, req.GetAccessToken(), req.GetGroupId()); err != nil {
+		return nil, responsegrpc.ToStatus(err)
+	}
+
+	return &userv1.LeaveGroupResponse{Ok: true}, nil
+}
+
+func (s *server) ListGroupChannels(ctx context.Context, req *userv1.ListGroupChannelsRequest) (*userv1.ListGroupChannelsResponse, error) {
+	channels, err := s.channel.ListGroupChannels(ctx, req.GetAccessToken(), req.GetGroupId())
+	if err != nil {
+		return nil, responsegrpc.ToStatus(err)
+	}
+
+	return &userv1.ListGroupChannelsResponse{Channels: authPb.ChannelSummaries(channels)}, nil
+}
+
+func (s *server) UploadGroupIcon(ctx context.Context, req *userv1.UploadGroupIconRequest) (*userv1.UploadGroupIconResponse, error) {
+	group, err := s.group.UploadGroupIcon(
+		ctx,
+		req.GetAccessToken(),
+		req.GetGroupId(),
+		req.GetContentType(),
+		bytes.NewReader(req.GetData()),
+		int64(len(req.GetData())),
+	)
+	if err != nil {
+		return nil, responsegrpc.ToStatus(err)
+	}
+
+	return &userv1.UploadGroupIconResponse{Group: authPb.GroupSummary(*group)}, nil
 }

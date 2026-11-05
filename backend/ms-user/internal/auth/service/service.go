@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"strings"
@@ -51,7 +52,8 @@ type Service interface {
 
 type service struct {
 	users     userrepo.PgRepository
-	sessions  authrepo.PgRepository
+	sessions  authrepo.SessionRepository
+	refresh   authrepo.RefreshStore
 	workspace userservice.Service
 	reset     authrepo.PasswordResetStore
 	emailAuth authrepo.EmailAuthStore
@@ -63,10 +65,16 @@ type service struct {
 	google    google.Config
 }
 
+// Options overrides auth service wiring (tests only).
+type Options struct {
+	Now func() time.Time
+}
+
 // NewService builds the auth use cases. secret is the HMAC key and must be at least 32 bytes.
 func NewService(
 	users userrepo.PgRepository,
-	sessions authrepo.PgRepository,
+	sessions authrepo.SessionRepository,
+	refresh authrepo.RefreshStore,
 	secret []byte,
 	log logger.Logger,
 	googleCfg google.Config,
@@ -74,6 +82,7 @@ func NewService(
 	emailAuth authrepo.EmailAuthStore,
 	notify Notifier,
 	workspace userservice.Service,
+	opts *Options,
 ) (Service, error) {
 	if len(secret) < constants.MinJWTSecretLen {
 		return nil, errors.New("auth: jwt secret must be at least 32 bytes")
@@ -87,16 +96,22 @@ func NewService(
 	copied := make([]byte, len(secret))
 	copy(copied, secret)
 
+	now := func() time.Time { return time.Now().UTC() }
+	if opts != nil && opts.Now != nil {
+		now = opts.Now
+	}
+
 	return service{
 		users:     users,
 		sessions:  sessions,
+		refresh:   refresh,
 		workspace: workspace,
 		reset:     reset,
 		emailAuth: emailAuth,
 		notify:    notify,
 		log:       log,
 		secret:    copied,
-		now:       func() time.Time { return time.Now().UTC() },
+		now:       now,
 		dummy:     dummy,
 		google:    google.Prepare(googleCfg),
 	}, nil
@@ -512,6 +527,15 @@ func (s service) VerifyLogin(ctx context.Context, challengeID, code string) (*mo
 		return nil, err
 	}
 
+	user, err := s.users.FindUserByID(ctx, pending.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	sess, err := s.openSession(ctx, user, models.ClientMeta{UserAgent: pending.UserAgent, ClientIP: pending.ClientIP})
+	if err != nil {
+		return nil, err
+	}
 	if err := s.emailAuth.DeleteLoginChallenge(ctx, challengeID); err != nil {
 		return nil, err
 	}
@@ -519,12 +543,7 @@ func (s service) VerifyLogin(ctx context.Context, challengeID, code string) (*mo
 		return nil, err
 	}
 
-	user, err := s.users.FindUserByID(ctx, pending.UserID)
-	if err != nil {
-		return nil, err
-	}
-
-	return s.openSession(ctx, user, models.ClientMeta{UserAgent: pending.UserAgent, ClientIP: pending.ClientIP})
+	return sess, nil
 }
 
 // ResendRegisterCode emails a new signup OTP for an existing challenge.
@@ -569,7 +588,7 @@ func (s service) ResendLoginCode(ctx context.Context, challengeID string) (int32
 	})
 }
 
-// RequestPasswordReset emails a reset code when the account exists (silent otherwise).
+// RequestPasswordReset starts password reset when the account exists (generic success otherwise).
 func (s service) RequestPasswordReset(ctx context.Context, emailRaw, locale string) (int, error) {
 	email, err := validator.NormalizeEmail(emailRaw)
 	if err != nil {
@@ -578,13 +597,10 @@ func (s service) RequestPasswordReset(ctx context.Context, emailRaw, locale stri
 
 	user, err := s.users.FindUserByEmail(ctx, email)
 	if errors.Is(err, constants.ErrNotFound) {
-		return 0, nil
+		return s.acknowledgePasswordResetRequest(ctx, email)
 	}
 	if err != nil {
 		return 0, err
-	}
-	if user.PasswordHash == "" {
-		return 0, nil
 	}
 
 	if err := s.requirePasswordReset(); err != nil {
@@ -610,6 +626,28 @@ func (s service) RequestPasswordReset(ctx context.Context, emailRaw, locale stri
 
 	if err := s.sendPasswordResetCode(ctx, email, user.DisplayName, locale, code); err != nil {
 		_ = s.reset.DeleteOTP(ctx, email)
+		return 0, err
+	}
+
+	wait, err := s.reset.RecordResetCodeSent(ctx, email)
+	if err != nil {
+		return 0, err
+	}
+
+	return resendCooldownSecs(wait), nil
+}
+
+// acknowledgePasswordResetRequest applies the same resend limits without emailing (anti-enumeration).
+func (s service) acknowledgePasswordResetRequest(ctx context.Context, email string) (int, error) {
+	if err := s.requirePasswordReset(); err != nil {
+		return 0, err
+	}
+
+	if err := s.reset.EnsureCanSendResetCode(ctx, email); err != nil {
+		if retry, ok := models.ResetRateLimitRetryAfter(err); ok {
+			return resendCooldownSecs(retry), resetRateLimited(retry)
+		}
+
 		return 0, err
 	}
 
@@ -695,7 +733,7 @@ func (s service) CompletePasswordReset(ctx context.Context, resetToken, newPassw
 		return err
 	}
 
-	if err := s.sessions.RevokeAllSessionsForUser(ctx, userID, now); err != nil {
+	if err := s.revokeAllUserSessions(ctx, userID, now); err != nil {
 		return err
 	}
 
@@ -714,12 +752,28 @@ func (s service) Refresh(ctx context.Context, refreshToken string, _ models.Clie
 		return nil, err
 	}
 
-	rec, err := s.sessions.FindRefreshByHash(ctx, token.HashRefresh(refreshToken))
-	if errors.Is(err, constants.ErrNotFound) {
-		return nil, exception.Unauthenticated(exception.MsgUnauthorized, nil)
-	}
-	if err != nil {
+	currentHash := token.HashRefresh(refreshToken)
+	now := s.now()
+
+	rec, err := s.refresh.FindByHash(ctx, currentHash)
+	if err != nil && !errors.Is(err, constants.ErrNotFound) {
 		return nil, err
+	}
+
+	if errors.Is(err, constants.ErrNotFound) {
+		sess, err := s.sessions.FindSessionByRefreshHash(ctx, currentHash, now)
+		if errors.Is(err, constants.ErrNotFound) {
+			return nil, exception.Unauthenticated(exception.MsgUnauthorized, nil)
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		return s.finishRefreshRotation(ctx, sess, currentHash)
+	}
+
+	if rec.UsedAt != nil {
+		return s.refreshReuseResponse(ctx, rec.SessionID, rec.UsedAt)
 	}
 
 	sess, err := s.sessions.FindSession(ctx, rec.SessionID)
@@ -730,11 +784,12 @@ func (s service) Refresh(ctx context.Context, refreshToken string, _ models.Clie
 		return nil, err
 	}
 
+	return s.finishRefreshRotation(ctx, sess, currentHash)
+}
+
+func (s service) finishRefreshRotation(ctx context.Context, sess models.Session, currentHash []byte) (*models.SessionResult, error) {
 	if sess.RevokedAt != nil || !sess.ExpiresAt.After(s.now()) {
 		return nil, exception.Unauthenticated(exception.MsgUnauthorized, nil)
-	}
-	if rec.UsedAt != nil {
-		return s.reuse(ctx, sess.ID)
 	}
 
 	plain, nextHash, err := token.NewRefresh()
@@ -747,14 +802,25 @@ func (s service) Refresh(ctx context.Context, refreshToken string, _ models.Clie
 	}
 
 	now := s.now()
-	err = s.sessions.MarkRefreshUsed(ctx, token.HashRefresh(refreshToken), nextHash, nextID, sess.ID, now.Add(constants.RefreshTokenTTL), now)
+	sessionExp := now.Add(constants.RefreshTokenTTL)
+	nextRefresh := models.RefreshToken{
+		ID: nextID, SessionID: sess.ID, TokenHash: nextHash, CreatedAt: now,
+	}
+	err = s.refresh.Rotate(ctx, currentHash, nextHash, nextRefresh, sess.UserID, sessionExp, now)
 	if errors.Is(err, constants.ErrAlreadyUsed) {
-		return s.reuse(ctx, sess.ID)
+		return s.refreshReuseResponse(ctx, sess.ID, &now)
 	}
 	if errors.Is(err, constants.ErrNotFound) {
-		return nil, exception.Unauthenticated(exception.MsgUnauthorized, nil)
+		if len(sess.RefreshTokenHash) == 0 || !bytes.Equal(sess.RefreshTokenHash, currentHash) {
+			return nil, exception.Unauthenticated(exception.MsgUnauthorized, nil)
+		}
+		if err := s.refresh.Put(ctx, nextRefresh, sess.UserID, sessionExp); err != nil {
+			return nil, err
+		}
+	} else if err != nil {
+		return nil, err
 	}
-	if err != nil {
+	if err := s.sessions.TouchSession(ctx, sess.ID, nextID, nextHash, sessionExp, now); err != nil {
 		return nil, err
 	}
 
@@ -785,13 +851,25 @@ func (s service) Logout(ctx context.Context, refreshToken string) error {
 		return nil
 	}
 
-	rec, err := s.sessions.FindRefreshByHash(ctx, token.HashRefresh(refreshToken))
+	hash := token.HashRefresh(refreshToken)
+	rec, err := s.refresh.FindByHash(ctx, hash)
 	if errors.Is(err, constants.ErrNotFound) {
-		return nil
+		sess, err := s.sessions.FindSessionByRefreshHash(ctx, hash, s.now())
+		if errors.Is(err, constants.ErrNotFound) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		_ = s.refresh.RevokeForSession(ctx, sess.ID)
+
+		return s.sessions.RevokeSession(ctx, sess.ID, s.now())
 	}
 	if err != nil {
 		return err
 	}
+
+	_ = s.refresh.RevokeForSession(ctx, rec.SessionID)
 
 	return s.sessions.RevokeSession(ctx, rec.SessionID, s.now())
 }
@@ -928,13 +1006,18 @@ func (s service) openSession(ctx context.Context, user models.User, meta models.
 	}
 
 	session := models.Session{
-		ID:         sessionID,
-		UserID:     user.ID,
-		ExpiresAt:  now.Add(constants.RefreshTokenTTL),
-		UserAgent:  ua,
-		ClientIP:   meta.ClientIP,
-		LastUsedAt: now,
-		CreatedAt:  now,
+		ID:               sessionID,
+		UserID:           user.ID,
+		ExpiresAt:        now.Add(constants.RefreshTokenTTL),
+		UserAgent:        ua,
+		ClientIP:         meta.ClientIP,
+		DeviceLabel:      meta.DeviceLabel,
+		Platform:         meta.Platform,
+		LocationLabel:    meta.LocationLabel,
+		RefreshID:        refreshID,
+		RefreshTokenHash: hash,
+		LastUsedAt:       now,
+		CreatedAt:        now,
 	}
 	refresh := models.RefreshToken{
 		ID:        refreshID,
@@ -942,7 +1025,11 @@ func (s service) openSession(ctx context.Context, user models.User, meta models.
 		TokenHash: hash,
 		CreatedAt: now,
 	}
-	if err := s.sessions.InsertSession(ctx, session, refresh); err != nil {
+	if err := s.sessions.InsertSession(ctx, session); err != nil {
+		return nil, err
+	}
+	if err := s.refresh.Put(ctx, refresh, user.ID, session.ExpiresAt); err != nil {
+		_ = s.sessions.RevokeSession(ctx, sessionID, now)
 		return nil, err
 	}
 
@@ -959,15 +1046,40 @@ func (s service) openSession(ctx context.Context, user models.User, meta models.
 	}, nil
 }
 
+func (s service) refreshReuseResponse(ctx context.Context, sessionID string, usedAt *time.Time) (*models.SessionResult, error) {
+	if usedAt != nil && s.now().Sub(*usedAt) < constants.RefreshReuseRevokeGrace {
+		return nil, exception.Unauthenticated(exception.MsgUnauthorized, nil)
+	}
+
+	return s.reuse(ctx, sessionID)
+}
+
 func (s service) reuse(ctx context.Context, sessionID string) (*models.SessionResult, error) {
 	if s.log != nil {
 		s.log.Warn("refresh token reuse", "session_id", sessionID)
 	}
-	if err := s.sessions.RevokeSession(ctx, sessionID, s.now()); err != nil {
+	now := s.now()
+	_ = s.refresh.RevokeForSession(ctx, sessionID)
+	if err := s.sessions.RevokeSession(ctx, sessionID, now); err != nil {
 		return nil, err
 	}
 
 	return nil, exception.Unauthenticated(exception.MsgUnauthorized, nil)
+}
+
+func (s service) revokeAllUserSessions(ctx context.Context, userID string, now time.Time) error {
+	ids, err := s.sessions.ListSessionIDsForUser(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if err := s.sessions.RevokeAllSessionsForUser(ctx, userID, now); err != nil {
+		return err
+	}
+	for _, id := range ids {
+		_ = s.refresh.RevokeForSession(ctx, id)
+	}
+
+	return nil
 }
 
 func resendCooldownSecs(d time.Duration) int {

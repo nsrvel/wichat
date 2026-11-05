@@ -20,6 +20,7 @@ import {
 	authFieldLinkClass,
 	authSubmitClass,
 } from "@/features/auth/components/auth-shell";
+import { resendRateLimitCooldownSec } from "@/features/auth/lib/resend-cooldown";
 import { translateError } from "@/integrations/i18n/translate-error";
 import {
 	useLoginMutation,
@@ -56,16 +57,26 @@ export function LoginForm() {
 				submittingKey="login.confirming_code"
 				isPending={verify.isPending}
 				error={verify.error}
+				resendError={resend.error}
+				isResendPending={resend.isPending}
 				resendCooldownSec={resendCooldown}
 				onResend={() => {
+					verify.reset();
 					resend.mutate(
 						{ challenge_id: challenge.challenge_id },
 						{
 							onSuccess: (data) => setResendCooldown(data.resend_after_seconds),
+							onError: (err) => {
+								const wait = resendRateLimitCooldownSec(err);
+								if (wait !== null) {
+									setResendCooldown(wait);
+								}
+							},
 						},
 					);
 				}}
 				onSubmit={(code) => {
+					resend.reset();
 					verify.mutate(
 						{ challenge_id: challenge.challenge_id, code },
 						{ onSuccess: () => router.push("/") },

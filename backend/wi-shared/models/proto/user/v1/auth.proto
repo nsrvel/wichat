@@ -36,7 +36,7 @@ service AuthService {
   rpc GoogleStart(GoogleStartRequest) returns (GoogleStartResponse);
   // GoogleFinish exchanges the authorization code and opens a session.
   rpc GoogleFinish(GoogleFinishRequest) returns (GoogleFinishResponse);
-  // RequestPasswordReset emails a reset code when the account exists.
+  // RequestPasswordReset emails a reset code when the account exists (uniform response either way).
   rpc RequestPasswordReset(RequestPasswordResetRequest) returns (RequestPasswordResetResponse);
   // VerifyPasswordReset checks the code and returns a one-time reset token.
   rpc VerifyPasswordReset(VerifyPasswordResetRequest) returns (VerifyPasswordResetResponse);
@@ -50,6 +50,12 @@ service AuthService {
   rpc CreateGroup(CreateGroupRequest) returns (CreateGroupResponse);
   // JoinGroup adds the caller as a member.
   rpc JoinGroup(JoinGroupRequest) returns (JoinGroupResponse);
+  // LeaveGroup removes the caller's membership in a group.
+  rpc LeaveGroup(LeaveGroupRequest) returns (LeaveGroupResponse);
+  // ListGroupChannels returns channels in a group the caller belongs to.
+  rpc ListGroupChannels(ListGroupChannelsRequest) returns (ListGroupChannelsResponse);
+  // UploadGroupIcon stores a group logo and updates group_settings.logo_url.
+  rpc UploadGroupIcon(UploadGroupIconRequest) returns (UploadGroupIconResponse);
 }
 
 // User is the public account view.
@@ -283,10 +289,13 @@ message CompletePasswordResetResponse {
 }
 
 // GroupSummary is a public group row.
+// id is the 24-char lowercase hex public_id (not the internal UUID).
 message GroupSummary {
   string id = 1;
   string name = 2;
   string logo_url = 3;
+  // default_channel_id is the public id of the #general channel (24-char hex).
+  string default_channel_id = 4;
 }
 
 message ListMyGroupsRequest {
@@ -321,4 +330,40 @@ message JoinGroupRequest {
 
 message JoinGroupResponse {
   bool ok = 1;
+}
+
+message LeaveGroupRequest {
+  string access_token = 1;
+  string group_id = 2;
+}
+
+message LeaveGroupResponse {
+  bool ok = 1;
+}
+
+// ChannelSummary is channel metadata for the sidebar.
+message ChannelSummary {
+  string id = 1;
+  string name = 2;
+  string type = 3;
+}
+
+message ListGroupChannelsRequest {
+  string access_token = 1;
+  string group_id = 2;
+}
+
+message ListGroupChannelsResponse {
+  repeated ChannelSummary channels = 1;
+}
+
+message UploadGroupIconRequest {
+  string access_token = 1;
+  string group_id = 2;
+  string content_type = 3;
+  bytes data = 4;
+}
+
+message UploadGroupIconResponse {
+  GroupSummary group = 1;
 }

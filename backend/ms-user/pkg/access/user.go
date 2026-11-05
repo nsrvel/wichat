@@ -13,34 +13,50 @@ import (
 	"github.com/wichat/wichat/backend/wi-shared/exception"
 )
 
+// UserIDFromAccessToken validates the token and session without loading the user row.
+func UserIDFromAccessToken(
+	ctx context.Context,
+	accessToken string,
+	secret []byte,
+	sessions authrepo.SessionRepository,
+	now time.Time,
+) (string, error) {
+	if accessToken == "" {
+		return "", exception.Unauthenticated(exception.MsgUnauthorized, nil)
+	}
+
+	userID, sessionID, err := jwt.Parse(secret, accessToken)
+	if err != nil {
+		return "", exception.Unauthenticated(exception.MsgUnauthorized, nil)
+	}
+
+	sess, err := sessions.FindSession(ctx, sessionID)
+	if errors.Is(err, constants.ErrNotFound) {
+		return "", exception.Unauthenticated(exception.MsgUnauthorized, nil)
+	}
+	if err != nil {
+		return "", err
+	}
+
+	if sess.UserID != userID || sess.RevokedAt != nil || !sess.ExpiresAt.After(now) {
+		return "", exception.Unauthenticated(exception.MsgUnauthorized, nil)
+	}
+
+	return userID, nil
+}
+
 // UserFromAccessToken loads the account for a valid access token and live session.
 func UserFromAccessToken(
 	ctx context.Context,
 	accessToken string,
 	secret []byte,
-	sessions authrepo.PgRepository,
+	sessions authrepo.SessionRepository,
 	users userrepo.PgRepository,
 	now time.Time,
 ) (models.User, error) {
-	if accessToken == "" {
-		return models.User{}, exception.Unauthenticated(exception.MsgUnauthorized, nil)
-	}
-
-	userID, sessionID, err := jwt.Parse(secret, accessToken)
-	if err != nil {
-		return models.User{}, exception.Unauthenticated(exception.MsgUnauthorized, nil)
-	}
-
-	sess, err := sessions.FindSession(ctx, sessionID)
-	if errors.Is(err, constants.ErrNotFound) {
-		return models.User{}, exception.Unauthenticated(exception.MsgUnauthorized, nil)
-	}
+	userID, err := UserIDFromAccessToken(ctx, accessToken, secret, sessions, now)
 	if err != nil {
 		return models.User{}, err
-	}
-
-	if sess.UserID != userID || sess.RevokedAt != nil || !sess.ExpiresAt.After(now) {
-		return models.User{}, exception.Unauthenticated(exception.MsgUnauthorized, nil)
 	}
 
 	user, err := users.FindUserByID(ctx, userID)

@@ -36,7 +36,7 @@ func codeOf(t *testing.T, err error) string {
 
 func TestGuestDisabledByDefault(t *testing.T) {
 	st := usermock.NewState()
-	authSvc, _, _, _, _, _ := testSupport.NewAuthService(t, st)
+	authSvc, _, _, _, _, _ := testSupport.NewAuthService(t, st, nil)
 	ctx := context.Background()
 
 	_, err := authSvc.RegisterGuest(ctx, models.GuestRegisterInput{
@@ -50,7 +50,7 @@ func TestGuestDisabledByDefault(t *testing.T) {
 
 func TestCompleteInstanceSetupCreatesFirstGroup(t *testing.T) {
 	st := usermock.NewState()
-	authSvc, notify, users, userSvc, _, _ := testSupport.NewAuthService(t, st)
+	authSvc, notify, _, userSvc, _, _ := testSupport.NewAuthService(t, st, nil)
 	ctx := context.Background()
 
 	owner := testSupport.RegisterSession(t, authSvc, notify, registerInput("admin@example.com"))
@@ -58,14 +58,15 @@ func TestCompleteInstanceSetupCreatesFirstGroup(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	group, err := users.GetFirstGroup(ctx)
+	_, groups, _ := testSupport.TestRepos(st)
+	group, err := groups.GetFirstGroup(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if group.Name != "WiChat" {
 		t.Fatalf("group name: %q", group.Name)
 	}
-	member, err := users.FindGroupMember(ctx, group.ID, owner.User.ID)
+	member, err := groups.FindGroupMember(ctx, group.ID, owner.User.ID)
 	if err != nil || member.Role != constants.GroupRoleOwner {
 		t.Fatalf("membership: %+v err %v", member, err)
 	}
@@ -83,7 +84,7 @@ func TestGuestRegisterWhenEnabled(t *testing.T) {
 		RegistrationMode: constants.RegistrationInviteOnly,
 		GuestEnabled:     true,
 	})
-	authSvc, _, _, _, _, _ := testSupport.NewAuthService(t, st)
+	authSvc, _, _, _, _, _ := testSupport.NewAuthService(t, st, nil)
 	ctx := context.Background()
 
 	guest, err := authSvc.RegisterGuest(ctx, models.GuestRegisterInput{
@@ -100,7 +101,7 @@ func TestGuestRegisterWhenEnabled(t *testing.T) {
 
 func TestCompleteInstanceSetupOwnerOnly(t *testing.T) {
 	st := usermock.NewState()
-	authSvc, notify, _, userSvc, _, _ := testSupport.NewAuthService(t, st)
+	authSvc, notify, _, userSvc, _, _ := testSupport.NewAuthService(t, st, nil)
 	ctx := context.Background()
 
 	owner := testSupport.RegisterSession(t, authSvc, notify, registerInput("admin@example.com"))

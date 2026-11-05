@@ -21,8 +21,9 @@ alwaysApply: false
 | `app/` | **Routing only** — `page.tsx`, `layout.tsx`, loading/error, metadata. Thin: import a feature screen and render. |
 | `features/<domain>/` | Screens and **domain-only** UI (e.g. `features/auth/login/`). Per slice: `*-page.tsx` (shell, copy, layout) + `*-form.tsx` (Zod + fields + submit) — see below. |
 | `features/<domain>/components/` | Shared **within that domain** (login + register shell). |
+| `features/<domain>/lib/` | Pure **`.ts`** helpers for that domain (formatters, cooldown math, `groupInitials`, server loaders) — not UI. |
 | `components/ui/` | shadcn primitives. |
-| `components/layout/` | Cross-feature shell (sidebar, header). |
+| `components/layout/` | Cross-feature shell (sidebar, header). **`ShellMainPane`** = bordered workspace canvas (top/left border, rounded TL when rail open). Subfolders: `layout/shell-rail/` — see `wichat-folder-grouping.mdc`. |
 | `services/` | TanStack Query layer — see `wichat-web-data.mdc`. |
 | `integrations/` | App wiring (api singleton, tanstack-query, locale cookie, MSW, LiveKit later). |
 | `hooks/` | Generic UI helpers only (`use-mobile`, dialogs) — not domain fetch. |
@@ -40,9 +41,37 @@ export default function Page() {
 }
 ```
 
-**Feature slice files (TSX folders):** keep UI folders **`.tsx` only** — do not add sibling `*-form.ts` for schemas. Colocate Zod + `to*Request` at the top of `login-form.tsx` (module-private). Split **page** vs **form**: `login-page.tsx` (shell) + `login-form.tsx` (RHF + mutation). When moving schema from `*-form.ts` to `*-form.tsx`, **delete the `.ts` file in the same commit** — TypeScript resolves `./login-form` to `.ts` before `.tsx`. Page imports: `import { LoginForm } from './login-form'`.
+## TSX-only UI folders (no sibling `.ts`)
 
-Import from the **defining file** — no `index.ts` re-export barrels (see `wichat-no-export-barrels.mdc`). Pure `.ts` is fine under `services/`, `lib/`, `integrations/` — not mixed into a slice folder that is otherwise components.
+Applies to folders whose siblings are **mostly `.tsx`** — `components/**` (except `lib/`), `features/<domain>/` screens, `features/<domain>/components/`, slice folders like `login/`, `register/`.
+
+- **Do not** drop a `.ts` next to UI `.tsx` for helpers, Zod, formatters, or server loaders — that pollutes a component folder.
+- **Pure non-UI logic** (no JSX): put under **`lib/`** and use **`.ts`**:
+  - App-wide: `src/lib/**`, `src/services/**`, `src/integrations/**`, `src/hooks/**`
+  - Feature/domain: **`features/<domain>/lib/**`** (e.g. `features/shell/lib/group-initials.ts`, `features/auth/lib/resend-cooldown.ts`)
+  - Dev/tools slice: **`features/dev/<slice>/lib/**`** for server `load*` / parsers with no UI
+  - Shared layout logic (rare): `components/<area>/lib/**` — not for Tailwind class catalogs (see below)
+- **UI-only folders stay `.tsx` only:** Zod + `to*Request` colocate at top of `login-form.tsx`; hooks used by one screen stay in that `.tsx` unless reused across slices → then `features/<domain>/lib/`.
+- When removing a misplaced `.ts`, **delete it in the same commit** — TypeScript resolves `./foo` to `.ts` before `.tsx`.
+
+**Feature slices:** `login-page.tsx` + `login-form.tsx`. Page imports: `import { LoginForm } from './login-form'`.
+
+Import from the **defining file** — no `index.ts` re-export barrels (see `wichat-no-export-barrels.mdc`).
+
+## Tailwind first — avoid manual CSS
+
+- **Default:** style UI with Tailwind on the component (`className`, `cn()`, `data-*:` / `data-[open=true]:` variants). Match patterns like `components/ui/tooltip.tsx` for enter/exit (`transition-*`, `duration-*`, `motion-reduce:*`).
+- **`globals.css` is not a dumping ground** — no new bespoke `.my-component-*` blocks for one-off screens (dialogs, modals, cards). Keep `globals.css` for **design tokens** (`@theme`, CSS variables), base layers, shared scrollbars, and exceptions that Tailwind cannot express cleanly.
+- **`@keyframes` / raw CSS** only when necessary (e.g. step animations like caret blink). If you add one, comment why Tailwind was not enough; prefer shrinking `globals.css` when you touch the same UI.
+- **Do not** reach for a new global class because a transition needs two states — use `data-open`, `data-state`, or prop-driven `cn()` instead.
+
+## No Tailwind class catalogs (strict)
+
+- **Forbidden:** files or modules whose exports are mainly Tailwind string constants (`export const rowClass = "flex …"`), including names like `*-ui.tsx`, `*-styles.tsx`, `*-classes.tsx`, or a dedicated `workspace-panel-header.tsx` that only shares `className` strings.
+- **Required:** write utilities **on the JSX** (`className="…"` / `className={cn("…", condition && "…")}`). If two components need the same strip height, **duplicate the string** — do not extract to a shared class file.
+- **Allowed:** `cn()` helpers that depend on **props or `data-state`** (e.g. `shellRailAsideClass()`, `shellRailColumnClass(open)`) — composition logic, not a style sheet.
+- **Allowed:** small **non-exported** consts at the top of the **same** `.tsx` when one component reuses the same chunk many times; still prefer inline for 1–2 uses.
+- **Do not add** new exported class catalogs to `auth-shell.tsx` or similar; colocate on the new component. Shrink legacy exports when you touch that screen.
 
 Prefer route groups: `(auth)`, `(app)` or workspace layouts. Keep `'use client'` in features when using hooks/Query; metadata stays in server `page.tsx` when needed.
 

@@ -1,12 +1,6 @@
 "use client";
 
-import {
-	FormControl,
-	FormField,
-	FormItem,
-	FormLabel,
-	FormMessage,
-} from "@/components/ui/form";
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { FieldLabelContent } from "@/components/form/field-label";
 import { Input } from "@/components/ui/input";
 import { Eye, EyeOff } from "lucide-react";

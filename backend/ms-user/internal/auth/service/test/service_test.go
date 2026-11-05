@@ -40,7 +40,7 @@ func codeOf(t *testing.T, err error) string {
 }
 
 func TestRegisterUnicodeDisplayName(t *testing.T) {
-	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState())
+	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
 	out := testSupport.RegisterSession(t, svc, notify, models.RegisterInput{
 		Email:       "unicode@example.com",
 		Password:    testPassword,
@@ -53,7 +53,7 @@ func TestRegisterUnicodeDisplayName(t *testing.T) {
 }
 
 func TestRegisterFirstUserIsOwner(t *testing.T) {
-	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState())
+	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
 	ctx := context.Background()
 
 	first := testSupport.RegisterSession(t, svc, notify, registerInput("admin@example.com"))
@@ -74,7 +74,7 @@ func TestRegisterFirstUserIsOwner(t *testing.T) {
 }
 
 func TestRegisterUsernameCollision(t *testing.T) {
-	svc, notify, _, userSvc, _, _ := testSupport.NewAuthService(t, usermock.NewState())
+	svc, notify, _, userSvc, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
 	ctx := context.Background()
 
 	owner := testSupport.RegisterSession(t, svc, notify, registerInput("admin@example.com"))
@@ -98,7 +98,7 @@ func TestRegisterUsernameCollision(t *testing.T) {
 }
 
 func TestLoginHidesUnknownEmail(t *testing.T) {
-	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState())
+	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
 	ctx := context.Background()
 	testSupport.RegisterSession(t, svc, notify, registerInput("admin@example.com"))
 
@@ -114,8 +114,27 @@ func TestLoginHidesUnknownEmail(t *testing.T) {
 	}
 }
 
+func TestRefreshAfterRedisFlush(t *testing.T) {
+	svc, notify, _, _, _, mr := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	ctx := context.Background()
+	first := testSupport.RegisterSession(t, svc, notify, registerInput("admin@example.com"))
+
+	mr.FlushAll()
+
+	second, err := svc.Refresh(ctx, first.RefreshToken, models.ClientMeta{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if second.RefreshToken == "" || second.RefreshToken == first.RefreshToken {
+		t.Fatal("refresh token was not rotated after redis flush")
+	}
+	if _, err := svc.Me(ctx, second.AccessToken); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestRefreshRotationKeepsAccess(t *testing.T) {
-	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState())
+	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
 	ctx := context.Background()
 	first := testSupport.RegisterSession(t, svc, notify, registerInput("admin@example.com"))
 
@@ -134,14 +153,36 @@ func TestRefreshRotationKeepsAccess(t *testing.T) {
 	}
 }
 
+func TestRefreshReuseWithinGraceDoesNotRevoke(t *testing.T) {
+	clock := time.Now().UTC()
+	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), func() time.Time { return clock })
+	ctx := context.Background()
+	first := testSupport.RegisterSession(t, svc, notify, registerInput("grace@example.com"))
+	second, err := svc.Refresh(ctx, first.RefreshToken, models.ClientMeta{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = svc.Refresh(ctx, first.RefreshToken, models.ClientMeta{})
+	if codeOf(t, err) != string(exception.MsgUnauthorized) {
+		t.Fatalf("reuse within grace: %v", err)
+	}
+	if _, err := svc.Me(ctx, second.AccessToken); err != nil {
+		t.Fatalf("session should stay active within grace: %v", err)
+	}
+}
+
 func TestRefreshReuseRevokesSession(t *testing.T) {
-	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState())
+	clock := time.Now().UTC()
+	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), func() time.Time { return clock })
 	ctx := context.Background()
 	first := testSupport.RegisterSession(t, svc, notify, registerInput("admin@example.com"))
 	second, err := svc.Refresh(ctx, first.RefreshToken, models.ClientMeta{})
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	clock = clock.Add(constants.RefreshReuseRevokeGrace + time.Second)
 
 	_, err = svc.Refresh(ctx, first.RefreshToken, models.ClientMeta{})
 	if codeOf(t, err) != string(exception.MsgUnauthorized) {
@@ -156,7 +197,7 @@ func TestRefreshReuseRevokesSession(t *testing.T) {
 }
 
 func TestUnknownRefreshDoesNotRevoke(t *testing.T) {
-	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState())
+	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
 	ctx := context.Background()
 	first := testSupport.RegisterSession(t, svc, notify, registerInput("admin@example.com"))
 
@@ -173,7 +214,7 @@ func TestUnknownRefreshDoesNotRevoke(t *testing.T) {
 }
 
 func TestLogoutRejectsAccess(t *testing.T) {
-	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState())
+	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
 	ctx := context.Background()
 	first := testSupport.RegisterSession(t, svc, notify, registerInput("admin@example.com"))
 
@@ -190,7 +231,7 @@ func TestLogoutRejectsAccess(t *testing.T) {
 
 func TestGoogleCreatesLinksAndRejectsPassword(t *testing.T) {
 	st := usermock.NewState()
-	users, sessions := testSupport.TestRepos(st)
+	users, _, sessions := testSupport.TestRepos(st)
 	var mode string
 	google := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -222,15 +263,16 @@ func TestGoogleCreatesLinksAndRejectsPassword(t *testing.T) {
 
 	notify := &testSupport.FakeNotifier{}
 	rdb := testSupport.RedisClient(t)
+	refresh := authrepo.NewRedisRefreshStore(rdb)
 	log := logger.New(logger.Options{Service: "auth-test", Env: "test", Level: "error"})
 	userSvc := userservice.NewService(users, sessions, []byte(testSupport.TestJWTSecret), log)
-	svc, err := service.NewService(users, sessions, []byte(testSupport.TestJWTSecret), log, googleoauth.Config{
+	svc, err := service.NewService(users, sessions, refresh, []byte(testSupport.TestJWTSecret), log, googleoauth.Config{
 		ClientID:     "client",
 		ClientSecret: "secret",
 		RedirectURL:  "http://localhost:3000/api/v1/auth/google/callback",
 		TokenURL:     google.URL + "/token",
 		UserInfoURL:  google.URL + "/userinfo",
-	}, authrepo.NewRedisPasswordResetStore(rdb), authrepo.NewRedisEmailAuthStore(rdb), notify, userSvc)
+	}, authrepo.NewRedisPasswordResetStore(rdb), authrepo.NewRedisEmailAuthStore(rdb), notify, userSvc, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -275,7 +317,7 @@ func TestGoogleCreatesLinksAndRejectsPassword(t *testing.T) {
 
 func TestRegisterDoesNotCreateUserUntilVerify(t *testing.T) {
 	st := usermock.NewState()
-	svc, notify, users, _, _, _ := testSupport.NewAuthService(t, st)
+	svc, notify, users, _, _, _ := testSupport.NewAuthService(t, st, nil)
 	ctx := context.Background()
 
 	step, err := svc.Register(ctx, registerInput("pending@example.com"))
@@ -305,7 +347,7 @@ func TestRegisterDoesNotCreateUserUntilVerify(t *testing.T) {
 }
 
 func TestLoginDoesNotIssueSessionUntilVerify(t *testing.T) {
-	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState())
+	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
 	ctx := context.Background()
 	testSupport.RegisterSession(t, svc, notify, registerInput("ada@example.com"))
 
@@ -331,7 +373,7 @@ func TestLoginDoesNotIssueSessionUntilVerify(t *testing.T) {
 }
 
 func TestVerifyLoginRejectsBadCode(t *testing.T) {
-	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState())
+	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
 	ctx := context.Background()
 	testSupport.RegisterSession(t, svc, notify, registerInput("ada@example.com"))
 
@@ -347,19 +389,72 @@ func TestVerifyLoginRejectsBadCode(t *testing.T) {
 }
 
 func TestRequestPasswordResetUnknownEmail(t *testing.T) {
-	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState())
+	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
 
-	if _, err := svc.RequestPasswordReset(context.Background(), "missing@example.com", "en"); err != nil {
+	cooldown, err := svc.RequestPasswordReset(context.Background(), "missing@example.com", "en")
+	if err != nil {
 		t.Fatal(err)
 	}
 	if notify.Sends != 0 {
 		t.Fatalf("expected no send, got %d", notify.Sends)
 	}
+	if cooldown != 60 {
+		t.Fatalf("cooldown: got %d want 60", cooldown)
+	}
+}
+
+func TestRequestPasswordResetOAuthOnlyAccount(t *testing.T) {
+	st := usermock.NewState()
+	svc, notify, users, _, _, _ := testSupport.NewAuthService(t, st, nil)
+	ctx := context.Background()
+
+	_, err := users.SaveGoogleUser(ctx, models.User{
+		ID:           "user-oauth",
+		Email:        "oauth@example.com",
+		PasswordHash: "",
+		DisplayName:  "OAuth User",
+	}, "identity-1", "google", "google-sub-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cooldown, err := svc.RequestPasswordReset(ctx, "oauth@example.com", "en")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if notify.Sends != 1 {
+		t.Fatalf("expected reset email, got %d sends", notify.Sends)
+	}
+	if cooldown != 60 {
+		t.Fatalf("cooldown: got %d want 60", cooldown)
+	}
+
+	code := notify.LastCode
+	if code == "" {
+		t.Fatal("expected code captured")
+	}
+
+	token, err := svc.VerifyPasswordReset(ctx, "oauth@example.com", code)
+	if err != nil || token == "" {
+		t.Fatalf("verify: err=%v token=%q", err, token)
+	}
+
+	if err := svc.CompletePasswordReset(ctx, token, "new-password-12"); err != nil {
+		t.Fatal(err)
+	}
+
+	user, err := users.FindUserByEmail(ctx, "oauth@example.com")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if user.PasswordHash == "" {
+		t.Fatal("expected password hash after reset")
+	}
 }
 
 func TestRequestPasswordResetSendsForKnownUser(t *testing.T) {
 	st := usermock.NewState()
-	svc, notify, _, _, _, mr := testSupport.NewAuthService(t, st)
+	svc, notify, _, _, _, mr := testSupport.NewAuthService(t, st, nil)
 	ctx := context.Background()
 
 	testSupport.RegisterSession(t, svc, notify, registerInput("ada@example.com"))
@@ -393,7 +488,7 @@ func TestRequestPasswordResetSendsForKnownUser(t *testing.T) {
 
 func TestVerifyPasswordResetClearsResendPenalty(t *testing.T) {
 	st := usermock.NewState()
-	svc, notify, _, _, _, mr := testSupport.NewAuthService(t, st)
+	svc, notify, _, _, _, mr := testSupport.NewAuthService(t, st, nil)
 	ctx := context.Background()
 
 	testSupport.RegisterSession(t, svc, notify, registerInput("ada@example.com"))

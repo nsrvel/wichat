@@ -17,6 +17,10 @@ func ToStatus(err error) error {
 	}
 	ex, ok := exception.As(err)
 	if !ok {
+		// Downstream gRPC services already attach client-safe codes; preserve them.
+		if st, ok := status.FromError(err); ok {
+			return st.Err()
+		}
 		return status.New(exception.GRPCCode(exception.KindInternal), string(exception.MsgInternal)).Err()
 	}
 

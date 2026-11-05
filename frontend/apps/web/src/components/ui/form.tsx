@@ -21,9 +21,7 @@ type FormFieldContextValue<
 	name: TName;
 };
 
-const FormFieldContext = React.createContext<FormFieldContextValue>(
-	{} as FormFieldContextValue,
-);
+const FormFieldContext = React.createContext<FormFieldContextValue>({} as FormFieldContextValue);
 
 const FormField = <
 	TFieldValues extends FieldValues = FieldValues,
@@ -79,9 +77,7 @@ function FormItem({ className, ...props }: React.ComponentProps<"div">) {
 function FormLabel({ className, ...props }: React.ComponentProps<"label">) {
 	const { formItemId } = useFormField();
 
-	return (
-		<label htmlFor={formItemId} className={cn(className)} {...props} />
-	);
+	return <label htmlFor={formItemId} className={cn(className)} {...props} />;
 }
 
 function FormControl({ ...props }: React.ComponentProps<"div">) {
@@ -90,9 +86,7 @@ function FormControl({ ...props }: React.ComponentProps<"div">) {
 	return (
 		<div
 			id={formItemId}
-			aria-describedby={
-				!error ? `${formDescriptionId}` : `${formDescriptionId} ${formMessageId}`
-			}
+			aria-describedby={!error ? `${formDescriptionId}` : `${formDescriptionId} ${formMessageId}`}
 			aria-invalid={!!error}
 			{...props}
 		/>
@@ -120,9 +114,10 @@ function FormMessage({ className, children, ...props }: React.ComponentProps<"p"
 		return null;
 	}
 
+	const formI18nKey = /^(auth|error|user|validation)\.[a-z0-9_.]+$/;
 	const body =
-		typeof raw === "string" && raw.includes(".")
-			? t(raw, { defaultValue: raw })
+		typeof raw === "string" && formI18nKey.test(raw)
+			? t(raw, { defaultValue: t("error.unknown") })
 			: raw;
 
 	return (

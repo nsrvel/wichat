@@ -26,14 +26,14 @@ type Service interface {
 
 type service struct {
 	users    userrepo.PgRepository
-	sessions authrepo.PgRepository
+	sessions authrepo.SessionRepository
 	secret   []byte
 	log      logger.Logger
 	now      func() time.Time
 }
 
 // NewService builds user/workspace use cases.
-func NewService(users userrepo.PgRepository, sessions authrepo.PgRepository, secret []byte, log logger.Logger) Service {
+func NewService(users userrepo.PgRepository, sessions authrepo.SessionRepository, secret []byte, log logger.Logger) Service {
 	copied := make([]byte, len(secret))
 	copy(copied, secret)
 
@@ -85,7 +85,12 @@ func (s service) CompleteInstanceSetup(ctx context.Context, accessToken string, 
 	if err != nil {
 		return exception.Internal(err)
 	}
+	publicID, err := token.NewPublicID()
+	if err != nil {
+		return exception.Internal(err)
+	}
 	payload.GroupID = groupID
+	payload.GroupPublicID = publicID
 
 	now := s.now()
 	if err := s.users.CompleteInstanceSetup(ctx, user.ID, payload, now); err != nil {

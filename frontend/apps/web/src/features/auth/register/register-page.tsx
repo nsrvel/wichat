@@ -4,11 +4,7 @@ import Link from "next/link";
 import { useTranslation } from "react-i18next";
 import { AuthInviteBanner } from "@/features/auth/components/auth-invite-banner";
 import { AuthPrivacyNotice } from "@/features/auth/components/auth-privacy-notice";
-import {
-	AuthOr,
-	authLeadSwitchClass,
-	authLinkClass,
-} from "@/features/auth/components/auth-shell";
+import { AuthOr, authLeadSwitchClass, authLinkClass } from "@/features/auth/components/auth-shell";
 import { AuthSessionLayout } from "@/features/auth/components/auth-session-layout";
 import { GoogleButton } from "@/features/auth/components/google-button";
 import { RegisterForm } from "./register-form";

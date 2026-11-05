@@ -16,6 +16,13 @@ type Config struct {
 	GoogleRedirectURL  string `mapstructure:"google_redirect_url"`
 	RedisURL           string `mapstructure:"redis_url"`
 	NotificationHost   string `mapstructure:"ms_notification_host"`
+	MinioEndpoint      string `mapstructure:"minio_endpoint"`
+	MinioAccessKey     string `mapstructure:"minio_access_key"`
+	MinioSecretKey     string `mapstructure:"minio_secret_key"`
+	MinioBucket        string `mapstructure:"minio_bucket"`
+	MinioPublicBaseURL string `mapstructure:"minio_public_base_url"`
+	MinioUseSSL        bool   `mapstructure:"minio_use_ssl"`
+	MinioRegion        string `mapstructure:"minio_region"`
 }
 
 // Defaults are applied when env / .env do not set a value.

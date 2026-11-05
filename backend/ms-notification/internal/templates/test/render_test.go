@@ -15,7 +15,7 @@ func TestRenderPasswordResetEn(t *testing.T) {
 	if subject != "Your WiChat password reset code" {
 		t.Fatalf("subject: %q", subject)
 	}
-	if !strings.Contains(html, "ABC-123") {
+	if !strings.Contains(html, "ABC123") {
 		t.Fatal("html missing formatted code")
 	}
 }
@@ -28,7 +28,7 @@ func TestRenderPasswordResetId(t *testing.T) {
 	if subject != "Kode reset kata sandi WiChat Anda" {
 		t.Fatalf("subject: %q", subject)
 	}
-	if !strings.Contains(html, "XYZ-789") {
+	if !strings.Contains(html, "XYZ789") {
 		t.Fatal("missing formatted code")
 	}
 }

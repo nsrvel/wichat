@@ -1,7 +1,7 @@
 ---
 description: Go readability — step comments, section banners, spacing
 globs: backend/**/*.go
-alwaysApply: false
+alwaysApply: true
 ---
 
 # Go style (comments & spacing)
@@ -20,6 +20,7 @@ Readability goal: **ops-friendly scan** — DevOps/SRE and devs should see **wha
 | Tests in `<pkg>/test/` (`wichat-go.mdc`); test file may describe behavior | `load_test.go` is fine |
 | **Dir** (`pkg/`, `internal/…`) | **kebab-case** for multi-word segments: `auth-http`, `auth-pb`, `auth-redis`, `test-support`, `ms-user`. Single-word dirs stay lowercase (`password`, `validate`). |
 | **File** | **snake_case** `.go`: `auth_http.go`, `auth_pb.go`, `ms_user.go`, `redis_email_auth.go`. |
+| **`internal/*/repository/`** | **Only** `pg_repository.go`, `minio_repository.go`, `redis_<concern>.go` — see `wichat-go-layers.mdc` whitelist; never `object_store.go`, `*_tx.go`, `repository.go` |
 | **Production `package`** | **camelCase** when the dir is kebab-case multi-word: `auth-http` → `authHttp`, `auth-pb` → `authPb`, `auth-redis` → `authRedis`, `ms-user` (wi-shared client) → `msUser`. Single-word dirs use a matching lowercase name (`service`, `validate`, `constants`). |
 | **External tests** (`<pkg>/test/`) | **`package {pkgname}_test`** only (`service_test`, `authHttp_test` if testing `authHttp`). |
 | **Lint** | ST1003 disabled in module `.golangci.yml` — camelCase packages are intentional. |

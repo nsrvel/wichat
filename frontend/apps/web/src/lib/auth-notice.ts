@@ -1,7 +1,7 @@
-const noticeCode = /^(auth|error|user)\.[a-z0-9_.]+$/;
+import { isClientErrorCode } from "@wichat/api-client/client-error-code";
 
 export function safeNotice(code: string | undefined) {
-	if (!code || !noticeCode.test(code)) {
+	if (!code || !isClientErrorCode(code)) {
 		return undefined;
 	}
 
