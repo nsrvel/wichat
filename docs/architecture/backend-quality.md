@@ -2,7 +2,7 @@
 
 ## Layout
 
-`make -C backend check-layout` runs [`backend/hack/check-layout`](../../backend/hack/check-layout) and enforces:
+`make -C backend check-layout` runs [`backend/tools/check-layout`](../../backend/tools/check-layout) and enforces:
 
 - `go.mod` module path `github.com/wichat/wichat/backend/<module>`
 - `internal/<domain>/repository/` — only `pg_repository.go`, `minio_repository.go`, `es_repository.go`, `redis_*.go`, plus `mock/` and `test/`

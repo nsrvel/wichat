@@ -158,7 +158,7 @@ func checkWiSharedRoot(modPath string) {
 			fail("%s/%s: rename to chat-events (kebab-case dir, chatEvents package)", modPath, name)
 		}
 		if !kebabDir.MatchString(name) && strings.Contains(name, "-") {
-			fail("%s/%s: invalid wi-shared dir name %q", modPath, name)
+			fail("%s/%s: invalid wi-shared dir name %q", modPath, name, name)
 		}
 	}
 }
@@ -200,7 +200,7 @@ func walkTestOneToOne(modPath string) {
 		if err != nil || !d.IsDir() || filepath.Base(path) != "test" {
 			return nil
 		}
-		if strings.Contains(path, string(os.PathSeparator)+"hack"+string(os.PathSeparator)) {
+		if strings.Contains(path, string(os.PathSeparator)+"tools"+string(os.PathSeparator)) {
 			return nil
 		}
 		pkgDir := filepath.Dir(path)
@@ -305,7 +305,7 @@ func walkMisplacedTests(modPath string) {
 		if filepath.Base(path) == "main_test.go" {
 			return nil
 		}
-		if strings.Contains(path, string(os.PathSeparator)+"hack"+string(os.PathSeparator)) {
+		if strings.Contains(path, string(os.PathSeparator)+"tools"+string(os.PathSeparator)) {
 			return nil
 		}
 		dir := filepath.Dir(path)

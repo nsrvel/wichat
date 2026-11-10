@@ -27,7 +27,7 @@ help:
 	@echo "Per module: cd ms-user|api-gateway|wi-shared && make dev|run|check"
 
 check-layout:
-	go run ./hack/check-layout
+	go run ./tools/check-layout
 
 check: check-layout
 	$(MAKE) -C wi-shared check
