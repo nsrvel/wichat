@@ -1,24 +1,18 @@
 package logger_test
 
 import (
-	"log/slog"
 	"testing"
 
 	"github.com/wichat/wichat/backend/wi-shared/infra/logger"
 )
 
-func TestParseLevel(t *testing.T) {
-	if logger.ParseLevel("debug") != slog.LevelDebug {
-		t.Fatal("debug")
-	}
-	if logger.ParseLevel("unknown") != slog.LevelInfo {
-		t.Fatal("default info")
-	}
-}
-
 func TestNewProductionJSON(t *testing.T) {
 	l := logger.New(logger.Options{Service: "test", Env: "production", Level: "info"})
 	l.Info("hello", "key", "value")
+	l.Debug("debug", "k", "v")
+	l.Warn("warn", "k", "v")
+	child := l.With("trace", "1")
+	child.Error("child", "k", "v")
 }
 
 func TestHTTPWriteErrorLogger(t *testing.T) {

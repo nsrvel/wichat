@@ -2,6 +2,7 @@ go 1.26.0
 
 use (
 	./api-gateway
+	./hack/check-layout
 	./ms-chat
 	./ms-notification
 	./ms-user

@@ -76,7 +76,7 @@ func NewAuthService(t *testing.T, st *usermock.State, now func() time.Time) (ser
 	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
 	log := logger.New(logger.Options{Service: "auth-test", Env: "test", Level: "error"})
 	userSvc := userservice.NewService(users, sessions, []byte(TestJWTSecret), log)
-	channelSvc := channelservice.NewService(channelmock.NewPgRepositoryMock(), groups, sessions, []byte(TestJWTSecret), log)
+	channelSvc := channelservice.NewService(channelmock.NewPgRepositoryMock(st), groups, sessions, []byte(TestJWTSecret), log)
 	groupSvc := groupservice.NewService(groups, channelSvc, users, disabledGroupMinio(log), sessions, []byte(TestJWTSecret), log)
 	refresh := authrepo.NewRedisRefreshStore(rdb)
 	var opts *service.Options

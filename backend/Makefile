@@ -3,7 +3,7 @@ REPO_ROOT := ..
 COMPOSE_FILE := $(REPO_ROOT)/deploy/docker-compose.yml
 COMPOSE := docker compose -f $(COMPOSE_FILE)
 
-.PHONY: help check run run-infra run-infra-minio-check run-down dev-ms-user dev-ms-chat dev-ms-notification dev-api-gateway run-ms-user run-ms-chat run-ms-notification run-api-gateway migrate-up migrate-down migrate-status
+.PHONY: help check check-layout run run-infra run-infra-minio-check run-down dev-ms-user dev-ms-chat dev-ms-notification dev-api-gateway run-ms-user run-ms-chat run-ms-notification run-api-gateway migrate-up migrate-down migrate-status
 
 help:
 	@echo "WiChat backend — common targets:"
@@ -13,7 +13,8 @@ help:
 	@echo "  make run-down           docker compose down (infra only; does not stop a running make run)"
 	@echo "  make migrate-up         apply Postgres migrations (goose)"
 	@echo "  make migrate-status     show migration state"
-	@echo "  make check              lint + test (wi-shared, ms-chat, ms-notification, ms-user, api-gateway)"
+	@echo "  make check              layout + lint + test + scoped coverage (all modules)"
+	@echo "  make check-layout       repository/pkg folder rules only"
 	@echo "  make dev-ms-user        ms-user with Air live reload"
 	@echo "  make dev-ms-chat        ms-chat with Air live reload"
 	@echo "  make dev-ms-notification ms-notification with Air live reload"
@@ -25,7 +26,10 @@ help:
 	@echo ""
 	@echo "Per module: cd ms-user|api-gateway|wi-shared && make dev|run|check"
 
-check:
+check-layout:
+	go run ./hack/check-layout
+
+check: check-layout
 	$(MAKE) -C wi-shared check
 	$(MAKE) -C ms-chat check
 	$(MAKE) -C ms-notification check

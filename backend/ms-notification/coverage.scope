@@ -1,0 +1,3 @@
+./internal/notify/service
+./internal/templates
+./pkg/...

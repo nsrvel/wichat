@@ -105,6 +105,7 @@ See [ms-user/internal/auth/README.md](../../backend/ms-user/internal/auth/README
 | Allowed | Purpose |
 |---------|---------|
 | `pg_repository.go` | Postgres — `PgRepository` (or domain name e.g. `SessionRepository` in this file only) |
+| `es_repository.go` | Elasticsearch domain store (`ms-chat` search indexer) — `EsRepository` pattern; ES client via `wi-shared/infra/elasticsearch` only |
 | `minio_repository.go` | Object storage for the domain — `MinioRepository`, `NewMinioRepository`; calls `wi-shared/infra/minio.Client` only |
 | `redis_<concern>.go` | One Redis store per file (e.g. `redis_refresh.go`, `redis_email_auth.go`) |
 | `mock/` | Postgres in-memory mocks only (`pg_repository_mock.go`) |
@@ -184,11 +185,11 @@ Package name **`service`** (not `usecase`). One **domain** per folder under `int
 internal/<domain>/service/
   service.go           # only production Go file in this folder
   test/
-    service_test.go    # only test file (package <domain>_test or service_test)
+    service_test.go    # sole test file for service.go (package service_test); no auth_more_test.go siblings
 ```
 
 - **No** sibling `register.go`, `groups.go`, … next to `service.go` — merge into `service.go` or split by **domain package**, not by file in one package.
-- **No** `helpers_test.go`, `groups_test.go`, … — one `service_test.go` per domain; shared test wiring → `ms-*/pkg/test-support` (`testSupport`; import only from `*_test`).
+- **No** `helpers_test.go`, `groups_test.go`, `auth_edges_test.go`, … — **1:1** with production files (`foo.go` → `test/foo_test.go` only); shared test wiring → `ms-*/pkg/test-support` (`testSupport`; import only from `*_test`).
 - DTOs → `internal/models/`; sentinels and shared limits → `ms-*/pkg/constants`; reusable pure logic → `ms-*/pkg/` (or `wi-shared/` when cross-service).
 
 **ms-user (reference):** `auth/service` (credentials, sessions, OAuth, password reset); `user/service` (instance setup, guest user creation); `group/service` (membership). gRPC `AuthService` delivery may inject all three; proto unchanged.

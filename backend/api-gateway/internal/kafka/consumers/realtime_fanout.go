@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/wichat/wichat/backend/api-gateway/internal/realtime/hub"
-	"github.com/wichat/wichat/backend/wi-shared/chatevents"
+	chatEvents "github.com/wichat/wichat/backend/wi-shared/chat-events"
 	wikafka "github.com/wichat/wichat/backend/wi-shared/infra/kafka"
 	"github.com/wichat/wichat/backend/wi-shared/infra/logger"
 	"github.com/wichat/wichat/backend/wi-shared/realtime"
@@ -59,11 +59,11 @@ func (r realtimeFanout) handle(in wikafka.Incoming) error {
 	if err := json.Unmarshal(in.Value, &head); err != nil {
 		return err
 	}
-	if strings.TrimSpace(head.Type) != chatevents.TypeMessageCreated {
+	if strings.TrimSpace(head.Type) != chatEvents.TypeMessageCreated {
 		return nil
 	}
 
-	var ev chatevents.MessageCreated
+	var ev chatEvents.MessageCreated
 	if err := json.Unmarshal(in.Value, &ev); err != nil {
 		return err
 	}

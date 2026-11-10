@@ -8,6 +8,12 @@ include .env
 export
 endif
 
+BACKEND_ROOT := ..
+
+.PHONY: test-cover
+test-cover:
+	@bash "$(BACKEND_ROOT)/scripts/coverage-gate.sh" "$(CURDIR)" 90
+
 .PHONY: fmt lint test check dev run
 
 fmt:
@@ -19,7 +25,7 @@ lint:
 test:
 	go test ./...
 
-check: fmt lint test
+check: fmt lint test test-cover
 
 dev:
 	$(AIR)

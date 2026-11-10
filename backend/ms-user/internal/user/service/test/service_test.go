@@ -34,6 +34,39 @@ func codeOf(t *testing.T, err error) string {
 	return string(ex.Code)
 }
 
+func TestSetupStatusDefaultsBeforeWizard(t *testing.T) {
+	st := usermock.NewState()
+	_, _, _, userSvc, _, _ := testSupport.NewAuthService(t, st, nil)
+	ctx := context.Background()
+
+	status, err := userSvc.SetupStatus(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if status.RegistrationMode != constants.RegistrationInviteOnly || !status.UsernameEnabled || status.GuestEnabled {
+		t.Fatalf("%+v", status)
+	}
+}
+
+func TestCompleteInstanceSetupRejectsNonOwner(t *testing.T) {
+	st := usermock.NewState()
+	authSvc, notify, _, userSvc, _, _ := testSupport.NewAuthService(t, st, nil)
+	ctx := context.Background()
+
+	owner := testSupport.RegisterSession(t, authSvc, notify, registerInput("owner-setup@example.com"))
+	if err := completeInstanceSetup(t, userSvc, owner.AccessToken); err != nil {
+		t.Fatal(err)
+	}
+
+	member := testSupport.RegisterSession(t, authSvc, notify, registerInput("member-setup@example.com"))
+	err := userSvc.CompleteInstanceSetup(ctx, member.AccessToken, models.CompleteInstanceSetupInput{
+		Name: "X", RegistrationMode: constants.RegistrationOpen,
+	})
+	if codeOf(t, err) != string(exception.MsgForbidden) {
+		t.Fatalf("%v", err)
+	}
+}
+
 func TestGuestDisabledByDefault(t *testing.T) {
 	st := usermock.NewState()
 	authSvc, _, _, _, _, _ := testSupport.NewAuthService(t, st, nil)

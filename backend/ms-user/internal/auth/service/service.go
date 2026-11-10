@@ -419,7 +419,7 @@ func (s service) markEmailCodeSent(ctx context.Context, ch *models.AuthChallenge
 	if err != nil {
 		return err
 	}
-	ch.ResendCooldownSeconds = resendCooldownInt32(wait)
+	ch.ResendCooldownSeconds = authRedis.CooldownInt32(wait)
 
 	return nil
 }
@@ -435,7 +435,7 @@ func (s service) resendEmailCode(
 	email = strings.TrimSpace(email)
 	if err := s.emailAuth.EnsureCanSendEmailCode(ctx, email); err != nil {
 		if retry, ok := models.ResetRateLimitRetryAfter(err); ok {
-			return resendCooldownInt32(retry), resetRateLimited(retry)
+			return authRedis.CooldownInt32(retry), resetRateLimited(retry)
 		}
 
 		return 0, err
@@ -459,7 +459,7 @@ func (s service) resendEmailCode(
 		return 0, err
 	}
 
-	return resendCooldownInt32(wait), nil
+	return authRedis.CooldownInt32(wait), nil
 }
 
 // VerifyRegister completes signup after email OTP.
@@ -609,7 +609,7 @@ func (s service) RequestPasswordReset(ctx context.Context, emailRaw, locale stri
 
 	if err := s.reset.EnsureCanSendResetCode(ctx, email); err != nil {
 		if retry, ok := models.ResetRateLimitRetryAfter(err); ok {
-			return resendCooldownSecs(retry), resetRateLimited(retry)
+			return authRedis.CooldownSecs(retry), resetRateLimited(retry)
 		}
 
 		return 0, err
@@ -634,7 +634,7 @@ func (s service) RequestPasswordReset(ctx context.Context, emailRaw, locale stri
 		return 0, err
 	}
 
-	return resendCooldownSecs(wait), nil
+	return authRedis.CooldownSecs(wait), nil
 }
 
 // acknowledgePasswordResetRequest applies the same resend limits without emailing (anti-enumeration).
@@ -645,7 +645,7 @@ func (s service) acknowledgePasswordResetRequest(ctx context.Context, email stri
 
 	if err := s.reset.EnsureCanSendResetCode(ctx, email); err != nil {
 		if retry, ok := models.ResetRateLimitRetryAfter(err); ok {
-			return resendCooldownSecs(retry), resetRateLimited(retry)
+			return authRedis.CooldownSecs(retry), resetRateLimited(retry)
 		}
 
 		return 0, err
@@ -656,7 +656,7 @@ func (s service) acknowledgePasswordResetRequest(ctx context.Context, email stri
 		return 0, err
 	}
 
-	return resendCooldownSecs(wait), nil
+	return authRedis.CooldownSecs(wait), nil
 }
 
 // VerifyPasswordReset checks the emailed code and returns a one-time reset token.
@@ -1082,29 +1082,8 @@ func (s service) revokeAllUserSessions(ctx context.Context, userID string, now t
 	return nil
 }
 
-func resendCooldownSecs(d time.Duration) int {
-	if d <= 0 {
-		return 0
-	}
-	secs := int((d + time.Second - 1) / time.Second)
-	if secs < 1 {
-		return 1
-	}
-
-	return secs
-}
-
-func resendCooldownInt32(d time.Duration) int32 {
-	secs := resendCooldownSecs(d)
-	if secs > 1_000_000 {
-		return 1_000_000
-	}
-
-	return int32(secs) //nolint:gosec // G115 — bounded above
-}
-
 func resetRateLimited(retry time.Duration) error {
-	secs := resendCooldownSecs(retry)
+	secs := authRedis.CooldownSecs(retry)
 	params := map[string]any{"retry_after_seconds": secs}
 	if secs < 1 {
 		params["retry_after_seconds"] = 1

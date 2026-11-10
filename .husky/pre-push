@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+set -e
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$ROOT" || exit 1
+
+if git diff --name-only '@{push}'...HEAD 2>/dev/null | grep -qE '^backend/.*\.(go|mod|sum)$'; then
+  echo "pre-push: backend Go changes — running layout + check"
+  make -C backend check-layout
+  make -C backend check
+fi

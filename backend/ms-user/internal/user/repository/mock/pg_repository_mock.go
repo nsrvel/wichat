@@ -27,6 +27,8 @@ type State struct {
 	Settings models.InstanceSettings
 	Groups   []models.Group
 	Members  []models.GroupMember
+	Invites  []models.GroupInviteRow
+	Channels []models.Channel
 }
 
 // NewState returns empty mock storage.
@@ -311,8 +313,43 @@ func (m *pgRepositoryMock) FindUserByID(_ context.Context, id string) (models.Us
 	return models.User{}, constants.ErrNotFound
 }
 
-func (m *pgRepositoryMock) SearchUsers(_ context.Context, _ string, _ int, _ string) ([]models.UserSearchHit, error) {
-	return nil, nil
+func (m *pgRepositoryMock) SearchUsers(_ context.Context, query string, limit int, excludeGroupID string) ([]models.UserSearchHit, error) {
+	m.st.mu.Lock()
+	defer m.st.mu.Unlock()
+
+	query = strings.ToLower(strings.TrimSpace(query))
+	if query == "" || limit <= 0 {
+		return nil, nil
+	}
+
+	memberIDs := make(map[string]struct{})
+	for _, mem := range m.st.Members {
+		if mem.GroupID == excludeGroupID {
+			memberIDs[mem.UserID] = struct{}{}
+		}
+	}
+
+	var out []models.UserSearchHit
+	for _, user := range m.st.Users {
+		if _, inGroup := memberIDs[user.ID]; inGroup {
+			continue
+		}
+		if strings.Contains(strings.ToLower(user.Email), query) ||
+			strings.Contains(strings.ToLower(user.Username), query) ||
+			strings.Contains(strings.ToLower(user.DisplayName), query) {
+			out = append(out, models.UserSearchHit{
+				UserID:      user.ID,
+				Email:       user.Email,
+				Username:    user.Username,
+				DisplayName: user.DisplayName,
+			})
+			if len(out) >= limit {
+				break
+			}
+		}
+	}
+
+	return out, nil
 }
 
 func (m *pgRepositoryMock) UpdateUserPasswordHash(_ context.Context, userID, hash string, now time.Time) error {

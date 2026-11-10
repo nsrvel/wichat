@@ -1,0 +1,24 @@
+# Scoped unit-test coverage (target 90%). pkg/test-support is test wiring — excluded.
+./internal/auth/service
+./internal/channel/service
+./internal/group/service
+./internal/invite/service
+./internal/user/service
+./internal/auth/repository/mock
+./internal/channel/repository/mock
+./internal/group/repository/mock
+./internal/invite/repository/mock
+./internal/user/repository/mock
+./pkg/access
+./pkg/auth-pb
+./pkg/auth-redis
+./pkg/constants
+./pkg/db
+./pkg/invite
+./pkg/jwt
+./pkg/oauth
+./pkg/otp
+./pkg/password
+./pkg/token
+./pkg/username
+./pkg/validator

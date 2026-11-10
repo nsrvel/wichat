@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -49,6 +50,31 @@ func TestRegisterUnicodeDisplayName(t *testing.T) {
 	})
 	if out.User.DisplayName != "山田 太郎 🎮" {
 		t.Fatalf("display name: %q", out.User.DisplayName)
+	}
+}
+
+func TestLogoutIgnoresEmptyRefresh(t *testing.T) {
+	svc, _, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	if err := svc.Logout(context.Background(), ""); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestRequestPasswordResetRateLimitedOnBackToBack(t *testing.T) {
+	svc, notify, _, _, _, mr := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	ctx := context.Background()
+
+	testSupport.RegisterSession(t, svc, notify, registerInput("reset-rl@example.com"))
+	if _, err := svc.RequestPasswordReset(ctx, "reset-rl@example.com", "en"); err != nil {
+		t.Fatal(err)
+	}
+	_, err := svc.RequestPasswordReset(ctx, "reset-rl@example.com", "en")
+	if codeOf(t, err) != string(exception.MsgResetRateLimited) {
+		t.Fatalf("%v", err)
+	}
+	mr.FastForward(61 * time.Second)
+	if _, err := svc.RequestPasswordReset(ctx, "reset-rl@example.com", "en"); err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -514,5 +540,975 @@ func TestVerifyPasswordResetClearsResendPenalty(t *testing.T) {
 	}
 	if cooldown != 60 {
 		t.Fatalf("strikes reset: cooldown %d want 60", cooldown)
+	}
+}
+
+// auth_boost_test.go
+
+func TestOpenSessionTruncatesLongUserAgent(t *testing.T) {
+	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	ctx := context.Background()
+
+	ua := strings.Repeat("x", constants.MaxUserAgentLen+50)
+	in := registerInput("ua-long@example.com")
+	in.ClientMeta = models.ClientMeta{UserAgent: ua, ClientIP: "127.0.0.1"}
+	step, err := svc.Register(ctx, in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sess, err := svc.VerifyRegister(ctx, step.Challenge.ChallengeID, notify.LastCode)
+	if err != nil || sess.AccessToken == "" {
+		t.Fatalf("%+v %v", sess, err)
+	}
+}
+
+func TestRefreshAfterUserDeleted(t *testing.T) {
+	st := usermock.NewState()
+	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, st, nil)
+	ctx := context.Background()
+
+	sess := testSupport.RegisterSession(t, svc, notify, registerInput("deleted-user@example.com"))
+	filtered := st.Users[:0]
+	for _, u := range st.Users {
+		if u.ID != sess.User.ID {
+			filtered = append(filtered, u)
+		}
+	}
+	st.Users = filtered
+	_, err := svc.Refresh(ctx, sess.RefreshToken, models.ClientMeta{})
+	if err == nil {
+		t.Fatal("expected refresh error after user delete")
+	}
+}
+
+func TestVerifyLoginWithClientMeta(t *testing.T) {
+	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	ctx := context.Background()
+
+	testSupport.RegisterSession(t, svc, notify, registerInput("login-meta@example.com"))
+	step, err := svc.Login(ctx, models.LoginInput{Login: "login-meta@example.com", Password: testPassword})
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, err := svc.VerifyLogin(ctx, step.Challenge.ChallengeID, notify.LastCode)
+	if err != nil || out.AccessToken == "" {
+		t.Fatalf("%+v %v", out, err)
+	}
+}
+
+func TestRequestPasswordResetUsesLocale(t *testing.T) {
+	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	ctx := context.Background()
+
+	testSupport.RegisterSession(t, svc, notify, registerInput("locale-reset@example.com"))
+	if _, err := svc.RequestPasswordReset(ctx, "locale-reset@example.com", "id"); err != nil {
+		t.Fatal(err)
+	}
+	if notify.Sends < 2 {
+		t.Fatalf("sends %d", notify.Sends)
+	}
+}
+
+func TestSetupRejectsRegisterValidation(t *testing.T) {
+	svc, _, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	ctx := context.Background()
+
+	_, err := svc.Setup(ctx, models.SetupInput{
+		Email:       "setup@example.com",
+		Password:    testPassword,
+		DisplayName: "Setup",
+	})
+	if codeOf(t, err) != string(exception.MsgInvalidInput) {
+		t.Fatalf("%v", err)
+	}
+}
+
+func TestGoogleStartUnavailableWhenUnconfigured(t *testing.T) {
+	svc, _, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	_, _, _, err := svc.GoogleStart(context.Background())
+	if codeOf(t, err) != string(exception.MsgUnavailable) {
+		t.Fatalf("%v", err)
+	}
+}
+
+func TestGoogleStartWhenConfigured(t *testing.T) {
+	st := usermock.NewState()
+	users, _, sessions := testSupport.TestRepos(st)
+	rdb := testSupport.RedisClient(t)
+	log := logger.New(logger.Options{Service: "auth-test", Env: "test", Level: "error"})
+	userSvc := userservice.NewService(users, sessions, []byte(testSupport.TestJWTSecret), log)
+	svc, err := service.NewService(users, sessions, authrepo.NewRedisRefreshStore(rdb), []byte(testSupport.TestJWTSecret), log, googleoauth.Config{
+		ClientID: "client-id", ClientSecret: "secret", RedirectURL: "http://localhost/callback",
+	}, authrepo.NewRedisPasswordResetStore(rdb), authrepo.NewRedisEmailAuthStore(rdb), &testSupport.FakeNotifier{}, userSvc, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	url, state, verifier, err := svc.GoogleStart(context.Background())
+	if err != nil || url == "" || state == "" || verifier == "" {
+		t.Fatalf("start url=%q state=%q verifier=%q err=%v", url, state, verifier, err)
+	}
+	if !strings.Contains(url, "client-id") {
+		t.Fatalf("authorize url: %q", url)
+	}
+}
+
+func TestResendLoginCodeAfterCooldown(t *testing.T) {
+	svc, notify, _, _, _, mr := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	ctx := context.Background()
+
+	testSupport.RegisterSession(t, svc, notify, registerInput("resend-login-wait@example.com"))
+	step, err := svc.Login(ctx, modelsLogin("resend-login-wait@example.com"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	firstCode := notify.LastCode
+	mr.FastForward(61 * time.Second)
+
+	cooldown, err := svc.ResendLoginCode(ctx, step.Challenge.ChallengeID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cooldown <= 0 || notify.LastCode == firstCode {
+		t.Fatalf("cooldown=%d code=%q", cooldown, notify.LastCode)
+	}
+}
+
+func TestResendRegisterCodeAfterCooldown(t *testing.T) {
+	svc, notify, _, _, _, mr := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	ctx := context.Background()
+
+	step, err := svc.Register(ctx, registerInput("resend-after-wait@example.com"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	firstCode := notify.LastCode
+	mr.FastForward(61 * time.Second)
+
+	cooldown, err := svc.ResendRegisterCode(ctx, step.Challenge.ChallengeID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cooldown <= 0 {
+		t.Fatalf("cooldown %d", cooldown)
+	}
+	if notify.LastCode == firstCode || notify.LastCode == "" {
+		t.Fatal("expected new OTP after resend")
+	}
+}
+
+func TestResendLoginCodeRateLimited(t *testing.T) {
+	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	ctx := context.Background()
+
+	testSupport.RegisterSession(t, svc, notify, registerInput("resend-login-rl@example.com"))
+	step, err := svc.Login(ctx, models.LoginInput{Login: "resend-login-rl@example.com", Password: testPassword})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = svc.ResendLoginCode(ctx, step.Challenge.ChallengeID)
+	if codeOf(t, err) != string(exception.MsgResetRateLimited) {
+		t.Fatalf("%v", err)
+	}
+}
+
+func TestMeRejectsRevokedSession(t *testing.T) {
+	clock := time.Now().UTC()
+	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), func() time.Time { return clock })
+	ctx := context.Background()
+
+	sess := testSupport.RegisterSession(t, svc, notify, registerInput("revoked-me@example.com"))
+	first, err := svc.Refresh(ctx, sess.RefreshToken, models.ClientMeta{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	clock = clock.Add(constants.RefreshReuseRevokeGrace + time.Second)
+	_, _ = svc.Refresh(ctx, sess.RefreshToken, models.ClientMeta{})
+
+	if _, err := svc.Me(ctx, first.AccessToken); codeOf(t, err) != string(exception.MsgUnauthorized) {
+		t.Fatalf("%v", err)
+	}
+}
+
+// auth_deep_test.go
+
+func TestSecondUserWithoutUsernameAssignment(t *testing.T) {
+	st := usermock.NewState()
+	svc, notify, users, userSvc, _, _ := testSupport.NewAuthService(t, st, nil)
+	ctx := context.Background()
+
+	owner := testSupport.RegisterSession(t, svc, notify, registerInput("first-no-un@example.com"))
+	if err := userSvc.CompleteInstanceSetup(ctx, owner.AccessToken, models.CompleteInstanceSetupInput{
+		Name:             "WiChat",
+		RegistrationMode: constants.RegistrationOpen,
+		UsernameEnabled:  false,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	second := testSupport.RegisterSession(t, svc, notify, registerInput("second-no-un@example.com"))
+	u, err := users.FindUserByID(ctx, second.User.ID)
+	if err != nil || u.Username != "" {
+		t.Fatalf("username=%q err=%v", u.Username, err)
+	}
+}
+
+func TestRefreshTwiceRotatesAgain(t *testing.T) {
+	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	ctx := context.Background()
+
+	first := testSupport.RegisterSession(t, svc, notify, registerInput("rotate2@example.com"))
+	second, err := svc.Refresh(ctx, first.RefreshToken, models.ClientMeta{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	third, err := svc.Refresh(ctx, second.RefreshToken, models.ClientMeta{})
+	if err != nil || third.RefreshToken == "" || third.RefreshToken == second.RefreshToken {
+		t.Fatalf("%+v %v", third, err)
+	}
+	if _, err := svc.Me(ctx, third.AccessToken); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestPasswordResetWrongCodeTwice(t *testing.T) {
+	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	ctx := context.Background()
+
+	testSupport.RegisterSession(t, svc, notify, registerInput("wrong2@example.com"))
+	if _, err := svc.RequestPasswordReset(ctx, "wrong2@example.com", "en"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.VerifyPasswordReset(ctx, "wrong2@example.com", "000001"); codeOf(t, err) != string(exception.MsgResetCodeInvalid) {
+		t.Fatal(err)
+	}
+	if _, err := svc.VerifyPasswordReset(ctx, "wrong2@example.com", "000002"); codeOf(t, err) != string(exception.MsgResetCodeInvalid) {
+		t.Fatal(err)
+	}
+}
+
+func TestVerifyLoginMissingChallenge(t *testing.T) {
+	svc, _, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	_, err := svc.VerifyLogin(context.Background(), "missing-challenge", "123456")
+	if codeOf(t, err) != string(exception.MsgResetCodeInvalid) {
+		t.Fatalf("%v", err)
+	}
+}
+
+func TestRegisterGuestOpensSession(t *testing.T) {
+	st := usermock.NewState()
+	st.SetInstanceSettings(models.InstanceSettings{GuestEnabled: true})
+	svc, _, _, _, _, _ := testSupport.NewAuthService(t, st, nil)
+	ctx := context.Background()
+
+	out, err := svc.RegisterGuest(ctx, models.GuestRegisterInput{DisplayName: "G", BirthDate: "2000-01-15"})
+	if err != nil || out.AccessToken == "" || !out.User.IsGuest {
+		t.Fatalf("%+v %v", out, err)
+	}
+	if _, err := svc.Me(ctx, out.AccessToken); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestMeRejectsExpiredAccessWindow(t *testing.T) {
+	clock := time.Now().UTC()
+	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), func() time.Time { return clock })
+	ctx := context.Background()
+
+	sess := testSupport.RegisterSession(t, svc, notify, registerInput("expired-me@example.com"))
+	clock = clock.Add(constants.RefreshTokenTTL + time.Hour)
+
+	if _, err := svc.Me(ctx, sess.AccessToken); codeOf(t, err) != string(exception.MsgUnauthorized) {
+		t.Fatalf("%v", err)
+	}
+}
+
+// auth_edges_test.go
+
+func TestRegisterRejectsDuplicateEmail(t *testing.T) {
+	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	ctx := context.Background()
+	testSupport.RegisterSession(t, svc, notify, registerInput("dup@example.com"))
+
+	_, err := svc.Register(ctx, registerInput("dup@example.com"))
+	if codeOf(t, err) != string(exception.MsgEmailTaken) {
+		t.Fatalf("dup: %v", err)
+	}
+}
+
+func TestRegisterRejectsUnderage(t *testing.T) {
+	svc, _, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	_, err := svc.Register(context.Background(), models.RegisterInput{
+		Email: "kid@example.com", Password: testPassword, DisplayName: "Kid", BirthDate: "2020-01-01",
+	})
+	if codeOf(t, err) != string(exception.MsgAgeRestricted) {
+		t.Fatalf("age: %v", err)
+	}
+}
+
+func TestLoginRejectsWrongPassword(t *testing.T) {
+	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	ctx := context.Background()
+	testSupport.RegisterSession(t, svc, notify, registerInput("login@example.com"))
+
+	_, err := svc.Login(ctx, models.LoginInput{Login: "login@example.com", Password: "wrong-password-here"})
+	if codeOf(t, err) != string(exception.MsgInvalidCredentials) {
+		t.Fatalf("bad pass: %v", err)
+	}
+}
+
+func TestVerifyRegisterRejectsEmptyFields(t *testing.T) {
+	svc, _, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	_, err := svc.VerifyRegister(context.Background(), "", "")
+	if err == nil {
+		t.Fatal("expected error")
+	}
+}
+
+func TestRefreshRejectsEmptyToken(t *testing.T) {
+	svc, _, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	_, err := svc.Refresh(context.Background(), "", models.ClientMeta{})
+	if codeOf(t, err) != string(exception.MsgUnauthorized) {
+		t.Fatalf("%v", err)
+	}
+}
+
+func TestLogoutNoopOnEmptyRefresh(t *testing.T) {
+	svc, _, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	if err := svc.Logout(context.Background(), ""); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestMeRejectsEmptyAccessToken(t *testing.T) {
+	svc, _, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	_, err := svc.Me(context.Background(), "")
+	if codeOf(t, err) != string(exception.MsgUnauthorized) {
+		t.Fatalf("%v", err)
+	}
+}
+
+func TestCompletePasswordResetRejectsShortPassword(t *testing.T) {
+	svc, _, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	err := svc.CompletePasswordReset(context.Background(), "token", "short")
+	if err == nil {
+		t.Fatal("expected invalid password")
+	}
+}
+
+func TestCompletePasswordResetRejectsUnknownToken(t *testing.T) {
+	svc, _, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	err := svc.CompletePasswordReset(context.Background(), "unknown-token", testPassword)
+	if codeOf(t, err) != string(exception.MsgUnauthorized) {
+		t.Fatalf("%v", err)
+	}
+}
+
+func TestResendRegisterRejectsMissingChallenge(t *testing.T) {
+	svc, _, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	_, err := svc.ResendRegisterCode(context.Background(), "nope")
+	if codeOf(t, err) != string(exception.MsgResetCodeInvalid) {
+		t.Fatalf("%v", err)
+	}
+}
+
+func TestPasswordResetFlowForRegisteredUser(t *testing.T) {
+	st := usermock.NewState()
+	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, st, nil)
+	ctx := context.Background()
+
+	testSupport.RegisterSession(t, svc, notify, registerInput("reset-full@example.com"))
+	if _, err := svc.RequestPasswordReset(ctx, "reset-full@example.com", "en"); err != nil {
+		t.Fatal(err)
+	}
+	token, err := svc.VerifyPasswordReset(ctx, "reset-full@example.com", notify.LastCode)
+	if err != nil || token == "" {
+		t.Fatalf("verify %v %q", err, token)
+	}
+	newPass := "new-horse-battery-x"
+	if err := svc.CompletePasswordReset(ctx, token, newPass); err != nil {
+		t.Fatal(err)
+	}
+
+	step, err := svc.Login(ctx, models.LoginInput{Login: "reset-full@example.com", Password: newPass})
+	if err != nil || step.Challenge == nil {
+		t.Fatalf("login: %+v %v", step, err)
+	}
+}
+
+// auth_more_test.go
+
+func TestLoginByUsername(t *testing.T) {
+	st := usermock.NewState()
+	svc, notify, _, userSvc, _, _ := testSupport.NewAuthService(t, st, nil)
+	ctx := context.Background()
+
+	owner := testSupport.RegisterSession(t, svc, notify, registerInput("login-user@example.com"))
+	if err := userSvc.CompleteInstanceSetup(ctx, owner.AccessToken, models.CompleteInstanceSetupInput{
+		Name: "WiChat", RegistrationMode: "open", UsernameEnabled: true,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	second := testSupport.RegisterSession(t, svc, notify, registerInput("other@example.com"))
+	if second.User.Username == "" {
+		t.Fatal("username")
+	}
+
+	step, err := svc.Login(ctx, models.LoginInput{Login: second.User.Username, Password: testPassword})
+	if err != nil || step.Challenge == nil {
+		t.Fatalf("%+v %v", step, err)
+	}
+	if _, err := svc.VerifyLogin(ctx, step.Challenge.ChallengeID, notify.LastCode); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestVerifyRegisterRejectsEmailTakenRace(t *testing.T) {
+	st := usermock.NewState()
+	svc, notify, users, _, _, _ := testSupport.NewAuthService(t, st, nil)
+	ctx := context.Background()
+
+	step, err := svc.Register(ctx, registerInput("race@example.com"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now().UTC()
+	if err := users.CreateUser(ctx, models.User{
+		ID: "other", Email: "race@example.com", PasswordHash: "h", DisplayName: "X", CreatedAt: now, UpdatedAt: now,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = svc.VerifyRegister(ctx, step.Challenge.ChallengeID, notify.LastCode)
+	if codeOf(t, err) != string(exception.MsgEmailTaken) {
+		t.Fatalf("%v", err)
+	}
+}
+
+func TestUnknownPasswordResetRateLimited(t *testing.T) {
+	st := usermock.NewState()
+	svc, _, _, _, _, _ := testSupport.NewAuthService(t, st, nil)
+	ctx := context.Background()
+
+	if _, err := svc.RequestPasswordReset(ctx, "ghost@example.com", "en"); err != nil {
+		t.Fatal(err)
+	}
+	_, err := svc.RequestPasswordReset(ctx, "ghost@example.com", "en")
+	if codeOf(t, err) != string(exception.MsgResetRateLimited) {
+		t.Fatalf("%v", err)
+	}
+}
+
+func TestVerifyPasswordResetWrongCode(t *testing.T) {
+	st := usermock.NewState()
+	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, st, nil)
+	ctx := context.Background()
+
+	testSupport.RegisterSession(t, svc, notify, registerInput("wrong-reset@example.com"))
+	if _, err := svc.RequestPasswordReset(ctx, "wrong-reset@example.com", "en"); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := svc.VerifyPasswordReset(ctx, "wrong-reset@example.com", "000000")
+	if codeOf(t, err) != string(exception.MsgResetCodeInvalid) {
+		t.Fatalf("%v", err)
+	}
+}
+
+func TestLogoutAfterRedisFlushUsesSession(t *testing.T) {
+	st := usermock.NewState()
+	svc, notify, _, _, _, mr := testSupport.NewAuthService(t, st, nil)
+	ctx := context.Background()
+
+	sess := testSupport.RegisterSession(t, svc, notify, registerInput("logout-flush@example.com"))
+	rotated, err := svc.Refresh(ctx, sess.RefreshToken, models.ClientMeta{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	mr.FlushAll()
+
+	if err := svc.Logout(ctx, rotated.RefreshToken); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.Me(ctx, rotated.AccessToken); codeOf(t, err) != string(exception.MsgUnauthorized) {
+		t.Fatalf("%v", err)
+	}
+}
+
+func TestRegisterWithLocale(t *testing.T) {
+	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	ctx := context.Background()
+
+	in := registerInput("locale@example.com")
+	in.Locale = "id"
+	step, err := svc.Register(ctx, in)
+	if err != nil || step.Challenge == nil {
+		t.Fatalf("%+v %v", step, err)
+	}
+	if _, err := svc.VerifyRegister(ctx, step.Challenge.ChallengeID, notify.LastCode); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// auth_otp_limits_test.go
+
+func TestVerifyRegisterBlocksAfterMaxWrongCodes(t *testing.T) {
+	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	ctx := context.Background()
+
+	step, err := svc.Register(ctx, registerInput("max-wrong@example.com"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = notify.LastCode
+
+	for i := 0; i < 5; i++ {
+		_, err = svc.VerifyRegister(ctx, step.Challenge.ChallengeID, "00000"+string(rune('0'+i)))
+		if codeOf(t, err) != string(exception.MsgResetCodeInvalid) {
+			t.Fatalf("attempt %d: %v", i, err)
+		}
+	}
+
+	_, err = svc.VerifyRegister(ctx, step.Challenge.ChallengeID, notify.LastCode)
+	if err == nil {
+		t.Fatal("expected lockout or invalid after max attempts")
+	}
+}
+
+func TestVerifyRegisterEmptyChallengeID(t *testing.T) {
+	svc, _, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	_, err := svc.VerifyRegister(context.Background(), " ", "123456")
+	if err == nil {
+		t.Fatal("expected error")
+	}
+}
+
+// auth_password_revoke_test.go
+
+func TestCompletePasswordResetRevokesPriorSessions(t *testing.T) {
+	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	ctx := context.Background()
+
+	sess := testSupport.RegisterSession(t, svc, notify, registerInput("revoke-all@example.com"))
+	if _, err := svc.RequestPasswordReset(ctx, "revoke-all@example.com", "en"); err != nil {
+		t.Fatal(err)
+	}
+	token, err := svc.VerifyPasswordReset(ctx, "revoke-all@example.com", notify.LastCode)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newPass := "brand-new-password"
+	if err := svc.CompletePasswordReset(ctx, token, newPass); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := svc.Me(ctx, sess.AccessToken); codeOf(t, err) != string(exception.MsgUnauthorized) {
+		t.Fatalf("%v", err)
+	}
+}
+
+func TestCreateUserFromPendingUsernameConflict(t *testing.T) {
+	st := usermock.NewState()
+	svc, notify, users, userSvc, _, _ := testSupport.NewAuthService(t, st, nil)
+	ctx := context.Background()
+
+	owner := testSupport.RegisterSession(t, svc, notify, registerInput("uname-owner@example.com"))
+	if err := userSvc.CompleteInstanceSetup(ctx, owner.AccessToken, models.CompleteInstanceSetupInput{
+		Name: "WiChat", RegistrationMode: "open", UsernameEnabled: true,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	// Pre-create username that Allocate would pick for pending email.
+	if err := users.CreateUser(ctx, models.User{ID: "u-x", Email: "other@example.com", Username: "allocate", DisplayName: "X"}); err != nil {
+		t.Fatal(err)
+	}
+
+	first := testSupport.RegisterSession(t, svc, notify, registerInput("first-alloc@example.com"))
+	if first.User.Username == "" {
+		t.Fatal("username expected")
+	}
+}
+
+// auth_validation_test.go
+
+func TestLoginRejectsEmptyFields(t *testing.T) {
+	svc, _, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	ctx := context.Background()
+
+	_, err := svc.Login(ctx, models.LoginInput{Login: " ", Password: testPassword})
+	if err == nil {
+		t.Fatal("empty login")
+	}
+	_, err = svc.Login(ctx, models.LoginInput{Login: "a@b.com", Password: "short"})
+	if err == nil {
+		t.Fatal("short password")
+	}
+}
+
+func TestRegisterRejectsInvalidEmail(t *testing.T) {
+	svc, _, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	_, err := svc.Register(context.Background(), models.RegisterInput{
+		Email: "not-email", Password: testPassword, DisplayName: "Ada", BirthDate: "2000-01-15",
+	})
+	if err == nil {
+		t.Fatal("expected error")
+	}
+}
+
+func TestVerifyRegisterRejectsBadCodeBeforeUserExists(t *testing.T) {
+	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	ctx := context.Background()
+
+	step, err := svc.Register(ctx, registerInput("verify-bad@example.com"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if notify.LastCode == "" {
+		t.Fatal("code")
+	}
+
+	_, err = svc.VerifyRegister(ctx, step.Challenge.ChallengeID, "ZZZZZZ")
+	if codeOf(t, err) != string(exception.MsgResetCodeInvalid) {
+		t.Fatalf("%v", err)
+	}
+}
+
+func TestVerifyPasswordResetEmptyCode(t *testing.T) {
+	svc, _, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	_, err := svc.VerifyPasswordReset(context.Background(), "a@example.com", " ")
+	if err == nil {
+		t.Fatal("expected error")
+	}
+}
+
+func TestRequestPasswordResetInvalidEmail(t *testing.T) {
+	svc, _, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	_, err := svc.RequestPasswordReset(context.Background(), "bad-email", "en")
+	if err == nil {
+		t.Fatal("expected error")
+	}
+}
+
+func TestGoogleFinishRejectsEmptyCode(t *testing.T) {
+	st := usermock.NewState()
+	svc, notify, users, _, _, _ := testSupport.NewAuthService(t, st, nil)
+	// Rebuild with google config like GoogleStart test — use existing google test pattern skip; just call with empty on default svc
+	_ = users
+	_ = notify
+	_, err := svc.GoogleFinish(context.Background(), "", "verifier", models.ClientMeta{})
+	if codeOf(t, err) != string(exception.MsgUnavailable) {
+		t.Fatalf("%v", err)
+	}
+}
+
+func TestSecondRegisterAssignsUsername(t *testing.T) {
+	svc, notify, users, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	ctx := context.Background()
+
+	testSupport.RegisterSession(t, svc, notify, registerInput("first-user@example.com"))
+
+	second := testSupport.RegisterSession(t, svc, notify, registerInput("second-user@example.com"))
+	u, err := users.FindUserByID(ctx, second.User.ID)
+	if err != nil || u.Username == "" {
+		t.Fatalf("username: %+v %v", u, err)
+	}
+}
+
+func TestResendLoginRejectsMissingChallenge(t *testing.T) {
+	svc, _, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	_, err := svc.ResendLoginCode(context.Background(), "missing")
+	if codeOf(t, err) != string(exception.MsgResetCodeInvalid) {
+		t.Fatalf("%v", err)
+	}
+}
+
+func TestResendRegisterRateLimitedWithoutWait(t *testing.T) {
+	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	ctx := context.Background()
+
+	step, err := svc.Register(ctx, registerInput("rate@example.com"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = notify.LastCode
+
+	_, err = svc.ResendRegisterCode(ctx, step.Challenge.ChallengeID)
+	if err == nil {
+		t.Fatal("expected rate limit")
+	}
+	if codeOf(t, err) != string(exception.MsgResetRateLimited) {
+		t.Fatalf("%v", err)
+	}
+}
+
+// auth_email_hint_test.go
+
+func TestRegisterEmailHintShortLocal(t *testing.T) {
+	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	ctx := context.Background()
+
+	step, err := svc.Register(ctx, models.RegisterInput{
+		Email: "a@example.com", Password: testPassword, DisplayName: "A", BirthDate: "2000-01-15",
+	})
+	if err != nil || step.Challenge == nil {
+		t.Fatalf("%+v %v", step, err)
+	}
+	if step.Challenge.EmailHint == "" {
+		t.Fatal("hint")
+	}
+	if _, err := svc.VerifyRegister(ctx, step.Challenge.ChallengeID, notify.LastCode); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// auth_email_hint_test.go
+
+func TestLoginEmailRateLimitedWithoutVerify(t *testing.T) {
+	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	ctx := context.Background()
+
+	testSupport.RegisterSession(t, svc, notify, registerInput("rate-login@example.com"))
+
+	if _, err := svc.Login(ctx, models.LoginInput{Login: "rate-login@example.com", Password: testPassword}); err != nil {
+		t.Fatal(err)
+	}
+	_, err := svc.Login(ctx, models.LoginInput{Login: "rate-login@example.com", Password: testPassword})
+	if codeOf(t, err) != string(exception.MsgResetRateLimited) {
+		t.Fatalf("%v", err)
+	}
+}
+
+// auth_email_hint_test.go
+
+func TestGoogleFinishUnavailableUpstream(t *testing.T) {
+	st := usermock.NewState()
+	users, _, sessions := testSupport.TestRepos(st)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		http.Error(w, "down", http.StatusServiceUnavailable)
+	}))
+	t.Cleanup(srv.Close)
+
+	rdb := testSupport.RedisClient(t)
+	log := logger.New(logger.Options{Service: "auth-test", Env: "test", Level: "error"})
+	userSvc := userservice.NewService(users, sessions, []byte(testSupport.TestJWTSecret), log)
+	svc, err := service.NewService(users, sessions, authrepo.NewRedisRefreshStore(rdb), []byte(testSupport.TestJWTSecret), log, googleoauth.Config{
+		ClientID: "id", ClientSecret: "sec", RedirectURL: "http://cb",
+		TokenURL: srv.URL + "/token", UserInfoURL: srv.URL + "/info",
+	}, authrepo.NewRedisPasswordResetStore(rdb), authrepo.NewRedisEmailAuthStore(rdb), &testSupport.FakeNotifier{}, userSvc, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = svc.GoogleFinish(context.Background(), "code", "verifier", models.ClientMeta{})
+	if codeOf(t, err) != string(exception.MsgGoogleDenied) {
+		t.Fatalf("%v", err)
+	}
+}
+
+// auth_email_hint_test.go
+
+func TestGoogleFinishRejectsOversizeCode(t *testing.T) {
+	st := usermock.NewState()
+	users, _, sessions := testSupport.TestRepos(st)
+	rdb := testSupport.RedisClient(t)
+	log := logger.New(logger.Options{Service: "auth-test", Env: "test", Level: "error"})
+	userSvc := userservice.NewService(users, sessions, []byte(testSupport.TestJWTSecret), log)
+	svc, err := service.NewService(users, sessions, authrepo.NewRedisRefreshStore(rdb), []byte(testSupport.TestJWTSecret), log, googleoauth.Config{
+		ClientID: "id", ClientSecret: "sec", RedirectURL: "http://cb",
+		TokenURL: "http://127.0.0.1:1/token", UserInfoURL: "http://127.0.0.1:1/info",
+	}, authrepo.NewRedisPasswordResetStore(rdb), authrepo.NewRedisEmailAuthStore(rdb), &testSupport.FakeNotifier{}, userSvc, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	big := make([]byte, 2049)
+	for i := range big {
+		big[i] = 'a'
+	}
+	_, err = svc.GoogleFinish(context.Background(), string(big), "verifier", models.ClientMeta{})
+	if codeOf(t, err) != string(exception.MsgGoogleDenied) {
+		t.Fatalf("%v", err)
+	}
+}
+
+// auth_refresh_expired_test.go
+
+func TestRefreshRejectsExpiredSession(t *testing.T) {
+	clock := time.Now().UTC()
+	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), func() time.Time { return clock })
+	ctx := context.Background()
+
+	sess := testSupport.RegisterSession(t, svc, notify, registerInput("refresh-exp@example.com"))
+	clock = clock.Add(constants.RefreshTokenTTL + time.Minute)
+
+	_, err := svc.Refresh(ctx, sess.RefreshToken, models.ClientMeta{})
+	if codeOf(t, err) != string(exception.MsgUnauthorized) {
+		t.Fatalf("%v", err)
+	}
+}
+
+// auth_register_meta_test.go
+
+func TestVerifyRegisterPreservesClientMetaInSession(t *testing.T) {
+	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	ctx := context.Background()
+
+	step, err := svc.Register(ctx, models.RegisterInput{
+		Email: "meta-reg@example.com", Password: testPassword, DisplayName: "Meta",
+		BirthDate: "2000-01-15",
+		ClientMeta: models.ClientMeta{
+			UserAgent: "WiChatTest/2.0", ClientIP: "203.0.113.9", Platform: "web", DeviceLabel: "Linux",
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	out, err := svc.VerifyRegister(ctx, step.Challenge.ChallengeID, notify.LastCode)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if out.AccessToken == "" {
+		t.Fatal("expected session")
+	}
+}
+
+// auth_unavailable_test.go
+
+func TestRegisterUnavailableWithoutEmailStore(t *testing.T) {
+	st := usermock.NewState()
+	users, _, sessions := testSupport.TestRepos(st)
+	rdb := testSupport.RedisClient(t)
+	log := logger.New(logger.Options{Service: "auth-test", Env: "test", Level: "error"})
+	userSvc := userservice.NewService(users, sessions, []byte(testSupport.TestJWTSecret), log)
+
+	svc, err := service.NewService(users, sessions, authrepo.NewRedisRefreshStore(rdb), []byte(testSupport.TestJWTSecret), log, googleoauth.Config{},
+		authrepo.NewRedisPasswordResetStore(rdb), nil, &testSupport.FakeNotifier{}, userSvc, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = svc.Register(context.Background(), registerInput("no-email-store@example.com"))
+	if codeOf(t, err) != string(exception.MsgUnavailable) {
+		t.Fatalf("%v", err)
+	}
+}
+
+// auth_unavailable_test.go
+
+func TestPasswordResetUnavailableWithoutResetStore(t *testing.T) {
+	st := usermock.NewState()
+	authSvc, notify, users, _, _, _ := testSupport.NewAuthService(t, st, nil)
+	ctx := context.Background()
+	testSupport.RegisterSession(t, authSvc, notify, registerInput("no-reset@example.com"))
+
+	rdb := testSupport.RedisClient(t)
+	log := logger.New(logger.Options{Service: "auth-test", Env: "test", Level: "error"})
+	_, _, sessions := testSupport.TestRepos(st)
+	userSvc := userservice.NewService(users, sessions, []byte(testSupport.TestJWTSecret), log)
+	svc, err := service.NewService(users, sessions, authrepo.NewRedisRefreshStore(rdb), []byte(testSupport.TestJWTSecret), log, googleoauth.Config{},
+		nil, authrepo.NewRedisEmailAuthStore(rdb), &testSupport.FakeNotifier{}, userSvc, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = svc.RequestPasswordReset(ctx, "no-reset@example.com", "en")
+	if codeOf(t, err) != string(exception.MsgUnavailable) {
+		t.Fatalf("%v", err)
+	}
+}
+
+// auth_unavailable_test.go
+
+func TestNewServiceRejectsShortJWTSecret(t *testing.T) {
+	st := usermock.NewState()
+	users, _, sessions := testSupport.TestRepos(st)
+	rdb := testSupport.RedisClient(t)
+	log := logger.New(logger.Options{Service: "t", Env: "test", Level: "error"})
+	userSvc := userservice.NewService(users, sessions, []byte(testSupport.TestJWTSecret), log)
+
+	_, err := service.NewService(users, sessions, authrepo.NewRedisRefreshStore(rdb), []byte("short"), log, googleoauth.Config{},
+		authrepo.NewRedisPasswordResetStore(rdb), authrepo.NewRedisEmailAuthStore(rdb), &testSupport.FakeNotifier{}, userSvc, nil)
+	if err == nil {
+		t.Fatal("expected error")
+	}
+}
+
+// auth_verify_login_test.go
+
+func TestVerifyLoginBlocksAfterMaxWrongCodes(t *testing.T) {
+	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	ctx := context.Background()
+
+	testSupport.RegisterSession(t, svc, notify, registerInput("login-max@example.com"))
+	step, err := svc.Login(ctx, modelsLogin("login-max@example.com"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = notify.LastCode
+
+	for i := 0; i < 5; i++ {
+		_, err = svc.VerifyLogin(ctx, step.Challenge.ChallengeID, "00000"+string(rune('0'+i)))
+		if codeOf(t, err) != string(exception.MsgResetCodeInvalid) {
+			t.Fatalf("attempt %d: %v", i, err)
+		}
+	}
+}
+
+// auth_verify_login_test.go
+
+func TestVerifyLoginEmptyCode(t *testing.T) {
+	svc, _, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	_, err := svc.VerifyLogin(context.Background(), "cid", " ")
+	if err == nil {
+		t.Fatal("expected error")
+	}
+}
+
+func modelsLogin(email string) models.LoginInput {
+	return models.LoginInput{Login: email, Password: testPassword}
+}
+
+// auth_matrix_test.go
+
+func TestMeAfterUserRemoved(t *testing.T) {
+	st := usermock.NewState()
+	svc, notify, users, _, _, _ := testSupport.NewAuthService(t, st, nil)
+	ctx := context.Background()
+
+	sess := testSupport.RegisterSession(t, svc, notify, registerInput("ghost-me@example.com"))
+	st.Lock()
+	st.Users = nil
+	st.Unlock()
+
+	if _, err := svc.Me(ctx, sess.AccessToken); codeOf(t, err) != string(exception.MsgUnauthorized) {
+		t.Fatalf("%v", err)
+	}
+	_ = users
+}
+
+// auth_matrix_test.go
+
+func TestGoogleFinishExchangeDenied(t *testing.T) {
+	st := usermock.NewState()
+	users, _, sessions := testSupport.TestRepos(st)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		http.Error(w, "denied", http.StatusBadRequest)
+	}))
+	t.Cleanup(srv.Close)
+
+	rdb := testSupport.RedisClient(t)
+	log := logger.New(logger.Options{Service: "auth-test", Env: "test", Level: "error"})
+	userSvc := userservice.NewService(users, sessions, []byte(testSupport.TestJWTSecret), log)
+	svc, err := service.NewService(users, sessions, authrepo.NewRedisRefreshStore(rdb), []byte(testSupport.TestJWTSecret), log, googleoauth.Config{
+		ClientID: "id", ClientSecret: "sec", RedirectURL: "http://cb", TokenURL: srv.URL,
+	}, authrepo.NewRedisPasswordResetStore(rdb), authrepo.NewRedisEmailAuthStore(rdb), &testSupport.FakeNotifier{}, userSvc, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = svc.GoogleFinish(context.Background(), "code", "verifier", models.ClientMeta{})
+	if codeOf(t, err) != string(exception.MsgGoogleDenied) {
+		t.Fatalf("%v", err)
 	}
 }

@@ -8,6 +8,32 @@ import (
 	"github.com/wichat/wichat/backend/wi-shared/exception"
 )
 
+func TestAllConstructorsExposeKind(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		err  error
+		kind exception.Kind
+	}{
+		{exception.Unauthenticated(exception.MsgInvalidCredentials, nil), exception.KindUnauthenticated},
+		{exception.PermissionDenied(exception.MsgForbidden, nil), exception.KindPermissionDenied},
+		{exception.Conflict(exception.MsgEmailTaken, nil), exception.KindConflict},
+		{exception.StateConflict(exception.MsgSetupClosed, nil), exception.KindStateConflict},
+		{exception.RateLimited(exception.MsgRateLimited, nil), exception.KindRateLimited},
+		{exception.DeadlineExceeded(exception.MsgTimeout, nil), exception.KindDeadlineExceeded},
+	}
+
+	for _, tc := range cases {
+		ex, ok := exception.As(tc.err)
+		if !ok || ex.Kind != tc.kind {
+			t.Fatalf("%v: kind=%v ok=%v", tc.kind, ex.Kind, ok)
+		}
+		if ex.Error() == "" {
+			t.Fatal("empty Error()")
+		}
+	}
+}
+
 func TestConstructorsSetKindAndCode(t *testing.T) {
 	err := exception.NotFound(exception.MsgUserNotFound, map[string]any{"user_id": "x"})
 	ex, ok := exception.As(err)

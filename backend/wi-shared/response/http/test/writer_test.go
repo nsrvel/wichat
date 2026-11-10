@@ -13,6 +13,22 @@ import (
 	responsehttp "github.com/wichat/wichat/backend/wi-shared/response/http"
 )
 
+func TestWriteErrorNil(t *testing.T) {
+	rec := httptest.NewRecorder()
+	responsehttp.WriteError(rec, nil, nil)
+	if rec.Code != 200 || rec.Body.Len() != 0 {
+		t.Fatalf("code=%d body=%q", rec.Code, rec.Body.String())
+	}
+}
+
+func TestWriteOutboundErrorNil(t *testing.T) {
+	rec := httptest.NewRecorder()
+	responsehttp.WriteOutboundError(rec, nil, nil)
+	if rec.Code != 200 || rec.Body.Len() != 0 {
+		t.Fatalf("code=%d", rec.Code)
+	}
+}
+
 func TestWriteErrorExceptionWithParams(t *testing.T) {
 	rec := httptest.NewRecorder()
 	err := exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "email"})
@@ -86,6 +102,47 @@ func TestWriteOutboundErrorTransport(t *testing.T) {
 	_ = json.Unmarshal(rec.Body.Bytes(), &body)
 	if body["error"]["code"] != string(exception.MsgUnavailable) {
 		t.Fatalf("code %v", body["error"]["code"])
+	}
+}
+
+func TestWriteOutboundErrorExceptionPassthrough(t *testing.T) {
+	rec := httptest.NewRecorder()
+	err := exception.Unauthenticated(exception.MsgInvalidCredentials, nil)
+	responsehttp.WriteOutboundError(rec, nil, err)
+
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("status %d", rec.Code)
+	}
+}
+
+func TestWriteOutboundErrorGRPCStatus(t *testing.T) {
+	rec := httptest.NewRecorder()
+	grpcErr := responsegrpc.ToStatus(exception.PermissionDenied(exception.MsgForbidden, nil))
+	responsehttp.WriteOutboundError(rec, nil, grpcErr)
+
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status %d", rec.Code)
+	}
+}
+
+func TestWriteErrorFromGRPCRaw(t *testing.T) {
+	var logged bool
+	rec := httptest.NewRecorder()
+	responsehttp.WriteErrorFromGRPC(rec, nil, errors.New("not a status"), responsehttp.WithLogger(func(error) { logged = true }))
+
+	if !logged || rec.Code != http.StatusInternalServerError {
+		t.Fatalf("logged=%v status=%d", logged, rec.Code)
+	}
+}
+
+func TestWriteErrorFromGRPCInternalLogs(t *testing.T) {
+	var logged bool
+	rec := httptest.NewRecorder()
+	grpcErr := responsegrpc.ToStatus(exception.Internal(errors.New("cause")))
+	responsehttp.WriteErrorFromGRPC(rec, nil, grpcErr, responsehttp.WithLogger(func(error) { logged = true }))
+
+	if !logged || rec.Code != http.StatusInternalServerError {
+		t.Fatalf("logged=%v status=%d", logged, rec.Code)
 	}
 }
 

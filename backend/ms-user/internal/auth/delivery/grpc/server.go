@@ -12,7 +12,7 @@ import (
 	inviteservice "github.com/wichat/wichat/backend/ms-user/internal/invite/service"
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
 	userservice "github.com/wichat/wichat/backend/ms-user/internal/user/service"
-	authPb "github.com/wichat/wichat/backend/ms-user/pkg/converter"
+	authPb "github.com/wichat/wichat/backend/ms-user/pkg/auth-pb"
 	inviteCursor "github.com/wichat/wichat/backend/ms-user/pkg/invite"
 	"github.com/wichat/wichat/backend/wi-shared/exception"
 	userv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/user/v1"

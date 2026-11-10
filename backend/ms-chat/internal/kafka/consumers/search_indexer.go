@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	searchrepo "github.com/wichat/wichat/backend/ms-chat/internal/search/repository"
-	"github.com/wichat/wichat/backend/wi-shared/chatevents"
+	chatEvents "github.com/wichat/wichat/backend/wi-shared/chat-events"
 	"github.com/wichat/wichat/backend/wi-shared/infra/elasticsearch"
 	wikafka "github.com/wichat/wichat/backend/wi-shared/infra/kafka"
 	"github.com/wichat/wichat/backend/wi-shared/infra/logger"
@@ -63,11 +63,11 @@ func (s searchIndexer) handle(ctx context.Context, in wikafka.Incoming) error {
 	if err := json.Unmarshal(in.Value, &head); err != nil {
 		return err
 	}
-	if strings.TrimSpace(head.Type) != chatevents.TypeMessageCreated {
+	if strings.TrimSpace(head.Type) != chatEvents.TypeMessageCreated {
 		return nil
 	}
 
-	var ev chatevents.MessageCreated
+	var ev chatEvents.MessageCreated
 	if err := json.Unmarshal(in.Value, &ev); err != nil {
 		return err
 	}

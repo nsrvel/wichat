@@ -1,0 +1,11 @@
+# Packages included in scoped coverage (target 90%).
+./config
+./exception
+./chat-events
+./realtime
+./response/...
+./microservices/utils
+./microservices/utils/correlation
+./microservices/utils/grpc
+./infra/logger
+# minio live client: ms-user group/repository/test/minio_repository_test; disabled-path unit tests in infra/minio/test still run

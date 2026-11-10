@@ -12,6 +12,12 @@ endif
 
 DATABASE_URL ?= postgres://wichat:wichat@localhost:5432/wichat?sslmode=disable
 
+BACKEND_ROOT := ..
+
+.PHONY: test-cover
+test-cover:
+	@bash "$(BACKEND_ROOT)/scripts/coverage-gate.sh" "$(CURDIR)" 90
+
 .PHONY: fmt lint test check dev run migrate-up migrate-down migrate-status migrate-create
 
 fmt:
@@ -23,7 +29,7 @@ lint:
 test:
 	go test ./...
 
-check: fmt lint test
+check: fmt lint test test-cover
 
 dev:
 	$(AIR)

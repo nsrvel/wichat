@@ -205,6 +205,63 @@ func TestMemberCanLeaveGroup(t *testing.T) {
 	}
 }
 
+func TestUploadGroupIconReplacesLogo(t *testing.T) {
+	st := usermock.NewState()
+	authSvc, notify, _, _, _, _ := testSupport.NewAuthService(t, st, nil)
+	groupSvc := testSupport.NewGroupServiceWithFakeMinio(t, st)
+	ctx := context.Background()
+
+	owner := testSupport.RegisterSession(t, authSvc, notify, registerInput("icon-replace@example.com"))
+	created, _ := groupSvc.CreateGroup(ctx, owner.AccessToken, "Replace")
+
+	first, err := groupSvc.UploadGroupIcon(ctx, owner.AccessToken, created.ID, "image/png", strings.NewReader("a"), 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := groupSvc.UploadGroupIcon(ctx, owner.AccessToken, created.ID, "image/jpeg", strings.NewReader("bb"), 2)
+	if err != nil || second.LogoURL == "" || first.LogoURL == "" {
+		t.Fatalf("first=%q second=%q err=%v", first.LogoURL, second.LogoURL, err)
+	}
+}
+
+func TestUploadGroupIconByOwner(t *testing.T) {
+	st := usermock.NewState()
+	authSvc, notify, _, _, _, _ := testSupport.NewAuthService(t, st, nil)
+	groupSvc := testSupport.NewGroupServiceWithFakeMinio(t, st)
+	ctx := context.Background()
+
+	owner := testSupport.RegisterSession(t, authSvc, notify, registerInput("owner-icon@example.com"))
+	created, err := groupSvc.CreateGroup(ctx, owner.AccessToken, "Icons")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	updated, err := groupSvc.UploadGroupIcon(ctx, owner.AccessToken, created.ID, "image/png", strings.NewReader("png-bytes"), 9)
+	if err != nil || updated.LogoURL == "" {
+		t.Fatalf("upload: %+v %v", updated, err)
+	}
+}
+
+func TestJoinGroupTwiceIsIdempotent(t *testing.T) {
+	st := usermock.NewState()
+	authSvc, notify, _, _, groupSvc, _ := testSupport.NewAuthService(t, st, nil)
+	ctx := context.Background()
+
+	owner := testSupport.RegisterSession(t, authSvc, notify, registerInput("owner-idem@example.com"))
+	created, err := groupSvc.CreateGroup(ctx, owner.AccessToken, "Idem")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	member := testSupport.RegisterSession(t, authSvc, notify, registerInput("member-idem@example.com"))
+	if err := groupSvc.JoinGroup(ctx, member.AccessToken, created.ID); err != nil {
+		t.Fatal(err)
+	}
+	if err := groupSvc.JoinGroup(ctx, member.AccessToken, created.ID); err != nil {
+		t.Fatalf("second join: %v", err)
+	}
+}
+
 func TestJoinGroupRejectsInvalidPublicID(t *testing.T) {
 	st := usermock.NewState()
 	authSvc, notify, _, _, groupSvc, _ := testSupport.NewAuthService(t, st, nil)
@@ -213,5 +270,70 @@ func TestJoinGroupRejectsInvalidPublicID(t *testing.T) {
 	member := testSupport.RegisterSession(t, authSvc, notify, registerInput("member@example.com"))
 	if err := groupSvc.JoinGroup(ctx, member.AccessToken, "not-a-public-id"); err == nil {
 		t.Fatal("expected invalid group_id")
+	}
+}
+
+func TestMemberDeleteForbiddenWhenJoined(t *testing.T) {
+	st := usermock.NewState()
+	authSvc, notify, _, _, groupSvc, _ := testSupport.NewAuthService(t, st, nil)
+	ctx := context.Background()
+
+	owner := testSupport.RegisterSession(t, authSvc, notify, registerInput("owner-mem-del@example.com"))
+	created, err := groupSvc.CreateGroup(ctx, owner.AccessToken, "Team")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	member := testSupport.RegisterSession(t, authSvc, notify, registerInput("member-mem-del@example.com"))
+	if err := groupSvc.JoinGroup(ctx, member.AccessToken, created.ID); err != nil {
+		t.Fatal(err)
+	}
+
+	mine, err := groupSvc.ListMyGroups(ctx, member.AccessToken)
+	if err != nil || len(mine) != 1 || mine[0].Role != constants.GroupRoleMember {
+		t.Fatalf("membership: %+v err=%v", mine, err)
+	}
+
+	err = groupSvc.DeleteGroup(ctx, member.AccessToken, created.ID)
+	ex, ok := exception.As(err)
+	if !ok || ex.Kind != exception.KindPermissionDenied {
+		t.Fatalf("delete as member: %v", err)
+	}
+}
+
+func TestDeleteGroupRejectsNonMember(t *testing.T) {
+	st := usermock.NewState()
+	authSvc, notify, _, _, groupSvc, _ := testSupport.NewAuthService(t, st, nil)
+	ctx := context.Background()
+
+	owner := testSupport.RegisterSession(t, authSvc, notify, registerInput("owner-del-guard@example.com"))
+	created, err := groupSvc.CreateGroup(ctx, owner.AccessToken, "Protected")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	outsider := testSupport.RegisterSession(t, authSvc, notify, registerInput("outsider-del@example.com"))
+	err = groupSvc.DeleteGroup(ctx, outsider.AccessToken, created.ID)
+	ex, ok := exception.As(err)
+	if !ok || ex.Kind != exception.KindInvalidInput {
+		t.Fatalf("expected invalid group_id, got %v", err)
+	}
+}
+
+func TestUploadGroupIconWhenMinioDisabled(t *testing.T) {
+	st := usermock.NewState()
+	authSvc, notify, _, _, groupSvc, _ := testSupport.NewAuthService(t, st, nil)
+	ctx := context.Background()
+
+	owner := testSupport.RegisterSession(t, authSvc, notify, registerInput("icon-disabled@example.com"))
+	created, err := groupSvc.CreateGroup(ctx, owner.AccessToken, "NoUpload")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = groupSvc.UploadGroupIcon(ctx, owner.AccessToken, created.ID, "image/png", strings.NewReader("x"), 1)
+	ex, ok := exception.As(err)
+	if !ok || ex.Kind != exception.KindInvalidInput {
+		t.Fatalf("expected file invalid, got %v", err)
 	}
 }

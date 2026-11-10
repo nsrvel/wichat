@@ -1,0 +1,20 @@
+---
+description: Backend layout checker, scoped 90% coverage gate, repository mocks
+globs: backend/**
+alwaysApply: false
+---
+
+# Backend quality
+
+**Spec:** [docs/architecture/backend-quality.md](../../docs/architecture/backend-quality.md)
+
+## Before merge (Go)
+
+1. `cd backend && make check-layout` — repository whitelist, `pkg/` kebab-case, Postgres mocks present.
+2. `cd backend/<module> && make check` — fmt, lint, tests, **scoped** `test-cover` vs `.coverage-min` (target **90%**).
+3. New `pg_repository.go` → add `repository/mock/pg_repository_mock.go` in the same slice (Redis: miniredis only).
+4. Proto mappers live in `pkg/auth-pb/` (`authPb`), not generic `pkg/converter/`.
+
+## Ratchet
+
+When adding tests, raise the module's `.coverage-min` toward 90 — do not lower floors.

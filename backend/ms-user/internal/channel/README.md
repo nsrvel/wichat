@@ -7,7 +7,7 @@ Workspace **channel metadata** (list, default seed, sidebar section) — not mes
 | Path | Role |
 |------|------|
 | `repository/pg_repository.go` | Postgres list + `SeedDefaultChannels`; tx helpers `InsertDefaultChannelsTx` for co-located transactions |
-| `service/service.go` | `ListGroupChannels`, `SeedDefaultChannels` |
+| `service/service.go` | `ListGroupChannels`, `SeedDefaultChannels`; tests [`service/test/service_test.go`](service/test/service_test.go) |
 | `delivery/grpc/server.go` | `ListGroupChannels` RPC (mounted on `AuthService` until proto splits) |
 | `repository/mock/` | Fast tests |
 

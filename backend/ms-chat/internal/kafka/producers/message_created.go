@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/wichat/wichat/backend/ms-chat/internal/models"
-	"github.com/wichat/wichat/backend/wi-shared/chatevents"
+	chatEvents "github.com/wichat/wichat/backend/wi-shared/chat-events"
 	wikafka "github.com/wichat/wichat/backend/wi-shared/infra/kafka"
 	"github.com/wichat/wichat/backend/wi-shared/infra/logger"
 )
@@ -26,11 +26,11 @@ func NewMessageCreated(producer wikafka.Producer, topic string, log logger.Logge
 }
 
 func (p messageCreatedPublisher) PublishMessageCreated(ctx context.Context, groupPublicID, channelPublicID string, msg models.PublicMessage) error {
-	ev := chatevents.NewMessageCreated(
+	ev := chatEvents.NewMessageCreated(
 		groupPublicID, channelPublicID,
 		msg.ID, msg.AuthorID, msg.AuthorDisplayName, msg.Body, msg.CreatedAt,
 	)
-	raw, err := chatevents.Marshal(ev)
+	raw, err := chatEvents.Marshal(ev)
 	if err != nil {
 		return err
 	}

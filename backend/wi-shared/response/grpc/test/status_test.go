@@ -79,6 +79,50 @@ func TestToStatusPassThroughGRPC(t *testing.T) {
 	}
 }
 
+func TestParseStatusNil(t *testing.T) {
+	if _, ok := responsegrpc.ParseStatus(nil); ok {
+		t.Fatal("expected false")
+	}
+}
+
+func TestParseStatusDeadlineExceededDefaultCode(t *testing.T) {
+	st := status.New(codes.DeadlineExceeded, "")
+	parsed, ok := responsegrpc.ParseStatus(st)
+	if !ok || parsed.Code != exception.MsgTimeout {
+		t.Fatalf("code %s", parsed.Code)
+	}
+}
+
+func TestParseStatusEmptyMessageFillsCode(t *testing.T) {
+	st := status.New(codes.InvalidArgument, "")
+	parsed, ok := responsegrpc.ParseStatus(st)
+	if !ok || parsed.Code != exception.MsgInvalidInput {
+		t.Fatalf("code %s", parsed.Code)
+	}
+}
+
+func TestParseStatusInvalidParamsJSON(t *testing.T) {
+	err := exception.NotFound(exception.MsgUserNotFound, map[string]any{"bad": make(chan int)})
+	stErr := responsegrpc.ToStatus(err)
+	st, _ := status.FromError(stErr)
+	parsed, ok := responsegrpc.ParseStatus(st)
+	if !ok || parsed.Kind != exception.KindInternal {
+		t.Fatalf("kind=%v", parsed.Kind)
+	}
+}
+
+func TestFromErrorNil(t *testing.T) {
+	if _, ok := responsegrpc.FromError(nil); ok {
+		t.Fatal("expected false")
+	}
+}
+
+func TestFromErrorNotStatus(t *testing.T) {
+	if _, ok := responsegrpc.FromError(errors.New("raw")); ok {
+		t.Fatal("expected false")
+	}
+}
+
 func TestUnavailableRoundTrip(t *testing.T) {
 	stErr := responsegrpc.ToStatus(exception.Unavailable(exception.MsgUnavailable, nil))
 	st, ok := status.FromError(stErr)

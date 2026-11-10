@@ -12,7 +12,7 @@ alwaysApply: true
 
 1. Repository folder matches the **whitelist** (`pg_repository.go`, `minio_repository.go`, `redis_*.go`, `mock/`, `test/` only).
 2. Models in `internal/models/<domain>_model.go` + `<domain>_repository_model.go` — not mixed into auth files for other domains.
-3. Tests under `test/`, package `*_test` — not beside production `.go`.
+3. Tests under `test/`, package `*_test` — not beside production `.go`; **one `foo_test.go` per production `foo.go`** (no extra siblings like `auth_more_test.go`).
 4. `cd backend/<module> && make check` passes for every module you changed.
 5. README under the domain still describes the real file names (update if you renamed/moved).
 
@@ -33,7 +33,14 @@ wi-shared/exception/
 - Import the module under test; tests are **black-box** (exported API only).
 - Run: `go test ./...` from the module root (includes `.../test` packages).
 
-**Exception:** tiny white-box tests for unexported helpers — only when unavoidable; keep in `test/` still, or document why a single in-package file is required.
+## Test file 1:1
+
+- Folder name is **`test/`** (singular), not `tests/`.
+- For each production file `foo.go` in the package directory, the **only** test file is `test/foo_test.go`. Merge scattered cases into that file; use `// Section` comments to mirror production structure.
+- One production file (e.g. `service.go`) → exactly **`test/service_test.go`** — never `service_foo_test.go` alongside it.
+- `mock/pg_repository_mock.go` → `mock/test/pg_repository_mock_test.go` (not generic `mock_test.go`).
+
+**No `*_test.go` beside production** — not even `export_test.go`. Unexported helpers: test via the public API from `test/foo_test.go`, or move pure logic to `pkg/` / `wi-shared` when it is worth reusing.
 
 ## Formatting and lint
 

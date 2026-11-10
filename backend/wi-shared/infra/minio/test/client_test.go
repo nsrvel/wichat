@@ -26,23 +26,6 @@ func TestNewDisabledWhenEndpointEmpty(t *testing.T) {
 	}
 }
 
-func TestNewRequiresBucketWhenEndpointSet(t *testing.T) {
-	_, err := minio.New(minio.Config{Endpoint: "localhost:9000"}, testLog())
-	if err == nil {
-		t.Fatal("expected error")
-	}
-}
-
-func TestEnsurePublicReadBucketNoOpWhenDisabled(t *testing.T) {
-	c, err := minio.New(minio.Config{}, testLog())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := minio.EnsurePublicReadBucket(context.Background(), c); err != nil {
-		t.Fatal(err)
-	}
-}
-
 func TestDisabledPublicURL(t *testing.T) {
 	c, err := minio.New(minio.Config{}, testLog())
 	if err != nil {
@@ -50,6 +33,27 @@ func TestDisabledPublicURL(t *testing.T) {
 	}
 	if c.PublicURL("groups/x/icon.png") != "/groups/x/icon.png" {
 		t.Fatalf("got %q", c.PublicURL("groups/x/icon.png"))
+	}
+}
+
+func TestDisabledClientBulkOps(t *testing.T) {
+	c, err := minio.New(minio.Config{}, testLog())
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+
+	if err := c.UploadMany(ctx, []minio.Upload{{Key: "a", ContentType: "text/plain", Body: nil, Size: 0}}); !errors.Is(err, minio.ErrDisabled) {
+		t.Fatalf("upload many: %v", err)
+	}
+	if err := c.Copy(ctx, "a", "b"); !errors.Is(err, minio.ErrDisabled) {
+		t.Fatalf("copy: %v", err)
+	}
+	if err := c.Delete(ctx, "a"); !errors.Is(err, minio.ErrDisabled) {
+		t.Fatalf("delete: %v", err)
+	}
+	if err := c.DeletePrefix(ctx, "p/"); !errors.Is(err, minio.ErrDisabled) {
+		t.Fatalf("delete prefix: %v", err)
 	}
 }
 

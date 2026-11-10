@@ -3,31 +3,13 @@ package service_test
 import (
 	"context"
 	"testing"
-	"time"
 
+	"github.com/wichat/wichat/backend/ms-chat/internal/message/repository/mock"
 	"github.com/wichat/wichat/backend/ms-chat/internal/message/service"
 	"github.com/wichat/wichat/backend/ms-chat/internal/models"
 	"github.com/wichat/wichat/backend/wi-shared/exception"
 	userv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/user/v1"
 )
-
-type fakeRepo struct{}
-
-func (fakeRepo) ListByChannel(context.Context, string, int, *time.Time) ([]models.MessageWithAuthor, error) {
-	return nil, nil
-}
-
-func (fakeRepo) Insert(context.Context, string, string, string, time.Time) (models.Message, error) {
-	return models.Message{}, nil
-}
-
-func (fakeRepo) FindUserDisplayName(context.Context, string) (string, error) {
-	return "", nil
-}
-
-func (fakeRepo) DeleteByID(context.Context, string) error {
-	return nil
-}
 
 type fakeChannel struct{}
 
@@ -49,7 +31,8 @@ func (noopPublisher) PublishMessageCreated(context.Context, string, string, mode
 }
 
 func TestCreateChannelMessageRejectsEmptyBody(t *testing.T) {
-	svc := service.NewService(fakeRepo{}, fakeChannel{}, noopPublisher{}, nil)
+	st := mock.NewState()
+	svc := service.NewService(mock.NewPgRepositoryMock(st), fakeChannel{}, noopPublisher{}, nil)
 	_, err := svc.CreateChannelMessage(context.Background(), &models.CreateChannelMessageInput{
 		ResolvedChannelID: "channel-uuid",
 		CallerUserID:      "user-uuid",

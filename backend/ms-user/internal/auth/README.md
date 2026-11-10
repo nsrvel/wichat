@@ -31,7 +31,7 @@ Persistence errors: `errors.Is(err, constants.ErrNotFound)` from [`pkg/constants
 
 ## Delivery (gRPC)
 
-[`delivery/grpc/server.go`](delivery/grpc/server.go): `Server` interface + thin handlers (Bind / Service / Response). Proto mapping: [`pkg/converter`](../../pkg/converter) (`authPb`).
+[`delivery/grpc/server.go`](delivery/grpc/server.go): `Server` interface + thin handlers (Bind / Service / Response). Proto mapping: [`pkg/auth-pb`](../../pkg/auth-pb) (`authPb`).
 
 ## Repository layout (template for other `ms-*` domains)
 

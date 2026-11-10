@@ -3,6 +3,7 @@ package utils_test
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/wichat/wichat/backend/wi-shared/exception"
 	"github.com/wichat/wichat/backend/wi-shared/microservices/utils"
@@ -39,6 +40,18 @@ func TestBreakerResetsOnSuccess(t *testing.T) {
 
 	if err := b.BeforeCall(); err != nil {
 		t.Fatalf("expected closed after success: %v", err)
+	}
+}
+
+func TestBreakerClosesAfterOpenDuration(t *testing.T) {
+	b := utils.NewBreaker(utils.Settings{BreakerFailureThreshold: 1, BreakerOpenMs: 1})
+	b.Record(status.Error(codes.Unavailable, "down"))
+	if err := b.BeforeCall(); err == nil {
+		t.Fatal("expected open")
+	}
+	time.Sleep(3 * time.Millisecond)
+	if err := b.BeforeCall(); err != nil {
+		t.Fatalf("expected half-open closed: %v", err)
 	}
 }
 

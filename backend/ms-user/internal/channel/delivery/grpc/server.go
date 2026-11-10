@@ -4,7 +4,7 @@ import (
 	"context"
 
 	channelservice "github.com/wichat/wichat/backend/ms-user/internal/channel/service"
-	authPb "github.com/wichat/wichat/backend/ms-user/pkg/converter"
+	authPb "github.com/wichat/wichat/backend/ms-user/pkg/auth-pb"
 	userv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/user/v1"
 	responsegrpc "github.com/wichat/wichat/backend/wi-shared/response/grpc"
 )

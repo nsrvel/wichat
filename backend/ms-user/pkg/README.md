@@ -10,7 +10,7 @@ Helpers shared **inside this microservice** only. Not imported by `api-gateway` 
 pkg/
 ├── constants/          # sentinels, limits, domain enums, SQL literals (no const in repository/)
 ├── validator/          # input validation (register, guest, setup, …)
-├── converter/          # authPb — models ↔ user v1 proto (`auth_pb.go`)
+├── auth-pb/              # authPb — models ↔ user v1 proto (`auth_pb.go`)
 ├── jwt/ token/ password/ otp/
 ├── auth-redis/         # authRedis — OTP HMAC, resend backoff
 ├── access/             # access token → user + session

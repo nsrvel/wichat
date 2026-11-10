@@ -13,6 +13,7 @@ Shared libraries for WiChat backend services.
 | [infra/minio/README.md](infra/minio/README.md) | S3/MinIO `Client` (upload, get, copy, delete) |
 | [models/README.md](models/README.md) | Protobuf contracts, `make proto` |
 | [microservices/README.md](microservices/README.md) | Outbound `Open`, `User.GRPC.*`, `utils` |
+| `chat-events/` | Kafka JSON payloads (`chatEvents`) for topic `chat-events` |
 
 ## Architecture docs
 
