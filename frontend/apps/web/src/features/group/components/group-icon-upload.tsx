@@ -6,7 +6,8 @@ import { useTranslation } from "react-i18next";
 import { groupInitials } from "@/features/shell/lib/group-initials";
 import { cn } from "@/lib/utils";
 
-const MAX_BYTES = 2 * 1024 * 1024;
+// Keep in sync with ms-user/pkg/constants.MaxGroupIconBytes (5 MiB).
+const MAX_BYTES = 5 * 1024 * 1024;
 const ACCEPT = "image/png,image/jpeg,image/webp";
 
 const OUTER_CLASS = "size-[100px] sm:size-[108px]";

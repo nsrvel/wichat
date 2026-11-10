@@ -16,7 +16,7 @@ const (
 const (
 	MaxGroupNameRunes = 80
 	MaxLogoURLRunes   = 2048
-	MaxGroupIconBytes = 2 * 1024 * 1024
+	MaxGroupIconBytes = 5 * 1024 * 1024
 )
 
 // Session token lifetimes.

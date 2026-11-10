@@ -1,4 +1,4 @@
-package auth_test
+package user_test
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-user/grpc/auth"
+	"github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-user/grpc/user"
 	"github.com/wichat/wichat/backend/wi-shared/microservices/utils"
 	userv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/user/v1"
 	"google.golang.org/grpc"
@@ -56,7 +56,7 @@ func TestSetupStatusRetriesIdempotent(t *testing.T) {
 		RetryBackoffMs:          1,
 		BreakerFailureThreshold: 0,
 	}
-	grpcClient := auth.New(conn, settings, nil)
+	grpcClient := user.New(userv1.NewAuthServiceClient(conn), settings, nil)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()

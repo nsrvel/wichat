@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { useCreateMessageMutation } from "@/services/message/message.mutation";
 import { ChatComposer } from "@/features/chat/components/chat-composer";
 import { ChannelEmptyState } from "@/features/chat/components/channel-empty-state";
 import { ConversationHeader } from "@/features/chat/components/conversation-header";
@@ -11,6 +12,7 @@ import { MessageReactions } from "@/features/chat/components/message-reactions";
 import { MessageRow } from "@/features/chat/components/message-row";
 import { toChannelShellNavTarget } from "@/features/channel/lib/channel-shell-nav-target";
 import { useChannelMessages } from "@/features/chat/lib/use-channel-messages";
+import { useChannelRealtime } from "@/features/chat/lib/use-channel-realtime";
 import * as channelQuery from "@/services/channel/channel.query";
 
 type ChannelChatViewProps = {
@@ -24,7 +26,10 @@ export function ChannelChatView({ groupId, channelId, onOpenSidebar }: ChannelCh
 	const channels = useQuery(channelQuery.groupChannelsQueryOpts(groupId));
 	const active = toChannelShellNavTarget(channelId, channels.data?.channels);
 	const { messages, isPending } = useChannelMessages(groupId, channelId);
+	useChannelRealtime(groupId, channelId);
+	const createMessage = useCreateMessageMutation();
 
+	const draftTrimmed = draft.trim();
 	const showEmpty = !isPending && messages.length === 0;
 
 	return (
@@ -57,9 +62,15 @@ export function ChannelChatView({ groupId, channelId, onOpenSidebar }: ChannelCh
 				<ChatComposer
 					value={draft}
 					onChange={setDraft}
-					submitDisabled
+					submitDisabled={createMessage.isPending || draftTrimmed.length === 0}
 					onSubmit={() => {
-						setDraft("");
+						if (draftTrimmed.length === 0 || createMessage.isPending) {
+							return;
+						}
+						createMessage.mutate(
+							{ groupId, channelId, body: draftTrimmed },
+							{ onSuccess: () => setDraft("") },
+						);
 					}}
 				/>
 			</div>

@@ -65,7 +65,7 @@ func NewHandler(ms *microservices.Clients, log logger.Logger, secureCookie bool,
 
 func (h handler) SetupStatus(w http.ResponseWriter, r *http.Request) {
 	// Service
-	out, err := h.ms.User.GRPC.Auth.SetupStatus(r.Context(), &userv1.SetupStatusRequest{})
+	out, err := h.ms.User.GRPC.User.SetupStatus(r.Context(), &userv1.SetupStatusRequest{})
 	if err != nil {
 		authHttp.WriteOutbound(w, r, h.log, err)
 		return
@@ -93,7 +93,7 @@ func (h handler) InstanceSetup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Service
-	_, err := h.ms.User.GRPC.Auth.CompleteInstanceSetup(r.Context(), &userv1.CompleteInstanceSetupRequest{
+	_, err := h.ms.User.GRPC.User.CompleteInstanceSetup(r.Context(), &userv1.CompleteInstanceSetupRequest{
 		AccessToken:      token,
 		Name:             body.Name,
 		LogoUrl:          body.LogoURL,
@@ -189,7 +189,7 @@ func (h handler) RegisterGuest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Service
-	out, err := h.ms.User.GRPC.Auth.RegisterGuest(r.Context(), &userv1.RegisterGuestRequest{
+	out, err := h.ms.User.GRPC.User.RegisterGuest(r.Context(), &userv1.RegisterGuestRequest{
 		DisplayName: body.DisplayName,
 		BirthDate:   body.BirthDate,
 		UserAgent:   middleware.UserAgent(r),
@@ -465,7 +465,7 @@ func (h handler) ListMyGroups(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	out, err := h.ms.User.GRPC.Auth.ListMyGroups(r.Context(), &userv1.ListMyGroupsRequest{AccessToken: token})
+	out, err := h.ms.User.GRPC.Group.ListMyGroups(r.Context(), &userv1.ListMyGroupsRequest{AccessToken: token})
 	if err != nil {
 		authHttp.WriteOutbound(w, r, h.log, err)
 		return
@@ -483,7 +483,7 @@ func (h handler) ListJoinableGroups(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	out, err := h.ms.User.GRPC.Auth.ListJoinableGroups(r.Context(), &userv1.ListJoinableGroupsRequest{AccessToken: token})
+	out, err := h.ms.User.GRPC.Group.ListJoinableGroups(r.Context(), &userv1.ListJoinableGroupsRequest{AccessToken: token})
 	if err != nil {
 		authHttp.WriteOutbound(w, r, h.log, err)
 		return
@@ -513,7 +513,7 @@ func (h handler) CreateGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	out, err := h.ms.User.GRPC.Auth.CreateGroup(r.Context(), &userv1.CreateGroupRequest{
+	out, err := h.ms.User.GRPC.Group.CreateGroup(r.Context(), &userv1.CreateGroupRequest{
 		AccessToken: token,
 		Name:        name,
 	})
@@ -538,7 +538,7 @@ func (h handler) JoinGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := h.ms.User.GRPC.Auth.JoinGroup(r.Context(), &userv1.JoinGroupRequest{
+	_, err := h.ms.User.GRPC.Group.JoinGroup(r.Context(), &userv1.JoinGroupRequest{
 		AccessToken: token,
 		GroupId:     groupID,
 	})
@@ -563,7 +563,7 @@ func (h handler) LeaveGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := h.ms.User.GRPC.Auth.LeaveGroup(r.Context(), &userv1.LeaveGroupRequest{
+	_, err := h.ms.User.GRPC.Group.LeaveGroup(r.Context(), &userv1.LeaveGroupRequest{
 		AccessToken: token,
 		GroupId:     groupID,
 	})
@@ -588,7 +588,7 @@ func (h handler) DeleteGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := h.ms.User.GRPC.Auth.DeleteGroup(r.Context(), &userv1.DeleteGroupRequest{
+	_, err := h.ms.User.GRPC.Group.DeleteGroup(r.Context(), &userv1.DeleteGroupRequest{
 		AccessToken: token,
 		GroupId:     groupID,
 	})
@@ -613,7 +613,7 @@ func (h handler) ListGroupChannels(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	out, err := h.ms.User.GRPC.Auth.ListGroupChannels(r.Context(), &userv1.ListGroupChannelsRequest{
+	out, err := h.ms.User.GRPC.Channel.ListGroupChannels(r.Context(), &userv1.ListGroupChannelsRequest{
 		AccessToken: token,
 		GroupId:     groupID,
 	})
@@ -668,7 +668,7 @@ func (h handler) UploadGroupIcon(w http.ResponseWriter, r *http.Request) {
 		contentType = "application/octet-stream"
 	}
 
-	out, err := h.ms.User.GRPC.Auth.UploadGroupIcon(r.Context(), &userv1.UploadGroupIconRequest{
+	out, err := h.ms.User.GRPC.Group.UploadGroupIcon(r.Context(), &userv1.UploadGroupIconRequest{
 		AccessToken: token,
 		GroupId:     groupID,
 		ContentType: contentType,

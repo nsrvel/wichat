@@ -1,6 +1,6 @@
 "use client";
 
-import { AtSign, Bell, Compass, FileText, Hash } from "lucide-react";
+import { AtSign, Compass, FileText } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -12,17 +12,15 @@ import {
 	SIDEBAR_INSET_X,
 	sidebarNestedListClass,
 } from "@/components/layout/channel-sidebar/sidebar-nav-styles";
-import {
-	ChannelGlyphSlot,
-	channelListGlyphIconClass,
-	sidebarNavGlyphIconClass,
-} from "@/components/layout/sidebar-list-icon";
+import { sidebarNavGlyphIconClass } from "@/components/layout/sidebar-list-icon";
+import { ChannelListIcon } from "@/features/channel/components/channel-list-icon";
 import {
 	CHANNEL_SIDEBAR_MIN_WIDTH,
 	useResizableSidebarWidth,
 } from "@/hooks/use-resizable-sidebar-width";
 import { channelPath, quickViewPath, type QuickViewId } from "@/lib/app-routes";
 import { cn } from "@/lib/utils";
+import { formatChannelDisplayName } from "@/features/channel/lib/channel-display";
 import { partitionChannelsBySidebarSection } from "@/features/channel/lib/partition-group-channels";
 import * as channelQuery from "@/services/channel/channel.query";
 import { useQuery } from "@tanstack/react-query";
@@ -130,11 +128,13 @@ export function ProductionChannelSidebar({
 											activeMenuId={activeMenuId}
 											onActiveMenuIdChange={setActiveMenuId}
 											icon={
-												<ChannelGlyphSlot tileTone="announcement">
-													<Bell className={channelListGlyphIconClass} strokeWidth={2} />
-												</ChannelGlyphSlot>
+												<ChannelListIcon
+													type={ch.type}
+													channelName={ch.name}
+													imageUrl={ch.image_url}
+												/>
 											}
-											label={ch.name}
+											label={formatChannelDisplayName(ch.name)}
 											selected={!activeQuickView && ch.id === activeChannelId}
 											onSelect={() => router.push(channelPath(groupId, ch.id))}
 										/>
@@ -164,11 +164,13 @@ export function ProductionChannelSidebar({
 											activeMenuId={activeMenuId}
 											onActiveMenuIdChange={setActiveMenuId}
 											icon={
-												<ChannelGlyphSlot tileTone="default">
-													<Hash className={channelListGlyphIconClass} strokeWidth={2} />
-												</ChannelGlyphSlot>
+												<ChannelListIcon
+													type={ch.type}
+													channelName={ch.name}
+													imageUrl={ch.image_url}
+												/>
 											}
-											label={ch.name}
+											label={formatChannelDisplayName(ch.name)}
 											selected={!activeQuickView && ch.id === activeChannelId}
 											onSelect={() => router.push(channelPath(groupId, ch.id))}
 										/>

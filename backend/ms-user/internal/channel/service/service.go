@@ -19,6 +19,7 @@ import (
 // Service is channel metadata for a group workspace.
 type Service interface {
 	ListGroupChannels(ctx context.Context, accessToken, groupPublicID string) ([]models.PublicChannel, error)
+	AssertGroupChannelAccess(ctx context.Context, accessToken, groupPublicID, channelPublicID string) (models.ChannelAccess, error)
 	SeedDefaultChannels(ctx context.Context, groupID, ownerUserID string, createdAt time.Time) error
 }
 
@@ -91,6 +92,51 @@ func (s service) ListGroupChannels(ctx context.Context, accessToken, groupPublic
 	}
 
 	return out, nil
+}
+
+func (s service) AssertGroupChannelAccess(ctx context.Context, accessToken, groupPublicID, channelPublicID string) (models.ChannelAccess, error) {
+	userID, err := access.UserIDFromAccessToken(ctx, accessToken, s.secret, s.sessions, s.now())
+	if err != nil {
+		return models.ChannelAccess{}, err
+	}
+
+	groupID, err := validator.GroupPublicID(groupPublicID)
+	if err != nil {
+		return models.ChannelAccess{}, err
+	}
+
+	channelID, err := validator.ChannelPublicID(channelPublicID)
+	if err != nil {
+		return models.ChannelAccess{}, err
+	}
+
+	group, err := s.groups.FindGroupByPublicID(ctx, groupID)
+	if err != nil {
+		if errors.Is(err, constants.ErrNotFound) {
+			return models.ChannelAccess{}, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "group_id"})
+		}
+
+		return models.ChannelAccess{}, err
+	}
+
+	if _, err := s.groups.FindGroupMember(ctx, group.ID, userID); err != nil {
+		if errors.Is(err, constants.ErrNotFound) {
+			return models.ChannelAccess{}, exception.PermissionDenied(exception.MsgForbidden, nil)
+		}
+
+		return models.ChannelAccess{}, err
+	}
+
+	ch, err := s.channels.FindByPublicIDInGroup(ctx, group.ID, channelID)
+	if err != nil {
+		if errors.Is(err, constants.ErrNotFound) {
+			return models.ChannelAccess{}, exception.PermissionDenied(exception.MsgForbidden, nil)
+		}
+
+		return models.ChannelAccess{}, err
+	}
+
+	return models.ChannelAccess{ChannelID: ch.ID, UserID: userID}, nil
 }
 
 func (s service) SeedDefaultChannels(ctx context.Context, groupID, ownerUserID string, createdAt time.Time) error {

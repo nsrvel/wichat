@@ -1,10 +1,16 @@
 package constants
 
 const (
-	ChannelTypePublic = "public"
+	ChannelKindBroadcast    = "broadcast"
+	ChannelKindTextOnly     = "text_only"
+	ChannelKindVoiceOnly    = "voice_only"
+	ChannelKindTextAndVoice = "text_and_voice"
+	ChannelKindForum        = "forum"
+	ChannelKindDM           = "dm"
 
-	DefaultChannelName             = "general"
-	DefaultAnnouncementChannelName = "announcements"
+	DefaultChannelName             = "General"
+	DefaultChannelLookupKey        = "general"
+	DefaultAnnouncementChannelName = "Announcements"
 
 	// SidebarSection* drives client sidebar grouping (see channels.sidebar_section).
 	SidebarSectionChannels  = "channels"

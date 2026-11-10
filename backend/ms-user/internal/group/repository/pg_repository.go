@@ -220,7 +220,7 @@ func groupJoinSelect(q *bun.SelectQuery) *bun.SelectQuery {
 		ColumnExpr("s.created_at AS s_created_at, s.updated_at AS s_updated_at").
 		ColumnExpr("ch.public_id AS ch_public_id").
 		Join("JOIN group_settings AS s ON s.group_id = g.id").
-		Join("LEFT JOIN channels AS ch ON ch.group_id = g.id AND ch.name = ?", constants.DefaultChannelName)
+		Join("LEFT JOIN channels AS ch ON ch.group_id = g.id AND lower(ch.name) = ?", constants.DefaultChannelLookupKey)
 }
 
 func groupFromRows(g models.GroupRow, s models.GroupSettingsRow, defaultChannelPublicID, callerRole string) models.Group {

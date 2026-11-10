@@ -26,7 +26,7 @@ const (
 		FROM groups AS g
 		JOIN group_settings AS s ON s.group_id = g.id
 		JOIN group_members AS m ON m.group_id = g.id
-		LEFT JOIN channels AS ch ON ch.group_id = g.id AND ch.name = 'general'
+		LEFT JOIN channels AS ch ON ch.group_id = g.id AND lower(ch.name) = 'general'
 		WHERE m.user_id = ?
 		ORDER BY s.name ASC`
 
@@ -38,7 +38,7 @@ const (
 		       ch.public_id AS ch_public_id
 		FROM groups AS g
 		JOIN group_settings AS s ON s.group_id = g.id
-		LEFT JOIN channels AS ch ON ch.group_id = g.id AND ch.name = 'general'
+		LEFT JOIN channels AS ch ON ch.group_id = g.id AND lower(ch.name) = 'general'
 		WHERE g.id NOT IN (SELECT group_id FROM group_members WHERE user_id = ?)
 		ORDER BY s.name ASC`
 )

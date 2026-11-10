@@ -1,6 +1,8 @@
 # microservices (wi-shared)
 
-Outbound **dependency injection** for callers (api-gateway today; other `ms-*` later). One `Open` per process wires dial targets, timeouts, and typed clients; handlers call `ms.User.GRPC.Auth.*` instead of raw gRPC stubs.
+Outbound **dependency injection** for callers (api-gateway today; other `ms-*` later). One `Open` per process wires dial targets, timeouts, and typed clients; handlers call domain facades (e.g. `ms.User.GRPC.Group.CreateGroup`) instead of raw gRPC stubs.
+
+For **ms-user**, proto v1 is still a single `AuthService`, but wi-shared splits outbound clients by domain (`Auth`, `User`, `Group`, `Channel`) to mirror `ms-user/internal/*`. **ms-chat** and **ms-notification** already use `message`/`notify` + `general`.
 
 Canonical architecture: [docs/architecture/microservices.md](../../../docs/architecture/microservices.md).
 
@@ -23,6 +25,7 @@ ms, err := microservices.Open(microservices.Config{
 defer ms.Close()
 
 out, err := ms.User.GRPC.Auth.Login(ctx, &userv1.LoginRequest{...})
+groups, err := ms.User.GRPC.Group.ListMyGroups(ctx, &userv1.ListMyGroupsRequest{...})
 
 // Liveness (process up)
 _, err = ms.User.GRPC.General.Health(ctx, &userv1.HealthRequest{})

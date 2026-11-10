@@ -8,6 +8,9 @@ export type ShellNavTarget = {
 	id: string;
 	label: string;
 	kind: ShellNavKind;
+	channelType?: string;
+	channelName?: string;
+	imageUrl?: string;
 };
 
 const DEFAULT_TARGET: ShellNavTarget = {

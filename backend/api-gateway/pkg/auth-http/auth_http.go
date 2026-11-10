@@ -19,7 +19,7 @@ import (
 const maxBodyBytes = 1 << 20
 
 // MaxGroupIconBytes is the largest accepted group icon upload.
-const MaxGroupIconBytes = 2 * 1024 * 1024
+const MaxGroupIconBytes = 5 * 1024 * 1024
 
 // SetupBody is the deprecated JSON body for POST /api/v1/auth/setup.
 type SetupBody = RegisterBody
@@ -123,6 +123,8 @@ type ChannelBody struct {
 	Name           string `json:"name"`
 	Type           string `json:"type"`
 	SidebarSection string `json:"sidebar_section"`
+	ImageURL       string `json:"image_url"`
+	IsPrivate      bool   `json:"is_private"`
 }
 
 // ChannelsListBody wraps a channel list.
@@ -216,6 +218,8 @@ func ChannelFromPB(c *userv1.ChannelSummary) ChannelBody {
 		Name:           c.GetName(),
 		Type:           c.GetType(),
 		SidebarSection: c.GetSidebarSection(),
+		ImageURL:       c.GetImageUrl(),
+		IsPrivate:      c.GetIsPrivate(),
 	}
 }
 

@@ -16,6 +16,7 @@ import (
 // PgRepository loads and persists channel metadata.
 type PgRepository interface {
 	ListByGroupID(ctx context.Context, groupID string) ([]models.Channel, error)
+	FindByPublicIDInGroup(ctx context.Context, groupID, channelPublicID string) (models.Channel, error)
 	SeedDefaultChannels(ctx context.Context, groupID, createdBy string, createdAt time.Time) error
 }
 
@@ -49,6 +50,20 @@ func (r pgRepository) ListByGroupID(ctx context.Context, groupID string) ([]mode
 	return out, nil
 }
 
+func (r pgRepository) FindByPublicIDInGroup(ctx context.Context, groupID, channelPublicID string) (models.Channel, error) {
+	var row models.ChannelRow
+	err := r.db.NewSelect().Model(&row).
+		Where("group_id = ? AND public_id = ?", groupID, channelPublicID).
+		Scan(ctx)
+	if err != nil {
+		r.logIfInfraErr("FindByPublicIDInGroup", err)
+
+		return models.Channel{}, pgErr.MapNotFound(err)
+	}
+
+	return row.ToModel(), nil
+}
+
 func (r pgRepository) SeedDefaultChannels(ctx context.Context, groupID, createdBy string, createdAt time.Time) error {
 	err := r.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
 		return InsertDefaultChannelsTx(ctx, tx, groupID, createdBy, createdAt)
@@ -66,7 +81,12 @@ func (r pgRepository) logIfInfraErr(op string, err error) {
 }
 
 // InsertDefaultChannelTx creates a seeded public channel inside an existing transaction.
-func InsertDefaultChannelTx(ctx context.Context, tx bun.Tx, groupID, createdBy, name, sidebarSection string, now time.Time) error {
+func InsertDefaultChannelTx(
+	ctx context.Context,
+	tx bun.Tx,
+	groupID, createdBy, channelType, name, sidebarSection string,
+	now time.Time,
+) error {
 	for range 5 {
 		channelID, err := token.NewID()
 		if err != nil {
@@ -78,7 +98,7 @@ func InsertDefaultChannelTx(ctx context.Context, tx bun.Tx, groupID, createdBy, 
 		}
 		row := models.ChannelRowFrom(models.Channel{
 			ID: channelID, PublicID: publicId, GroupID: groupID,
-			Type: constants.ChannelTypePublic, Name: name, SidebarSection: sidebarSection,
+			Type: channelType, IsPrivate: false, Name: name, SidebarSection: sidebarSection,
 			CreatedBy: createdBy, CreatedAt: now, UpdatedAt: now,
 		})
 		_, err = tx.NewInsert().Model(&row).Exec(ctx)
@@ -97,13 +117,16 @@ func InsertDefaultChannelTx(ctx context.Context, tx bun.Tx, groupID, createdBy, 
 
 // InsertGeneralChannelTx creates the default #general channel inside an existing transaction.
 func InsertGeneralChannelTx(ctx context.Context, tx bun.Tx, groupID, createdBy string, now time.Time) error {
-	return InsertDefaultChannelTx(ctx, tx, groupID, createdBy, constants.DefaultChannelName, constants.SidebarSectionChannels, now)
+	return InsertDefaultChannelTx(
+		ctx, tx, groupID, createdBy, constants.ChannelKindTextAndVoice, constants.DefaultChannelName, constants.SidebarSectionChannels, now,
+	)
 }
 
 // InsertAnnouncementChannelTx creates the default announcements channel inside an existing transaction.
 func InsertAnnouncementChannelTx(ctx context.Context, tx bun.Tx, groupID, createdBy string, now time.Time) error {
 	return InsertDefaultChannelTx(
-		ctx, tx, groupID, createdBy, constants.DefaultAnnouncementChannelName, constants.SidebarSectionFavorites, now,
+		ctx, tx, groupID, createdBy, constants.ChannelKindBroadcast,
+		constants.DefaultAnnouncementChannelName, constants.SidebarSectionFavorites, now,
 	)
 }
 

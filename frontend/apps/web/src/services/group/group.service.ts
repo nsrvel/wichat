@@ -24,10 +24,14 @@ function normalizeMembershipRole(
 }
 
 function normalizeMyGroup(raw: Group): MyGroup | null {
-	if (!isPublicEntityId(raw.id) || !isPublicEntityId(raw.default_channel_id)) {
+	if (!isPublicEntityId(raw.id)) {
 		return null;
 	}
-	return { ...raw, role: normalizeMembershipRole(raw.role) };
+	const role = normalizeMembershipRole(raw.role);
+	if (!role) {
+		return null;
+	}
+	return { ...raw, role };
 }
 
 export async function listMyGroups() {

@@ -25,6 +25,8 @@ From repo root:
 docker compose -p wichat -f deploy/compose/postgres.yml up -d
 docker compose -p wichat -f deploy/compose/redis.yml up -d
 docker compose -p wichat -f deploy/compose/minio.yml up -d
+docker compose -p wichat -f deploy/compose/kafka.yml up -d
+docker compose -p wichat -f deploy/compose/elasticsearch.yml up -d
 ```
 
 Stop one component (example):
@@ -40,7 +42,9 @@ Postgres data volume: `wichat_wichat-postgres` (Compose prefixes volume names wi
 | Service | Host port | Notes |
 |---------|-----------|--------|
 | Postgres | **5432** | `postgres://wichat:wichat@localhost:5432/wichat` |
-| Redis | **6379** | `redis://localhost:6379/0` |
+| Redis | **6379** | `redis://localhost:6379/0` — ms-user auth (sessions, OTP, refresh mirror); not used for chat fanout |
+| Kafka | **9092** | `KAFKA_BROKERS=localhost:9092`; topic `chat-events` (produce on message create; gateway + ms-chat consumers) |
+| Elasticsearch | **9200** | `ELASTICSEARCH_URL` — ms-chat indexes messages via Kafka (search query UI/API later) |
 | MinIO | **9000** (API), **9001** (console) | `alpine/minio` on Docker Hub (not `quay.io/minio/minio` — Hub login does not apply). Set `MINIO_*` in `backend/ms-user/.env` and restart ms-user. |
 
 **MinIO won’t start (`file access denied` on `/data`)** — reset the volume once, then bring the stack up:
@@ -53,7 +57,8 @@ curl -sf http://127.0.0.1:9000/minio/health/live && echo ok
 ```
 | api-gateway | **3000** | Public HTTP |
 | ms-user | **3001** | gRPC (auth + user/workspace) |
-| ms-chat | **3002** | gRPC (messages, WS fanout, search indexer) — planned |
+| ms-chat | **3002** | gRPC (messages); Kafka produce + ES indexer consumer |
+| api-gateway WS | **3000** | `GET /api/v1/realtime` — Kafka fanout to WebSocket subscribers |
 | ms-core | **3003** | gRPC (LiveKit tokens, call lifecycle) — planned |
 | ms-plugin | **3004** | gRPC — planned |
 | ms-notification | **3005** | gRPC — planned |

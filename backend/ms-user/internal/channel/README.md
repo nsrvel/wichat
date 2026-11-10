@@ -17,6 +17,8 @@ Workspace **channel metadata** (list, default seed, sidebar section) — not mes
 - **Create group:** `group/service.CreateGroup` calls `channel/service.SeedDefaultChannels` after insert (rollback delete group on seed failure).
 - **Instance setup:** `user/repository.CompleteInstanceSetup` runs `InsertGroupWithOwnerTx` + `InsertDefaultChannelsTx` in one transaction (bootstrap only).
 
+Default seed: **General** (`text_and_voice`, `is_private=false`), **Announcements** (`broadcast`, favorites). JSON field `type` is the channel **kind**; visibility uses `is_private` (always `false` for `dm`). Client default icons use kind when `image_url` is empty.
+
 Models: [`internal/models/channel_model.go`](../models/channel_model.go), [`channel_repository_model.go`](../models/channel_repository_model.go).
 
 See `wichat-go-layers.mdc`.

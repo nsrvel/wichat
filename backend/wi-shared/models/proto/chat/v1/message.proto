@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+package chat.v1;
+
+option go_package = "github.com/wichat/wichat/backend/wi-shared/models/gen/chat/v1;chatv1";
+
+// MessageService stores and lists plain-text channel messages (v0).
+service MessageService {
+  rpc ListChannelMessages(ListChannelMessagesRequest) returns (ListChannelMessagesResponse);
+  rpc CreateChannelMessage(CreateChannelMessageRequest) returns (CreateChannelMessageResponse);
+}
+
+message ListChannelMessagesRequest {
+  string access_token = 1;
+  string group_id = 2;
+  string channel_id = 3;
+  int32 limit = 4;
+  string before_created_at = 5;
+}
+
+message ListChannelMessagesResponse {
+  repeated MessageSummary messages = 1;
+}
+
+message CreateChannelMessageRequest {
+  string access_token = 1;
+  string group_id = 2;
+  string channel_id = 3;
+  string body = 4;
+}
+
+message CreateChannelMessageResponse {
+  MessageSummary message = 1;
+}
+
+message MessageSummary {
+  string id = 1;
+  string author_id = 2;
+  string author_display_name = 3;
+  string body = 4;
+  string created_at = 5;
+  bool mine = 6;
+}

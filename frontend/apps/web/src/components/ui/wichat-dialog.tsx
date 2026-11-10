@@ -1,7 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
-import { Children, type ReactNode, useLayoutEffect, useRef, useState } from "react";
+import { Children, type ReactNode, useCallback, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +17,9 @@ export const wichatDialogSubtitleClass = "text-sm leading-relaxed text-muted-for
 
 const wichatDialogCloseButtonClass =
 	"absolute top-3 right-3 z-20 flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground sm:top-4 sm:right-4";
+
+const shellStepMotionClass =
+	"duration-[var(--shell-rail-motion-duration)] ease-[var(--shell-rail-motion-ease)] motion-reduce:transition-none";
 
 type WiChatDialogProps = {
 	open: boolean;
@@ -44,7 +47,7 @@ export function WiChatDialog({
 	}
 
 	return (
-		<div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+		<div className="fixed inset-0 z-50 grid place-items-center p-4 sm:p-6">
 			<button
 				type="button"
 				className="absolute inset-0 bg-black/50"
@@ -57,7 +60,7 @@ export function WiChatDialog({
 				aria-labelledby={titleId}
 				className={cn(
 					groupOnboardingCardShellClass,
-					"relative z-10 flex h-auto w-full max-h-[min(90vh,44rem)] flex-col overflow-hidden",
+					"relative z-10 flex h-auto w-full max-h-[90vh] flex-col overflow-hidden",
 					className,
 				)}
 			>
@@ -81,7 +84,7 @@ type WiChatDialogStepCarouselProps = {
 	className?: string;
 };
 
-/** Horizontal step track inside a dialog (header/body/footer per panel). Slide only; card height snaps to the active step (centering handles backdrop space). */
+/** Horizontal slide only; height = active step (instant snap, no animation) so the card re-centers in the viewport. */
 export function WiChatDialogStepCarousel({
 	activeIndex,
 	children,
@@ -94,45 +97,52 @@ export function WiChatDialogStepCarousel({
 	const panelWidthPercent = count === 0 ? 100 : 100 / count;
 	const translatePercent = safeIndex * panelWidthPercent;
 	const panelRefs = useRef<(HTMLDivElement | null)[]>([]);
-	const [viewportHeight, setViewportHeight] = useState<number | null>(null);
+	const [viewportHeight, setViewportHeight] = useState<number | undefined>(undefined);
 
-	const measurePanel = (index: number) => panelRefs.current[index]?.offsetHeight ?? 0;
-
-	useLayoutEffect(() => {
-		if (count === 0) {
+	const snapActiveHeight = useCallback(() => {
+		const el = panelRefs.current[safeIndex];
+		if (!el) {
 			return;
 		}
 
-		const frame = requestAnimationFrame(() => {
-			const h = measurePanel(safeIndex);
-			if (h > 0) {
-				setViewportHeight(h);
-			}
-		});
+		const raw = el.scrollHeight;
+		if (raw <= 0) {
+			return;
+		}
 
-		return () => cancelAnimationFrame(frame);
-	}, [safeIndex, count]);
+		const maxPx = Math.floor(window.innerHeight * 0.9) - 32;
+		setViewportHeight(Math.min(raw, maxPx));
+	}, [safeIndex]);
 
 	useLayoutEffect(() => {
-		const onResize = () => {
-			const h = measurePanel(safeIndex);
-			if (h > 0) {
-				setViewportHeight(h);
-			}
+		snapActiveHeight();
+	}, [snapActiveHeight, count]);
+
+	useLayoutEffect(() => {
+		const el = panelRefs.current[safeIndex];
+		if (!el) {
+			return;
+		}
+
+		const ro = new ResizeObserver(() => snapActiveHeight());
+		ro.observe(el);
+
+		const onWindowResize = () => snapActiveHeight();
+		window.addEventListener("resize", onWindowResize);
+
+		return () => {
+			ro.disconnect();
+			window.removeEventListener("resize", onWindowResize);
 		};
-
-		window.addEventListener("resize", onResize);
-
-		return () => window.removeEventListener("resize", onResize);
-	}, [safeIndex]);
+	}, [safeIndex, count, snapActiveHeight]);
 
 	return (
 		<div
 			className={cn("w-full overflow-hidden", className)}
-			style={viewportHeight === null ? undefined : { height: viewportHeight }}
+			style={viewportHeight === undefined ? undefined : { height: viewportHeight }}
 		>
 			<div
-				className="flex items-start transition-transform duration-[var(--shell-rail-motion-duration)] ease-[var(--shell-rail-motion-ease)] motion-reduce:transition-none"
+				className={cn("flex items-start transition-transform", shellStepMotionClass)}
 				style={{
 					width: `${trackWidthPercent}%`,
 					transform: `translateX(-${translatePercent}%)`,
@@ -189,13 +199,7 @@ type WiChatDialogBodyProps = {
 
 export function WiChatDialogBody({ children, className }: WiChatDialogBodyProps) {
 	return (
-		<div
-			className={cn(
-				authCardInsetXClass,
-				"min-h-0 max-h-[calc(min(90vh,44rem)-12rem)] overflow-y-auto",
-				className,
-			)}
-		>
+		<div className={cn(authCardInsetXClass, "min-h-0 overflow-y-auto overscroll-contain", className)}>
 			{children}
 		</div>
 	);

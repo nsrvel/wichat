@@ -56,6 +56,8 @@ service AuthService {
   rpc DeleteGroup(DeleteGroupRequest) returns (DeleteGroupResponse);
   // ListGroupChannels returns channels in a group the caller belongs to.
   rpc ListGroupChannels(ListGroupChannelsRequest) returns (ListGroupChannelsResponse);
+  // AssertGroupChannelAccess validates membership and resolves internal channel and user ids.
+  rpc AssertGroupChannelAccess(AssertGroupChannelAccessRequest) returns (AssertGroupChannelAccessResponse);
   // UploadGroupIcon stores a group logo and updates group_settings.logo_url.
   rpc UploadGroupIcon(UploadGroupIconRequest) returns (UploadGroupIconResponse);
 }
@@ -361,6 +363,10 @@ message ChannelSummary {
   string type = 3;
   // Sidebar bucket: favorites | channels (see ms-user channels.sidebar_section).
   string sidebar_section = 4;
+  // Preset key or uploaded URL; empty uses client default by type.
+  string image_url = 5;
+  // Group channel visibility; always false when type is dm.
+  bool is_private = 6;
 }
 
 message ListGroupChannelsRequest {
@@ -370,6 +376,17 @@ message ListGroupChannelsRequest {
 
 message ListGroupChannelsResponse {
   repeated ChannelSummary channels = 1;
+}
+
+message AssertGroupChannelAccessRequest {
+  string access_token = 1;
+  string group_id = 2;
+  string channel_id = 3;
+}
+
+message AssertGroupChannelAccessResponse {
+  string channel_uuid = 1;
+  string user_uuid = 2;
 }
 
 message UploadGroupIconRequest {

@@ -19,32 +19,33 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	AuthService_SetupStatus_FullMethodName           = "/user.v1.AuthService/SetupStatus"
-	AuthService_Setup_FullMethodName                 = "/user.v1.AuthService/Setup"
-	AuthService_Register_FullMethodName              = "/user.v1.AuthService/Register"
-	AuthService_RegisterGuest_FullMethodName         = "/user.v1.AuthService/RegisterGuest"
-	AuthService_Login_FullMethodName                 = "/user.v1.AuthService/Login"
-	AuthService_VerifyRegister_FullMethodName        = "/user.v1.AuthService/VerifyRegister"
-	AuthService_VerifyLogin_FullMethodName           = "/user.v1.AuthService/VerifyLogin"
-	AuthService_ResendRegisterCode_FullMethodName    = "/user.v1.AuthService/ResendRegisterCode"
-	AuthService_ResendLoginCode_FullMethodName       = "/user.v1.AuthService/ResendLoginCode"
-	AuthService_Refresh_FullMethodName               = "/user.v1.AuthService/Refresh"
-	AuthService_Logout_FullMethodName                = "/user.v1.AuthService/Logout"
-	AuthService_Me_FullMethodName                    = "/user.v1.AuthService/Me"
-	AuthService_CompleteInstanceSetup_FullMethodName = "/user.v1.AuthService/CompleteInstanceSetup"
-	AuthService_GoogleStart_FullMethodName           = "/user.v1.AuthService/GoogleStart"
-	AuthService_GoogleFinish_FullMethodName          = "/user.v1.AuthService/GoogleFinish"
-	AuthService_RequestPasswordReset_FullMethodName  = "/user.v1.AuthService/RequestPasswordReset"
-	AuthService_VerifyPasswordReset_FullMethodName   = "/user.v1.AuthService/VerifyPasswordReset"
-	AuthService_CompletePasswordReset_FullMethodName = "/user.v1.AuthService/CompletePasswordReset"
-	AuthService_ListMyGroups_FullMethodName          = "/user.v1.AuthService/ListMyGroups"
-	AuthService_ListJoinableGroups_FullMethodName    = "/user.v1.AuthService/ListJoinableGroups"
-	AuthService_CreateGroup_FullMethodName           = "/user.v1.AuthService/CreateGroup"
-	AuthService_JoinGroup_FullMethodName             = "/user.v1.AuthService/JoinGroup"
-	AuthService_LeaveGroup_FullMethodName            = "/user.v1.AuthService/LeaveGroup"
-	AuthService_DeleteGroup_FullMethodName           = "/user.v1.AuthService/DeleteGroup"
-	AuthService_ListGroupChannels_FullMethodName     = "/user.v1.AuthService/ListGroupChannels"
-	AuthService_UploadGroupIcon_FullMethodName       = "/user.v1.AuthService/UploadGroupIcon"
+	AuthService_SetupStatus_FullMethodName              = "/user.v1.AuthService/SetupStatus"
+	AuthService_Setup_FullMethodName                    = "/user.v1.AuthService/Setup"
+	AuthService_Register_FullMethodName                 = "/user.v1.AuthService/Register"
+	AuthService_RegisterGuest_FullMethodName            = "/user.v1.AuthService/RegisterGuest"
+	AuthService_Login_FullMethodName                    = "/user.v1.AuthService/Login"
+	AuthService_VerifyRegister_FullMethodName           = "/user.v1.AuthService/VerifyRegister"
+	AuthService_VerifyLogin_FullMethodName              = "/user.v1.AuthService/VerifyLogin"
+	AuthService_ResendRegisterCode_FullMethodName       = "/user.v1.AuthService/ResendRegisterCode"
+	AuthService_ResendLoginCode_FullMethodName          = "/user.v1.AuthService/ResendLoginCode"
+	AuthService_Refresh_FullMethodName                  = "/user.v1.AuthService/Refresh"
+	AuthService_Logout_FullMethodName                   = "/user.v1.AuthService/Logout"
+	AuthService_Me_FullMethodName                       = "/user.v1.AuthService/Me"
+	AuthService_CompleteInstanceSetup_FullMethodName    = "/user.v1.AuthService/CompleteInstanceSetup"
+	AuthService_GoogleStart_FullMethodName              = "/user.v1.AuthService/GoogleStart"
+	AuthService_GoogleFinish_FullMethodName             = "/user.v1.AuthService/GoogleFinish"
+	AuthService_RequestPasswordReset_FullMethodName     = "/user.v1.AuthService/RequestPasswordReset"
+	AuthService_VerifyPasswordReset_FullMethodName      = "/user.v1.AuthService/VerifyPasswordReset"
+	AuthService_CompletePasswordReset_FullMethodName    = "/user.v1.AuthService/CompletePasswordReset"
+	AuthService_ListMyGroups_FullMethodName             = "/user.v1.AuthService/ListMyGroups"
+	AuthService_ListJoinableGroups_FullMethodName       = "/user.v1.AuthService/ListJoinableGroups"
+	AuthService_CreateGroup_FullMethodName              = "/user.v1.AuthService/CreateGroup"
+	AuthService_JoinGroup_FullMethodName                = "/user.v1.AuthService/JoinGroup"
+	AuthService_LeaveGroup_FullMethodName               = "/user.v1.AuthService/LeaveGroup"
+	AuthService_DeleteGroup_FullMethodName              = "/user.v1.AuthService/DeleteGroup"
+	AuthService_ListGroupChannels_FullMethodName        = "/user.v1.AuthService/ListGroupChannels"
+	AuthService_AssertGroupChannelAccess_FullMethodName = "/user.v1.AuthService/AssertGroupChannelAccess"
+	AuthService_UploadGroupIcon_FullMethodName          = "/user.v1.AuthService/UploadGroupIcon"
 )
 
 // AuthServiceClient is the client API for AuthService service.
@@ -103,6 +104,8 @@ type AuthServiceClient interface {
 	DeleteGroup(ctx context.Context, in *DeleteGroupRequest, opts ...grpc.CallOption) (*DeleteGroupResponse, error)
 	// ListGroupChannels returns channels in a group the caller belongs to.
 	ListGroupChannels(ctx context.Context, in *ListGroupChannelsRequest, opts ...grpc.CallOption) (*ListGroupChannelsResponse, error)
+	// AssertGroupChannelAccess validates membership and resolves internal channel and user ids.
+	AssertGroupChannelAccess(ctx context.Context, in *AssertGroupChannelAccessRequest, opts ...grpc.CallOption) (*AssertGroupChannelAccessResponse, error)
 	// UploadGroupIcon stores a group logo and updates group_settings.logo_url.
 	UploadGroupIcon(ctx context.Context, in *UploadGroupIconRequest, opts ...grpc.CallOption) (*UploadGroupIconResponse, error)
 }
@@ -365,6 +368,16 @@ func (c *authServiceClient) ListGroupChannels(ctx context.Context, in *ListGroup
 	return out, nil
 }
 
+func (c *authServiceClient) AssertGroupChannelAccess(ctx context.Context, in *AssertGroupChannelAccessRequest, opts ...grpc.CallOption) (*AssertGroupChannelAccessResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AssertGroupChannelAccessResponse)
+	err := c.cc.Invoke(ctx, AuthService_AssertGroupChannelAccess_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *authServiceClient) UploadGroupIcon(ctx context.Context, in *UploadGroupIconRequest, opts ...grpc.CallOption) (*UploadGroupIconResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(UploadGroupIconResponse)
@@ -431,6 +444,8 @@ type AuthServiceServer interface {
 	DeleteGroup(context.Context, *DeleteGroupRequest) (*DeleteGroupResponse, error)
 	// ListGroupChannels returns channels in a group the caller belongs to.
 	ListGroupChannels(context.Context, *ListGroupChannelsRequest) (*ListGroupChannelsResponse, error)
+	// AssertGroupChannelAccess validates membership and resolves internal channel and user ids.
+	AssertGroupChannelAccess(context.Context, *AssertGroupChannelAccessRequest) (*AssertGroupChannelAccessResponse, error)
 	// UploadGroupIcon stores a group logo and updates group_settings.logo_url.
 	UploadGroupIcon(context.Context, *UploadGroupIconRequest) (*UploadGroupIconResponse, error)
 	mustEmbedUnimplementedAuthServiceServer()
@@ -517,6 +532,9 @@ func (UnimplementedAuthServiceServer) DeleteGroup(context.Context, *DeleteGroupR
 }
 func (UnimplementedAuthServiceServer) ListGroupChannels(context.Context, *ListGroupChannelsRequest) (*ListGroupChannelsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListGroupChannels not implemented")
+}
+func (UnimplementedAuthServiceServer) AssertGroupChannelAccess(context.Context, *AssertGroupChannelAccessRequest) (*AssertGroupChannelAccessResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method AssertGroupChannelAccess not implemented")
 }
 func (UnimplementedAuthServiceServer) UploadGroupIcon(context.Context, *UploadGroupIconRequest) (*UploadGroupIconResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method UploadGroupIcon not implemented")
@@ -992,6 +1010,24 @@ func _AuthService_ListGroupChannels_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthService_AssertGroupChannelAccess_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AssertGroupChannelAccessRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).AssertGroupChannelAccess(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_AssertGroupChannelAccess_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).AssertGroupChannelAccess(ctx, req.(*AssertGroupChannelAccessRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AuthService_UploadGroupIcon_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UploadGroupIconRequest)
 	if err := dec(in); err != nil {
@@ -1116,6 +1152,10 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListGroupChannels",
 			Handler:    _AuthService_ListGroupChannels_Handler,
+		},
+		{
+			MethodName: "AssertGroupChannelAccess",
+			Handler:    _AuthService_AssertGroupChannelAccess_Handler,
 		},
 		{
 			MethodName: "UploadGroupIcon",

@@ -38,8 +38,7 @@ Full table: [deploy/README.md](../deploy/README.md#local-ports-defaults).
 
 ## Config
 
-- **No** shared backend `.env` at repo root.
-- Env templates: each module’s `.env.example`.
-- Infra defaults: [deploy/README.md](../deploy/README.md).
+- **`make run`:** each service reads **`ms-*/.env`** (copy from `.env.example`; gitignored).
+- Infra ports: [deploy/README.md](../deploy/README.md).
 
 Layout: [docs/architecture/monorepo-layout.md](../docs/architecture/monorepo-layout.md).

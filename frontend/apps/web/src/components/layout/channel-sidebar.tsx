@@ -11,6 +11,7 @@ import {
 	sidebarNestedListClass,
 } from "@/components/layout/channel-sidebar/sidebar-nav-styles";
 import { useShellChrome } from "@/components/layout/shell-chrome-context";
+import { ChannelListIcon } from "@/features/channel/components/channel-list-icon";
 import {
 	channelNavBellIcon,
 	channelNavHashIcon,
@@ -152,7 +153,7 @@ export function ChannelSidebar({
 									menuId="fav-announcements"
 									activeMenuId={activeMenuId}
 									onActiveMenuIdChange={setActiveMenuId}
-									icon={<ChannelGlyphSlot>{channelNavBellIcon}</ChannelGlyphSlot>}
+									icon={<ChannelListIcon type="broadcast" channelName="Announcements" />}
 									label="Announcements"
 									selected={isActive("fav-announcements")}
 									onSelect={selectNav("fav-announcements", "Announcements", "channel")}

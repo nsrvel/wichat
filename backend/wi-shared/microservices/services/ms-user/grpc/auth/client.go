@@ -1,4 +1,4 @@
-// Package auth is the gRPC client for ms-user AuthService.
+// Package auth is the gRPC client for ms-user auth domain RPCs on AuthService.
 package auth
 
 import (
@@ -7,15 +7,12 @@ import (
 	"github.com/wichat/wichat/backend/wi-shared/infra/logger"
 	"github.com/wichat/wichat/backend/wi-shared/microservices/utils"
 	userv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/user/v1"
-	"google.golang.org/grpc"
 )
 
-// Client calls ms-user AuthService with shared timeouts, retries, and circuit breaking.
+// Client calls auth-domain AuthService RPCs with shared timeouts, retries, and circuit breaking.
 type Client interface {
-	SetupStatus(ctx context.Context, in *userv1.SetupStatusRequest) (*userv1.SetupStatusResponse, error)
 	Setup(ctx context.Context, in *userv1.SetupRequest) (*userv1.SetupResponse, error)
 	Register(ctx context.Context, in *userv1.RegisterRequest) (*userv1.RegisterResponse, error)
-	RegisterGuest(ctx context.Context, in *userv1.RegisterGuestRequest) (*userv1.RegisterGuestResponse, error)
 	Login(ctx context.Context, in *userv1.LoginRequest) (*userv1.LoginResponse, error)
 	VerifyRegister(ctx context.Context, in *userv1.VerifyRegisterRequest) (*userv1.VerifyRegisterResponse, error)
 	VerifyLogin(ctx context.Context, in *userv1.VerifyLoginRequest) (*userv1.VerifyLoginResponse, error)
@@ -24,20 +21,11 @@ type Client interface {
 	Refresh(ctx context.Context, in *userv1.RefreshRequest) (*userv1.RefreshResponse, error)
 	Logout(ctx context.Context, in *userv1.LogoutRequest) (*userv1.LogoutResponse, error)
 	Me(ctx context.Context, in *userv1.MeRequest) (*userv1.MeResponse, error)
-	CompleteInstanceSetup(ctx context.Context, in *userv1.CompleteInstanceSetupRequest) (*userv1.CompleteInstanceSetupResponse, error)
 	GoogleStart(ctx context.Context, in *userv1.GoogleStartRequest) (*userv1.GoogleStartResponse, error)
 	GoogleFinish(ctx context.Context, in *userv1.GoogleFinishRequest) (*userv1.GoogleFinishResponse, error)
 	RequestPasswordReset(ctx context.Context, in *userv1.RequestPasswordResetRequest) (*userv1.RequestPasswordResetResponse, error)
 	VerifyPasswordReset(ctx context.Context, in *userv1.VerifyPasswordResetRequest) (*userv1.VerifyPasswordResetResponse, error)
 	CompletePasswordReset(ctx context.Context, in *userv1.CompletePasswordResetRequest) (*userv1.CompletePasswordResetResponse, error)
-	ListMyGroups(ctx context.Context, in *userv1.ListMyGroupsRequest) (*userv1.ListMyGroupsResponse, error)
-	ListJoinableGroups(ctx context.Context, in *userv1.ListJoinableGroupsRequest) (*userv1.ListJoinableGroupsResponse, error)
-	CreateGroup(ctx context.Context, in *userv1.CreateGroupRequest) (*userv1.CreateGroupResponse, error)
-	JoinGroup(ctx context.Context, in *userv1.JoinGroupRequest) (*userv1.JoinGroupResponse, error)
-	LeaveGroup(ctx context.Context, in *userv1.LeaveGroupRequest) (*userv1.LeaveGroupResponse, error)
-	DeleteGroup(ctx context.Context, in *userv1.DeleteGroupRequest) (*userv1.DeleteGroupResponse, error)
-	ListGroupChannels(ctx context.Context, in *userv1.ListGroupChannelsRequest) (*userv1.ListGroupChannelsResponse, error)
-	UploadGroupIcon(ctx context.Context, in *userv1.UploadGroupIconRequest) (*userv1.UploadGroupIconResponse, error)
 }
 
 type client struct {
@@ -47,8 +35,8 @@ type client struct {
 	read utils.CallConfig
 }
 
-// New wraps an existing gRPC connection (tests or custom dial). Caller owns conn lifetime.
-func New(conn *grpc.ClientConn, settings utils.Settings, log logger.Logger) Client {
+// New wraps an existing AuthService client stub.
+func New(stub userv1.AuthServiceClient, settings utils.Settings, log logger.Logger) Client {
 	breaker := utils.NewBreaker(settings)
 	none := utils.CallConfigFromSettings(settings, utils.RetryNone)
 	none.Breaker = breaker
@@ -56,17 +44,11 @@ func New(conn *grpc.ClientConn, settings utils.Settings, log logger.Logger) Clie
 	read.Breaker = breaker
 
 	return &client{
-		stub: userv1.NewAuthServiceClient(conn),
+		stub: stub,
 		log:  log,
 		none: none,
 		read: read,
 	}
-}
-
-func (c *client) SetupStatus(ctx context.Context, in *userv1.SetupStatusRequest) (*userv1.SetupStatusResponse, error) {
-	return utils.CallUnaryResult(ctx, c.read, c.log, "auth.AuthService/SetupStatus", func(callCtx context.Context) (*userv1.SetupStatusResponse, error) {
-		return c.stub.SetupStatus(callCtx, in)
-	})
 }
 
 func (c *client) Setup(ctx context.Context, in *userv1.SetupRequest) (*userv1.SetupResponse, error) {
@@ -78,12 +60,6 @@ func (c *client) Setup(ctx context.Context, in *userv1.SetupRequest) (*userv1.Se
 func (c *client) Register(ctx context.Context, in *userv1.RegisterRequest) (*userv1.RegisterResponse, error) {
 	return utils.CallUnaryResult(ctx, c.none, c.log, "auth.AuthService/Register", func(callCtx context.Context) (*userv1.RegisterResponse, error) {
 		return c.stub.Register(callCtx, in)
-	})
-}
-
-func (c *client) RegisterGuest(ctx context.Context, in *userv1.RegisterGuestRequest) (*userv1.RegisterGuestResponse, error) {
-	return utils.CallUnaryResult(ctx, c.none, c.log, "auth.AuthService/RegisterGuest", func(callCtx context.Context) (*userv1.RegisterGuestResponse, error) {
-		return c.stub.RegisterGuest(callCtx, in)
 	})
 }
 
@@ -135,12 +111,6 @@ func (c *client) Me(ctx context.Context, in *userv1.MeRequest) (*userv1.MeRespon
 	})
 }
 
-func (c *client) CompleteInstanceSetup(ctx context.Context, in *userv1.CompleteInstanceSetupRequest) (*userv1.CompleteInstanceSetupResponse, error) {
-	return utils.CallUnaryResult(ctx, c.none, c.log, "auth.AuthService/CompleteInstanceSetup", func(callCtx context.Context) (*userv1.CompleteInstanceSetupResponse, error) {
-		return c.stub.CompleteInstanceSetup(callCtx, in)
-	})
-}
-
 func (c *client) GoogleStart(ctx context.Context, in *userv1.GoogleStartRequest) (*userv1.GoogleStartResponse, error) {
 	return utils.CallUnaryResult(ctx, c.none, c.log, "auth.AuthService/GoogleStart", func(callCtx context.Context) (*userv1.GoogleStartResponse, error) {
 		return c.stub.GoogleStart(callCtx, in)
@@ -168,53 +138,5 @@ func (c *client) VerifyPasswordReset(ctx context.Context, in *userv1.VerifyPassw
 func (c *client) CompletePasswordReset(ctx context.Context, in *userv1.CompletePasswordResetRequest) (*userv1.CompletePasswordResetResponse, error) {
 	return utils.CallUnaryResult(ctx, c.none, c.log, "auth.AuthService/CompletePasswordReset", func(callCtx context.Context) (*userv1.CompletePasswordResetResponse, error) {
 		return c.stub.CompletePasswordReset(callCtx, in)
-	})
-}
-
-func (c *client) ListMyGroups(ctx context.Context, in *userv1.ListMyGroupsRequest) (*userv1.ListMyGroupsResponse, error) {
-	return utils.CallUnaryResult(ctx, c.read, c.log, "auth.AuthService/ListMyGroups", func(callCtx context.Context) (*userv1.ListMyGroupsResponse, error) {
-		return c.stub.ListMyGroups(callCtx, in)
-	})
-}
-
-func (c *client) ListJoinableGroups(ctx context.Context, in *userv1.ListJoinableGroupsRequest) (*userv1.ListJoinableGroupsResponse, error) {
-	return utils.CallUnaryResult(ctx, c.read, c.log, "auth.AuthService/ListJoinableGroups", func(callCtx context.Context) (*userv1.ListJoinableGroupsResponse, error) {
-		return c.stub.ListJoinableGroups(callCtx, in)
-	})
-}
-
-func (c *client) CreateGroup(ctx context.Context, in *userv1.CreateGroupRequest) (*userv1.CreateGroupResponse, error) {
-	return utils.CallUnaryResult(ctx, c.none, c.log, "auth.AuthService/CreateGroup", func(callCtx context.Context) (*userv1.CreateGroupResponse, error) {
-		return c.stub.CreateGroup(callCtx, in)
-	})
-}
-
-func (c *client) JoinGroup(ctx context.Context, in *userv1.JoinGroupRequest) (*userv1.JoinGroupResponse, error) {
-	return utils.CallUnaryResult(ctx, c.none, c.log, "auth.AuthService/JoinGroup", func(callCtx context.Context) (*userv1.JoinGroupResponse, error) {
-		return c.stub.JoinGroup(callCtx, in)
-	})
-}
-
-func (c *client) LeaveGroup(ctx context.Context, in *userv1.LeaveGroupRequest) (*userv1.LeaveGroupResponse, error) {
-	return utils.CallUnaryResult(ctx, c.none, c.log, "auth.AuthService/LeaveGroup", func(callCtx context.Context) (*userv1.LeaveGroupResponse, error) {
-		return c.stub.LeaveGroup(callCtx, in)
-	})
-}
-
-func (c *client) DeleteGroup(ctx context.Context, in *userv1.DeleteGroupRequest) (*userv1.DeleteGroupResponse, error) {
-	return utils.CallUnaryResult(ctx, c.none, c.log, "auth.AuthService/DeleteGroup", func(callCtx context.Context) (*userv1.DeleteGroupResponse, error) {
-		return c.stub.DeleteGroup(callCtx, in)
-	})
-}
-
-func (c *client) ListGroupChannels(ctx context.Context, in *userv1.ListGroupChannelsRequest) (*userv1.ListGroupChannelsResponse, error) {
-	return utils.CallUnaryResult(ctx, c.read, c.log, "auth.AuthService/ListGroupChannels", func(callCtx context.Context) (*userv1.ListGroupChannelsResponse, error) {
-		return c.stub.ListGroupChannels(callCtx, in)
-	})
-}
-
-func (c *client) UploadGroupIcon(ctx context.Context, in *userv1.UploadGroupIconRequest) (*userv1.UploadGroupIconResponse, error) {
-	return utils.CallUnaryResult(ctx, c.none, c.log, "auth.AuthService/UploadGroupIcon", func(callCtx context.Context) (*userv1.UploadGroupIconResponse, error) {
-		return c.stub.UploadGroupIcon(callCtx, in)
 	})
 }

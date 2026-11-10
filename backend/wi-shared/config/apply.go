@@ -62,8 +62,15 @@ func walkConfigFields(v *viper.Viper, dst, defaults reflect.Value) {
 		}
 
 		if !wasExplicitlyProvided(v, key, envKey) {
-			slog.Warn("config: env unset, using default", "key", envKey, "default", defField.Interface())
+			if reflect.DeepEqual(dstField.Interface(), defField.Interface()) {
+				continue
+			}
 			dstField.Set(defField)
+			if field.Type.Kind() == reflect.String &&
+				strings.TrimSpace(defField.String()) == "" &&
+				strings.TrimSpace(dstField.String()) == "" {
+				slog.Warn("config: env unset, no default", "key", envKey)
+			}
 			continue
 		}
 

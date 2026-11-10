@@ -2787,8 +2787,12 @@ type ChannelSummary struct {
 	Type  string                 `protobuf:"bytes,3,opt,name=type,proto3" json:"type,omitempty"`
 	// Sidebar bucket: favorites | channels (see ms-user channels.sidebar_section).
 	SidebarSection string `protobuf:"bytes,4,opt,name=sidebar_section,json=sidebarSection,proto3" json:"sidebar_section,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	// Preset key or uploaded URL; empty uses client default by type.
+	ImageUrl string `protobuf:"bytes,5,opt,name=image_url,json=imageUrl,proto3" json:"image_url,omitempty"`
+	// Group channel visibility; always false when type is dm.
+	IsPrivate     bool `protobuf:"varint,6,opt,name=is_private,json=isPrivate,proto3" json:"is_private,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ChannelSummary) Reset() {
@@ -2847,6 +2851,20 @@ func (x *ChannelSummary) GetSidebarSection() string {
 		return x.SidebarSection
 	}
 	return ""
+}
+
+func (x *ChannelSummary) GetImageUrl() string {
+	if x != nil {
+		return x.ImageUrl
+	}
+	return ""
+}
+
+func (x *ChannelSummary) GetIsPrivate() bool {
+	if x != nil {
+		return x.IsPrivate
+	}
+	return false
 }
 
 type ListGroupChannelsRequest struct {
@@ -2945,6 +2963,118 @@ func (x *ListGroupChannelsResponse) GetChannels() []*ChannelSummary {
 	return nil
 }
 
+type AssertGroupChannelAccessRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	GroupId       string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	ChannelId     string                 `protobuf:"bytes,3,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AssertGroupChannelAccessRequest) Reset() {
+	*x = AssertGroupChannelAccessRequest{}
+	mi := &file_user_v1_auth_proto_msgTypes[55]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AssertGroupChannelAccessRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AssertGroupChannelAccessRequest) ProtoMessage() {}
+
+func (x *AssertGroupChannelAccessRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_auth_proto_msgTypes[55]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AssertGroupChannelAccessRequest.ProtoReflect.Descriptor instead.
+func (*AssertGroupChannelAccessRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_auth_proto_rawDescGZIP(), []int{55}
+}
+
+func (x *AssertGroupChannelAccessRequest) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
+func (x *AssertGroupChannelAccessRequest) GetGroupId() string {
+	if x != nil {
+		return x.GroupId
+	}
+	return ""
+}
+
+func (x *AssertGroupChannelAccessRequest) GetChannelId() string {
+	if x != nil {
+		return x.ChannelId
+	}
+	return ""
+}
+
+type AssertGroupChannelAccessResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ChannelUuid   string                 `protobuf:"bytes,1,opt,name=channel_uuid,json=channelUuid,proto3" json:"channel_uuid,omitempty"`
+	UserUuid      string                 `protobuf:"bytes,2,opt,name=user_uuid,json=userUuid,proto3" json:"user_uuid,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AssertGroupChannelAccessResponse) Reset() {
+	*x = AssertGroupChannelAccessResponse{}
+	mi := &file_user_v1_auth_proto_msgTypes[56]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AssertGroupChannelAccessResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AssertGroupChannelAccessResponse) ProtoMessage() {}
+
+func (x *AssertGroupChannelAccessResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_auth_proto_msgTypes[56]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AssertGroupChannelAccessResponse.ProtoReflect.Descriptor instead.
+func (*AssertGroupChannelAccessResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_auth_proto_rawDescGZIP(), []int{56}
+}
+
+func (x *AssertGroupChannelAccessResponse) GetChannelUuid() string {
+	if x != nil {
+		return x.ChannelUuid
+	}
+	return ""
+}
+
+func (x *AssertGroupChannelAccessResponse) GetUserUuid() string {
+	if x != nil {
+		return x.UserUuid
+	}
+	return ""
+}
+
 type UploadGroupIconRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
@@ -2957,7 +3087,7 @@ type UploadGroupIconRequest struct {
 
 func (x *UploadGroupIconRequest) Reset() {
 	*x = UploadGroupIconRequest{}
-	mi := &file_user_v1_auth_proto_msgTypes[55]
+	mi := &file_user_v1_auth_proto_msgTypes[57]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2969,7 +3099,7 @@ func (x *UploadGroupIconRequest) String() string {
 func (*UploadGroupIconRequest) ProtoMessage() {}
 
 func (x *UploadGroupIconRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[55]
+	mi := &file_user_v1_auth_proto_msgTypes[57]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2982,7 +3112,7 @@ func (x *UploadGroupIconRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UploadGroupIconRequest.ProtoReflect.Descriptor instead.
 func (*UploadGroupIconRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{55}
+	return file_user_v1_auth_proto_rawDescGZIP(), []int{57}
 }
 
 func (x *UploadGroupIconRequest) GetAccessToken() string {
@@ -3022,7 +3152,7 @@ type UploadGroupIconResponse struct {
 
 func (x *UploadGroupIconResponse) Reset() {
 	*x = UploadGroupIconResponse{}
-	mi := &file_user_v1_auth_proto_msgTypes[56]
+	mi := &file_user_v1_auth_proto_msgTypes[58]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3034,7 +3164,7 @@ func (x *UploadGroupIconResponse) String() string {
 func (*UploadGroupIconResponse) ProtoMessage() {}
 
 func (x *UploadGroupIconResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[56]
+	mi := &file_user_v1_auth_proto_msgTypes[58]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3047,7 +3177,7 @@ func (x *UploadGroupIconResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UploadGroupIconResponse.ProtoReflect.Descriptor instead.
 func (*UploadGroupIconResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{56}
+	return file_user_v1_auth_proto_rawDescGZIP(), []int{58}
 }
 
 func (x *UploadGroupIconResponse) GetGroup() *GroupSummary {
@@ -3234,24 +3364,35 @@ const file_user_v1_auth_proto_rawDesc = "" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
 	"\bgroup_id\x18\x02 \x01(\tR\agroupId\"%\n" +
 	"\x13DeleteGroupResponse\x12\x0e\n" +
-	"\x02ok\x18\x01 \x01(\bR\x02ok\"q\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok\"\xad\x01\n" +
 	"\x0eChannelSummary\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
 	"\x04type\x18\x03 \x01(\tR\x04type\x12'\n" +
-	"\x0fsidebar_section\x18\x04 \x01(\tR\x0esidebarSection\"X\n" +
+	"\x0fsidebar_section\x18\x04 \x01(\tR\x0esidebarSection\x12\x1b\n" +
+	"\timage_url\x18\x05 \x01(\tR\bimageUrl\x12\x1d\n" +
+	"\n" +
+	"is_private\x18\x06 \x01(\bR\tisPrivate\"X\n" +
 	"\x18ListGroupChannelsRequest\x12!\n" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
 	"\bgroup_id\x18\x02 \x01(\tR\agroupId\"P\n" +
 	"\x19ListGroupChannelsResponse\x123\n" +
-	"\bchannels\x18\x01 \x03(\v2\x17.user.v1.ChannelSummaryR\bchannels\"\x8d\x01\n" +
+	"\bchannels\x18\x01 \x03(\v2\x17.user.v1.ChannelSummaryR\bchannels\"~\n" +
+	"\x1fAssertGroupChannelAccessRequest\x12!\n" +
+	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
+	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x1d\n" +
+	"\n" +
+	"channel_id\x18\x03 \x01(\tR\tchannelId\"b\n" +
+	" AssertGroupChannelAccessResponse\x12!\n" +
+	"\fchannel_uuid\x18\x01 \x01(\tR\vchannelUuid\x12\x1b\n" +
+	"\tuser_uuid\x18\x02 \x01(\tR\buserUuid\"\x8d\x01\n" +
 	"\x16UploadGroupIconRequest\x12!\n" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
 	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12!\n" +
 	"\fcontent_type\x18\x03 \x01(\tR\vcontentType\x12\x12\n" +
 	"\x04data\x18\x04 \x01(\fR\x04data\"F\n" +
 	"\x17UploadGroupIconResponse\x12+\n" +
-	"\x05group\x18\x01 \x01(\v2\x15.user.v1.GroupSummaryR\x05group2\xfd\x0f\n" +
+	"\x05group\x18\x01 \x01(\v2\x15.user.v1.GroupSummaryR\x05group2\xee\x10\n" +
 	"\vAuthService\x12H\n" +
 	"\vSetupStatus\x12\x1b.user.v1.SetupStatusRequest\x1a\x1c.user.v1.SetupStatusResponse\x126\n" +
 	"\x05Setup\x12\x15.user.v1.SetupRequest\x1a\x16.user.v1.SetupResponse\x12?\n" +
@@ -3278,7 +3419,8 @@ const file_user_v1_auth_proto_rawDesc = "" +
 	"\n" +
 	"LeaveGroup\x12\x1a.user.v1.LeaveGroupRequest\x1a\x1b.user.v1.LeaveGroupResponse\x12H\n" +
 	"\vDeleteGroup\x12\x1b.user.v1.DeleteGroupRequest\x1a\x1c.user.v1.DeleteGroupResponse\x12Z\n" +
-	"\x11ListGroupChannels\x12!.user.v1.ListGroupChannelsRequest\x1a\".user.v1.ListGroupChannelsResponse\x12T\n" +
+	"\x11ListGroupChannels\x12!.user.v1.ListGroupChannelsRequest\x1a\".user.v1.ListGroupChannelsResponse\x12o\n" +
+	"\x18AssertGroupChannelAccess\x12(.user.v1.AssertGroupChannelAccessRequest\x1a).user.v1.AssertGroupChannelAccessResponse\x12T\n" +
 	"\x0fUploadGroupIcon\x12\x1f.user.v1.UploadGroupIconRequest\x1a .user.v1.UploadGroupIconResponseB\x9b\x01\n" +
 	"\vcom.user.v1B\tAuthProtoP\x01ZDgithub.com/wichat/wichat/backend/wi-shared/models/gen/user/v1;userv1\xa2\x02\x03UXX\xaa\x02\aUser.V1\xca\x02\aUser\\V1\xe2\x02\x13User\\V1\\GPBMetadata\xea\x02\bUser::V1b\x06proto3"
 
@@ -3294,65 +3436,67 @@ func file_user_v1_auth_proto_rawDescGZIP() []byte {
 	return file_user_v1_auth_proto_rawDescData
 }
 
-var file_user_v1_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 57)
+var file_user_v1_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 59)
 var file_user_v1_auth_proto_goTypes = []any{
-	(*User)(nil),                          // 0: user.v1.User
-	(*Session)(nil),                       // 1: user.v1.Session
-	(*SetupStatusRequest)(nil),            // 2: user.v1.SetupStatusRequest
-	(*SetupStatusResponse)(nil),           // 3: user.v1.SetupStatusResponse
-	(*CompleteInstanceSetupRequest)(nil),  // 4: user.v1.CompleteInstanceSetupRequest
-	(*CompleteInstanceSetupResponse)(nil), // 5: user.v1.CompleteInstanceSetupResponse
-	(*SetupRequest)(nil),                  // 6: user.v1.SetupRequest
-	(*SetupResponse)(nil),                 // 7: user.v1.SetupResponse
-	(*AuthChallenge)(nil),                 // 8: user.v1.AuthChallenge
-	(*RegisterRequest)(nil),               // 9: user.v1.RegisterRequest
-	(*RegisterResponse)(nil),              // 10: user.v1.RegisterResponse
-	(*RegisterGuestRequest)(nil),          // 11: user.v1.RegisterGuestRequest
-	(*RegisterGuestResponse)(nil),         // 12: user.v1.RegisterGuestResponse
-	(*LoginRequest)(nil),                  // 13: user.v1.LoginRequest
-	(*LoginResponse)(nil),                 // 14: user.v1.LoginResponse
-	(*VerifyRegisterRequest)(nil),         // 15: user.v1.VerifyRegisterRequest
-	(*VerifyRegisterResponse)(nil),        // 16: user.v1.VerifyRegisterResponse
-	(*VerifyLoginRequest)(nil),            // 17: user.v1.VerifyLoginRequest
-	(*VerifyLoginResponse)(nil),           // 18: user.v1.VerifyLoginResponse
-	(*ResendRegisterCodeRequest)(nil),     // 19: user.v1.ResendRegisterCodeRequest
-	(*ResendRegisterCodeResponse)(nil),    // 20: user.v1.ResendRegisterCodeResponse
-	(*ResendLoginCodeRequest)(nil),        // 21: user.v1.ResendLoginCodeRequest
-	(*ResendLoginCodeResponse)(nil),       // 22: user.v1.ResendLoginCodeResponse
-	(*RefreshRequest)(nil),                // 23: user.v1.RefreshRequest
-	(*RefreshResponse)(nil),               // 24: user.v1.RefreshResponse
-	(*LogoutRequest)(nil),                 // 25: user.v1.LogoutRequest
-	(*LogoutResponse)(nil),                // 26: user.v1.LogoutResponse
-	(*MeRequest)(nil),                     // 27: user.v1.MeRequest
-	(*MeResponse)(nil),                    // 28: user.v1.MeResponse
-	(*GoogleStartRequest)(nil),            // 29: user.v1.GoogleStartRequest
-	(*GoogleStartResponse)(nil),           // 30: user.v1.GoogleStartResponse
-	(*GoogleFinishRequest)(nil),           // 31: user.v1.GoogleFinishRequest
-	(*GoogleFinishResponse)(nil),          // 32: user.v1.GoogleFinishResponse
-	(*RequestPasswordResetRequest)(nil),   // 33: user.v1.RequestPasswordResetRequest
-	(*RequestPasswordResetResponse)(nil),  // 34: user.v1.RequestPasswordResetResponse
-	(*VerifyPasswordResetRequest)(nil),    // 35: user.v1.VerifyPasswordResetRequest
-	(*VerifyPasswordResetResponse)(nil),   // 36: user.v1.VerifyPasswordResetResponse
-	(*CompletePasswordResetRequest)(nil),  // 37: user.v1.CompletePasswordResetRequest
-	(*CompletePasswordResetResponse)(nil), // 38: user.v1.CompletePasswordResetResponse
-	(*GroupSummary)(nil),                  // 39: user.v1.GroupSummary
-	(*ListMyGroupsRequest)(nil),           // 40: user.v1.ListMyGroupsRequest
-	(*ListMyGroupsResponse)(nil),          // 41: user.v1.ListMyGroupsResponse
-	(*ListJoinableGroupsRequest)(nil),     // 42: user.v1.ListJoinableGroupsRequest
-	(*ListJoinableGroupsResponse)(nil),    // 43: user.v1.ListJoinableGroupsResponse
-	(*CreateGroupRequest)(nil),            // 44: user.v1.CreateGroupRequest
-	(*CreateGroupResponse)(nil),           // 45: user.v1.CreateGroupResponse
-	(*JoinGroupRequest)(nil),              // 46: user.v1.JoinGroupRequest
-	(*JoinGroupResponse)(nil),             // 47: user.v1.JoinGroupResponse
-	(*LeaveGroupRequest)(nil),             // 48: user.v1.LeaveGroupRequest
-	(*LeaveGroupResponse)(nil),            // 49: user.v1.LeaveGroupResponse
-	(*DeleteGroupRequest)(nil),            // 50: user.v1.DeleteGroupRequest
-	(*DeleteGroupResponse)(nil),           // 51: user.v1.DeleteGroupResponse
-	(*ChannelSummary)(nil),                // 52: user.v1.ChannelSummary
-	(*ListGroupChannelsRequest)(nil),      // 53: user.v1.ListGroupChannelsRequest
-	(*ListGroupChannelsResponse)(nil),     // 54: user.v1.ListGroupChannelsResponse
-	(*UploadGroupIconRequest)(nil),        // 55: user.v1.UploadGroupIconRequest
-	(*UploadGroupIconResponse)(nil),       // 56: user.v1.UploadGroupIconResponse
+	(*User)(nil),                             // 0: user.v1.User
+	(*Session)(nil),                          // 1: user.v1.Session
+	(*SetupStatusRequest)(nil),               // 2: user.v1.SetupStatusRequest
+	(*SetupStatusResponse)(nil),              // 3: user.v1.SetupStatusResponse
+	(*CompleteInstanceSetupRequest)(nil),     // 4: user.v1.CompleteInstanceSetupRequest
+	(*CompleteInstanceSetupResponse)(nil),    // 5: user.v1.CompleteInstanceSetupResponse
+	(*SetupRequest)(nil),                     // 6: user.v1.SetupRequest
+	(*SetupResponse)(nil),                    // 7: user.v1.SetupResponse
+	(*AuthChallenge)(nil),                    // 8: user.v1.AuthChallenge
+	(*RegisterRequest)(nil),                  // 9: user.v1.RegisterRequest
+	(*RegisterResponse)(nil),                 // 10: user.v1.RegisterResponse
+	(*RegisterGuestRequest)(nil),             // 11: user.v1.RegisterGuestRequest
+	(*RegisterGuestResponse)(nil),            // 12: user.v1.RegisterGuestResponse
+	(*LoginRequest)(nil),                     // 13: user.v1.LoginRequest
+	(*LoginResponse)(nil),                    // 14: user.v1.LoginResponse
+	(*VerifyRegisterRequest)(nil),            // 15: user.v1.VerifyRegisterRequest
+	(*VerifyRegisterResponse)(nil),           // 16: user.v1.VerifyRegisterResponse
+	(*VerifyLoginRequest)(nil),               // 17: user.v1.VerifyLoginRequest
+	(*VerifyLoginResponse)(nil),              // 18: user.v1.VerifyLoginResponse
+	(*ResendRegisterCodeRequest)(nil),        // 19: user.v1.ResendRegisterCodeRequest
+	(*ResendRegisterCodeResponse)(nil),       // 20: user.v1.ResendRegisterCodeResponse
+	(*ResendLoginCodeRequest)(nil),           // 21: user.v1.ResendLoginCodeRequest
+	(*ResendLoginCodeResponse)(nil),          // 22: user.v1.ResendLoginCodeResponse
+	(*RefreshRequest)(nil),                   // 23: user.v1.RefreshRequest
+	(*RefreshResponse)(nil),                  // 24: user.v1.RefreshResponse
+	(*LogoutRequest)(nil),                    // 25: user.v1.LogoutRequest
+	(*LogoutResponse)(nil),                   // 26: user.v1.LogoutResponse
+	(*MeRequest)(nil),                        // 27: user.v1.MeRequest
+	(*MeResponse)(nil),                       // 28: user.v1.MeResponse
+	(*GoogleStartRequest)(nil),               // 29: user.v1.GoogleStartRequest
+	(*GoogleStartResponse)(nil),              // 30: user.v1.GoogleStartResponse
+	(*GoogleFinishRequest)(nil),              // 31: user.v1.GoogleFinishRequest
+	(*GoogleFinishResponse)(nil),             // 32: user.v1.GoogleFinishResponse
+	(*RequestPasswordResetRequest)(nil),      // 33: user.v1.RequestPasswordResetRequest
+	(*RequestPasswordResetResponse)(nil),     // 34: user.v1.RequestPasswordResetResponse
+	(*VerifyPasswordResetRequest)(nil),       // 35: user.v1.VerifyPasswordResetRequest
+	(*VerifyPasswordResetResponse)(nil),      // 36: user.v1.VerifyPasswordResetResponse
+	(*CompletePasswordResetRequest)(nil),     // 37: user.v1.CompletePasswordResetRequest
+	(*CompletePasswordResetResponse)(nil),    // 38: user.v1.CompletePasswordResetResponse
+	(*GroupSummary)(nil),                     // 39: user.v1.GroupSummary
+	(*ListMyGroupsRequest)(nil),              // 40: user.v1.ListMyGroupsRequest
+	(*ListMyGroupsResponse)(nil),             // 41: user.v1.ListMyGroupsResponse
+	(*ListJoinableGroupsRequest)(nil),        // 42: user.v1.ListJoinableGroupsRequest
+	(*ListJoinableGroupsResponse)(nil),       // 43: user.v1.ListJoinableGroupsResponse
+	(*CreateGroupRequest)(nil),               // 44: user.v1.CreateGroupRequest
+	(*CreateGroupResponse)(nil),              // 45: user.v1.CreateGroupResponse
+	(*JoinGroupRequest)(nil),                 // 46: user.v1.JoinGroupRequest
+	(*JoinGroupResponse)(nil),                // 47: user.v1.JoinGroupResponse
+	(*LeaveGroupRequest)(nil),                // 48: user.v1.LeaveGroupRequest
+	(*LeaveGroupResponse)(nil),               // 49: user.v1.LeaveGroupResponse
+	(*DeleteGroupRequest)(nil),               // 50: user.v1.DeleteGroupRequest
+	(*DeleteGroupResponse)(nil),              // 51: user.v1.DeleteGroupResponse
+	(*ChannelSummary)(nil),                   // 52: user.v1.ChannelSummary
+	(*ListGroupChannelsRequest)(nil),         // 53: user.v1.ListGroupChannelsRequest
+	(*ListGroupChannelsResponse)(nil),        // 54: user.v1.ListGroupChannelsResponse
+	(*AssertGroupChannelAccessRequest)(nil),  // 55: user.v1.AssertGroupChannelAccessRequest
+	(*AssertGroupChannelAccessResponse)(nil), // 56: user.v1.AssertGroupChannelAccessResponse
+	(*UploadGroupIconRequest)(nil),           // 57: user.v1.UploadGroupIconRequest
+	(*UploadGroupIconResponse)(nil),          // 58: user.v1.UploadGroupIconResponse
 }
 var file_user_v1_auth_proto_depIdxs = []int32{
 	0,  // 0: user.v1.Session.user:type_name -> user.v1.User
@@ -3397,35 +3541,37 @@ var file_user_v1_auth_proto_depIdxs = []int32{
 	48, // 39: user.v1.AuthService.LeaveGroup:input_type -> user.v1.LeaveGroupRequest
 	50, // 40: user.v1.AuthService.DeleteGroup:input_type -> user.v1.DeleteGroupRequest
 	53, // 41: user.v1.AuthService.ListGroupChannels:input_type -> user.v1.ListGroupChannelsRequest
-	55, // 42: user.v1.AuthService.UploadGroupIcon:input_type -> user.v1.UploadGroupIconRequest
-	3,  // 43: user.v1.AuthService.SetupStatus:output_type -> user.v1.SetupStatusResponse
-	7,  // 44: user.v1.AuthService.Setup:output_type -> user.v1.SetupResponse
-	10, // 45: user.v1.AuthService.Register:output_type -> user.v1.RegisterResponse
-	12, // 46: user.v1.AuthService.RegisterGuest:output_type -> user.v1.RegisterGuestResponse
-	14, // 47: user.v1.AuthService.Login:output_type -> user.v1.LoginResponse
-	16, // 48: user.v1.AuthService.VerifyRegister:output_type -> user.v1.VerifyRegisterResponse
-	18, // 49: user.v1.AuthService.VerifyLogin:output_type -> user.v1.VerifyLoginResponse
-	20, // 50: user.v1.AuthService.ResendRegisterCode:output_type -> user.v1.ResendRegisterCodeResponse
-	22, // 51: user.v1.AuthService.ResendLoginCode:output_type -> user.v1.ResendLoginCodeResponse
-	24, // 52: user.v1.AuthService.Refresh:output_type -> user.v1.RefreshResponse
-	26, // 53: user.v1.AuthService.Logout:output_type -> user.v1.LogoutResponse
-	28, // 54: user.v1.AuthService.Me:output_type -> user.v1.MeResponse
-	5,  // 55: user.v1.AuthService.CompleteInstanceSetup:output_type -> user.v1.CompleteInstanceSetupResponse
-	30, // 56: user.v1.AuthService.GoogleStart:output_type -> user.v1.GoogleStartResponse
-	32, // 57: user.v1.AuthService.GoogleFinish:output_type -> user.v1.GoogleFinishResponse
-	34, // 58: user.v1.AuthService.RequestPasswordReset:output_type -> user.v1.RequestPasswordResetResponse
-	36, // 59: user.v1.AuthService.VerifyPasswordReset:output_type -> user.v1.VerifyPasswordResetResponse
-	38, // 60: user.v1.AuthService.CompletePasswordReset:output_type -> user.v1.CompletePasswordResetResponse
-	41, // 61: user.v1.AuthService.ListMyGroups:output_type -> user.v1.ListMyGroupsResponse
-	43, // 62: user.v1.AuthService.ListJoinableGroups:output_type -> user.v1.ListJoinableGroupsResponse
-	45, // 63: user.v1.AuthService.CreateGroup:output_type -> user.v1.CreateGroupResponse
-	47, // 64: user.v1.AuthService.JoinGroup:output_type -> user.v1.JoinGroupResponse
-	49, // 65: user.v1.AuthService.LeaveGroup:output_type -> user.v1.LeaveGroupResponse
-	51, // 66: user.v1.AuthService.DeleteGroup:output_type -> user.v1.DeleteGroupResponse
-	54, // 67: user.v1.AuthService.ListGroupChannels:output_type -> user.v1.ListGroupChannelsResponse
-	56, // 68: user.v1.AuthService.UploadGroupIcon:output_type -> user.v1.UploadGroupIconResponse
-	43, // [43:69] is the sub-list for method output_type
-	17, // [17:43] is the sub-list for method input_type
+	55, // 42: user.v1.AuthService.AssertGroupChannelAccess:input_type -> user.v1.AssertGroupChannelAccessRequest
+	57, // 43: user.v1.AuthService.UploadGroupIcon:input_type -> user.v1.UploadGroupIconRequest
+	3,  // 44: user.v1.AuthService.SetupStatus:output_type -> user.v1.SetupStatusResponse
+	7,  // 45: user.v1.AuthService.Setup:output_type -> user.v1.SetupResponse
+	10, // 46: user.v1.AuthService.Register:output_type -> user.v1.RegisterResponse
+	12, // 47: user.v1.AuthService.RegisterGuest:output_type -> user.v1.RegisterGuestResponse
+	14, // 48: user.v1.AuthService.Login:output_type -> user.v1.LoginResponse
+	16, // 49: user.v1.AuthService.VerifyRegister:output_type -> user.v1.VerifyRegisterResponse
+	18, // 50: user.v1.AuthService.VerifyLogin:output_type -> user.v1.VerifyLoginResponse
+	20, // 51: user.v1.AuthService.ResendRegisterCode:output_type -> user.v1.ResendRegisterCodeResponse
+	22, // 52: user.v1.AuthService.ResendLoginCode:output_type -> user.v1.ResendLoginCodeResponse
+	24, // 53: user.v1.AuthService.Refresh:output_type -> user.v1.RefreshResponse
+	26, // 54: user.v1.AuthService.Logout:output_type -> user.v1.LogoutResponse
+	28, // 55: user.v1.AuthService.Me:output_type -> user.v1.MeResponse
+	5,  // 56: user.v1.AuthService.CompleteInstanceSetup:output_type -> user.v1.CompleteInstanceSetupResponse
+	30, // 57: user.v1.AuthService.GoogleStart:output_type -> user.v1.GoogleStartResponse
+	32, // 58: user.v1.AuthService.GoogleFinish:output_type -> user.v1.GoogleFinishResponse
+	34, // 59: user.v1.AuthService.RequestPasswordReset:output_type -> user.v1.RequestPasswordResetResponse
+	36, // 60: user.v1.AuthService.VerifyPasswordReset:output_type -> user.v1.VerifyPasswordResetResponse
+	38, // 61: user.v1.AuthService.CompletePasswordReset:output_type -> user.v1.CompletePasswordResetResponse
+	41, // 62: user.v1.AuthService.ListMyGroups:output_type -> user.v1.ListMyGroupsResponse
+	43, // 63: user.v1.AuthService.ListJoinableGroups:output_type -> user.v1.ListJoinableGroupsResponse
+	45, // 64: user.v1.AuthService.CreateGroup:output_type -> user.v1.CreateGroupResponse
+	47, // 65: user.v1.AuthService.JoinGroup:output_type -> user.v1.JoinGroupResponse
+	49, // 66: user.v1.AuthService.LeaveGroup:output_type -> user.v1.LeaveGroupResponse
+	51, // 67: user.v1.AuthService.DeleteGroup:output_type -> user.v1.DeleteGroupResponse
+	54, // 68: user.v1.AuthService.ListGroupChannels:output_type -> user.v1.ListGroupChannelsResponse
+	56, // 69: user.v1.AuthService.AssertGroupChannelAccess:output_type -> user.v1.AssertGroupChannelAccessResponse
+	58, // 70: user.v1.AuthService.UploadGroupIcon:output_type -> user.v1.UploadGroupIconResponse
+	44, // [44:71] is the sub-list for method output_type
+	17, // [17:44] is the sub-list for method input_type
 	17, // [17:17] is the sub-list for extension type_name
 	17, // [17:17] is the sub-list for extension extendee
 	0,  // [0:17] is the sub-list for field type_name
@@ -3442,7 +3588,7 @@ func file_user_v1_auth_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_user_v1_auth_proto_rawDesc), len(file_user_v1_auth_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   57,
+			NumMessages:   59,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

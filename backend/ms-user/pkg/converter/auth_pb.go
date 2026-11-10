@@ -80,6 +80,8 @@ func ChannelSummary(c models.PublicChannel) *userv1.ChannelSummary {
 		Name:           c.Name,
 		Type:           c.Type,
 		SidebarSection: c.SidebarSection,
+		ImageUrl:       c.ImageURL,
+		IsPrivate:      c.IsPrivate,
 	}
 }
 

@@ -13,6 +13,9 @@ import (
 	"github.com/wichat/wichat/backend/wi-shared/microservices"
 	msUser "github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-user"
 	"github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-user/grpc/auth"
+	"github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-user/grpc/channel"
+	"github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-user/grpc/group"
+	"github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-user/grpc/user"
 	userv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/user/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -21,7 +24,7 @@ import (
 const refreshSecret = "super-secret-refresh"
 
 func TestLoginReturnsChallengeWithoutRefreshCookie(t *testing.T) {
-	handler := authdelivery.NewHandler(testClients(fakeAuth{
+	handler := authdelivery.NewHandler(testClients(msUserFakes{Auth: fakeAuth{
 		login: func(context.Context, *userv1.LoginRequest) (*userv1.LoginResponse, error) {
 			return &userv1.LoginResponse{Challenge: &userv1.AuthChallenge{
 				ChallengeId:           "ch-1",
@@ -30,7 +33,7 @@ func TestLoginReturnsChallengeWithoutRefreshCookie(t *testing.T) {
 				OtpRequired:           true,
 			}}, nil
 		},
-	}), testLog(), false, "http://localhost:8080")
+	}}), testLog(), false, "http://localhost:8080")
 
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", strings.NewReader(`{"email":"ada@example.com","password":"correct-horse-battery"}`))
 	rec := httptest.NewRecorder()
@@ -66,7 +69,7 @@ func TestLoginReturnsChallengeWithoutRefreshCookie(t *testing.T) {
 }
 
 func TestVerifyLoginSetsRefreshCookie(t *testing.T) {
-	handler := authdelivery.NewHandler(testClients(fakeAuth{
+	handler := authdelivery.NewHandler(testClients(msUserFakes{Auth: fakeAuth{
 		verifyLogin: func(context.Context, *userv1.VerifyLoginRequest) (*userv1.VerifyLoginResponse, error) {
 			return &userv1.VerifyLoginResponse{Session: &userv1.Session{
 				AccessToken:  "access-token",
@@ -75,7 +78,7 @@ func TestVerifyLoginSetsRefreshCookie(t *testing.T) {
 				User:         &userv1.User{Id: "u1", Email: "ada@example.com", DisplayName: "Ada"},
 			}}, nil
 		},
-	}), testLog(), false, "http://localhost:8080")
+	}}), testLog(), false, "http://localhost:8080")
 
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login/verify", strings.NewReader(`{"challenge_id":"ch-1","code":"ABC123"}`))
 	rec := httptest.NewRecorder()
@@ -98,26 +101,36 @@ func TestVerifyLoginSetsRefreshCookie(t *testing.T) {
 	}
 }
 
+type msUserFakes struct {
+	Auth    auth.Client
+	User    user.Client
+	Group   group.Client
+	Channel channel.Client
+}
+
+func testClients(f msUserFakes) *microservices.Clients {
+	if f.Auth == nil {
+		f.Auth = fakeAuth{}
+	}
+	if f.User == nil {
+		f.User = fakeUser{}
+	}
+	if f.Group == nil {
+		f.Group = fakeGroup{}
+	}
+	if f.Channel == nil {
+		f.Channel = fakeChannel{}
+	}
+
+	return &microservices.Clients{User: msUser.Service{GRPC: msUser.GRPC{
+		Auth: f.Auth, User: f.User, Group: f.Group, Channel: f.Channel,
+	}}}
+}
+
 type fakeAuth struct {
 	login        func(context.Context, *userv1.LoginRequest) (*userv1.LoginResponse, error)
 	verifyLogin  func(context.Context, *userv1.VerifyLoginRequest) (*userv1.VerifyLoginResponse, error)
 	googleFinish func(context.Context, *userv1.GoogleFinishRequest) (*userv1.GoogleFinishResponse, error)
-	setupStatus  func(context.Context, *userv1.SetupStatusRequest) (*userv1.SetupStatusResponse, error)
-	createGroup  func(context.Context, *userv1.CreateGroupRequest) (*userv1.CreateGroupResponse, error)
-	joinGroup    func(context.Context, *userv1.JoinGroupRequest) (*userv1.JoinGroupResponse, error)
-	leaveGroup   func(context.Context, *userv1.LeaveGroupRequest) (*userv1.LeaveGroupResponse, error)
-	deleteGroup  func(context.Context, *userv1.DeleteGroupRequest) (*userv1.DeleteGroupResponse, error)
-}
-
-func testClients(authClient auth.Client) *microservices.Clients {
-	return &microservices.Clients{User: msUser.Service{GRPC: msUser.GRPC{Auth: authClient}}}
-}
-
-func (f fakeAuth) SetupStatus(ctx context.Context, in *userv1.SetupStatusRequest) (*userv1.SetupStatusResponse, error) {
-	if f.setupStatus != nil {
-		return f.setupStatus(ctx, in)
-	}
-	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
 
 func (f fakeAuth) Setup(context.Context, *userv1.SetupRequest) (*userv1.SetupResponse, error) {
@@ -125,10 +138,6 @@ func (f fakeAuth) Setup(context.Context, *userv1.SetupRequest) (*userv1.SetupRes
 }
 
 func (f fakeAuth) Register(context.Context, *userv1.RegisterRequest) (*userv1.RegisterResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "error.internal")
-}
-
-func (f fakeAuth) RegisterGuest(context.Context, *userv1.RegisterGuestRequest) (*userv1.RegisterGuestResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
 
@@ -167,10 +176,6 @@ func (f fakeAuth) Me(context.Context, *userv1.MeRequest) (*userv1.MeResponse, er
 	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
 
-func (f fakeAuth) CompleteInstanceSetup(context.Context, *userv1.CompleteInstanceSetupRequest) (*userv1.CompleteInstanceSetupResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "error.internal")
-}
-
 func (f fakeAuth) GoogleStart(context.Context, *userv1.GoogleStartRequest) (*userv1.GoogleStartResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
@@ -195,53 +200,85 @@ func (f fakeAuth) GoogleFinish(ctx context.Context, in *userv1.GoogleFinishReque
 	return f.googleFinish(ctx, in)
 }
 
-func (f fakeAuth) ListMyGroups(context.Context, *userv1.ListMyGroupsRequest) (*userv1.ListMyGroupsResponse, error) {
+type fakeUser struct {
+	setupStatus func(context.Context, *userv1.SetupStatusRequest) (*userv1.SetupStatusResponse, error)
+}
+
+func (f fakeUser) SetupStatus(ctx context.Context, in *userv1.SetupStatusRequest) (*userv1.SetupStatusResponse, error) {
+	if f.setupStatus != nil {
+		return f.setupStatus(ctx, in)
+	}
 	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
 
-func (f fakeAuth) ListJoinableGroups(context.Context, *userv1.ListJoinableGroupsRequest) (*userv1.ListJoinableGroupsResponse, error) {
+func (fakeUser) CompleteInstanceSetup(context.Context, *userv1.CompleteInstanceSetupRequest) (*userv1.CompleteInstanceSetupResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
 
-func (f fakeAuth) CreateGroup(ctx context.Context, in *userv1.CreateGroupRequest) (*userv1.CreateGroupResponse, error) {
+func (fakeUser) RegisterGuest(context.Context, *userv1.RegisterGuestRequest) (*userv1.RegisterGuestResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "error.internal")
+}
+
+type fakeGroup struct {
+	createGroup func(context.Context, *userv1.CreateGroupRequest) (*userv1.CreateGroupResponse, error)
+	joinGroup   func(context.Context, *userv1.JoinGroupRequest) (*userv1.JoinGroupResponse, error)
+	leaveGroup  func(context.Context, *userv1.LeaveGroupRequest) (*userv1.LeaveGroupResponse, error)
+	deleteGroup func(context.Context, *userv1.DeleteGroupRequest) (*userv1.DeleteGroupResponse, error)
+}
+
+func (fakeGroup) ListMyGroups(context.Context, *userv1.ListMyGroupsRequest) (*userv1.ListMyGroupsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "error.internal")
+}
+
+func (fakeGroup) ListJoinableGroups(context.Context, *userv1.ListJoinableGroupsRequest) (*userv1.ListJoinableGroupsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "error.internal")
+}
+
+func (f fakeGroup) CreateGroup(ctx context.Context, in *userv1.CreateGroupRequest) (*userv1.CreateGroupResponse, error) {
 	if f.createGroup != nil {
 		return f.createGroup(ctx, in)
 	}
 	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
 
-func (f fakeAuth) JoinGroup(ctx context.Context, in *userv1.JoinGroupRequest) (*userv1.JoinGroupResponse, error) {
+func (f fakeGroup) JoinGroup(ctx context.Context, in *userv1.JoinGroupRequest) (*userv1.JoinGroupResponse, error) {
 	if f.joinGroup != nil {
 		return f.joinGroup(ctx, in)
 	}
 	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
 
-func (f fakeAuth) LeaveGroup(ctx context.Context, in *userv1.LeaveGroupRequest) (*userv1.LeaveGroupResponse, error) {
+func (f fakeGroup) LeaveGroup(ctx context.Context, in *userv1.LeaveGroupRequest) (*userv1.LeaveGroupResponse, error) {
 	if f.leaveGroup != nil {
 		return f.leaveGroup(ctx, in)
 	}
 	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
 
-func (f fakeAuth) DeleteGroup(ctx context.Context, in *userv1.DeleteGroupRequest) (*userv1.DeleteGroupResponse, error) {
+func (f fakeGroup) DeleteGroup(ctx context.Context, in *userv1.DeleteGroupRequest) (*userv1.DeleteGroupResponse, error) {
 	if f.deleteGroup != nil {
 		return f.deleteGroup(ctx, in)
 	}
 	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
 
-func (f fakeAuth) ListGroupChannels(context.Context, *userv1.ListGroupChannelsRequest) (*userv1.ListGroupChannelsResponse, error) {
+func (fakeGroup) UploadGroupIcon(context.Context, *userv1.UploadGroupIconRequest) (*userv1.UploadGroupIconResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
 
-func (f fakeAuth) UploadGroupIcon(context.Context, *userv1.UploadGroupIconRequest) (*userv1.UploadGroupIconResponse, error) {
+type fakeChannel struct{}
+
+func (fakeChannel) ListGroupChannels(context.Context, *userv1.ListGroupChannelsRequest) (*userv1.ListGroupChannelsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "error.internal")
+}
+
+func (fakeChannel) AssertGroupChannelAccess(context.Context, *userv1.AssertGroupChannelAccessRequest) (*userv1.AssertGroupChannelAccessResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
 
 func TestGoogleCallbackRedirectsWithRefreshCookie(t *testing.T) {
 	var verifier string
-	handler := authdelivery.NewHandler(testClients(fakeAuth{
+	handler := authdelivery.NewHandler(testClients(msUserFakes{Auth: fakeAuth{
 		googleFinish: func(_ context.Context, in *userv1.GoogleFinishRequest) (*userv1.GoogleFinishResponse, error) {
 			verifier = in.GetCodeVerifier()
 			return &userv1.GoogleFinishResponse{Session: &userv1.Session{
@@ -251,7 +288,7 @@ func TestGoogleCallbackRedirectsWithRefreshCookie(t *testing.T) {
 				User:         &userv1.User{Id: "u1", Email: "ada@example.com", DisplayName: "Ada"},
 			}}, nil
 		},
-	}), testLog(), false, "http://localhost:8080")
+	}}), testLog(), false, "http://localhost:8080")
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/google/callback?code=abc&state=state-1", nil)
 	req.AddCookie(&http.Cookie{Name: "wichat_oauth", Value: "state-1.verifier-1"})
@@ -279,7 +316,7 @@ func TestGoogleCallbackRedirectsWithRefreshCookie(t *testing.T) {
 }
 
 func TestGoogleCallbackAliasPath(t *testing.T) {
-	handler := authdelivery.NewHandler(testClients(fakeAuth{
+	handler := authdelivery.NewHandler(testClients(msUserFakes{Auth: fakeAuth{
 		googleFinish: func(_ context.Context, in *userv1.GoogleFinishRequest) (*userv1.GoogleFinishResponse, error) {
 			return &userv1.GoogleFinishResponse{Session: &userv1.Session{
 				AccessToken:  "access-token",
@@ -288,7 +325,7 @@ func TestGoogleCallbackAliasPath(t *testing.T) {
 				User:         &userv1.User{Id: "u1", Email: "ada@example.com", DisplayName: "Ada"},
 			}}, nil
 		},
-	}), testLog(), false, "http://localhost:8080")
+	}}), testLog(), false, "http://localhost:8080")
 
 	req := httptest.NewRequest(http.MethodGet, "/api/auth/callback/google?code=abc&state=state-1", nil)
 	req.AddCookie(&http.Cookie{Name: "wichat_oauth", Value: "state-1.verifier-1", Path: "/api"})
@@ -301,7 +338,7 @@ func TestGoogleCallbackAliasPath(t *testing.T) {
 }
 
 func TestSetupStatusReturnsInstancePolicy(t *testing.T) {
-	handler := authdelivery.NewHandler(testClients(fakeAuth{
+	handler := authdelivery.NewHandler(testClients(msUserFakes{User: fakeUser{
 		setupStatus: func(context.Context, *userv1.SetupStatusRequest) (*userv1.SetupStatusResponse, error) {
 			return &userv1.SetupStatusResponse{
 				RegistrationMode: "invite_only",
@@ -309,7 +346,7 @@ func TestSetupStatusReturnsInstancePolicy(t *testing.T) {
 				UsernameEnabled:  false,
 			}, nil
 		},
-	}), testLog(), false, "http://localhost:8080")
+	}}), testLog(), false, "http://localhost:8080")
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/setup-status", nil)
 	rec := httptest.NewRecorder()
@@ -338,7 +375,7 @@ func TestSetupStatusReturnsInstancePolicy(t *testing.T) {
 }
 
 func TestCreateGroupRequiresBearer(t *testing.T) {
-	handler := authdelivery.NewHandler(testClients(fakeAuth{}), testLog(), false, "http://localhost:8080")
+	handler := authdelivery.NewHandler(testClients(msUserFakes{}), testLog(), false, "http://localhost:8080")
 
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/groups", strings.NewReader(`{"name":"Acme"}`))
 	rec := httptest.NewRecorder()
@@ -352,7 +389,7 @@ func TestCreateGroupRequiresBearer(t *testing.T) {
 const testGroupPublicID = "507f1f77bcf86cd799439011"
 
 func TestCreateGroupRejectsEmptyName(t *testing.T) {
-	handler := authdelivery.NewHandler(testClients(fakeAuth{}), testLog(), false, "http://localhost:8080")
+	handler := authdelivery.NewHandler(testClients(msUserFakes{}), testLog(), false, "http://localhost:8080")
 
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/groups", strings.NewReader(`{"name":"   "}`))
 	req.Header.Set("Authorization", "Bearer access-token")
@@ -366,14 +403,14 @@ func TestCreateGroupRejectsEmptyName(t *testing.T) {
 
 func TestCreateGroupWithBearer(t *testing.T) {
 	var token string
-	handler := authdelivery.NewHandler(testClients(fakeAuth{
+	handler := authdelivery.NewHandler(testClients(msUserFakes{Group: fakeGroup{
 		createGroup: func(_ context.Context, in *userv1.CreateGroupRequest) (*userv1.CreateGroupResponse, error) {
 			token = in.GetAccessToken()
 			return &userv1.CreateGroupResponse{
 				Group: &userv1.GroupSummary{Id: testGroupPublicID, Name: in.GetName()},
 			}, nil
 		},
-	}), testLog(), false, "http://localhost:8080")
+	}}), testLog(), false, "http://localhost:8080")
 
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/groups", strings.NewReader(`{"name":"Acme"}`))
 	req.Header.Set("Authorization", "Bearer access-token")
@@ -399,13 +436,13 @@ func TestCreateGroupWithBearer(t *testing.T) {
 
 func TestJoinGroupWithBearer(t *testing.T) {
 	var gotToken, gotID string
-	handler := authdelivery.NewHandler(testClients(fakeAuth{
+	handler := authdelivery.NewHandler(testClients(msUserFakes{Group: fakeGroup{
 		joinGroup: func(_ context.Context, in *userv1.JoinGroupRequest) (*userv1.JoinGroupResponse, error) {
 			gotToken = in.GetAccessToken()
 			gotID = in.GetGroupId()
 			return &userv1.JoinGroupResponse{Ok: true}, nil
 		},
-	}), testLog(), false, "http://localhost:8080")
+	}}), testLog(), false, "http://localhost:8080")
 
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/groups/"+testGroupPublicID+"/join", nil)
 	req.SetPathValue("id", testGroupPublicID)
@@ -420,12 +457,12 @@ func TestJoinGroupWithBearer(t *testing.T) {
 
 func TestGoogleCallbackRejectsStateMismatch(t *testing.T) {
 	called := false
-	handler := authdelivery.NewHandler(testClients(fakeAuth{
+	handler := authdelivery.NewHandler(testClients(msUserFakes{Auth: fakeAuth{
 		googleFinish: func(context.Context, *userv1.GoogleFinishRequest) (*userv1.GoogleFinishResponse, error) {
 			called = true
 			return nil, nil
 		},
-	}), testLog(), false, "http://localhost:8080")
+	}}), testLog(), false, "http://localhost:8080")
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/google/callback?code=abc&state=other", nil)
 	req.AddCookie(&http.Cookie{Name: "wichat_oauth", Value: "state-1.verifier-1"})

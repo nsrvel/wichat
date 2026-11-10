@@ -134,7 +134,7 @@
       "icon_upload": "Upload",
       "icon_remove": "Remove photo",
       "icon_invalid_type": "Choose a PNG, JPEG, WebP, or GIF image.",
-      "icon_too_large": "Image must be 8 MB or smaller.",
+      "icon_too_large": "Image must be 5 MB or smaller.",
       "create_submit": "Create",
       "creating": "Creating…",
       "join_title": "Join a group",

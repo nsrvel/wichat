@@ -28,7 +28,7 @@ import { resolveGroupLogoUrl } from "@/features/shell/lib/group-logo-url";
 export const SHELL_GROUP_RAIL_WIDTH_PX = ICON_RAIL_WIDTH_PX;
 
 const railLogoTileClass =
-	"relative overflow-hidden border-0 bg-transparent p-0 shadow-none hover:opacity-90";
+	"relative overflow-hidden border-0 bg-transparent p-0 shadow-none hover:opacity-90 select-none";
 
 type ShellGroupRailProps = {
 	open: boolean;
@@ -79,6 +79,7 @@ export function ShellGroupRail({
 									className={logoSrc ? railLogoTileClass : undefined}
 									label={group.name}
 									aria-current={active ? "true" : undefined}
+									onDragStart={(e) => e.preventDefault()}
 									onClick={() => {
 										if (active) {
 											return;
@@ -94,7 +95,8 @@ export function ShellGroupRail({
 											width={SHELL_RAIL_TILE_PX}
 											height={SHELL_RAIL_TILE_PX}
 											unoptimized
-											className="h-[var(--shell-rail-tile-size)] w-[var(--shell-rail-tile-size)] rounded-[var(--shell-rail-tile-radius)] object-cover"
+											draggable={false}
+											className="pointer-events-none h-[var(--shell-rail-tile-size)] w-[var(--shell-rail-tile-size)] rounded-[var(--shell-rail-tile-radius)] object-cover"
 										/>
 									) : (
 										<span className="text-sm font-semibold">{groupInitials(group.name)}</span>

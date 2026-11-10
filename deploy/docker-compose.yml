@@ -5,3 +5,5 @@ include:
   - path: compose/postgres.yml
   - path: compose/redis.yml
   - path: compose/minio.yml
+  - path: compose/kafka.yml
+  - path: compose/elasticsearch.yml

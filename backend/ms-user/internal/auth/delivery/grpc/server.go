@@ -22,10 +22,10 @@ type Server interface {
 
 type server struct {
 	userv1.UnimplementedAuthServiceServer
-	auth        authservice.Service
-	user        userservice.Service
-	group       groupservice.Service
-	channelRPC  *channelgrpc.Server
+	auth       authservice.Service
+	user       userservice.Service
+	group      groupservice.Service
+	channelRPC *channelgrpc.Server
 }
 
 // NewServer binds auth, user, group, and channel services to the Auth gRPC surface.
@@ -342,6 +342,10 @@ func (s *server) DeleteGroup(ctx context.Context, req *userv1.DeleteGroupRequest
 
 func (s *server) ListGroupChannels(ctx context.Context, req *userv1.ListGroupChannelsRequest) (*userv1.ListGroupChannelsResponse, error) {
 	return s.channelRPC.ListGroupChannels(ctx, req)
+}
+
+func (s *server) AssertGroupChannelAccess(ctx context.Context, req *userv1.AssertGroupChannelAccessRequest) (*userv1.AssertGroupChannelAccessResponse, error) {
+	return s.channelRPC.AssertGroupChannelAccess(ctx, req)
 }
 
 func (s *server) UploadGroupIcon(ctx context.Context, req *userv1.UploadGroupIconRequest) (*userv1.UploadGroupIconResponse, error) {

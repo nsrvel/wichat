@@ -29,3 +29,17 @@ func (s *Server) ListGroupChannels(ctx context.Context, req *userv1.ListGroupCha
 	// Response
 	return &userv1.ListGroupChannelsResponse{Channels: authPb.ChannelSummaries(channels)}, nil
 }
+
+func (s *Server) AssertGroupChannelAccess(ctx context.Context, req *userv1.AssertGroupChannelAccessRequest) (*userv1.AssertGroupChannelAccessResponse, error) {
+	// Service
+	access, err := s.svc.AssertGroupChannelAccess(ctx, req.GetAccessToken(), req.GetGroupId(), req.GetChannelId())
+	if err != nil {
+		return nil, responsegrpc.ToStatus(err)
+	}
+
+	// Response
+	return &userv1.AssertGroupChannelAccessResponse{
+		ChannelUuid: access.ChannelID,
+		UserUuid:    access.UserID,
+	}, nil
+}

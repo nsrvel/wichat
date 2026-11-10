@@ -378,7 +378,7 @@ export function GroupOnboardingFlow({
 		<div
 			className={cn(
 				groupOnboardingCardShellClass,
-				"flex h-auto w-full max-h-[min(90vh,44rem)] flex-col overflow-hidden",
+				"flex h-auto w-full max-h-[90vh] flex-col overflow-hidden",
 			)}
 		>
 			{chrome}

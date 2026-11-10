@@ -206,7 +206,7 @@
       "icon_upload": "Unggah",
       "icon_remove": "Hapus foto",
       "icon_invalid_type": "Pilih gambar PNG, JPEG, WebP, atau GIF.",
-      "icon_too_large": "Ukuran gambar maksimal 8 MB.",
+      "icon_too_large": "Ukuran gambar maksimal 5 MB.",
       "create_submit": "Buat",
       "creating": "Membuat…",
       "join_title": "Gabung group",

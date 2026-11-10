@@ -59,7 +59,7 @@ export function ConversationHeader({
 				</span>
 				<span
 					className={cn(
-						"truncate text-[13px] font-semibold text-sidebar-foreground",
+						"truncate text-[15px] font-semibold leading-tight tracking-tight text-sidebar-foreground lg:text-base",
 						active.kind === "dm" && "uppercase tracking-wide",
 					)}
 				>
@@ -76,7 +76,7 @@ export function ConversationHeader({
 								type="button"
 								onClick={() => setTab(label)}
 								className={cn(
-									"shrink-0 text-[13px] font-medium transition-colors",
+									"shrink-0 text-xs font-medium transition-colors lg:text-[13px]",
 									selected
 										? "text-sidebar-foreground"
 										: "text-muted-foreground hover:text-sidebar-foreground",

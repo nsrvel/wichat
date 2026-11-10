@@ -6,8 +6,12 @@ import {
 	ChannelGlyphSlot,
 	SidebarListInitialsAvatar,
 	channelListGlyphIconClass,
+	conversationHeaderIconSlotSizeClass,
+	sidebarNavGlyphSlotClass,
 	type SidebarListIconVariant,
 } from "@/components/layout/sidebar-list-icon";
+import { cn } from "@/lib/utils";
+import { ChannelListIcon } from "@/features/channel/components/channel-list-icon";
 
 export const channelSidebarGlyphClass = channelListGlyphIconClass;
 const channelHeaderGlyphClass = "h-4 w-4";
@@ -82,6 +86,19 @@ function quickViewGlyph(id: string, variant: SidebarListIconVariant): ReactNode 
 
 export function ConversationNavIcon({ active, variant = "list" }: ConversationNavIconProps) {
 	if (active.kind === "quickView") {
+		if (variant === "header") {
+			return (
+				<span
+					className={cn(
+						sidebarNavGlyphSlotClass,
+						conversationHeaderIconSlotSizeClass,
+						"text-muted-foreground",
+					)}
+				>
+					{quickViewGlyph(active.id, variant)}
+				</span>
+			);
+		}
 		return (
 			<ChannelGlyphSlot variant={variant} framed={false}>
 				{quickViewGlyph(active.id, variant)}
@@ -95,6 +112,17 @@ export function ConversationNavIcon({ active, variant = "list" }: ConversationNa
 			return <SidebarListAvatar src={src} alt={active.label} variant={variant} />;
 		}
 		return <SidebarListInitialsAvatar initials={active.label} variant={variant} />;
+	}
+
+	if (active.kind === "channel") {
+		return (
+			<ChannelListIcon
+				type={active.channelType ?? ""}
+				channelName={active.channelName ?? active.label}
+				imageUrl={active.imageUrl}
+				variant={variant}
+			/>
+		);
 	}
 
 	return <ChannelGlyphSlot variant={variant}>{channelGlyph(active.id, variant)}</ChannelGlyphSlot>;

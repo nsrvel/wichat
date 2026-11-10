@@ -1,6 +1,6 @@
 # Service-to-service (`wi-shared/microservices`)
 
-Outbound calls: one `microservices.Open` per process, inject `*microservices.Clients`, call typed facades (e.g. `ms.User.GRPC.Auth.Login`). Shared timeouts, retries, dial, and request ID live in **`microservices/utils`**.
+Outbound calls: one `microservices.Open` per process, inject `*microservices.Clients`, call typed facades (e.g. `ms.User.GRPC.Auth.Login`, `ms.User.GRPC.Group.ListMyGroups`). On ms-user, proto v1 remains one `AuthService`, but wi-shared clients are split by domain (`Auth`, `User`, `Group`, `Channel`) to match `ms-user/internal/*`. Shared timeouts, retries, dial, and request ID live in **`microservices/utils`**.
 
 **Module docs:** [microservices/README.md](../../backend/wi-shared/microservices/README.md), [utils/README.md](../../backend/wi-shared/microservices/utils/README.md), [services/ms-user/README.md](../../backend/wi-shared/microservices/services/ms-user/README.md).
 

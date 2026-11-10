@@ -65,15 +65,54 @@ export const publicEntityIdSchema = z.string().regex(/^[0-9a-f]{24}$/);
 
 export const channelSidebarSectionSchema = z.enum(["favorites", "channels"]);
 
+export const channelKindSchema = z.enum([
+	"broadcast",
+	"text_only",
+	"voice_only",
+	"text_and_voice",
+	"forum",
+	"dm",
+	"public",
+	"private",
+]);
+
 export const ChannelSchema = z.object({
 	id: publicEntityIdSchema,
 	name: z.string(),
-	type: z.string(),
+	type: z.union([channelKindSchema, z.string()]),
 	sidebar_section: channelSidebarSectionSchema.default("channels"),
+	image_url: z.string().default(""),
+	is_private: z.boolean().default(false),
 });
 
 export const ChannelsListSchema = z.object({
 	channels: z.array(ChannelSchema),
+});
+
+export const MessageSchema = z.object({
+	id: publicEntityIdSchema,
+	author_id: z.string(),
+	author_display_name: z.string(),
+	body: z.string(),
+	created_at: z.string(),
+	mine: z.boolean().default(false),
+});
+
+export const MessagesListSchema = z.object({
+	messages: z.array(MessageSchema),
+});
+
+export const CreateMessageBodySchema = z.object({
+	body: z.string().trim().min(1).max(4096),
+});
+
+export const CreateMessageResponseSchema = z.object({
+	message: MessageSchema,
+});
+
+export const RealtimeMessageCreatedSchema = z.object({
+	type: z.literal("message.created"),
+	message: MessageSchema,
 });
 
 export const groupMembershipRoleSchema = z.enum(["owner", "member"]);
@@ -82,7 +121,7 @@ export const GroupSchema = z.object({
 	id: publicEntityIdSchema,
 	name: z.string(),
 	logo_url: z.string(),
-	default_channel_id: publicEntityIdSchema,
+	default_channel_id: z.union([publicEntityIdSchema, z.literal("")]),
 	role: z.preprocess(
 		(v) => (v === "" || v == null ? undefined : v),
 		groupMembershipRoleSchema.or(z.enum(["admin", "guest"])).optional(),
@@ -170,6 +209,10 @@ export type GuestRegisterRequest = z.infer<typeof GuestRegisterRequestSchema>;
 export type SetupRequest = RegisterRequest;
 export type Channel = z.infer<typeof ChannelSchema>;
 export type ChannelsList = z.infer<typeof ChannelsListSchema>;
+export type Message = z.infer<typeof MessageSchema>;
+export type MessagesList = z.infer<typeof MessagesListSchema>;
+export type CreateMessageBody = z.infer<typeof CreateMessageBodySchema>;
+export type CreateMessageResponse = z.infer<typeof CreateMessageResponseSchema>;
 export type Group = z.infer<typeof GroupSchema>;
 export type GroupsList = z.infer<typeof GroupsListSchema>;
 

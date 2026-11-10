@@ -3,6 +3,11 @@ GOLANGCI := go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLA
 AIR_VERSION := v1.62.0
 AIR := go run github.com/air-verse/air@$(AIR_VERSION)
 
+ifneq (,$(wildcard .env))
+include .env
+export
+endif
+
 .PHONY: fmt lint test check dev run
 
 fmt:

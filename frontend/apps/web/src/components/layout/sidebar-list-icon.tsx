@@ -11,9 +11,13 @@ export const sidebarListIconBoxClass = cn(
 	sidebarListIconSlotSizeClass,
 );
 
-/** Text channels in the conversation header — circular tile on chat surface (token colors, not white puck). */
-export const conversationHeaderIconBoxClass =
-	"flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-sidebar-border bg-sidebar-control text-muted-foreground shadow-none";
+/** Header — same chrome as sidebar channel tiles, scaled to 32px. */
+export const conversationHeaderIconSlotSizeClass = "h-8 w-8 shrink-0 lg:h-8 lg:w-8";
+
+export const conversationHeaderIconBoxClass = cn(
+	"flex items-center justify-center overflow-hidden rounded-full border border-sidebar-border bg-sidebar-control text-muted-foreground shadow-none",
+	conversationHeaderIconSlotSizeClass,
+);
 
 export const channelTileDefaultToneClass =
 	"border-[color-mix(in_oklab,var(--chat-tab-active)_24%,var(--sidebar-border))] bg-[color-mix(in_oklab,var(--chat-tab-active)_14%,var(--sidebar-control))]";
@@ -44,6 +48,8 @@ export const sidebarNavGlyphSlotClass = cn(
 export const sidebarNavGlyphIconClass = "h-3 w-3 lg:h-3.5 lg:w-3.5";
 
 export const channelListGlyphIconClass = sidebarNavGlyphIconClass;
+
+export const channelHeaderGlyphIconClass = "h-4 w-4";
 
 export type SidebarListIconVariant = "list" | "header";
 
@@ -80,7 +86,13 @@ export function ChannelGlyphSlot({
 }) {
 	if (variant === "header") {
 		return (
-			<span className={cn(conversationHeaderIconBoxClass, channelTileDefaultToneClass, className)}>
+			<span
+				className={cn(
+					channelListGlyphSlotClass(tileTone),
+					conversationHeaderIconSlotSizeClass,
+					className,
+				)}
+			>
 				{children}
 			</span>
 		);

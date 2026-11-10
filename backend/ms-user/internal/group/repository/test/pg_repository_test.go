@@ -82,12 +82,27 @@ func TestCreateGroupWithOwnerListAndJoinable(t *testing.T) {
 	for _, ch := range listed {
 		switch ch.Name {
 		case constants.DefaultChannelName:
+			if ch.Type != constants.ChannelKindTextAndVoice {
+				t.Fatalf("general type: %+v", ch)
+			}
+			if ch.IsPrivate {
+				t.Fatalf("general is_private: %+v", ch)
+			}
 			if ch.SidebarSection != constants.SidebarSectionChannels {
 				t.Fatalf("general sidebar_section: %+v", ch)
 			}
 		case constants.DefaultAnnouncementChannelName:
+			if ch.Type != constants.ChannelKindBroadcast {
+				t.Fatalf("announcements type: %+v", ch)
+			}
+			if ch.IsPrivate {
+				t.Fatalf("announcements is_private: %+v", ch)
+			}
 			if ch.SidebarSection != constants.SidebarSectionFavorites {
 				t.Fatalf("announcements sidebar_section: %+v", ch)
+			}
+			if ch.ImageURL != "" {
+				t.Fatalf("announcements image_url: %+v", ch)
 			}
 		}
 	}
