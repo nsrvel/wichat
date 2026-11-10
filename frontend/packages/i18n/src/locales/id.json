@@ -110,6 +110,18 @@
     "placeholder_title": "Chat sedang dibangun ulang",
     "placeholder_lead": "Pesan dan composer akan muncul di sini setelah API channel terhubung."
   },
+  "chat": {
+    "empty_title": "Belum ada pesan",
+    "empty_description": "Jadilah yang pertama ngobrol di channel ini. Pengiriman pesan akan terhubung ke server di update berikutnya.",
+    "composer_placeholder": "Kirim pesan ke channel ini",
+    "send": "Kirim pesan",
+    "send_soon": "Pengiriman pesan segera hadir",
+    "formatting": "Format teks",
+    "emoji": "Emoji",
+    "attach": "Lampirkan berkas",
+    "mention": "Mention",
+    "more": "Lainnya"
+  },
   "shell": {
     "loading": "Memuat workspace…",
     "workspace_default_title": "WiChat",
@@ -132,7 +144,30 @@
     "leave_group": "Keluar dari group",
     "leave_group_confirm": "Keluar dari {{name}}? Kamu bisa gabung lagi nanti.",
     "leave_group_action": "Keluar",
-    "leave_group_cancel": "Batal"
+    "leave_group_cancel": "Batal",
+    "delete_group": "Hapus group",
+    "delete_group_confirm": "Hapus {{name}} permanen? Tidak bisa dibatalkan.",
+    "delete_group_action": "Hapus",
+    "delete_group_cancel": "Batal",
+    "quick_view": {
+      "coming_soon_title": "Segera hadir",
+      "mentions_description": "Pesan yang menyebut kamu akan muncul di sini.",
+      "discover_description": "Jelajahi dan gabung channel publik di group ini.",
+      "drafts_description": "Pesan yang belum terkirim dari channel dan chat akan muncul di sini."
+    },
+    "sidebar": {
+      "quick_views": "Tampilan cepat",
+      "mentions": "Mention",
+      "discover": "Jelajahi",
+      "drafts": "Draf",
+      "favorites": "Favorit",
+      "channels": "Channel",
+      "chats": "Chat",
+      "announcements_channel": "Pengumuman",
+      "empty_favorites": "Sematkan channel atau chat yang sering dipakai.",
+      "empty_channels": "Belum ada channel di sini.",
+      "empty_chats": "Pesan langsung akan muncul di sini."
+    }
   },
   "guest": {
     "display_name": "Nama tampilan",

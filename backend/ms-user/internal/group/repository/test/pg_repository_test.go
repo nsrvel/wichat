@@ -18,6 +18,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
+	channelrepo "github.com/wichat/wichat/backend/ms-user/internal/channel/repository"
 	grouprepo "github.com/wichat/wichat/backend/ms-user/internal/group/repository"
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
 	userrepo "github.com/wichat/wichat/backend/ms-user/internal/user/repository"
@@ -26,7 +27,7 @@ import (
 )
 
 func TestCreateGroupWithOwnerListAndJoinable(t *testing.T) {
-	users, groups, cleanup := newGroupPgRepositories(t)
+	users, groups, channels, cleanup := newGroupPgRepositories(t)
 	defer cleanup()
 	ctx := context.Background()
 	now := time.Now().UTC().Truncate(time.Microsecond)
@@ -60,6 +61,36 @@ func TestCreateGroupWithOwnerListAndJoinable(t *testing.T) {
 	if err := groups.CreateGroupWithOwner(ctx, group, ownerMember); err != nil {
 		t.Fatalf("CreateGroupWithOwner: %v", err)
 	}
+	if err := channels.SeedDefaultChannels(ctx, groupID, ownerID, now); err != nil {
+		t.Fatalf("SeedDefaultChannels: %v", err)
+	}
+
+	listed, err := channels.ListByGroupID(ctx, groupID)
+	if err != nil {
+		t.Fatalf("ListByGroupID: %v", err)
+	}
+	if len(listed) != 2 {
+		t.Fatalf("channels after create: got %d want 2: %+v", len(listed), listed)
+	}
+	names := map[string]struct{}{listed[0].Name: {}, listed[1].Name: {}}
+	if _, ok := names[constants.DefaultChannelName]; !ok {
+		t.Fatalf("missing %q: %+v", constants.DefaultChannelName, listed)
+	}
+	if _, ok := names[constants.DefaultAnnouncementChannelName]; !ok {
+		t.Fatalf("missing %q: %+v", constants.DefaultAnnouncementChannelName, listed)
+	}
+	for _, ch := range listed {
+		switch ch.Name {
+		case constants.DefaultChannelName:
+			if ch.SidebarSection != constants.SidebarSectionChannels {
+				t.Fatalf("general sidebar_section: %+v", ch)
+			}
+		case constants.DefaultAnnouncementChannelName:
+			if ch.SidebarSection != constants.SidebarSectionFavorites {
+				t.Fatalf("announcements sidebar_section: %+v", ch)
+			}
+		}
+	}
 
 	mine, err := groups.ListGroupsForUser(ctx, ownerID)
 	if err != nil || len(mine) != 1 {
@@ -67,6 +98,9 @@ func TestCreateGroupWithOwnerListAndJoinable(t *testing.T) {
 	}
 	if mine[0].Name != "Acme" || mine[0].PublicID != publicID {
 		t.Fatalf("group: %+v", mine[0])
+	}
+	if mine[0].CallerRole != constants.GroupRoleOwner {
+		t.Fatalf("caller role: %q", mine[0].CallerRole)
 	}
 	if !regexp.MustCompile(`^[0-9a-f]{24}$`).MatchString(mine[0].DefaultChannelPublicID) {
 		t.Fatalf("default channel id: %q", mine[0].DefaultChannelPublicID)
@@ -97,7 +131,7 @@ func TestCreateGroupWithOwnerListAndJoinable(t *testing.T) {
 	}
 }
 
-func newGroupPgRepositories(t *testing.T) (userrepo.PgRepository, grouprepo.PgRepository, func()) {
+func newGroupPgRepositories(t *testing.T) (userrepo.PgRepository, grouprepo.PgRepository, channelrepo.PgRepository, func()) {
 	t.Helper()
 	ctx := context.Background()
 
@@ -141,7 +175,7 @@ func newGroupPgRepositories(t *testing.T) (userrepo.PgRepository, grouprepo.PgRe
 
 	log := logger.New(logger.Options{Service: "group-repo-test", Env: "test", Level: "error"})
 
-	return userrepo.NewPgRepository(db), grouprepo.NewPgRepository(db, log), cleanup
+	return userrepo.NewPgRepository(db), grouprepo.NewPgRepository(db, log), channelrepo.NewPgRepository(db, log), cleanup
 }
 
 func runMigrations(dsn string) error {

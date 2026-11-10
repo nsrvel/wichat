@@ -5,6 +5,9 @@ import (
 	"net/url"
 )
 
+// Browser preflight and credentialed cross-origin calls (web :8080 → gateway :3000).
+const corsAllowedMethods = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+
 func corsOriginAllowed(configured, request string) bool {
 	if configured == "" || request == "" {
 		return false
@@ -36,7 +39,7 @@ func CORS(origin string, next http.Handler) http.Handler {
 			w.Header().Set("Access-Control-Allow-Credentials", "true")
 			w.Header().Set("Vary", "Origin")
 			w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
-			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Methods", corsAllowedMethods)
 		}
 
 		if r.Method == http.MethodOptions {

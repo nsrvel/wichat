@@ -114,13 +114,15 @@ type GroupBody struct {
 	Name             string `json:"name"`
 	LogoURL          string `json:"logo_url"`
 	DefaultChannelID string `json:"default_channel_id"`
+	Role             string `json:"role,omitempty"`
 }
 
 // ChannelBody is channel metadata in JSON responses.
 type ChannelBody struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-	Type string `json:"type"`
+	ID             string `json:"id"`
+	Name           string `json:"name"`
+	Type           string `json:"type"`
+	SidebarSection string `json:"sidebar_section"`
 }
 
 // ChannelsListBody wraps a channel list.
@@ -199,6 +201,7 @@ func GroupFromPB(g *userv1.GroupSummary) GroupBody {
 		Name:             g.GetName(),
 		LogoURL:          g.GetLogoUrl(),
 		DefaultChannelID: g.GetDefaultChannelId(),
+		Role:             g.GetRole(),
 	}
 }
 
@@ -209,9 +212,10 @@ func ChannelFromPB(c *userv1.ChannelSummary) ChannelBody {
 	}
 
 	return ChannelBody{
-		ID:   c.GetId(),
-		Name: c.GetName(),
-		Type: c.GetType(),
+		ID:             c.GetId(),
+		Name:           c.GetName(),
+		Type:           c.GetType(),
+		SidebarSection: c.GetSidebarSection(),
 	}
 }
 

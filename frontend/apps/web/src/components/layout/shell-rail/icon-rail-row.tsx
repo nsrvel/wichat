@@ -1,8 +1,8 @@
 import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-/** Horizontal inset — same on both sides inside the 64px rail. */
-export const iconRailRowInsetClass = "mx-2";
+/** Row chrome only — horizontal inset lives on `shellRailAsideInnerClass`. */
+export const iconRailRowInsetClass = "";
 
 type IconRailSelectionBarProps = {
 	selected?: boolean;
@@ -15,7 +15,9 @@ export function IconRailSelectionBar({ selected = false, className }: IconRailSe
 			aria-hidden
 			className={cn(
 				"block w-1 shrink-0 rounded-r-full bg-sidebar-foreground transition-[height,opacity] duration-200",
-				selected ? "h-6 opacity-100" : "h-2 opacity-40 group-hover:opacity-70",
+				selected
+					? "h-10 opacity-100"
+					: "h-2.5 opacity-35 group-hover:h-6 group-hover:opacity-75",
 				className,
 			)}
 		/>
@@ -37,14 +39,14 @@ export function IconRailWorkspaceRow({
 	return (
 		<div
 			className={cn(
-				"group relative flex min-h-10 items-center justify-center",
+				"group relative flex min-h-[var(--shell-rail-tile-size)] items-center justify-center",
 				iconRailRowInsetClass,
 				className,
 			)}
 		>
 			<IconRailSelectionBar
 				selected={selected}
-				className="absolute top-1/2 -left-2 -translate-y-1/2"
+				className="absolute top-1/2 -left-[var(--shell-rail-row-inset)] -translate-y-1/2"
 			/>
 			{children}
 		</div>
@@ -59,7 +61,11 @@ type IconRailActionRowProps = ComponentProps<"div"> & {
 export function IconRailActionRow({ children, className, ...props }: IconRailActionRowProps) {
 	return (
 		<div
-			className={cn("flex min-h-10 items-center justify-center", iconRailRowInsetClass, className)}
+			className={cn(
+				"flex min-h-[var(--shell-rail-tile-size)] items-center justify-center",
+				iconRailRowInsetClass,
+				className,
+			)}
 			{...props}
 		>
 			{children}

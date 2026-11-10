@@ -113,7 +113,9 @@ export async function getSession(): Promise<User | null> {
 		// Stale access token, gateway blip, or refresh cookie out of sync — treat as signed out.
 		if (
 			error instanceof ApiError &&
-			(error.code === "error.unknown" || error.code === "error.invalid_response")
+			(error.code === "error.unknown" ||
+				error.code === "error.invalid_response" ||
+				error.code === "error.network")
 		) {
 			setAccessToken(null);
 			return null;

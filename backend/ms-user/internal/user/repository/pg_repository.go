@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/uptrace/bun"
+	channelrepo "github.com/wichat/wichat/backend/ms-user/internal/channel/repository"
 	grouprepo "github.com/wichat/wichat/backend/ms-user/internal/group/repository"
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
 	"github.com/wichat/wichat/backend/ms-user/pkg/constants"
@@ -93,7 +94,11 @@ func (r pgRepository) CompleteInstanceSetup(ctx context.Context, ownerUserID str
 			GroupID: payload.GroupID, UserID: ownerUserID, Role: constants.GroupRoleOwner, CreatedAt: now,
 		}
 
-		return grouprepo.InsertGroupWithOwnerTx(ctx, tx, group, owner)
+		if err := grouprepo.InsertGroupWithOwnerTx(ctx, tx, group, owner); err != nil {
+			return err
+		}
+
+		return channelrepo.InsertDefaultChannelsTx(ctx, tx, group.ID, owner.UserID, now)
 	})
 }
 

@@ -59,23 +59,28 @@ export function createApiClient({
 
 	async function refreshAccess(): Promise<string | null> {
 		return refreshAccessToken(async () => {
-			const res = await fetchApi("/auth/refresh", { method: "POST" });
-			if (!res.ok) {
+			try {
+				const res = await fetchApi("/auth/refresh", { method: "POST" });
+				if (!res.ok) {
+					setAccessToken(null);
+					return null;
+				}
+				const json: unknown = await res.json().catch(() => null);
+				const data =
+					json && typeof json === "object" && "data" in json
+						? (json as { data: unknown }).data
+						: null;
+				const parsed = SessionSchema.safeParse(data);
+				if (!parsed.success) {
+					setAccessToken(null);
+					return null;
+				}
+				setAccessToken(parsed.data.access_token);
+				return parsed.data.access_token;
+			} catch {
 				setAccessToken(null);
 				return null;
 			}
-			const json: unknown = await res.json().catch(() => null);
-			const data =
-				json && typeof json === "object" && "data" in json
-					? (json as { data: unknown }).data
-					: null;
-			const parsed = SessionSchema.safeParse(data);
-			if (!parsed.success) {
-				setAccessToken(null);
-				return null;
-			}
-			setAccessToken(parsed.data.access_token);
-			return parsed.data.access_token;
 		});
 	}
 
@@ -83,7 +88,11 @@ export function createApiClient({
 		if (getAccessToken()) {
 			return getAccessToken();
 		}
-		return refreshAccess();
+		try {
+			return await refreshAccess();
+		} catch {
+			return null;
+		}
 	}
 
 	async function send<T>(
@@ -126,6 +135,10 @@ export function createApiClient({
 				},
 				true,
 			);
+		},
+
+		async delete<T>(path: string, schema: Schema<T>): Promise<T> {
+			return send(path, schema, { method: "DELETE" }, true);
 		},
 
 		async postForm<T>(

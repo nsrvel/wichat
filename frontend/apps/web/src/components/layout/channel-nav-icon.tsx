@@ -1,15 +1,16 @@
-import { Bell, Cloud, Hash, ListTodo, MessageCircle, Server, Tv } from "lucide-react";
+import { AtSign, Bell, Cloud, Compass, FileText, Hash, ListTodo, MessageCircle, Server, Tv } from "lucide-react";
 import type { ReactNode } from "react";
 import type { ShellNavTarget } from "@/components/layout/shell-navigation";
 import {
 	SidebarListAvatar,
-	SidebarListIconBox,
+	ChannelGlyphSlot,
 	SidebarListInitialsAvatar,
+	channelListGlyphIconClass,
 	type SidebarListIconVariant,
 } from "@/components/layout/sidebar-list-icon";
 
-export const channelSidebarGlyphClass = "h-[11px] w-[11px] text-[#8e8e93]";
-const channelHeaderGlyphClass = "h-4 w-4 text-[#8e8e93]";
+export const channelSidebarGlyphClass = channelListGlyphIconClass;
+const channelHeaderGlyphClass = "h-4 w-4";
 
 function glyphClass(variant: SidebarListIconVariant) {
 	return variant === "header" ? channelHeaderGlyphClass : channelSidebarGlyphClass;
@@ -65,7 +66,29 @@ type ConversationNavIconProps = {
 };
 
 /** Sidebar list tile — larger only in conversation header. */
+function quickViewGlyph(id: string, variant: SidebarListIconVariant): ReactNode {
+	const g = glyphClass(variant);
+	switch (id) {
+		case "qv-mentions":
+			return <AtSign className={g} strokeWidth={2} />;
+		case "qv-discover":
+			return <Compass className={g} strokeWidth={2} />;
+		case "qv-drafts":
+			return <FileText className={g} strokeWidth={2} />;
+		default:
+			return <AtSign className={g} strokeWidth={2} />;
+	}
+}
+
 export function ConversationNavIcon({ active, variant = "list" }: ConversationNavIconProps) {
+	if (active.kind === "quickView") {
+		return (
+			<ChannelGlyphSlot variant={variant} framed={false}>
+				{quickViewGlyph(active.id, variant)}
+			</ChannelGlyphSlot>
+		);
+	}
+
 	if (active.kind === "dm") {
 		const src = DM_AVATAR_BY_ID[active.id];
 		if (src) {
@@ -74,7 +97,5 @@ export function ConversationNavIcon({ active, variant = "list" }: ConversationNa
 		return <SidebarListInitialsAvatar initials={active.label} variant={variant} />;
 	}
 
-	return (
-		<SidebarListIconBox variant={variant}>{channelGlyph(active.id, variant)}</SidebarListIconBox>
-	);
+	return <ChannelGlyphSlot variant={variant}>{channelGlyph(active.id, variant)}</ChannelGlyphSlot>;
 }

@@ -15,6 +15,7 @@ import {
 	IconRailActionRow,
 	IconRailWorkspaceRow,
 } from "@/components/layout/shell-rail/icon-rail-row";
+import { SHELL_RAIL_TILE_PX } from "@/components/layout/shell-rail/shell-rail-metrics";
 import { ICON_RAIL_WIDTH_PX } from "@/components/layout/shell-chrome-context";
 import { useMyGroupsQuery } from "@/hooks/use-my-groups-query";
 import { channelPath } from "@/lib/app-routes";
@@ -90,12 +91,13 @@ export function ShellGroupRail({
 										<Image
 											src={logoSrc}
 											alt=""
-											width={40}
-											height={40}
-											className="h-10 w-10 rounded-[13px] object-cover"
+											width={SHELL_RAIL_TILE_PX}
+											height={SHELL_RAIL_TILE_PX}
+											unoptimized
+											className="h-[var(--shell-rail-tile-size)] w-[var(--shell-rail-tile-size)] rounded-[var(--shell-rail-tile-radius)] object-cover"
 										/>
 									) : (
-										<span className="text-xs font-semibold">{groupInitials(group.name)}</span>
+										<span className="text-sm font-semibold">{groupInitials(group.name)}</span>
 									)}
 								</IconRailTooltipTile>
 							</GroupRailTileContextMenu>

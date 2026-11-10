@@ -1,6 +1,11 @@
+# Official quay.io/minio/minio (and many minio/minio tags) need Quay/registry access MinIO
+# no longer grants to arbitrary Docker Hub logins — Hub login does not apply to quay.io.
+# Dev: alpine/minio on Docker Hub (community build from upstream MinIO source).
 services:
   minio:
-    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    image: alpine/minio:RELEASE.2025-10-15T17-29-55Z
+    # alpine/minio runs non-root; named volumes on Docker Desktop can deny writes without root in dev.
+    user: "0:0"
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: wichat

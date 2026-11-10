@@ -10,7 +10,6 @@ import { ShellRailTrack } from "@/components/layout/shell-rail/shell-rail-track"
 import { WorkspacePanel } from "@/components/layout/workspace-panel";
 import { ShellNavigationProvider } from "@/components/layout/shell-navigation";
 import { ShellChromeProvider } from "@/components/layout/shell-chrome-context";
-import { ShellUserDock } from "@/components/layout/shell-user-dock";
 import { ShellTopBar } from "@/components/layout/shell-top-bar";
 import type { ShellMainChildProps } from "@/components/layout/app-shell";
 
@@ -50,8 +49,6 @@ export function DevChatUiShell({ children }: { children: ReactNode }) {
 								</div>
 							</div>
 						) : null}
-
-						<ShellUserDock />
 					</div>
 				</ShellChromeProvider>
 			</div>

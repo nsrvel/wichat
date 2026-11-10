@@ -16,9 +16,10 @@ import (
 	"github.com/wichat/wichat/backend/wi-shared/infra/logger"
 )
 
-// Service lists channels for members of a group.
+// Service is channel metadata for a group workspace.
 type Service interface {
 	ListGroupChannels(ctx context.Context, accessToken, groupPublicID string) ([]models.PublicChannel, error)
+	SeedDefaultChannels(ctx context.Context, groupID, ownerUserID string, createdAt time.Time) error
 }
 
 type service struct {
@@ -90,4 +91,8 @@ func (s service) ListGroupChannels(ctx context.Context, accessToken, groupPublic
 	}
 
 	return out, nil
+}
+
+func (s service) SeedDefaultChannels(ctx context.Context, groupID, ownerUserID string, createdAt time.Time) error {
+	return s.channels.SeedDefaultChannels(ctx, groupID, ownerUserID, createdAt)
 }

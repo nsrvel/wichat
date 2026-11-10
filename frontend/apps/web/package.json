@@ -14,14 +14,14 @@
 		"check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm build"
 	},
 	"dependencies": {
-		"@wichat/api-client": "workspace:*",
-		"@wichat/contracts": "workspace:*",
-		"@wichat/i18n": "workspace:*",
 		"@base-ui/react": "^1.8.0",
 		"@hookform/resolvers": "^5.9.1",
 		"@t3-oss/env-nextjs": "^0.13.11",
 		"@tanstack/react-query": "^5.104.1",
 		"@tanstack/react-query-devtools": "^5.104.1",
+		"@wichat/api-client": "workspace:*",
+		"@wichat/contracts": "workspace:*",
+		"@wichat/i18n": "workspace:*",
 		"class-variance-authority": "^0.7.1",
 		"cn": "^0.4.0",
 		"i18next": "^26.5.2",
@@ -39,6 +39,7 @@
 		"zod": "^4.6.5"
 	},
 	"devDependencies": {
+		"@next/env": "16.3.8",
 		"@tailwindcss/postcss": "^4",
 		"@types/node": "^20",
 		"@types/react": "^19",

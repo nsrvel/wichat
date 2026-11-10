@@ -69,15 +69,17 @@ func GroupSummary(g models.PublicGroup) *userv1.GroupSummary {
 		Name:             g.Name,
 		LogoUrl:          g.LogoURL,
 		DefaultChannelId: g.DefaultChannelID,
+		Role:             g.Role,
 	}
 }
 
 // ChannelSummary maps a public channel to protobuf.
 func ChannelSummary(c models.PublicChannel) *userv1.ChannelSummary {
 	return &userv1.ChannelSummary{
-		Id:   c.ID,
-		Name: c.Name,
-		Type: c.Type,
+		Id:             c.ID,
+		Name:           c.Name,
+		Type:           c.Type,
+		SidebarSection: c.SidebarSection,
 	}
 }
 

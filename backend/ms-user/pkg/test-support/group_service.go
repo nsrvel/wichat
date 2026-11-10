@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	authrepo "github.com/wichat/wichat/backend/ms-user/internal/auth/repository"
+	channelmock "github.com/wichat/wichat/backend/ms-user/internal/channel/repository/mock"
+	channelservice "github.com/wichat/wichat/backend/ms-user/internal/channel/service"
 	grouprepo "github.com/wichat/wichat/backend/ms-user/internal/group/repository"
 	groupservice "github.com/wichat/wichat/backend/ms-user/internal/group/service"
 	userrepo "github.com/wichat/wichat/backend/ms-user/internal/user/repository"
@@ -28,5 +30,7 @@ func NewGroupService(t *testing.T, st *usermock.State) (groupservice.Service, gr
 	users, groups, sessions := TestRepos(st)
 	log := logger.New(logger.Options{Service: "group-test", Env: "test", Level: "error"})
 
-	return groupservice.NewService(groups, users, disabledGroupMinio(log), sessions, []byte(TestJWTSecret), log), groups, users, sessions
+	channelSvc := channelservice.NewService(channelmock.NewPgRepositoryMock(), groups, sessions, []byte(TestJWTSecret), log)
+
+	return groupservice.NewService(groups, channelSvc, users, disabledGroupMinio(log), sessions, []byte(TestJWTSecret), log), groups, users, sessions
 }

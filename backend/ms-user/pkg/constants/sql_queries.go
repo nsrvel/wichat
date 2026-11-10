@@ -21,7 +21,8 @@ const (
 		       s.group_id AS s_group_id, s.name AS s_name, s.logo_url AS s_logo_url,
 		       s.retention_days AS s_retention_days, s.trash_retention_days AS s_trash_retention_days,
 		       s.created_at AS s_created_at, s.updated_at AS s_updated_at,
-		       ch.public_id AS ch_public_id
+		       ch.public_id AS ch_public_id,
+		       m.role AS member_role
 		FROM groups AS g
 		JOIN group_settings AS s ON s.group_id = g.id
 		JOIN group_members AS m ON m.group_id = g.id

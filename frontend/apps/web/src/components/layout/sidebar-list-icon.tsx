@@ -2,13 +2,48 @@ import Image from "next/image";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-/** Shared 20×20 tile for sidebar rows (DM avatar, channel icon, quick views). */
-export const sidebarListIconBoxClass =
-	"flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#ececec] bg-white shadow-[0_1px_1px_rgba(0,0,0,0.03)] dark:border-sidebar-border dark:bg-[#242424] lg:h-[22px] lg:w-[22px]";
+/** List row icon column — glyph ~54% of tile (12px → 24px, 14px → 26px at lg). */
+export const sidebarListIconSlotSizeClass = "h-6 w-6 shrink-0 lg:h-[26px] lg:w-[26px]";
 
-/** Conversation header — same tile style, original 32×32 footprint. */
+/** Photo / initials DMs — circular frame (not used for text-channel # glyphs). */
+export const sidebarListIconBoxClass = cn(
+	"flex items-center justify-center overflow-hidden rounded-full border border-sidebar-border bg-sidebar-control shadow-none",
+	sidebarListIconSlotSizeClass,
+);
+
+/** Text channels in the conversation header — circular tile on chat surface (token colors, not white puck). */
 export const conversationHeaderIconBoxClass =
-	"flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#ececec] bg-white shadow-[0_1px_1px_rgba(0,0,0,0.03)] dark:border-sidebar-border dark:bg-[#242424]";
+	"flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border border-sidebar-border bg-sidebar-control text-muted-foreground shadow-none";
+
+export const channelTileDefaultToneClass =
+	"border-[color-mix(in_oklab,var(--chat-tab-active)_24%,var(--sidebar-border))] bg-[color-mix(in_oklab,var(--chat-tab-active)_14%,var(--sidebar-control))]";
+
+export const channelTileAnnouncementToneClass =
+	"border-[color-mix(in_oklab,var(--presence-idle)_40%,var(--sidebar-border))] bg-[color-mix(in_oklab,var(--presence-idle)_22%,var(--sidebar-control))]";
+
+export type ChannelTileTone = "default" | "announcement";
+
+/** Sidebar list: circular tile + subtle tint (not quick-view icon-only). */
+export function channelListGlyphSlotClass(tone: ChannelTileTone = "default") {
+	return cn(
+		sidebarListIconBoxClass,
+		"text-muted-foreground",
+		tone === "announcement" ? channelTileAnnouncementToneClass : channelTileDefaultToneClass,
+		"group-data-[selected=true]/row:border-sidebar-border group-data-[selected=true]/row:bg-sidebar-accent group-data-[selected=true]/row:text-sidebar-foreground",
+	);
+}
+
+/** Quick views / nav rows — glyph only, fixed width for alignment with channel tiles. */
+export const sidebarNavGlyphSlotClass = cn(
+	"flex items-center justify-center text-muted-foreground",
+	sidebarListIconSlotSizeClass,
+	"group-data-[selected=true]/row:text-sidebar-foreground",
+);
+
+/** Sidebar row glyphs (quick views + channel `#` inside the tile). */
+export const sidebarNavGlyphIconClass = "h-3 w-3 lg:h-3.5 lg:w-3.5";
+
+export const channelListGlyphIconClass = sidebarNavGlyphIconClass;
 
 export type SidebarListIconVariant = "list" | "header";
 
@@ -28,6 +63,34 @@ export function SidebarListIconBox({
 	return <span className={cn(iconBoxClass(variant), className)}>{children}</span>;
 }
 
+/** Channel glyph tile; quick views use `framed={false}` for icon-only. */
+export function ChannelGlyphSlot({
+	children,
+	className,
+	variant = "list",
+	framed = true,
+	tileTone = "default",
+}: {
+	children: ReactNode;
+	className?: string;
+	variant?: SidebarListIconVariant;
+	/** `false` = no circular background (quick views). */
+	framed?: boolean;
+	tileTone?: ChannelTileTone;
+}) {
+	if (variant === "header") {
+		return (
+			<span className={cn(conversationHeaderIconBoxClass, channelTileDefaultToneClass, className)}>
+				{children}
+			</span>
+		);
+	}
+	if (!framed) {
+		return <span className={cn(sidebarNavGlyphSlotClass, className)}>{children}</span>;
+	}
+	return <span className={cn(channelListGlyphSlotClass(tileTone), className)}>{children}</span>;
+}
+
 export function SidebarListAvatar({
 	src,
 	alt = "",
@@ -37,7 +100,7 @@ export function SidebarListAvatar({
 	alt?: string;
 	variant?: SidebarListIconVariant;
 }) {
-	const px = variant === "header" ? 32 : 22;
+	const px = variant === "header" ? 32 : 26;
 	return (
 		<SidebarListIconBox className="p-0" variant={variant}>
 			<Image src={src} alt={alt} width={px} height={px} className="h-full w-full object-cover" />
@@ -58,7 +121,7 @@ export function SidebarListInitialsAvatar({
 		<SidebarListIconBox
 			variant={variant}
 			className={cn(
-				"border-[#E4E4E7] bg-[#EEEEF0] p-0 font-semibold leading-none text-[#52525b]",
+				"border-sidebar-border bg-sidebar-accent p-0 font-semibold leading-none text-sidebar-accent-foreground",
 				variant === "header" ? "text-[10px]" : "text-[8px]",
 			)}
 		>

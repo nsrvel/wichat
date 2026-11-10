@@ -10,6 +10,8 @@ import (
 	authrepo "github.com/wichat/wichat/backend/ms-user/internal/auth/repository"
 	authmock "github.com/wichat/wichat/backend/ms-user/internal/auth/repository/mock"
 	"github.com/wichat/wichat/backend/ms-user/internal/auth/service"
+	channelmock "github.com/wichat/wichat/backend/ms-user/internal/channel/repository/mock"
+	channelservice "github.com/wichat/wichat/backend/ms-user/internal/channel/service"
 	grouprepo "github.com/wichat/wichat/backend/ms-user/internal/group/repository"
 	groupmock "github.com/wichat/wichat/backend/ms-user/internal/group/repository/mock"
 	groupservice "github.com/wichat/wichat/backend/ms-user/internal/group/service"
@@ -74,7 +76,8 @@ func NewAuthService(t *testing.T, st *usermock.State, now func() time.Time) (ser
 	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
 	log := logger.New(logger.Options{Service: "auth-test", Env: "test", Level: "error"})
 	userSvc := userservice.NewService(users, sessions, []byte(TestJWTSecret), log)
-	groupSvc := groupservice.NewService(groups, users, disabledGroupMinio(log), sessions, []byte(TestJWTSecret), log)
+	channelSvc := channelservice.NewService(channelmock.NewPgRepositoryMock(), groups, sessions, []byte(TestJWTSecret), log)
+	groupSvc := groupservice.NewService(groups, channelSvc, users, disabledGroupMinio(log), sessions, []byte(TestJWTSecret), log)
 	refresh := authrepo.NewRedisRefreshStore(rdb)
 	var opts *service.Options
 	if now != nil {

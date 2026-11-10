@@ -9,6 +9,7 @@ type Group struct {
 	Name                   string
 	LogoURL                string
 	DefaultChannelPublicID string
+	CallerRole             string
 	CreatedAt              time.Time
 	UpdatedAt              time.Time
 }
@@ -19,12 +20,17 @@ type PublicGroup struct {
 	Name             string
 	LogoURL          string
 	DefaultChannelID string
+	Role             string
 }
 
 // Public returns client-safe group fields.
 func (g Group) Public() PublicGroup {
 	return PublicGroup{
-		ID: g.PublicID, Name: g.Name, LogoURL: g.LogoURL, DefaultChannelID: g.DefaultChannelPublicID,
+		ID:               g.PublicID,
+		Name:             g.Name,
+		LogoURL:          g.LogoURL,
+		DefaultChannelID: g.DefaultChannelPublicID,
+		Role:             g.CallerRole,
 	}
 }
 

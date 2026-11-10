@@ -35,7 +35,7 @@ import { cn } from "@/lib/utils";
 import * as groupQuery from "@/services/group/group.query";
 import { channelPath } from "@/lib/app-routes";
 import { Q_MY_GROUPS } from "@/services/group/group.key";
-import { leaveGroup, uploadGroupIcon } from "@/services/group/group.service";
+import { uploadGroupIcon } from "@/services/group/group.service";
 import { useCreateGroupMutation, useJoinGroupMutation } from "@/services/group/group.mutation";
 
 const GROUP_ONBOARDING_TITLE_ID = "group-onboarding-title";
@@ -217,27 +217,36 @@ export function GroupOnboardingFlow({
 								createGroup.mutate(values, {
 									onSuccess: async (group) => {
 										try {
+											const owned: Group = {
+												...group,
+												role: group.role ?? "owner",
+											};
+											queryClient.setQueryData<Group[]>([Q_MY_GROUPS], (prev) => [
+												...(prev ?? []).filter((g) => g.id !== owned.id),
+												owned,
+											]);
+
 											if (groupIconFile) {
-												const updated = await uploadGroupIcon(group.id, groupIconFile);
-												queryClient.setQueryData<Group[]>([Q_MY_GROUPS], (prev) => {
-													const list = prev ?? [];
-													const has = list.some((g) => g.id === updated.id);
-													if (has) {
+												try {
+													const updated = await uploadGroupIcon(group.id, groupIconFile);
+													queryClient.setQueryData<Group[]>([Q_MY_GROUPS], (prev) => {
+														const list = prev ?? [];
 														return list.map((g) =>
-															g.id === updated.id ? { ...g, logo_url: updated.logo_url } : g,
+															g.id === updated.id
+																? {
+																		...g,
+																		logo_url: updated.logo_url,
+																		role: updated.role ?? g.role ?? "owner",
+																	}
+																: g,
 														);
-													}
-													return [...list, updated];
-												});
+													});
+												} catch {
+													// Group already created — continue without logo (e.g. MinIO off locally).
+												}
 											}
 											openGroupChannel(group.id, group.default_channel_id);
 										} catch (err) {
-											try {
-												await leaveGroup(group.id);
-											} catch {
-												// best-effort rollback so create can be retried
-											}
-											void queryClient.invalidateQueries({ queryKey: [Q_MY_GROUPS] });
 											form.setError("root", {
 												message: translateError(t, err),
 											});

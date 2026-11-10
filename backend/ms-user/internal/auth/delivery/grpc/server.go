@@ -5,6 +5,7 @@ import (
 	"context"
 
 	authservice "github.com/wichat/wichat/backend/ms-user/internal/auth/service"
+	channelgrpc "github.com/wichat/wichat/backend/ms-user/internal/channel/delivery/grpc"
 	channelservice "github.com/wichat/wichat/backend/ms-user/internal/channel/service"
 	groupservice "github.com/wichat/wichat/backend/ms-user/internal/group/service"
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
@@ -21,10 +22,10 @@ type Server interface {
 
 type server struct {
 	userv1.UnimplementedAuthServiceServer
-	auth    authservice.Service
-	user    userservice.Service
-	group   groupservice.Service
-	channel channelservice.Service
+	auth        authservice.Service
+	user        userservice.Service
+	group       groupservice.Service
+	channelRPC  *channelgrpc.Server
 }
 
 // NewServer binds auth, user, group, and channel services to the Auth gRPC surface.
@@ -34,7 +35,12 @@ func NewServer(
 	group groupservice.Service,
 	channel channelservice.Service,
 ) Server {
-	return &server{auth: auth, user: user, group: group, channel: channel}
+	return &server{
+		auth:       auth,
+		user:       user,
+		group:      group,
+		channelRPC: channelgrpc.NewServer(channel),
+	}
 }
 
 func (s *server) SetupStatus(ctx context.Context, _ *userv1.SetupStatusRequest) (*userv1.SetupStatusResponse, error) {
@@ -326,13 +332,16 @@ func (s *server) LeaveGroup(ctx context.Context, req *userv1.LeaveGroupRequest) 
 	return &userv1.LeaveGroupResponse{Ok: true}, nil
 }
 
-func (s *server) ListGroupChannels(ctx context.Context, req *userv1.ListGroupChannelsRequest) (*userv1.ListGroupChannelsResponse, error) {
-	channels, err := s.channel.ListGroupChannels(ctx, req.GetAccessToken(), req.GetGroupId())
-	if err != nil {
+func (s *server) DeleteGroup(ctx context.Context, req *userv1.DeleteGroupRequest) (*userv1.DeleteGroupResponse, error) {
+	if err := s.group.DeleteGroup(ctx, req.GetAccessToken(), req.GetGroupId()); err != nil {
 		return nil, responsegrpc.ToStatus(err)
 	}
 
-	return &userv1.ListGroupChannelsResponse{Channels: authPb.ChannelSummaries(channels)}, nil
+	return &userv1.DeleteGroupResponse{Ok: true}, nil
+}
+
+func (s *server) ListGroupChannels(ctx context.Context, req *userv1.ListGroupChannelsRequest) (*userv1.ListGroupChannelsResponse, error) {
+	return s.channelRPC.ListGroupChannels(ctx, req)
 }
 
 func (s *server) UploadGroupIcon(ctx context.Context, req *userv1.UploadGroupIconRequest) (*userv1.UploadGroupIconResponse, error) {

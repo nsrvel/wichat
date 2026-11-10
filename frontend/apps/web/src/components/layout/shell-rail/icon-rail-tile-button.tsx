@@ -3,7 +3,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { cn } from "@/lib/utils";
 
 const tileBase =
-	"flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-shell-rail";
+	"flex h-[var(--shell-rail-tile-size)] w-[var(--shell-rail-tile-size)] shrink-0 items-center justify-center rounded-[var(--shell-rail-tile-radius)] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-shell-rail";
 
 const tileVariants = {
 	primary: "bg-[#141414] text-white shadow-sm",

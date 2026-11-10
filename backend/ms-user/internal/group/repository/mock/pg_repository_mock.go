@@ -135,6 +135,35 @@ func (m pgRepositoryMock) DeleteGroupMember(_ context.Context, groupID, userID s
 	return constants.ErrNotFound
 }
 
+func (m pgRepositoryMock) DeleteGroup(_ context.Context, groupID string) error {
+	m.st.Lock()
+	defer m.st.Unlock()
+
+	found := false
+	filtered := m.st.Groups[:0]
+	for _, g := range m.st.Groups {
+		if g.ID == groupID {
+			found = true
+			continue
+		}
+		filtered = append(filtered, g)
+	}
+	if !found {
+		return constants.ErrNotFound
+	}
+	m.st.Groups = filtered
+
+	var members []models.GroupMember
+	for _, mem := range m.st.Members {
+		if mem.GroupID != groupID {
+			members = append(members, mem)
+		}
+	}
+	m.st.Members = members
+
+	return nil
+}
+
 func (m pgRepositoryMock) UpdateGroupDisplayName(_ context.Context, groupID, name string, _ time.Time) error {
 	m.st.Lock()
 	defer m.st.Unlock()
@@ -166,15 +195,16 @@ func (m pgRepositoryMock) UpdateGroupLogoURL(_ context.Context, groupID, logoURL
 }
 
 func groupsForUser(st *usermock.State, userID string) []models.Group {
-	memberOf := map[string]bool{}
+	memberOf := map[string]string{}
 	for _, mem := range st.Members {
 		if mem.UserID == userID {
-			memberOf[mem.GroupID] = true
+			memberOf[mem.GroupID] = mem.Role
 		}
 	}
 	var out []models.Group
 	for _, g := range st.Groups {
-		if memberOf[g.ID] {
+		if role, ok := memberOf[g.ID]; ok {
+			g.CallerRole = role
 			out = append(out, g)
 		}
 	}

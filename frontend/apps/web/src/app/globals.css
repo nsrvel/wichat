@@ -142,8 +142,11 @@
 	--shadow-elevated: 0 4px 24px rgb(0 0 0 / 0.05);
 	--shadow-elevated-lg: 0 8px 30px rgb(0 0 0 / 0.04);
 	--focus-ring: oklch(0.205 0 0 / 10%);
-	/* Icon rail show/hide — keep in sync with ICON_RAIL_WIDTH_PX (64) */
-	--shell-rail-width: 4rem;
+	/* Icon rail geometry — keep in sync with `shell-rail-metrics.ts` (not `--shell-rail-tile` = tile bg color) */
+	--shell-rail-tile-size: 2.5rem;
+	--shell-rail-tile-radius: 13px;
+	--shell-rail-row-inset: 0.75rem;
+	--shell-rail-width: calc(var(--shell-rail-tile-size) + 2 * var(--shell-rail-row-inset));
 	--shell-rail-motion-duration: 280ms;
 	--shell-rail-motion-ease: cubic-bezier(0.33, 1, 0.68, 1);
 	--shell-rail-content-duration: 200ms;

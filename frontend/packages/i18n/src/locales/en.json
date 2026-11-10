@@ -157,6 +157,18 @@
     "placeholder_title": "Chat is being rebuilt",
     "placeholder_lead": "Messages and composer will appear here as we wire the channel API."
   },
+  "chat": {
+    "empty_title": "No messages yet",
+    "empty_description": "Be the first to say something in this channel. Sending will connect to the server in a later update.",
+    "composer_placeholder": "Message this channel",
+    "send": "Send message",
+    "send_soon": "Sending messages is coming soon",
+    "formatting": "Formatting",
+    "emoji": "Emoji",
+    "attach": "Attach file",
+    "mention": "Mention",
+    "more": "More"
+  },
   "shell": {
     "loading": "Loading workspace…",
     "workspace_default_title": "WiChat",
@@ -179,7 +191,30 @@
     "leave_group": "Leave group",
     "leave_group_confirm": "Leave {{name}}? You can join again later.",
     "leave_group_action": "Leave",
-    "leave_group_cancel": "Cancel"
+    "leave_group_cancel": "Cancel",
+    "delete_group": "Delete group",
+    "delete_group_confirm": "Delete {{name}} permanently? This cannot be undone.",
+    "delete_group_action": "Delete",
+    "delete_group_cancel": "Cancel",
+    "quick_view": {
+      "coming_soon_title": "Coming soon",
+      "mentions_description": "Messages that mention you will show up here.",
+      "discover_description": "Browse and join public channels in this group.",
+      "drafts_description": "Unsent messages from channels and chats will appear here."
+    },
+    "sidebar": {
+      "quick_views": "Quick views",
+      "mentions": "Mentions",
+      "discover": "Discover",
+      "drafts": "Drafts",
+      "favorites": "Favorites",
+      "channels": "Channels",
+      "chats": "Chats",
+      "announcements_channel": "Announcements",
+      "empty_favorites": "Pin channels or chats you use often.",
+      "empty_channels": "No channels here yet.",
+      "empty_chats": "Direct messages will appear here."
+    }
   },
   "guest": {
     "display_name": "Display name",

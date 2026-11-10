@@ -1,20 +1,52 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { ConversationHeader } from "@/features/chat/components/conversation-header";
+import { toChannelShellNavTarget } from "@/features/channel/lib/channel-shell-nav-target";
+import { toQuickViewShellNavTarget } from "@/features/channel/lib/quick-view-shell-nav-target";
+import type { QuickViewId } from "@/lib/app-routes";
 import { useShellChrome } from "@/components/layout/shell-chrome-context";
 import { useShellNavigation } from "@/components/layout/shell-navigation";
 import { WorkspaceSidebarHeader } from "@/components/layout/workspace-sidebar-header";
 import { useMyGroupsQuery } from "@/hooks/use-my-groups-query";
+import * as channelQuery from "@/services/channel/channel.query";
+
+const QUICK_VIEW_LABEL_KEYS: Record<QuickViewId, string> = {
+	mentions: "shell.sidebar.mentions",
+	discover: "shell.sidebar.discover",
+	drafts: "shell.sidebar.drafts",
+};
+
 type WorkspacePanelHeaderRowProps = {
 	onOpenSidebar?: () => void;
+	groupId?: string;
+	channelId?: string;
+	quickView?: QuickViewId;
 };
 
 /** Sidebar + conversation headers — aligned strips, full-width divider like workspace chrome. */
-export function WorkspacePanelHeaderRow({ onOpenSidebar }: WorkspacePanelHeaderRowProps) {
+export function WorkspacePanelHeaderRow({
+	onOpenSidebar,
+	groupId,
+	channelId,
+	quickView,
+}: WorkspacePanelHeaderRowProps) {
+	const { t } = useTranslation();
 	const { sidebarWidth } = useShellChrome();
-	const { active } = useShellNavigation();
+	const { active: mockActive } = useShellNavigation();
+	const channels = useQuery({
+		...channelQuery.groupChannelsQueryOpts(groupId ?? ""),
+		enabled: Boolean(groupId && channelId),
+	});
+	const active = quickView
+		? toQuickViewShellNavTarget(quickView, t(QUICK_VIEW_LABEL_KEYS[quickView]))
+		: groupId && channelId
+			? toChannelShellNavTarget(channelId, channels.data?.channels)
+			: mockActive;
 	const myGroups = useMyGroupsQuery();
-	const groupName = myGroups.data?.[0]?.name ?? "";
+	const groupName =
+		myGroups.data?.find((g) => g.id === groupId)?.name ?? myGroups.data?.[0]?.name ?? "";
 
 	return (
 		<div className="hidden shrink-0 border-b border-black lg:flex">

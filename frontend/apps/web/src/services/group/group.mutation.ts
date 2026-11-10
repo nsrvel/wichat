@@ -1,16 +1,29 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Q_GROUP_CHANNELS } from "@/services/channel/channel.key";
 import { Q_JOINABLE_GROUPS, Q_MY_GROUPS } from "@/services/group/group.key";
-import { createGroup, joinGroup, leaveGroup } from "@/services/group/group.service";
+import type { Group } from "@wichat/contracts";
+import {
+	createGroup,
+	deleteGroup,
+	joinGroup,
+	leaveGroup,
+} from "@/services/group/group.service";
 
 export function useCreateGroupMutation() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: createGroup,
-		onSuccess: () => {
+		onSuccess: (group) => {
+			const owned: Group = { ...group, role: group.role ?? "owner" };
+			queryClient.setQueryData<Group[]>([Q_MY_GROUPS], (prev) => [
+				...(prev ?? []).filter((g) => g.id !== owned.id),
+				owned,
+			]);
 			void queryClient.invalidateQueries({ queryKey: [Q_MY_GROUPS] });
 			void queryClient.invalidateQueries({ queryKey: [Q_JOINABLE_GROUPS] });
+			void queryClient.invalidateQueries({ queryKey: [Q_GROUP_CHANNELS, group.id] });
 		},
 	});
 }
@@ -30,7 +43,24 @@ export function useLeaveGroupMutation() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: leaveGroup,
-		onSuccess: () => {
+		onSuccess: (_data, groupId) => {
+			queryClient.setQueryData<Group[]>([Q_MY_GROUPS], (prev) =>
+				(prev ?? []).filter((g) => g.id !== groupId),
+			);
+			void queryClient.invalidateQueries({ queryKey: [Q_MY_GROUPS] });
+			void queryClient.invalidateQueries({ queryKey: [Q_JOINABLE_GROUPS] });
+		},
+	});
+}
+
+export function useDeleteGroupMutation() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: deleteGroup,
+		onSuccess: (_data, groupId) => {
+			queryClient.setQueryData<Group[]>([Q_MY_GROUPS], (prev) =>
+				(prev ?? []).filter((g) => g.id !== groupId),
+			);
 			void queryClient.invalidateQueries({ queryKey: [Q_MY_GROUPS] });
 			void queryClient.invalidateQueries({ queryKey: [Q_JOINABLE_GROUPS] });
 		},

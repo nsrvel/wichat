@@ -107,8 +107,8 @@ func (s *server) Run(ctx context.Context) error {
 	authRefresh := authrepo.NewRedisRefreshStore(rdb)
 	secret := []byte(s.cfg.AuthJWTSecret)
 	userSvc := userservice.NewService(userPg, authSessions, secret, s.log)
-	groupSvc := groupservice.NewService(groupPg, userPg, groupMinio, authSessions, secret, s.log)
 	channelSvc := channelservice.NewService(channelPg, groupPg, authSessions, secret, s.log)
+	groupSvc := groupservice.NewService(groupPg, channelSvc, userPg, groupMinio, authSessions, secret, s.log)
 	authSvc, err := authservice.NewService(userPg, authSessions, authRefresh, secret, s.log, googleoauth.Config{
 		ClientID:     s.cfg.GoogleClientID,
 		ClientSecret: s.cfg.GoogleClientSecret,

@@ -8,6 +8,7 @@ export const mockMyGroupsList: GroupsList = {
 			name: "UI sample workspace",
 			logo_url: "",
 			default_channel_id: "f00100000000000000000002",
+			role: "owner",
 		},
 	],
 };

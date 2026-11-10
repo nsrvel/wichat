@@ -50,8 +50,10 @@ service AuthService {
   rpc CreateGroup(CreateGroupRequest) returns (CreateGroupResponse);
   // JoinGroup adds the caller as a member.
   rpc JoinGroup(JoinGroupRequest) returns (JoinGroupResponse);
-  // LeaveGroup removes the caller's membership in a group.
+  // LeaveGroup removes the caller's membership in a group (not owners).
   rpc LeaveGroup(LeaveGroupRequest) returns (LeaveGroupResponse);
+  // DeleteGroup removes a group; owner only.
+  rpc DeleteGroup(DeleteGroupRequest) returns (DeleteGroupResponse);
   // ListGroupChannels returns channels in a group the caller belongs to.
   rpc ListGroupChannels(ListGroupChannelsRequest) returns (ListGroupChannelsResponse);
   // UploadGroupIcon stores a group logo and updates group_settings.logo_url.
@@ -296,6 +298,8 @@ message GroupSummary {
   string logo_url = 3;
   // default_channel_id is the public id of the #general channel (24-char hex).
   string default_channel_id = 4;
+  // role is the caller's membership role (ListMyGroups / CreateGroup); empty for joinable list.
+  string role = 5;
 }
 
 message ListMyGroupsRequest {
@@ -341,11 +345,22 @@ message LeaveGroupResponse {
   bool ok = 1;
 }
 
+message DeleteGroupRequest {
+  string access_token = 1;
+  string group_id = 2;
+}
+
+message DeleteGroupResponse {
+  bool ok = 1;
+}
+
 // ChannelSummary is channel metadata for the sidebar.
 message ChannelSummary {
   string id = 1;
   string name = 2;
   string type = 3;
+  // Sidebar bucket: favorites | channels (see ms-user channels.sidebar_section).
+  string sidebar_section = 4;
 }
 
 message ListGroupChannelsRequest {

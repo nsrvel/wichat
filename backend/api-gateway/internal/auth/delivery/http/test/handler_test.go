@@ -106,6 +106,7 @@ type fakeAuth struct {
 	createGroup  func(context.Context, *userv1.CreateGroupRequest) (*userv1.CreateGroupResponse, error)
 	joinGroup    func(context.Context, *userv1.JoinGroupRequest) (*userv1.JoinGroupResponse, error)
 	leaveGroup   func(context.Context, *userv1.LeaveGroupRequest) (*userv1.LeaveGroupResponse, error)
+	deleteGroup  func(context.Context, *userv1.DeleteGroupRequest) (*userv1.DeleteGroupResponse, error)
 }
 
 func testClients(authClient auth.Client) *microservices.Clients {
@@ -219,6 +220,13 @@ func (f fakeAuth) JoinGroup(ctx context.Context, in *userv1.JoinGroupRequest) (*
 func (f fakeAuth) LeaveGroup(ctx context.Context, in *userv1.LeaveGroupRequest) (*userv1.LeaveGroupResponse, error) {
 	if f.leaveGroup != nil {
 		return f.leaveGroup(ctx, in)
+	}
+	return nil, status.Error(codes.Unimplemented, "error.internal")
+}
+
+func (f fakeAuth) DeleteGroup(ctx context.Context, in *userv1.DeleteGroupRequest) (*userv1.DeleteGroupResponse, error) {
+	if f.deleteGroup != nil {
+		return f.deleteGroup(ctx, in)
 	}
 	return nil, status.Error(codes.Unimplemented, "error.internal")
 }

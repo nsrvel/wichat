@@ -42,6 +42,7 @@ const (
 	AuthService_CreateGroup_FullMethodName           = "/user.v1.AuthService/CreateGroup"
 	AuthService_JoinGroup_FullMethodName             = "/user.v1.AuthService/JoinGroup"
 	AuthService_LeaveGroup_FullMethodName            = "/user.v1.AuthService/LeaveGroup"
+	AuthService_DeleteGroup_FullMethodName           = "/user.v1.AuthService/DeleteGroup"
 	AuthService_ListGroupChannels_FullMethodName     = "/user.v1.AuthService/ListGroupChannels"
 	AuthService_UploadGroupIcon_FullMethodName       = "/user.v1.AuthService/UploadGroupIcon"
 )
@@ -96,8 +97,10 @@ type AuthServiceClient interface {
 	CreateGroup(ctx context.Context, in *CreateGroupRequest, opts ...grpc.CallOption) (*CreateGroupResponse, error)
 	// JoinGroup adds the caller as a member.
 	JoinGroup(ctx context.Context, in *JoinGroupRequest, opts ...grpc.CallOption) (*JoinGroupResponse, error)
-	// LeaveGroup removes the caller's membership in a group.
+	// LeaveGroup removes the caller's membership in a group (not owners).
 	LeaveGroup(ctx context.Context, in *LeaveGroupRequest, opts ...grpc.CallOption) (*LeaveGroupResponse, error)
+	// DeleteGroup removes a group; owner only.
+	DeleteGroup(ctx context.Context, in *DeleteGroupRequest, opts ...grpc.CallOption) (*DeleteGroupResponse, error)
 	// ListGroupChannels returns channels in a group the caller belongs to.
 	ListGroupChannels(ctx context.Context, in *ListGroupChannelsRequest, opts ...grpc.CallOption) (*ListGroupChannelsResponse, error)
 	// UploadGroupIcon stores a group logo and updates group_settings.logo_url.
@@ -342,6 +345,16 @@ func (c *authServiceClient) LeaveGroup(ctx context.Context, in *LeaveGroupReques
 	return out, nil
 }
 
+func (c *authServiceClient) DeleteGroup(ctx context.Context, in *DeleteGroupRequest, opts ...grpc.CallOption) (*DeleteGroupResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteGroupResponse)
+	err := c.cc.Invoke(ctx, AuthService_DeleteGroup_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *authServiceClient) ListGroupChannels(ctx context.Context, in *ListGroupChannelsRequest, opts ...grpc.CallOption) (*ListGroupChannelsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListGroupChannelsResponse)
@@ -412,8 +425,10 @@ type AuthServiceServer interface {
 	CreateGroup(context.Context, *CreateGroupRequest) (*CreateGroupResponse, error)
 	// JoinGroup adds the caller as a member.
 	JoinGroup(context.Context, *JoinGroupRequest) (*JoinGroupResponse, error)
-	// LeaveGroup removes the caller's membership in a group.
+	// LeaveGroup removes the caller's membership in a group (not owners).
 	LeaveGroup(context.Context, *LeaveGroupRequest) (*LeaveGroupResponse, error)
+	// DeleteGroup removes a group; owner only.
+	DeleteGroup(context.Context, *DeleteGroupRequest) (*DeleteGroupResponse, error)
 	// ListGroupChannels returns channels in a group the caller belongs to.
 	ListGroupChannels(context.Context, *ListGroupChannelsRequest) (*ListGroupChannelsResponse, error)
 	// UploadGroupIcon stores a group logo and updates group_settings.logo_url.
@@ -496,6 +511,9 @@ func (UnimplementedAuthServiceServer) JoinGroup(context.Context, *JoinGroupReque
 }
 func (UnimplementedAuthServiceServer) LeaveGroup(context.Context, *LeaveGroupRequest) (*LeaveGroupResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method LeaveGroup not implemented")
+}
+func (UnimplementedAuthServiceServer) DeleteGroup(context.Context, *DeleteGroupRequest) (*DeleteGroupResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteGroup not implemented")
 }
 func (UnimplementedAuthServiceServer) ListGroupChannels(context.Context, *ListGroupChannelsRequest) (*ListGroupChannelsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListGroupChannels not implemented")
@@ -938,6 +956,24 @@ func _AuthService_LeaveGroup_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthService_DeleteGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteGroupRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).DeleteGroup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_DeleteGroup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).DeleteGroup(ctx, req.(*DeleteGroupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AuthService_ListGroupChannels_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListGroupChannelsRequest)
 	if err := dec(in); err != nil {
@@ -1072,6 +1108,10 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "LeaveGroup",
 			Handler:    _AuthService_LeaveGroup_Handler,
+		},
+		{
+			MethodName: "DeleteGroup",
+			Handler:    _AuthService_DeleteGroup_Handler,
 		},
 		{
 			MethodName: "ListGroupChannels",

@@ -13,8 +13,7 @@ import {
 	shellRailAsideInnerClass,
 	shellRailChromeState,
 } from "@/components/layout/shell-rail/shell-rail-aside";
-import { useShellChromeDockInset } from "@/components/layout/shell-chrome-context";
-
+import { SHELL_RAIL_TILE_PX } from "@/components/layout/shell-rail/shell-rail-metrics";
 const railLogoTileClass =
 	"relative overflow-hidden border-0 bg-transparent p-0 shadow-none hover:opacity-90";
 
@@ -25,14 +24,12 @@ type IconRailProps = {
 };
 
 export function IconRail({ open }: IconRailProps) {
-	const dockInset = useShellChromeDockInset();
 	const [activeWorkspace, setActiveWorkspace] = useState<RailWorkspaceId>("wistudio");
 
 	return (
 		<aside
 			className={shellRailAsideClass()}
 			data-state={shellRailChromeState(open)}
-			style={{ paddingBottom: open ? dockInset : 0 }}
 			aria-label="Workspaces"
 			aria-hidden={!open}
 		>
@@ -45,7 +42,7 @@ export function IconRail({ open }: IconRailProps) {
 						aria-current={activeWorkspace === "wistudio" ? "true" : undefined}
 						onClick={() => setActiveWorkspace("wistudio")}
 					>
-						<WiStudioLogoMark size={40} />
+						<WiStudioLogoMark size={SHELL_RAIL_TILE_PX} />
 					</IconRailTooltipTile>
 				</IconRailWorkspaceRow>
 				<IconRailActionRow>

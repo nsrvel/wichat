@@ -8,6 +8,7 @@ import (
 
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
 	usermock "github.com/wichat/wichat/backend/ms-user/internal/user/repository/mock"
+	"github.com/wichat/wichat/backend/ms-user/pkg/constants"
 	testSupport "github.com/wichat/wichat/backend/ms-user/pkg/test-support"
 	"github.com/wichat/wichat/backend/wi-shared/exception"
 )
@@ -48,6 +49,9 @@ func TestCreateJoinGroupFlow(t *testing.T) {
 	if err != nil || created.Name != "Acme" {
 		t.Fatalf("create: %v %+v", err, created)
 	}
+	if created.Role != constants.GroupRoleOwner {
+		t.Fatalf("create role: %q", created.Role)
+	}
 	if !regexp.MustCompile(`^[0-9a-f]{24}$`).MatchString(created.ID) {
 		t.Fatalf("public id: %q", created.ID)
 	}
@@ -55,6 +59,9 @@ func TestCreateJoinGroupFlow(t *testing.T) {
 	mine, err := groupSvc.ListMyGroups(ctx, owner.AccessToken)
 	if err != nil || len(mine) != 1 || mine[0].ID != created.ID {
 		t.Fatalf("mine: %v err %v", mine, err)
+	}
+	if mine[0].Role != constants.GroupRoleOwner {
+		t.Fatalf("owner list role: %q", mine[0].Role)
 	}
 
 	member := testSupport.RegisterSession(t, authSvc, notify, registerInput("member@example.com"))
@@ -76,6 +83,9 @@ func TestCreateJoinGroupFlow(t *testing.T) {
 	mine, err = groupSvc.ListMyGroups(ctx, member.AccessToken)
 	if err != nil || len(mine) != 1 {
 		t.Fatalf("member mine: %+v err %v", mine, err)
+	}
+	if mine[0].Role != constants.GroupRoleMember {
+		t.Fatalf("member list role: %q", mine[0].Role)
 	}
 }
 
@@ -113,6 +123,27 @@ func TestOwnerCannotLeaveGroup(t *testing.T) {
 	ex, ok := exception.As(leaveErr)
 	if !ok || ex.Kind != exception.KindPermissionDenied {
 		t.Fatalf("expected forbidden, got %v", leaveErr)
+	}
+}
+
+func TestOwnerCanDeleteGroup(t *testing.T) {
+	st := usermock.NewState()
+	authSvc, notify, _, _, groupSvc, _ := testSupport.NewAuthService(t, st, nil)
+	ctx := context.Background()
+
+	owner := testSupport.RegisterSession(t, authSvc, notify, registerInput("owner-delete@example.com"))
+	created, err := groupSvc.CreateGroup(ctx, owner.AccessToken, "Solo")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := groupSvc.DeleteGroup(ctx, owner.AccessToken, created.ID); err != nil {
+		t.Fatalf("owner delete: %v", err)
+	}
+
+	mine, err := groupSvc.ListMyGroups(ctx, owner.AccessToken)
+	if err != nil || len(mine) != 0 {
+		t.Fatalf("owner should have no groups after delete: %+v err %v", mine, err)
 	}
 }
 

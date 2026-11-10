@@ -12,7 +12,7 @@ type ShellRailTrackProps = {
 	className?: string;
 };
 
-/** Rail column width `w-0` ↔ `w-16`; motion tokens in `globals.css` `:root`. */
+/** Rail column width `w-0` ↔ `--shell-rail-width`; motion tokens in `globals.css` `:root`. */
 export function ShellRailTrack({ open, rail, children, className }: ShellRailTrackProps) {
 	return (
 		<div className={shellRailTrackClass(className)}>

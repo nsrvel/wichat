@@ -1,8 +1,16 @@
 "use client";
 
-import { AtSign, ChevronDown, Compass, FileText } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
-import { useShellChrome, useShellChromeDockInset } from "@/components/layout/shell-chrome-context";
+import { AtSign, Compass, FileText } from "lucide-react";
+import { useEffect, useState } from "react";
+import { SidebarCategoryRow } from "@/components/layout/channel-sidebar/sidebar-category-row";
+import { SidebarChannelRow } from "@/components/layout/channel-sidebar/sidebar-channel-row";
+import { SidebarFavoriteDmRow } from "@/components/layout/channel-sidebar/sidebar-favorite-dm-row";
+import { SidebarNavItem } from "@/components/layout/channel-sidebar/sidebar-nav-item";
+import {
+	SIDEBAR_INSET_X,
+	sidebarNestedListClass,
+} from "@/components/layout/channel-sidebar/sidebar-nav-styles";
+import { useShellChrome } from "@/components/layout/shell-chrome-context";
 import {
 	channelNavBellIcon,
 	channelNavHashIcon,
@@ -12,9 +20,12 @@ import {
 	channelNavWinobarIcon,
 	channelNavWitaskIcon,
 } from "@/components/layout/channel-nav-icon";
-import { SidebarListAvatar, SidebarListIconBox } from "@/components/layout/sidebar-list-icon";
+import {
+	ChannelGlyphSlot,
+	SidebarListAvatar,
+	sidebarNavGlyphIconClass,
+} from "@/components/layout/sidebar-list-icon";
 import { useShellNavigation, type ShellNavKind } from "@/components/layout/shell-navigation";
-import { SidebarMoreMenu } from "@/components/layout/sidebar-more-menu";
 import { WorkspaceSidebarFilter } from "@/components/layout/workspace-sidebar-filter";
 import { WorkspaceSidebarHeader } from "@/components/layout/workspace-sidebar-header";
 import {
@@ -23,269 +34,6 @@ import {
 } from "@/hooks/use-resizable-sidebar-width";
 import { cn } from "@/lib/utils";
 import { useMyGroupsQuery } from "@/hooks/use-my-groups-query";
-
-/** Horizontal inset for header + nav. */
-const SIDEBAR_INSET_X = "px-3.5";
-
-const SIDEBAR_ROW_LG_H = "lg:min-h-[32px] lg:h-[32px]";
-
-const sidebarRowLabelClass = (unread?: boolean) =>
-	unread ? "font-semibold text-sidebar-foreground" : "font-medium text-muted-foreground";
-
-const sidebarRowShellClass = cn(
-	"group/row relative flex min-h-[30px] items-center rounded-md transition-colors hover:bg-sidebar-accent",
-	SIDEBAR_ROW_LG_H,
-);
-
-const sidebarRowMoreRailClass = (menuOpen: boolean) =>
-	cn(
-		"absolute top-0 right-0 z-[1] flex h-full w-8 items-center justify-end pr-0.5 opacity-0 transition-opacity group-hover/row:opacity-100",
-		menuOpen && "opacity-100",
-	);
-
-const sidebarRowInnerButtonClass = cn(
-	"flex h-11 w-full min-w-0 items-center gap-3 rounded-md px-2.5 lg:gap-2 lg:px-1.5",
-	SIDEBAR_ROW_LG_H,
-);
-
-/** Category header: same row height, chevron flush left (items indent via nested list). */
-const sidebarCategoryInnerButtonClass = cn(
-	"flex h-11 w-full min-w-0 flex-1 items-center gap-1 rounded-md pl-0.5 pr-2.5",
-	SIDEBAR_ROW_LG_H,
-);
-
-const sidebarRowTextClass = "truncate text-sm lg:text-sm";
-
-const sidebarNestedListClass = "flex flex-col gap-0 pl-3 lg:pl-2.5";
-
-function SidebarCategoryRow({
-	title,
-	open,
-	onToggle,
-	menuId,
-	activeMenuId,
-	onActiveMenuIdChange,
-}: {
-	title: string;
-	open: boolean;
-	onToggle: () => void;
-	menuId: string;
-	activeMenuId: string | null;
-	onActiveMenuIdChange: (id: string | null) => void;
-}) {
-	const menuOpen = activeMenuId === menuId;
-
-	return (
-		<div className={sidebarRowShellClass}>
-			<button
-				type="button"
-				className={cn(
-					sidebarCategoryInnerButtonClass,
-					"min-w-0 flex-1 text-left",
-					open && "text-foreground",
-				)}
-				aria-expanded={open}
-				onClick={onToggle}
-			>
-				<span
-					className={cn(
-						"flex h-5 w-5 shrink-0 items-center justify-center text-muted-foreground",
-						open && "text-foreground",
-					)}
-				>
-					<ChevronDown
-						className={cn("h-3.5 w-3.5 -rotate-90 transition-transform", open && "rotate-0")}
-						strokeWidth={2.2}
-					/>
-				</span>
-				<span className="min-w-0 flex-1 truncate text-xs font-medium text-muted-foreground lg:text-[13px] group-hover/row:font-semibold">
-					{title}
-				</span>
-			</button>
-			<div className={cn(sidebarRowMoreRailClass(menuOpen), "group-hover/cat:opacity-100")}>
-				<SidebarMoreMenu
-					id={menuId}
-					activeId={activeMenuId}
-					onActiveIdChange={onActiveMenuIdChange}
-				/>
-			</div>
-		</div>
-	);
-}
-
-function SidebarRowShell({
-	menuId,
-	activeMenuId,
-	onActiveMenuIdChange,
-	unread,
-	selected,
-	rowClassName,
-	children,
-}: {
-	menuId: string;
-	activeMenuId: string | null;
-	onActiveMenuIdChange: (id: string | null) => void;
-	unread?: boolean;
-	selected?: boolean;
-	rowClassName?: string;
-	children: ReactNode;
-}) {
-	const menuOpen = activeMenuId === menuId;
-
-	return (
-		<div className={cn(sidebarRowShellClass, selected && "bg-sidebar-row-selected", rowClassName)}>
-			<div className="min-w-0 flex-1">{children}</div>
-			{unread ? (
-				<span
-					className={cn(
-						"pointer-events-none absolute top-1/2 right-2 z-[2] h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-primary transition-opacity",
-						menuOpen ? "opacity-0" : "group-hover/row:opacity-0",
-					)}
-					aria-hidden
-				/>
-			) : null}
-			<div className={sidebarRowMoreRailClass(menuOpen)}>
-				<SidebarMoreMenu
-					id={menuId}
-					activeId={activeMenuId}
-					onActiveIdChange={onActiveMenuIdChange}
-				/>
-			</div>
-		</div>
-	);
-}
-
-function FavoriteDmItem({
-	avatarSrc,
-	label,
-	unread,
-	selected,
-	menuId,
-	activeMenuId,
-	onActiveMenuIdChange,
-	onSelect,
-}: {
-	avatarSrc: string;
-	label: string;
-	unread?: boolean;
-	selected?: boolean;
-	menuId: string;
-	activeMenuId: string | null;
-	onActiveMenuIdChange: (id: string | null) => void;
-	onSelect: () => void;
-}) {
-	return (
-		<SidebarRowShell
-			menuId={menuId}
-			activeMenuId={activeMenuId}
-			onActiveMenuIdChange={onActiveMenuIdChange}
-			unread={unread}
-			selected={selected}
-		>
-			<button
-				type="button"
-				className={cn(
-					sidebarRowInnerButtonClass,
-					selected ? "font-semibold text-sidebar-foreground" : sidebarRowLabelClass(unread),
-				)}
-				onClick={onSelect}
-			>
-				<SidebarListAvatar src={avatarSrc} />
-				<span
-					className={cn(
-						sidebarRowTextClass,
-						"min-w-0 flex-1 truncate text-left",
-						sidebarRowLabelClass(unread),
-					)}
-				>
-					{label}
-				</span>
-			</button>
-		</SidebarRowShell>
-	);
-}
-
-function NavItem({
-	icon,
-	label,
-	badge,
-	unread,
-	menuId,
-	activeMenuId,
-	onActiveMenuIdChange,
-}: {
-	icon: ReactNode;
-	label: string;
-	badge?: boolean;
-	unread?: boolean;
-	menuId: string;
-	activeMenuId: string | null;
-	onActiveMenuIdChange: (id: string | null) => void;
-}) {
-	return (
-		<SidebarRowShell
-			menuId={menuId}
-			activeMenuId={activeMenuId}
-			onActiveMenuIdChange={onActiveMenuIdChange}
-			unread={unread}
-		>
-			<button type="button" className={sidebarRowInnerButtonClass}>
-				<SidebarListIconBox className="text-[#6b6b70]">{icon}</SidebarListIconBox>
-				<span className={cn(sidebarRowTextClass, "min-w-0 flex-1 truncate text-left font-medium")}>
-					{label}
-				</span>
-				{badge ? (
-					<span className="rounded bg-[#F2D9F6] px-1 py-px text-[9px] font-semibold tracking-wide text-[#A855C8]">
-						NEW
-					</span>
-				) : null}
-			</button>
-		</SidebarRowShell>
-	);
-}
-
-function ChannelItem({
-	icon,
-	label,
-	unread,
-	selected,
-	menuId,
-	activeMenuId,
-	onActiveMenuIdChange,
-	onSelect,
-}: {
-	icon: ReactNode;
-	label: string;
-	unread?: boolean;
-	selected?: boolean;
-	menuId: string;
-	activeMenuId: string | null;
-	onActiveMenuIdChange: (id: string | null) => void;
-	onSelect: () => void;
-}) {
-	return (
-		<SidebarRowShell
-			menuId={menuId}
-			activeMenuId={activeMenuId}
-			onActiveMenuIdChange={onActiveMenuIdChange}
-			unread={unread}
-			selected={selected}
-		>
-			<button
-				type="button"
-				className={cn(
-					sidebarRowInnerButtonClass,
-					sidebarRowTextClass,
-					selected ? "font-semibold text-sidebar-foreground" : sidebarRowLabelClass(unread),
-				)}
-				onClick={onSelect}
-			>
-				{icon}
-				<span className="min-w-0 flex-1 truncate text-left">{label}</span>
-			</button>
-		</SidebarRowShell>
-	);
-}
 
 type ChannelSidebarProps = {
 	/** Desktop: drag to resize. Mobile drawer should pass `false`. */
@@ -310,7 +58,6 @@ export function ChannelSidebar({
 	const { width: internalWidth, onResizePointerDown } = useResizableSidebarWidth(ownsResize);
 	const width = controlledWidth ?? internalWidth;
 	const { setSidebarWidth } = useShellChrome();
-	const dockInset = useShellChromeDockInset();
 
 	useEffect(() => {
 		if (controlledWidth !== undefined) return;
@@ -345,7 +92,7 @@ export function ChannelSidebar({
 			)}
 			<div className={cn("flex min-h-0 flex-1 flex-col", SIDEBAR_INSET_X)}>
 				{layout === "full" ? <WorkspaceSidebarFilter /> : null}
-				<div className="thin-scroll flex-1 overflow-y-auto" style={{ paddingBottom: dockInset }}>
+				<div className="thin-scroll flex-1 overflow-y-auto">
 					<div className="group/cat">
 						<SidebarCategoryRow
 							title="Quick views"
@@ -357,25 +104,25 @@ export function ChannelSidebar({
 						/>
 						{quickViewsOpen ? (
 							<nav className={sidebarNestedListClass}>
-								<NavItem
+								<SidebarNavItem
 									menuId="qv-mentions"
 									activeMenuId={activeMenuId}
 									onActiveMenuIdChange={setActiveMenuId}
-									icon={<AtSign className="h-[11px] w-[11px]" strokeWidth={2.2} />}
+									icon={<AtSign className={sidebarNavGlyphIconClass} strokeWidth={2} />}
 									label="Mentions"
 								/>
-								<NavItem
+								<SidebarNavItem
 									menuId="qv-discover"
 									activeMenuId={activeMenuId}
 									onActiveMenuIdChange={setActiveMenuId}
-									icon={<Compass className="h-[11px] w-[11px]" strokeWidth={2.2} />}
+									icon={<Compass className={sidebarNavGlyphIconClass} strokeWidth={2} />}
 									label="Discover"
 								/>
-								<NavItem
+								<SidebarNavItem
 									menuId="qv-drafts"
 									activeMenuId={activeMenuId}
 									onActiveMenuIdChange={setActiveMenuId}
-									icon={<FileText className="h-[11px] w-[11px]" strokeWidth={2.2} />}
+									icon={<FileText className={sidebarNavGlyphIconClass} strokeWidth={2} />}
 									label="Drafts"
 								/>
 							</nav>
@@ -392,7 +139,7 @@ export function ChannelSidebar({
 						/>
 						{favoritesOpen ? (
 							<div className={sidebarNestedListClass}>
-								<FavoriteDmItem
+								<SidebarFavoriteDmRow
 									menuId="fav-self-dm"
 									activeMenuId={activeMenuId}
 									onActiveMenuIdChange={setActiveMenuId}
@@ -401,20 +148,20 @@ export function ChannelSidebar({
 									selected={isActive("fav-self-dm")}
 									onSelect={selectNav("fav-self-dm", "ⱮąɾѵҽӀӀ", "dm")}
 								/>
-								<ChannelItem
+								<SidebarChannelRow
 									menuId="fav-announcements"
 									activeMenuId={activeMenuId}
 									onActiveMenuIdChange={setActiveMenuId}
-									icon={<SidebarListIconBox>{channelNavBellIcon}</SidebarListIconBox>}
+									icon={<ChannelGlyphSlot>{channelNavBellIcon}</ChannelGlyphSlot>}
 									label="Announcements"
 									selected={isActive("fav-announcements")}
 									onSelect={selectNav("fav-announcements", "Announcements", "channel")}
 								/>
-								<ChannelItem
+								<SidebarChannelRow
 									menuId="fav-deployment-production"
 									activeMenuId={activeMenuId}
 									onActiveMenuIdChange={setActiveMenuId}
-									icon={<SidebarListIconBox>{channelNavBellIcon}</SidebarListIconBox>}
+									icon={<ChannelGlyphSlot>{channelNavBellIcon}</ChannelGlyphSlot>}
 									label="Deployment Production"
 									selected={isActive("fav-deployment-production")}
 									onSelect={selectNav(
@@ -423,20 +170,20 @@ export function ChannelSidebar({
 										"channel",
 									)}
 								/>
-								<ChannelItem
+								<SidebarChannelRow
 									menuId="fav-deployment-staging"
 									activeMenuId={activeMenuId}
 									onActiveMenuIdChange={setActiveMenuId}
-									icon={<SidebarListIconBox>{channelNavBellIcon}</SidebarListIconBox>}
+									icon={<ChannelGlyphSlot>{channelNavBellIcon}</ChannelGlyphSlot>}
 									label="Deployment Staging"
 									selected={isActive("fav-deployment-staging")}
 									onSelect={selectNav("fav-deployment-staging", "Deployment Staging", "channel")}
 								/>
-								<ChannelItem
+								<SidebarChannelRow
 									menuId="fav-release-notes"
 									activeMenuId={activeMenuId}
 									onActiveMenuIdChange={setActiveMenuId}
-									icon={<SidebarListIconBox>{channelNavHashIcon}</SidebarListIconBox>}
+									icon={<ChannelGlyphSlot>{channelNavHashIcon}</ChannelGlyphSlot>}
 									label="Release Notes"
 									selected={isActive("fav-release-notes")}
 									onSelect={selectNav("fav-release-notes", "Release Notes", "channel")}
@@ -455,47 +202,47 @@ export function ChannelSidebar({
 						/>
 						{channelsOpen ? (
 							<div className={sidebarNestedListClass}>
-								<ChannelItem
+								<SidebarChannelRow
 									menuId="ch-infra"
 									activeMenuId={activeMenuId}
 									onActiveMenuIdChange={setActiveMenuId}
-									icon={<SidebarListIconBox>{channelNavInfraIcon}</SidebarListIconBox>}
+									icon={<ChannelGlyphSlot>{channelNavInfraIcon}</ChannelGlyphSlot>}
 									label="Infra"
 									selected={isActive("ch-infra")}
 									onSelect={selectNav("ch-infra", "Infra", "channel")}
 								/>
-								<ChannelItem
+								<SidebarChannelRow
 									menuId="ch-wichat"
 									activeMenuId={activeMenuId}
 									onActiveMenuIdChange={setActiveMenuId}
-									icon={<SidebarListIconBox>{channelNavWichatIcon}</SidebarListIconBox>}
+									icon={<ChannelGlyphSlot>{channelNavWichatIcon}</ChannelGlyphSlot>}
 									label="WiChat"
 									selected={isActive("ch-wichat")}
 									onSelect={selectNav("ch-wichat", "WiChat", "channel")}
 								/>
-								<ChannelItem
+								<SidebarChannelRow
 									menuId="ch-wicloud"
 									activeMenuId={activeMenuId}
 									onActiveMenuIdChange={setActiveMenuId}
-									icon={<SidebarListIconBox>{channelNavWicloudIcon}</SidebarListIconBox>}
+									icon={<ChannelGlyphSlot>{channelNavWicloudIcon}</ChannelGlyphSlot>}
 									label="WiCloud"
 									selected={isActive("ch-wicloud")}
 									onSelect={selectNav("ch-wicloud", "WiCloud", "channel")}
 								/>
-								<ChannelItem
+								<SidebarChannelRow
 									menuId="ch-witask"
 									activeMenuId={activeMenuId}
 									onActiveMenuIdChange={setActiveMenuId}
-									icon={<SidebarListIconBox>{channelNavWitaskIcon}</SidebarListIconBox>}
+									icon={<ChannelGlyphSlot>{channelNavWitaskIcon}</ChannelGlyphSlot>}
 									label="WiTask"
 									selected={isActive("ch-witask")}
 									onSelect={selectNav("ch-witask", "WiTask", "channel")}
 								/>
-								<ChannelItem
+								<SidebarChannelRow
 									menuId="ch-winobar"
 									activeMenuId={activeMenuId}
 									onActiveMenuIdChange={setActiveMenuId}
-									icon={<SidebarListIconBox>{channelNavWinobarIcon}</SidebarListIconBox>}
+									icon={<ChannelGlyphSlot>{channelNavWinobarIcon}</ChannelGlyphSlot>}
 									label="WiNobar"
 									selected={isActive("ch-winobar")}
 									onSelect={selectNav("ch-winobar", "WiNobar", "channel")}
@@ -514,7 +261,7 @@ export function ChannelSidebar({
 						/>
 						{chatsOpen ? (
 							<div className={sidebarNestedListClass}>
-								<ChannelItem
+								<SidebarChannelRow
 									menuId="chat-dm-koh-yadi"
 									activeMenuId={activeMenuId}
 									onActiveMenuIdChange={setActiveMenuId}
@@ -523,7 +270,7 @@ export function ChannelSidebar({
 									selected={isActive("chat-dm-koh-yadi")}
 									onSelect={selectNav("chat-dm-koh-yadi", "Koh Yadi", "dm")}
 								/>
-								<ChannelItem
+								<SidebarChannelRow
 									menuId="chat-dm-koh-yanto"
 									activeMenuId={activeMenuId}
 									onActiveMenuIdChange={setActiveMenuId}

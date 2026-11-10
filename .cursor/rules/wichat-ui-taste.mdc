@@ -1,0 +1,39 @@
+---
+description: WiChat in-app UI polish and revamp — apply design-taste-frontend (adapted for product shell, not marketing sites)
+globs: frontend/apps/web/**
+alwaysApply: false
+---
+
+# UI taste (WiChat product)
+
+When **designing, redesigning, polishing, or reviewing** WiChat web UI (shell, chat, auth chrome), read and follow:
+
+**[.agents/skills/design-taste-frontend/SKILL.md](../../.agents/skills/design-taste-frontend/SKILL.md)** — tasteskill 2.5 (anti-slop).
+
+## WiChat adaptation (not a marketing page)
+
+| tasteskill default | WiChat |
+| --- | --- |
+| Static landing + `gate.mjs` rounds | **Skip gate** for `apps/web` routes; use manual browser check + `pnpm lint` / typecheck |
+| Hero / photo chapters | **Product shell** — sidebar, rail, header, composer, empty states |
+| Shader scenes | **No** WebGL in core chat shell v1 |
+| site-kind place / cafe | **site-kind software** — real app UI, tokens in `globals.css` |
+
+## Apply in-app
+
+- **One system:** reuse `--shell-rail-*`, `--chat-*`, sidebar tokens; no one-off hex unless tokenized.
+- **Quiet motion (rule 5):** hover/press on tiles and composer actions; respect `motion-reduce`; no gratuitous parallax or scroll-linked card motion.
+- **Real product UI:** show actual WiChat surfaces in mocks/screenshots, not generic dashboard filler.
+- **Copy:** i18n keys only (`packages/i18n`); plain, specific strings — no lorem or “AI” filler.
+- **Equal edges:** message gutter (`max-w-[60rem]`) aligned with composer; shell chrome consistent with `wichat-web-layout.mdc`.
+
+## Shell rail motion (when touching rail open/close)
+
+- Current: `transition-[width]` on column + border-radius on main pane (~280ms). Acceptable for ~64px rail; **layout reflow** each frame is the main cost, not GPU shaders.
+- **Revamp only if jank is measured:** prefer `transform` + fixed rail width + `overflow: hidden` over animating `width`; avoid stacking heavy work (large lists re-layout) during toggle; keep `motion-reduce:transition-none`.
+
+## Order of reads
+
+1. This rule + `wichat-web-layout.mdc` / `wichat-web-data.mdc`
+2. `design-taste-frontend/SKILL.md` (house rules + software row in §1–2)
+3. Implement; verify in browser at lg + mobile widths.

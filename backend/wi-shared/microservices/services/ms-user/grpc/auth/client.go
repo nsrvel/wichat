@@ -35,6 +35,7 @@ type Client interface {
 	CreateGroup(ctx context.Context, in *userv1.CreateGroupRequest) (*userv1.CreateGroupResponse, error)
 	JoinGroup(ctx context.Context, in *userv1.JoinGroupRequest) (*userv1.JoinGroupResponse, error)
 	LeaveGroup(ctx context.Context, in *userv1.LeaveGroupRequest) (*userv1.LeaveGroupResponse, error)
+	DeleteGroup(ctx context.Context, in *userv1.DeleteGroupRequest) (*userv1.DeleteGroupResponse, error)
 	ListGroupChannels(ctx context.Context, in *userv1.ListGroupChannelsRequest) (*userv1.ListGroupChannelsResponse, error)
 	UploadGroupIcon(ctx context.Context, in *userv1.UploadGroupIconRequest) (*userv1.UploadGroupIconResponse, error)
 }
@@ -197,6 +198,12 @@ func (c *client) JoinGroup(ctx context.Context, in *userv1.JoinGroupRequest) (*u
 func (c *client) LeaveGroup(ctx context.Context, in *userv1.LeaveGroupRequest) (*userv1.LeaveGroupResponse, error) {
 	return utils.CallUnaryResult(ctx, c.none, c.log, "auth.AuthService/LeaveGroup", func(callCtx context.Context) (*userv1.LeaveGroupResponse, error) {
 		return c.stub.LeaveGroup(callCtx, in)
+	})
+}
+
+func (c *client) DeleteGroup(ctx context.Context, in *userv1.DeleteGroupRequest) (*userv1.DeleteGroupResponse, error) {
+	return utils.CallUnaryResult(ctx, c.none, c.log, "auth.AuthService/DeleteGroup", func(callCtx context.Context) (*userv1.DeleteGroupResponse, error) {
+		return c.stub.DeleteGroup(callCtx, in)
 	})
 }
 

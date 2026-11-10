@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 
-export type ShellNavKind = "dm" | "channel";
+export type ShellNavKind = "dm" | "channel" | "quickView";
 
 export type ShellNavTarget = {
 	id: string;

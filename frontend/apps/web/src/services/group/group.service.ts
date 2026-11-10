@@ -5,11 +5,37 @@ import {
 	OkSchema,
 	type CreateGroupRequest,
 	type Group,
+	isPublicEntityId,
 } from "@wichat/contracts";
 import { api } from "@/integrations/api-client";
 
+export type MyGroup = Group;
+
+function normalizeMembershipRole(
+	role: string | undefined,
+): "owner" | "member" | undefined {
+	if (role === "owner") {
+		return "owner";
+	}
+	if (role === "member" || role === "admin" || role === "guest") {
+		return "member";
+	}
+	return undefined;
+}
+
+function normalizeMyGroup(raw: Group): MyGroup | null {
+	if (!isPublicEntityId(raw.id) || !isPublicEntityId(raw.default_channel_id)) {
+		return null;
+	}
+	return { ...raw, role: normalizeMembershipRole(raw.role) };
+}
+
 export async function listMyGroups() {
-	return api.get("/groups/mine", GroupsListSchema);
+	const data = await api.get("/groups/mine", GroupsListSchema);
+	const groups = data.groups
+		.map(normalizeMyGroup)
+		.filter((g): g is MyGroup => g !== null);
+	return { groups };
 }
 
 export async function listJoinableGroups() {
@@ -27,6 +53,11 @@ export async function joinGroup(groupId: string) {
 
 export async function leaveGroup(groupId: string) {
 	return api.post(`/groups/${encodeURIComponent(groupId)}/leave`, OkSchema, {});
+}
+
+export async function deleteGroup(groupId: string) {
+	const id = encodeURIComponent(groupId);
+	return api.post(`/groups/${id}/delete`, OkSchema, {});
 }
 
 export async function uploadGroupIcon(groupId: string, file: File) {

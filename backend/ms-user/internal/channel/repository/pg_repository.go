@@ -16,6 +16,7 @@ import (
 // PgRepository loads and persists channel metadata.
 type PgRepository interface {
 	ListByGroupID(ctx context.Context, groupID string) ([]models.Channel, error)
+	SeedDefaultChannels(ctx context.Context, groupID, createdBy string, createdAt time.Time) error
 }
 
 type pgRepository struct {
@@ -48,6 +49,15 @@ func (r pgRepository) ListByGroupID(ctx context.Context, groupID string) ([]mode
 	return out, nil
 }
 
+func (r pgRepository) SeedDefaultChannels(ctx context.Context, groupID, createdBy string, createdAt time.Time) error {
+	err := r.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
+		return InsertDefaultChannelsTx(ctx, tx, groupID, createdBy, createdAt)
+	})
+	r.logIfInfraErr("SeedDefaultChannels", err)
+
+	return err
+}
+
 func (r pgRepository) logIfInfraErr(op string, err error) {
 	if err == nil {
 		return
@@ -55,20 +65,20 @@ func (r pgRepository) logIfInfraErr(op string, err error) {
 	r.log.Error("channel repository", "op", op, "err", err)
 }
 
-// InsertGeneralChannelTx creates the default #general channel inside an existing transaction.
-func InsertGeneralChannelTx(ctx context.Context, tx bun.Tx, groupID, createdBy string, now time.Time) error {
+// InsertDefaultChannelTx creates a seeded public channel inside an existing transaction.
+func InsertDefaultChannelTx(ctx context.Context, tx bun.Tx, groupID, createdBy, name, sidebarSection string, now time.Time) error {
 	for range 5 {
 		channelID, err := token.NewID()
 		if err != nil {
 			return err
 		}
-		publicID, err := token.NewPublicID()
+		publicId, err := token.NewPublicID()
 		if err != nil {
 			return err
 		}
 		row := models.ChannelRowFrom(models.Channel{
-			ID: channelID, PublicID: publicID, GroupID: groupID,
-			Type: constants.ChannelTypePublic, Name: constants.DefaultChannelName,
+			ID: channelID, PublicID: publicId, GroupID: groupID,
+			Type: constants.ChannelTypePublic, Name: name, SidebarSection: sidebarSection,
 			CreatedBy: createdBy, CreatedAt: now, UpdatedAt: now,
 		})
 		_, err = tx.NewInsert().Model(&row).Exec(ctx)
@@ -83,4 +93,25 @@ func InsertGeneralChannelTx(ctx context.Context, tx bun.Tx, groupID, createdBy s
 	}
 
 	return constants.ErrConflict
+}
+
+// InsertGeneralChannelTx creates the default #general channel inside an existing transaction.
+func InsertGeneralChannelTx(ctx context.Context, tx bun.Tx, groupID, createdBy string, now time.Time) error {
+	return InsertDefaultChannelTx(ctx, tx, groupID, createdBy, constants.DefaultChannelName, constants.SidebarSectionChannels, now)
+}
+
+// InsertAnnouncementChannelTx creates the default announcements channel inside an existing transaction.
+func InsertAnnouncementChannelTx(ctx context.Context, tx bun.Tx, groupID, createdBy string, now time.Time) error {
+	return InsertDefaultChannelTx(
+		ctx, tx, groupID, createdBy, constants.DefaultAnnouncementChannelName, constants.SidebarSectionFavorites, now,
+	)
+}
+
+// InsertDefaultChannelsTx seeds general and announcements — same path as new group create.
+func InsertDefaultChannelsTx(ctx context.Context, tx bun.Tx, groupID, createdBy string, now time.Time) error {
+	if err := InsertGeneralChannelTx(ctx, tx, groupID, createdBy, now); err != nil {
+		return err
+	}
+
+	return InsertAnnouncementChannelTx(ctx, tx, groupID, createdBy, now)
 }

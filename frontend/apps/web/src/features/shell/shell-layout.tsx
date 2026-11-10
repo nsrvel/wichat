@@ -6,10 +6,10 @@ import { ShellMainPane } from "@/components/layout/shell-main-pane";
 import { shellChromeBodyClass } from "@/components/layout/shell-rail/shell-rail-aside";
 import { ShellRailTrack } from "@/components/layout/shell-rail/shell-rail-track";
 import { ShellChromeProvider } from "@/components/layout/shell-chrome-context";
-import { ShellUserDock } from "@/components/layout/shell-user-dock";
 import { ShellTopBar } from "@/components/layout/shell-top-bar";
 import { WorkspacePanel } from "@/components/layout/workspace-panel";
 import { ProductionChannelSidebar } from "@/features/channel/components/production-channel-sidebar";
+import type { QuickViewId } from "@/lib/app-routes";
 import { GroupOnboardingProvider } from "@/features/group/group-onboarding-provider";
 import { ShellGroupRail } from "@/features/shell/shell-group-rail";
 import { ShellMembershipGate } from "@/features/shell/shell-membership-gate";
@@ -18,17 +18,18 @@ export type ShellLayoutProps = {
 	children?: ReactNode;
 	groupId?: string;
 	channelId?: string;
+	quickView?: QuickViewId;
 };
 
-export function ShellLayout({ children, groupId, channelId }: ShellLayoutProps) {
+export function ShellLayout({ children, groupId, channelId, quickView }: ShellLayoutProps) {
 	const [railOpen, setRailOpen] = usePersistedShellRailOpen();
 
-	const inChannel = Boolean(groupId && channelId);
+	const inWorkspace = Boolean(groupId && (channelId || quickView));
 
 	const chrome = (
 		<div className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-background text-foreground">
 			<ShellChromeProvider railOpen={railOpen}>
-				<div className={shellChromeBodyClass(inChannel ? "relative" : undefined)}>
+				<div className={shellChromeBodyClass(inWorkspace ? "relative" : undefined)}>
 					<ShellTopBar railOpen={railOpen} onRailOpenChange={setRailOpen} />
 
 					<ShellRailTrack
@@ -38,12 +39,16 @@ export function ShellLayout({ children, groupId, channelId }: ShellLayoutProps) 
 						}
 					>
 						<ShellMainPane railOpen={railOpen}>
-							{inChannel && groupId && channelId ? (
+							{inWorkspace && groupId ? (
 								<WorkspacePanel
+									groupId={groupId}
+									channelId={channelId}
+									quickView={quickView}
 									sidebar={
 										<ProductionChannelSidebar
 											groupId={groupId}
-											activeChannelId={channelId}
+											activeChannelId={channelId ?? ""}
+											activeQuickView={quickView}
 											panelResizeHandle
 										/>
 									}
@@ -55,8 +60,6 @@ export function ShellLayout({ children, groupId, channelId }: ShellLayoutProps) 
 							)}
 						</ShellMainPane>
 					</ShellRailTrack>
-
-					{inChannel ? <ShellUserDock /> : null}
 				</div>
 			</ShellChromeProvider>
 		</div>

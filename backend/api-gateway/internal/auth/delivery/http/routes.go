@@ -50,6 +50,8 @@ func Register(mux *http.ServeMux, h Handler) {
 	mux.Handle("POST /api/v1/groups", groupLimit.Wrap(http.HandlerFunc(h.CreateGroup)))
 	mux.Handle("POST /api/v1/groups/{id}/join", groupLimit.Wrap(http.HandlerFunc(h.JoinGroup)))
 	mux.Handle("POST /api/v1/groups/{id}/leave", groupLimit.Wrap(http.HandlerFunc(h.LeaveGroup)))
+	mux.Handle("POST /api/v1/groups/{id}/delete", groupLimit.Wrap(http.HandlerFunc(h.DeleteGroup)))
+	mux.Handle("DELETE /api/v1/groups/{id}", groupLimit.Wrap(http.HandlerFunc(h.DeleteGroup)))
 	mux.HandleFunc("GET /api/v1/groups/{id}/channels", h.ListGroupChannels)
 	mux.Handle("POST /api/v1/groups/{id}/icon", groupLimit.Wrap(http.HandlerFunc(h.UploadGroupIcon)))
 }

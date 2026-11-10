@@ -23,14 +23,14 @@ export function shellRailColumnClass(open: boolean) {
 		"h-full min-h-0 shrink-0 overflow-hidden",
 		"transition-[width]",
 		shellRailMotion,
-		open ? "w-16" : "w-0",
+		open ? "w-[var(--shell-rail-width)]" : "w-0",
 	);
 }
 
 /** `group/rail` on the aside — inner rows use `shellRailAsideInnerClass`. */
 export function shellRailAsideClass(className?: string) {
 	return cn(
-		"group/rail flex h-full min-h-0 w-16 flex-col gap-3 overflow-hidden bg-shell-rail pt-3",
+		"group/rail flex h-full min-h-0 w-[var(--shell-rail-width)] flex-col gap-3 overflow-hidden bg-shell-rail pt-3",
 		"transition-[padding-bottom,visibility]",
 		shellRailMotion,
 		"data-[state=open]:visible",
@@ -41,7 +41,7 @@ export function shellRailAsideClass(className?: string) {
 
 export function shellRailAsideInnerClass(className?: string) {
 	return cn(
-		"flex flex-col items-center gap-2 px-2",
+		"flex flex-col items-center gap-2 px-[var(--shell-rail-row-inset)]",
 		"transition-opacity duration-[var(--shell-rail-content-duration)] ease-[var(--shell-rail-motion-ease)] motion-reduce:transition-none",
 		"group-data-[state=open]/rail:opacity-100 group-data-[state=open]/rail:delay-[var(--shell-rail-content-delay-open)]",
 		"group-data-[state=closed]/rail:opacity-0 group-data-[state=closed]/rail:delay-0",
@@ -60,6 +60,3 @@ export function shellMainPaneChromeClass(railOpen: boolean, className?: string) 
 	);
 }
 
-export function shellUserDockAnchorClass(className?: string) {
-	return cn("transition-[width]", shellRailMotion, className);
-}

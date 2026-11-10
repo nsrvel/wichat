@@ -7,6 +7,7 @@ import (
 	"time"
 
 	authrepo "github.com/wichat/wichat/backend/ms-user/internal/auth/repository"
+	channelservice "github.com/wichat/wichat/backend/ms-user/internal/channel/service"
 	grouprepo "github.com/wichat/wichat/backend/ms-user/internal/group/repository"
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
 	userrepo "github.com/wichat/wichat/backend/ms-user/internal/user/repository"
@@ -26,11 +27,13 @@ type Service interface {
 	CreateGroup(ctx context.Context, accessToken, name string) (*models.PublicGroup, error)
 	JoinGroup(ctx context.Context, accessToken, groupID string) error
 	LeaveGroup(ctx context.Context, accessToken, groupID string) error
+	DeleteGroup(ctx context.Context, accessToken, groupID string) error
 	UploadGroupIcon(ctx context.Context, accessToken, groupPublicID, contentType string, body io.Reader, size int64) (*models.PublicGroup, error)
 }
 
 type service struct {
 	groups   grouprepo.PgRepository
+	channels channelservice.Service
 	users    userrepo.PgRepository
 	objects  grouprepo.MinioRepository
 	sessions authrepo.SessionRepository
@@ -42,6 +45,7 @@ type service struct {
 // NewService builds group use cases.
 func NewService(
 	groups grouprepo.PgRepository,
+	channels channelservice.Service,
 	users userrepo.PgRepository,
 	objects grouprepo.MinioRepository,
 	sessions authrepo.SessionRepository,
@@ -53,6 +57,7 @@ func NewService(
 
 	return service{
 		groups:   groups,
+		channels: channels,
 		users:    users,
 		objects:  objects,
 		sessions: sessions,
@@ -152,12 +157,21 @@ func (s service) CreateGroup(ctx context.Context, accessToken, name string) (*mo
 		return nil, exception.Internal(errors.New("group public id"))
 	}
 
+	if err := s.channels.SeedDefaultChannels(ctx, groupID, userID, now); err != nil {
+		if delErr := s.groups.DeleteGroup(ctx, groupID); delErr != nil {
+			s.log.Error("create group rollback", "group_id", groupID, "seed_err", err, "delete_err", delErr)
+		}
+
+		return nil, err
+	}
+
 	saved, err := s.groups.FindGroupByID(ctx, groupID)
 	if err != nil {
 		return nil, err
 	}
 
 	pub := saved.Public()
+	pub.Role = constants.GroupRoleOwner
 
 	return &pub, nil
 }
@@ -246,6 +260,49 @@ func (s service) LeaveGroup(ctx context.Context, accessToken, groupID string) er
 	return nil
 }
 
+func (s service) DeleteGroup(ctx context.Context, accessToken, groupID string) error {
+	userID, err := access.UserIDFromAccessToken(ctx, accessToken, s.secret, s.sessions, s.now())
+	if err != nil {
+		return err
+	}
+
+	publicID, err := validator.GroupPublicID(groupID)
+	if err != nil {
+		return err
+	}
+
+	group, err := s.groups.FindGroupByPublicID(ctx, publicID)
+	if err != nil {
+		if errors.Is(err, constants.ErrNotFound) {
+			return exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "group_id"})
+		}
+
+		return err
+	}
+
+	member, err := s.groups.FindGroupMember(ctx, group.ID, userID)
+	if err != nil {
+		if errors.Is(err, constants.ErrNotFound) {
+			return exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "group_id"})
+		}
+
+		return err
+	}
+	if member.Role != constants.GroupRoleOwner {
+		return exception.PermissionDenied(exception.MsgForbidden, nil)
+	}
+
+	if err := s.groups.DeleteGroup(ctx, group.ID); err != nil {
+		if errors.Is(err, constants.ErrNotFound) {
+			return exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "group_id"})
+		}
+
+		return err
+	}
+
+	return nil
+}
+
 func (s service) UploadGroupIcon(
 	ctx context.Context,
 	accessToken,
@@ -309,6 +366,7 @@ func (s service) UploadGroupIcon(
 	}
 
 	pub := saved.Public()
+	pub.Role = member.Role
 
 	return &pub, nil
 }

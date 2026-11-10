@@ -19,6 +19,7 @@ make check  # fmt, lint, test (repository integration tests need Docker)
 | `internal/auth/` | Auth use cases + gRPC; `repository/` = sessions/refresh + Redis challenges |
 | `internal/user/` | User/workspace repo + [`service/service.go`](internal/user/service/service.go) (setup, guest) |
 | `internal/group/` | Group membership [`service/service.go`](internal/group/service/service.go) |
+| `internal/channel/` | Channel metadata (list, default seed) — [`internal/channel/README.md`](internal/channel/README.md) |
 | `internal/general/` | Operational gRPC only (e.g. health liveness) — see [`internal/general/README.md`](internal/general/README.md) |
 | `pkg/` | Grouped by role (`auth/`, `validator/`, `converter/`, `utils/`, …) — see [`pkg/README.md`](pkg/README.md) |
 | `internal/server/` | gRPC listen, DB (`bun` + pgx), wiring |

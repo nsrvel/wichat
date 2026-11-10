@@ -63,25 +63,43 @@ export const OkSchema = z.object({
 /** Client-facing entity id (24 lowercase hex), used in REST and web URLs. */
 export const publicEntityIdSchema = z.string().regex(/^[0-9a-f]{24}$/);
 
+export const channelSidebarSectionSchema = z.enum(["favorites", "channels"]);
+
 export const ChannelSchema = z.object({
 	id: publicEntityIdSchema,
 	name: z.string(),
 	type: z.string(),
+	sidebar_section: channelSidebarSectionSchema.default("channels"),
 });
 
 export const ChannelsListSchema = z.object({
 	channels: z.array(ChannelSchema),
 });
 
+export const groupMembershipRoleSchema = z.enum(["owner", "member"]);
+
 export const GroupSchema = z.object({
 	id: publicEntityIdSchema,
 	name: z.string(),
 	logo_url: z.string(),
 	default_channel_id: publicEntityIdSchema,
+	role: z.preprocess(
+		(v) => (v === "" || v == null ? undefined : v),
+		groupMembershipRoleSchema.or(z.enum(["admin", "guest"])).optional(),
+	),
 });
 
 export const GroupsListSchema = z.object({
 	groups: z.array(GroupSchema),
+});
+
+/** Groups the user belongs to — membership role is always set. */
+export const MyGroupSchema = GroupSchema.extend({
+	role: groupMembershipRoleSchema,
+});
+
+export const MyGroupsListSchema = z.object({
+	groups: z.array(MyGroupSchema),
 });
 
 export const CreateGroupRequestSchema = z.object({

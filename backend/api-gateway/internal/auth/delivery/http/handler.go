@@ -41,6 +41,7 @@ type Handler interface {
 	CreateGroup(w http.ResponseWriter, r *http.Request)
 	JoinGroup(w http.ResponseWriter, r *http.Request)
 	LeaveGroup(w http.ResponseWriter, r *http.Request)
+	DeleteGroup(w http.ResponseWriter, r *http.Request)
 	ListGroupChannels(w http.ResponseWriter, r *http.Request)
 	UploadGroupIcon(w http.ResponseWriter, r *http.Request)
 }
@@ -563,6 +564,31 @@ func (h handler) LeaveGroup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_, err := h.ms.User.GRPC.Auth.LeaveGroup(r.Context(), &userv1.LeaveGroupRequest{
+		AccessToken: token,
+		GroupId:     groupID,
+	})
+	if err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(authHttp.OKBody{OK: true}))
+}
+
+func (h handler) DeleteGroup(w http.ResponseWriter, r *http.Request) {
+	token := authHttp.Bearer(r)
+	if token == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.Unauthenticated(exception.MsgUnauthorized, nil))
+		return
+	}
+
+	groupID := strings.TrimSpace(r.PathValue("id"))
+	if groupID == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "id"}))
+		return
+	}
+
+	_, err := h.ms.User.GRPC.Auth.DeleteGroup(r.Context(), &userv1.DeleteGroupRequest{
 		AccessToken: token,
 		GroupId:     groupID,
 	})

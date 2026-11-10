@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/uptrace/bun"
-	channelrepo "github.com/wichat/wichat/backend/ms-user/internal/channel/repository"
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
 	"github.com/wichat/wichat/backend/ms-user/pkg/constants"
 	pgErr "github.com/wichat/wichat/backend/ms-user/pkg/db"
@@ -24,6 +23,7 @@ type PgRepository interface {
 	CreateGroupWithOwner(ctx context.Context, group models.Group, owner models.GroupMember) error
 	InsertGroupMember(ctx context.Context, member models.GroupMember) error
 	DeleteGroupMember(ctx context.Context, groupID, userID string) error
+	DeleteGroup(ctx context.Context, groupID string) error
 	UpdateGroupDisplayName(ctx context.Context, groupID, name string, now time.Time) error
 	UpdateGroupLogoURL(ctx context.Context, groupID, logoURL string, now time.Time) error
 }
@@ -52,7 +52,7 @@ func (r pgRepository) GetFirstGroup(ctx context.Context) (models.Group, error) {
 		return models.Group{}, err
 	}
 
-	return groupFromRows(joined.Group, joined.Settings, joined.DefaultChannelPublicID), nil
+	return groupFromRows(joined.Group, joined.Settings, joined.DefaultChannelPublicID, ""), nil
 }
 
 // ListGroupsForUser returns groups the user belongs to, ordered by name.
@@ -78,7 +78,7 @@ func (r pgRepository) FindGroupByID(ctx context.Context, id string) (models.Grou
 		return models.Group{}, err
 	}
 
-	return groupFromRows(joined.Group, joined.Settings, joined.DefaultChannelPublicID), nil
+	return groupFromRows(joined.Group, joined.Settings, joined.DefaultChannelPublicID, ""), nil
 }
 
 // FindGroupByPublicID loads one group by its client-facing public id.
@@ -94,7 +94,7 @@ func (r pgRepository) FindGroupByPublicID(ctx context.Context, publicID string) 
 		return models.Group{}, err
 	}
 
-	return groupFromRows(joined.Group, joined.Settings, joined.DefaultChannelPublicID), nil
+	return groupFromRows(joined.Group, joined.Settings, joined.DefaultChannelPublicID, ""), nil
 }
 
 // FindGroupMember loads membership for a user in a group.
@@ -158,6 +158,29 @@ func (r pgRepository) DeleteGroupMember(ctx context.Context, groupID, userID str
 	return nil
 }
 
+// DeleteGroup removes a group; membership and channels cascade in Postgres.
+func (r pgRepository) DeleteGroup(ctx context.Context, groupID string) error {
+	res, err := r.db.NewDelete().Model((*models.GroupRow)(nil)).
+		Where("id = ?", groupID).
+		Exec(ctx)
+	if err != nil {
+		r.logIfInfraErr("DeleteGroup", err)
+
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		r.logIfInfraErr("DeleteGroup", err)
+
+		return err
+	}
+	if n == 0 {
+		return constants.ErrNotFound
+	}
+
+	return nil
+}
+
 // UpdateGroupDisplayName sets group_settings.name for a workspace.
 func (r pgRepository) UpdateGroupDisplayName(ctx context.Context, groupID, name string, now time.Time) error {
 	_, err := r.db.NewUpdate().Model((*models.GroupSettingsRow)(nil)).
@@ -186,6 +209,7 @@ type groupJoinedRow struct {
 	Group                  models.GroupRow         `bun:"embed:g_"`
 	Settings               models.GroupSettingsRow `bun:"embed:s_"`
 	DefaultChannelPublicID string                  `bun:"ch_public_id"`
+	MemberRole             string                  `bun:"member_role"`
 }
 
 func groupJoinSelect(q *bun.SelectQuery) *bun.SelectQuery {
@@ -199,10 +223,11 @@ func groupJoinSelect(q *bun.SelectQuery) *bun.SelectQuery {
 		Join("LEFT JOIN channels AS ch ON ch.group_id = g.id AND ch.name = ?", constants.DefaultChannelName)
 }
 
-func groupFromRows(g models.GroupRow, s models.GroupSettingsRow, defaultChannelPublicID string) models.Group {
+func groupFromRows(g models.GroupRow, s models.GroupSettingsRow, defaultChannelPublicID, callerRole string) models.Group {
 	return models.Group{
 		ID: g.ID, PublicID: g.PublicID, Name: s.Name, LogoURL: s.LogoURL,
 		DefaultChannelPublicID: defaultChannelPublicID,
+		CallerRole:             callerRole,
 		CreatedAt:              g.CreatedAt, UpdatedAt: g.UpdatedAt,
 	}
 }
@@ -218,7 +243,7 @@ func (r pgRepository) listGroupsRaw(ctx context.Context, query, userID, op strin
 
 	out := make([]models.Group, len(joined))
 	for i, row := range joined {
-		out[i] = groupFromRows(row.Group, row.Settings, row.DefaultChannelPublicID)
+		out[i] = groupFromRows(row.Group, row.Settings, row.DefaultChannelPublicID, row.MemberRole)
 	}
 
 	return out, nil
@@ -252,5 +277,5 @@ func InsertGroupWithOwnerTx(ctx context.Context, tx bun.Tx, group models.Group, 
 		return err
 	}
 
-	return channelrepo.InsertGeneralChannelTx(ctx, tx, group.ID, owner.UserID, group.CreatedAt)
+	return nil
 }
