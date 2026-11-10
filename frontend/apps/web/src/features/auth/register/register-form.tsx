@@ -22,6 +22,7 @@ import {
 import { resendRateLimitCooldownSec } from "@/features/auth/lib/resend-cooldown";
 import { translateError } from "@/integrations/i18n/translate-error";
 import { birthPartsDefaults, formatBirthDate, refineMinAgeBirth } from "@/lib/auth-validators";
+import { postAuthRedirectPath } from "@/lib/auth-invite";
 import {
 	useRegisterMutation,
 	useResendRegisterCodeMutation,
@@ -55,7 +56,7 @@ function toRegisterRequest(values: RegisterFormValues, locale: string): Register
 	};
 }
 
-export function RegisterForm() {
+export function RegisterForm({ inviteToken }: { inviteToken?: string }) {
 	const { t, i18n } = useTranslation();
 	const router = useRouter();
 	const register = useRegisterMutation();
@@ -104,7 +105,7 @@ export function RegisterForm() {
 					resend.reset();
 					verify.mutate(
 						{ challenge_id: challenge.challenge_id, code },
-						{ onSuccess: () => router.push("/") },
+						{ onSuccess: () => router.push(postAuthRedirectPath(inviteToken)) },
 					);
 				}}
 			/>
@@ -123,7 +124,7 @@ export function RegisterForm() {
 								setResendCooldown(step.challenge.resend_after_seconds);
 								return;
 							}
-							router.push("/");
+							router.push(postAuthRedirectPath(inviteToken));
 						},
 					});
 				})}

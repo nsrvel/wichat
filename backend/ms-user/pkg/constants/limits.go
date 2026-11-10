@@ -19,6 +19,17 @@ const (
 	MaxGroupIconBytes = 5 * 1024 * 1024
 )
 
+// Group invite and member list limits.
+const (
+	DefaultMemberListLimit = 20
+	MaxMemberListLimit     = 50
+	DefaultUserSearchLimit = 20
+	MaxUserSearchLimit     = 20
+	MaxInviteBatchSize     = 25
+	GroupInviteTTL         = 7 * 24 * time.Hour
+	GroupShareLinkTTL      = 30 * 24 * time.Hour
+)
+
 // Session token lifetimes.
 const (
 	AccessTokenTTL  = 15 * time.Minute

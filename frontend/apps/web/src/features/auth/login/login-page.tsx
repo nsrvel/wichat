@@ -58,7 +58,7 @@ export function LoginPage({
 		>
 			<GoogleButton label={t("auth.google")} />
 			<AuthOr label={t("auth.or")} />
-			<LoginForm />
+			<LoginForm inviteToken={inviteToken} />
 			<AuthPrivacyNotice />
 		</AuthSessionLayout>
 	);

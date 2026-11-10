@@ -47,7 +47,7 @@ export function RegisterPage({
 		>
 			<GoogleButton label={t("auth.google")} />
 			<AuthOr label={t("auth.or")} />
-			<RegisterForm />
+			<RegisterForm inviteToken={inviteToken} />
 			<AuthPrivacyNotice />
 		</AuthSessionLayout>
 	);

@@ -21,6 +21,8 @@ import (
 	generalgrpc "github.com/wichat/wichat/backend/ms-user/internal/general/delivery/grpc"
 	grouprepo "github.com/wichat/wichat/backend/ms-user/internal/group/repository"
 	groupservice "github.com/wichat/wichat/backend/ms-user/internal/group/service"
+	inviterepo "github.com/wichat/wichat/backend/ms-user/internal/invite/repository"
+	inviteservice "github.com/wichat/wichat/backend/ms-user/internal/invite/service"
 	userrepo "github.com/wichat/wichat/backend/ms-user/internal/user/repository"
 	userservice "github.com/wichat/wichat/backend/ms-user/internal/user/service"
 	googleoauth "github.com/wichat/wichat/backend/ms-user/pkg/oauth"
@@ -109,6 +111,8 @@ func (s *server) Run(ctx context.Context) error {
 	userSvc := userservice.NewService(userPg, authSessions, secret, s.log)
 	channelSvc := channelservice.NewService(channelPg, groupPg, authSessions, secret, s.log)
 	groupSvc := groupservice.NewService(groupPg, channelSvc, userPg, groupMinio, authSessions, secret, s.log)
+	invitePg := inviterepo.NewPgRepository(db, s.log)
+	inviteSvc := inviteservice.NewService(groupPg, channelPg, invitePg, userPg, authSessions, notifyClient, secret, s.cfg.WebOrigin, s.log)
 	authSvc, err := authservice.NewService(userPg, authSessions, authRefresh, secret, s.log, googleoauth.Config{
 		ClientID:     s.cfg.GoogleClientID,
 		ClientSecret: s.cfg.GoogleClientSecret,
@@ -126,7 +130,7 @@ func (s *server) Run(ctx context.Context) error {
 	}
 
 	grpcSrv := newGRPCServer(s.log)
-	userv1.RegisterAuthServiceServer(grpcSrv, authgrpc.NewServer(authSvc, userSvc, groupSvc, channelSvc))
+	userv1.RegisterAuthServiceServer(grpcSrv, authgrpc.NewServer(authSvc, userSvc, groupSvc, inviteSvc, channelSvc))
 	userv1.RegisterGeneralServiceServer(grpcSrv, generalgrpc.NewServer("ms-user"))
 
 	// Listen

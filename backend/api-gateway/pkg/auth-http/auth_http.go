@@ -142,6 +142,81 @@ type CreateGroupBody struct {
 	Name string `json:"name"`
 }
 
+// ReorderMyGroupsBody is PUT /api/v1/groups/mine/order.
+type ReorderMyGroupsBody struct {
+	GroupIDs []string `json:"group_ids"`
+}
+
+// GroupMemberBody is one row in the share access list.
+type GroupMemberBody struct {
+	UserID      string `json:"user_id"`
+	DisplayName string `json:"display_name"`
+	Email       string `json:"email"`
+	Role        string `json:"role"`
+	JoinedAt    string `json:"joined_at"`
+}
+
+// GroupMembersPageBody is GET /api/v1/groups/{id}/members.
+type GroupMembersPageBody struct {
+	Members    []GroupMemberBody `json:"members"`
+	NextCursor string            `json:"next_cursor,omitempty"`
+	Total      int               `json:"total"`
+}
+
+// UserSearchHitBody is one autocomplete row.
+type UserSearchHitBody struct {
+	UserID      string `json:"user_id"`
+	DisplayName string `json:"display_name"`
+	Email       string `json:"email"`
+	Username    string `json:"username"`
+}
+
+// UserSearchBody is GET /api/v1/users/search.
+type UserSearchBody struct {
+	Users []UserSearchHitBody `json:"users"`
+}
+
+// GroupInviteLinkBody is GET /api/v1/groups/{id}/invite-link.
+type GroupInviteLinkBody struct {
+	Token     string `json:"token"`
+	URL       string `json:"url"`
+	ExpiresAt string `json:"expires_at"`
+}
+
+// SendGroupInvitesBody is POST /api/v1/groups/{id}/invites.
+type SendGroupInvitesBody struct {
+	UserIDs   []string `json:"user_ids"`
+	Emails    []string `json:"emails"`
+	ChannelID string   `json:"channel_id,omitempty"`
+}
+
+// SendGroupInvitesResultBody is the invite batch outcome.
+type SendGroupInvitesResultBody struct {
+	Added   int `json:"added"`
+	Emailed int `json:"emailed"`
+	Skipped int `json:"skipped"`
+}
+
+// InvitePreviewBody is GET /api/v1/invites/preview.
+type InvitePreviewBody struct {
+	Valid       bool   `json:"valid"`
+	GroupName   string `json:"group_name,omitempty"`
+	ChannelName string `json:"channel_name,omitempty"`
+	ExpiresAt   string `json:"expires_at,omitempty"`
+	Reason      string `json:"reason,omitempty"`
+}
+
+// RedeemInviteBody is POST /api/v1/invites/redeem.
+type RedeemInviteBody struct {
+	Token string `json:"token"`
+}
+
+// RedeemInviteResultBody is membership after redeem.
+type RedeemInviteResultBody struct {
+	GroupID   string `json:"group_id"`
+	ChannelID string `json:"channel_id,omitempty"`
+}
+
 // ForgotPasswordRequestData is POST /api/v1/auth/forgot-password success body.
 type ForgotPasswordRequestData struct {
 	OK                    bool `json:"ok"`
@@ -238,6 +313,43 @@ func GroupsFromPB(groups []*userv1.GroupSummary) []GroupBody {
 	out := make([]GroupBody, len(groups))
 	for i, g := range groups {
 		out[i] = GroupFromPB(g)
+	}
+
+	return out
+}
+
+// GroupMembersFromPB maps member entries to JSON.
+func GroupMembersFromPB(members []*userv1.GroupMemberEntry) []GroupMemberBody {
+	out := make([]GroupMemberBody, len(members))
+	for i, m := range members {
+		if m == nil {
+			continue
+		}
+		out[i] = GroupMemberBody{
+			UserID:      m.GetUserId(),
+			DisplayName: m.GetDisplayName(),
+			Email:       m.GetEmail(),
+			Role:        m.GetRole(),
+			JoinedAt:    m.GetJoinedAt(),
+		}
+	}
+
+	return out
+}
+
+// UserSearchFromPB maps search hits to JSON.
+func UserSearchFromPB(users []*userv1.UserSearchHit) []UserSearchHitBody {
+	out := make([]UserSearchHitBody, len(users))
+	for i, u := range users {
+		if u == nil {
+			continue
+		}
+		out[i] = UserSearchHitBody{
+			UserID:      u.GetUserId(),
+			DisplayName: u.GetDisplayName(),
+			Email:       u.GetEmail(),
+			Username:    u.GetUsername(),
+		}
 	}
 
 	return out

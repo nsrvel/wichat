@@ -17,7 +17,15 @@ var titleRe = regexp.MustCompile(`(?is)<title[^>]*>([^<]*)</title>`)
 const (
 	TemplatePasswordReset = "auth.password_reset"
 	TemplateEmailCode     = "auth.email_code"
+	TemplateGroupInvite   = "group.invite"
 )
+
+// GroupInviteView is template data for group.invite.
+type GroupInviteView struct {
+	InviterName string
+	GroupName   string
+	InviteURL   string
+}
 
 // PasswordResetView is template data for auth.password_reset.
 type PasswordResetView struct {
@@ -83,6 +91,39 @@ func emailCodeCopy(locale, purpose string) (headline, lead, subjectTitle string)
 	default:
 		return "Verify your sign-in", "use this code to finish signing in.", "Your WiChat sign-in code"
 	}
+}
+
+// RenderGroupInvite returns subject and HTML for a workspace invite email.
+func RenderGroupInvite(locale, inviterName, groupName, inviteURL string) (subject, html string, err error) {
+	loc := normalizeLocale(locale)
+	htmlBytes, err := files.ReadFile(fmt.Sprintf("%s/group_invite.html", loc))
+	if err != nil {
+		return "", "", err
+	}
+
+	view := GroupInviteView{
+		InviterName: strings.TrimSpace(inviterName),
+		GroupName:   strings.TrimSpace(groupName),
+		InviteURL:   strings.TrimSpace(inviteURL),
+	}
+	if view.InviterName == "" {
+		view.InviterName = "A teammate"
+	}
+	if view.GroupName == "" {
+		view.GroupName = "a group"
+	}
+
+	html, err = executeTemplate(string(htmlBytes), view)
+	if err != nil {
+		return "", "", err
+	}
+
+	subject, err = subjectFromHTML(html)
+	if err != nil {
+		return "", "", err
+	}
+
+	return subject, html, nil
 }
 
 func RenderPasswordReset(locale, displayName, code, expiresMinutes string) (subject, html string, err error) {

@@ -105,6 +105,39 @@ func TestCreateGroupRejectsInvalidName(t *testing.T) {
 	}
 }
 
+func TestReorderMyGroupsPersistsOrder(t *testing.T) {
+	st := usermock.NewState()
+	authSvc, notify, _, _, groupSvc, _ := testSupport.NewAuthService(t, st, nil)
+	ctx := context.Background()
+
+	owner := testSupport.RegisterSession(t, authSvc, notify, registerInput("reorder@example.com"))
+	acme, err := groupSvc.CreateGroup(ctx, owner.AccessToken, "Acme")
+	if err != nil {
+		t.Fatal(err)
+	}
+	beta, err := groupSvc.CreateGroup(ctx, owner.AccessToken, "Beta")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mine, err := groupSvc.ListMyGroups(ctx, owner.AccessToken)
+	if err != nil || len(mine) != 2 {
+		t.Fatalf("before reorder: %+v err %v", mine, err)
+	}
+
+	if err := groupSvc.ReorderMyGroups(ctx, owner.AccessToken, []string{beta.ID, acme.ID}); err != nil {
+		t.Fatal(err)
+	}
+
+	mine, err = groupSvc.ListMyGroups(ctx, owner.AccessToken)
+	if err != nil || len(mine) != 2 {
+		t.Fatalf("after reorder: %+v err %v", mine, err)
+	}
+	if mine[0].ID != beta.ID || mine[1].ID != acme.ID {
+		t.Fatalf("order: got [%s, %s] want [%s, %s]", mine[0].ID, mine[1].ID, beta.ID, acme.ID)
+	}
+}
+
 func TestOwnerCannotLeaveGroup(t *testing.T) {
 	st := usermock.NewState()
 	authSvc, notify, _, _, groupSvc, _ := testSupport.NewAuthService(t, st, nil)

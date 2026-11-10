@@ -46,6 +46,7 @@ func Register(mux *http.ServeMux, h Handler) {
 	mux.Handle("POST /api/v1/auth/forgot-password/reset", forgotResetLimit.Wrap(http.HandlerFunc(h.ForgotPasswordReset)))
 
 	mux.HandleFunc("GET /api/v1/groups/mine", h.ListMyGroups)
+	mux.Handle("PUT /api/v1/groups/mine/order", groupLimit.Wrap(http.HandlerFunc(h.ReorderMyGroups)))
 	mux.HandleFunc("GET /api/v1/groups/joinable", h.ListJoinableGroups)
 	mux.Handle("POST /api/v1/groups", groupLimit.Wrap(http.HandlerFunc(h.CreateGroup)))
 	mux.Handle("POST /api/v1/groups/{id}/join", groupLimit.Wrap(http.HandlerFunc(h.JoinGroup)))
@@ -54,4 +55,12 @@ func Register(mux *http.ServeMux, h Handler) {
 	mux.Handle("DELETE /api/v1/groups/{id}", groupLimit.Wrap(http.HandlerFunc(h.DeleteGroup)))
 	mux.HandleFunc("GET /api/v1/groups/{id}/channels", h.ListGroupChannels)
 	mux.Handle("POST /api/v1/groups/{id}/icon", groupLimit.Wrap(http.HandlerFunc(h.UploadGroupIcon)))
+	inviteLimit := middleware.NewLimiter(60, time.Hour)
+	searchLimit := middleware.NewLimiter(120, time.Hour)
+	mux.HandleFunc("GET /api/v1/groups/{id}/members", h.ListGroupMembers)
+	mux.Handle("GET /api/v1/users/search", searchLimit.Wrap(http.HandlerFunc(h.SearchUsers)))
+	mux.Handle("GET /api/v1/groups/{id}/invite-link", inviteLimit.Wrap(http.HandlerFunc(h.GetGroupInviteLink)))
+	mux.Handle("POST /api/v1/groups/{id}/invites", inviteLimit.Wrap(http.HandlerFunc(h.SendGroupInvites)))
+	mux.Handle("GET /api/v1/invites/preview", inviteLimit.Wrap(http.HandlerFunc(h.PreviewGroupInvite)))
+	mux.Handle("POST /api/v1/invites/redeem", inviteLimit.Wrap(http.HandlerFunc(h.RedeemGroupInvite)))
 }

@@ -33,15 +33,17 @@ type GroupSettingsRow struct {
 type GroupMemberRow struct {
 	bun.BaseModel `bun:"table:group_members"`
 
-	GroupID   string    `bun:"group_id,pk,type:uuid"`
-	UserID    string    `bun:"user_id,pk,type:uuid"`
-	Role      string    `bun:"role"`
-	CreatedAt time.Time `bun:"created_at"`
+	GroupID      string    `bun:"group_id,pk,type:uuid"`
+	UserID       string    `bun:"user_id,pk,type:uuid"`
+	Role         string    `bun:"role"`
+	RailPosition *int      `bun:"rail_position"`
+	CreatedAt    time.Time `bun:"created_at"`
 }
 
 // GroupMemberRowFrom maps domain membership to a Bun row.
 func GroupMemberRowFrom(m GroupMember) GroupMemberRow {
 	return GroupMemberRow{
-		GroupID: m.GroupID, UserID: m.UserID, Role: m.Role, CreatedAt: m.CreatedAt,
+		GroupID: m.GroupID, UserID: m.UserID, Role: m.Role,
+		RailPosition: m.RailPosition, CreatedAt: m.CreatedAt,
 	}
 }

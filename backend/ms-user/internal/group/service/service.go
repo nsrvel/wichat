@@ -26,6 +26,7 @@ type Service interface {
 	ListJoinableGroups(ctx context.Context, accessToken string) ([]models.PublicGroup, error)
 	CreateGroup(ctx context.Context, accessToken, name string) (*models.PublicGroup, error)
 	JoinGroup(ctx context.Context, accessToken, groupID string) error
+	ReorderMyGroups(ctx context.Context, accessToken string, groupPublicIDs []string) error
 	LeaveGroup(ctx context.Context, accessToken, groupID string) error
 	DeleteGroup(ctx context.Context, accessToken, groupID string) error
 	UploadGroupIcon(ctx context.Context, accessToken, groupPublicID, contentType string, body io.Reader, size int64) (*models.PublicGroup, error)
@@ -211,6 +212,57 @@ func (s service) JoinGroup(ctx context.Context, accessToken, groupID string) err
 		Role:      constants.GroupRoleMember,
 		CreatedAt: now,
 	}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s service) ReorderMyGroups(ctx context.Context, accessToken string, groupPublicIDs []string) error {
+	userID, err := access.UserIDFromAccessToken(ctx, accessToken, s.secret, s.sessions, s.now())
+	if err != nil {
+		return err
+	}
+
+	mine, err := s.groups.ListGroupsForUser(ctx, userID)
+	if err != nil {
+		return err
+	}
+	if len(groupPublicIDs) != len(mine) {
+		return exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "group_ids"})
+	}
+
+	byPublic := make(map[string]string, len(mine))
+	for _, g := range mine {
+		byPublic[g.PublicID] = g.ID
+	}
+
+	seen := make(map[string]struct{}, len(groupPublicIDs))
+	orderedUUIDs := make([]string, 0, len(groupPublicIDs))
+	for _, raw := range groupPublicIDs {
+		publicID, err := validator.GroupPublicID(raw)
+		if err != nil {
+			return err
+		}
+		if _, dup := seen[publicID]; dup {
+			return exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "group_ids"})
+		}
+		seen[publicID] = struct{}{}
+
+		uuid, ok := byPublic[publicID]
+		if !ok {
+			return exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "group_ids"})
+		}
+		orderedUUIDs = append(orderedUUIDs, uuid)
+	}
+	if len(seen) != len(mine) {
+		return exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "group_ids"})
+	}
+
+	if err := s.groups.SetRailPositions(ctx, userID, orderedUUIDs); err != nil {
+		if errors.Is(err, constants.ErrNotFound) {
+			return exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "group_ids"})
+		}
 		return err
 	}
 

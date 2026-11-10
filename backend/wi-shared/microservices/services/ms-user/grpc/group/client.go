@@ -15,9 +15,16 @@ type Client interface {
 	ListJoinableGroups(ctx context.Context, in *userv1.ListJoinableGroupsRequest) (*userv1.ListJoinableGroupsResponse, error)
 	CreateGroup(ctx context.Context, in *userv1.CreateGroupRequest) (*userv1.CreateGroupResponse, error)
 	JoinGroup(ctx context.Context, in *userv1.JoinGroupRequest) (*userv1.JoinGroupResponse, error)
+	ReorderMyGroups(ctx context.Context, in *userv1.ReorderMyGroupsRequest) (*userv1.ReorderMyGroupsResponse, error)
 	LeaveGroup(ctx context.Context, in *userv1.LeaveGroupRequest) (*userv1.LeaveGroupResponse, error)
 	DeleteGroup(ctx context.Context, in *userv1.DeleteGroupRequest) (*userv1.DeleteGroupResponse, error)
 	UploadGroupIcon(ctx context.Context, in *userv1.UploadGroupIconRequest) (*userv1.UploadGroupIconResponse, error)
+	ListGroupMembers(ctx context.Context, in *userv1.ListGroupMembersRequest) (*userv1.ListGroupMembersResponse, error)
+	SearchUsers(ctx context.Context, in *userv1.SearchUsersRequest) (*userv1.SearchUsersResponse, error)
+	GetGroupInviteLink(ctx context.Context, in *userv1.GetGroupInviteLinkRequest) (*userv1.GetGroupInviteLinkResponse, error)
+	SendGroupInvites(ctx context.Context, in *userv1.SendGroupInvitesRequest) (*userv1.SendGroupInvitesResponse, error)
+	PreviewGroupInvite(ctx context.Context, in *userv1.PreviewGroupInviteRequest) (*userv1.PreviewGroupInviteResponse, error)
+	RedeemGroupInvite(ctx context.Context, in *userv1.RedeemGroupInviteRequest) (*userv1.RedeemGroupInviteResponse, error)
 }
 
 type client struct {
@@ -67,6 +74,12 @@ func (c *client) JoinGroup(ctx context.Context, in *userv1.JoinGroupRequest) (*u
 	})
 }
 
+func (c *client) ReorderMyGroups(ctx context.Context, in *userv1.ReorderMyGroupsRequest) (*userv1.ReorderMyGroupsResponse, error) {
+	return utils.CallUnaryResult(ctx, c.none, c.log, "auth.AuthService/ReorderMyGroups", func(callCtx context.Context) (*userv1.ReorderMyGroupsResponse, error) {
+		return c.stub.ReorderMyGroups(callCtx, in)
+	})
+}
+
 func (c *client) LeaveGroup(ctx context.Context, in *userv1.LeaveGroupRequest) (*userv1.LeaveGroupResponse, error) {
 	return utils.CallUnaryResult(ctx, c.none, c.log, "auth.AuthService/LeaveGroup", func(callCtx context.Context) (*userv1.LeaveGroupResponse, error) {
 		return c.stub.LeaveGroup(callCtx, in)
@@ -82,5 +95,41 @@ func (c *client) DeleteGroup(ctx context.Context, in *userv1.DeleteGroupRequest)
 func (c *client) UploadGroupIcon(ctx context.Context, in *userv1.UploadGroupIconRequest) (*userv1.UploadGroupIconResponse, error) {
 	return utils.CallUnaryResult(ctx, c.none, c.log, "auth.AuthService/UploadGroupIcon", func(callCtx context.Context) (*userv1.UploadGroupIconResponse, error) {
 		return c.stub.UploadGroupIcon(callCtx, in)
+	})
+}
+
+func (c *client) ListGroupMembers(ctx context.Context, in *userv1.ListGroupMembersRequest) (*userv1.ListGroupMembersResponse, error) {
+	return utils.CallUnaryResult(ctx, c.read, c.log, "auth.AuthService/ListGroupMembers", func(callCtx context.Context) (*userv1.ListGroupMembersResponse, error) {
+		return c.stub.ListGroupMembers(callCtx, in)
+	})
+}
+
+func (c *client) SearchUsers(ctx context.Context, in *userv1.SearchUsersRequest) (*userv1.SearchUsersResponse, error) {
+	return utils.CallUnaryResult(ctx, c.read, c.log, "auth.AuthService/SearchUsers", func(callCtx context.Context) (*userv1.SearchUsersResponse, error) {
+		return c.stub.SearchUsers(callCtx, in)
+	})
+}
+
+func (c *client) GetGroupInviteLink(ctx context.Context, in *userv1.GetGroupInviteLinkRequest) (*userv1.GetGroupInviteLinkResponse, error) {
+	return utils.CallUnaryResult(ctx, c.none, c.log, "auth.AuthService/GetGroupInviteLink", func(callCtx context.Context) (*userv1.GetGroupInviteLinkResponse, error) {
+		return c.stub.GetGroupInviteLink(callCtx, in)
+	})
+}
+
+func (c *client) SendGroupInvites(ctx context.Context, in *userv1.SendGroupInvitesRequest) (*userv1.SendGroupInvitesResponse, error) {
+	return utils.CallUnaryResult(ctx, c.none, c.log, "auth.AuthService/SendGroupInvites", func(callCtx context.Context) (*userv1.SendGroupInvitesResponse, error) {
+		return c.stub.SendGroupInvites(callCtx, in)
+	})
+}
+
+func (c *client) PreviewGroupInvite(ctx context.Context, in *userv1.PreviewGroupInviteRequest) (*userv1.PreviewGroupInviteResponse, error) {
+	return utils.CallUnaryResult(ctx, c.read, c.log, "auth.AuthService/PreviewGroupInvite", func(callCtx context.Context) (*userv1.PreviewGroupInviteResponse, error) {
+		return c.stub.PreviewGroupInvite(callCtx, in)
+	})
+}
+
+func (c *client) RedeemGroupInvite(ctx context.Context, in *userv1.RedeemGroupInviteRequest) (*userv1.RedeemGroupInviteResponse, error) {
+	return utils.CallUnaryResult(ctx, c.none, c.log, "auth.AuthService/RedeemGroupInvite", func(callCtx context.Context) (*userv1.RedeemGroupInviteResponse, error) {
+		return c.stub.RedeemGroupInvite(callCtx, in)
 	})
 }

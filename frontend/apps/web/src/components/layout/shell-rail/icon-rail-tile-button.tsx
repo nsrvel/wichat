@@ -1,9 +1,9 @@
-import type { ComponentProps, ReactNode } from "react";
+import { useState, type ComponentProps, type ReactNode } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 const tileBase =
-	"flex h-[var(--shell-rail-tile-size)] w-[var(--shell-rail-tile-size)] shrink-0 items-center justify-center rounded-[var(--shell-rail-tile-radius)] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-shell-rail";
+	"flex h-[var(--shell-rail-tile-size)] w-[var(--shell-rail-tile-size)] shrink-0 items-center justify-center rounded-[var(--shell-rail-tile-radius)] outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-shell-rail";
 
 const tileVariants = {
 	primary: "bg-[#141414] text-white shadow-sm",
@@ -39,15 +39,30 @@ export function IconRailTooltipTile({
 	label,
 	tooltipSide = "right",
 	children,
+	onClick,
+	onPointerDown,
 	...buttonProps
 }: IconRailTooltipTileProps) {
+	const [open, setOpen] = useState(false);
+
 	return (
-		<Tooltip>
+		<Tooltip open={open} onOpenChange={setOpen}>
 			<TooltipTrigger
 				delay={300}
 				closeDelay={0}
 				render={
-					<IconRailTileButton aria-label={label} {...buttonProps}>
+					<IconRailTileButton
+						aria-label={label}
+						{...buttonProps}
+						onPointerDown={(event) => {
+							setOpen(false);
+							onPointerDown?.(event);
+						}}
+						onClick={(event) => {
+							setOpen(false);
+							onClick?.(event);
+						}}
+					>
 						{children}
 					</IconRailTileButton>
 				}

@@ -17,6 +17,7 @@ import (
 type PgRepository interface {
 	ListByGroupID(ctx context.Context, groupID string) ([]models.Channel, error)
 	FindByPublicIDInGroup(ctx context.Context, groupID, channelPublicID string) (models.Channel, error)
+	FindByID(ctx context.Context, channelID string) (models.Channel, error)
 	SeedDefaultChannels(ctx context.Context, groupID, createdBy string, createdAt time.Time) error
 }
 
@@ -57,6 +58,21 @@ func (r pgRepository) FindByPublicIDInGroup(ctx context.Context, groupID, channe
 		Scan(ctx)
 	if err != nil {
 		r.logIfInfraErr("FindByPublicIDInGroup", err)
+
+		return models.Channel{}, pgErr.MapNotFound(err)
+	}
+
+	return row.ToModel(), nil
+}
+
+// FindByID loads one channel by internal id.
+func (r pgRepository) FindByID(ctx context.Context, channelID string) (models.Channel, error) {
+	var row models.ChannelRow
+	err := r.db.NewSelect().Model(&row).
+		Where("id = ?", channelID).
+		Scan(ctx)
+	if err != nil {
+		r.logIfInfraErr("FindByID", err)
 
 		return models.Channel{}, pgErr.MapNotFound(err)
 	}

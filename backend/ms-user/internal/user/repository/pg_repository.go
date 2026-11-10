@@ -27,6 +27,7 @@ type PgRepository interface {
 	FindUserByID(ctx context.Context, id string) (models.User, error)
 	UpdateUserPasswordHash(ctx context.Context, userID, hash string, now time.Time) error
 	SaveGoogleUser(ctx context.Context, user models.User, identityID, provider, subject string) (models.User, error)
+	SearchUsers(ctx context.Context, query string, limit int, excludeGroupID string) ([]models.UserSearchHit, error)
 }
 
 type pgRepository struct {
@@ -157,6 +158,69 @@ func (r pgRepository) FindUserByLogin(ctx context.Context, login string) (models
 
 func (r pgRepository) FindUserByID(ctx context.Context, id string) (models.User, error) {
 	return r.findUserBy(ctx, "id = ?", id)
+}
+
+// SearchUsers finds instance accounts by display name, username, or email prefix.
+func (r pgRepository) SearchUsers(ctx context.Context, query string, limit int, excludeGroupID string) ([]models.UserSearchHit, error) {
+	q := strings.TrimSpace(query)
+	if q == "" {
+		return nil, nil
+	}
+	if limit <= 0 {
+		limit = constants.DefaultUserSearchLimit
+	}
+	if limit > constants.MaxUserSearchLimit {
+		limit = constants.MaxUserSearchLimit
+	}
+
+	pattern := "%" + strings.ReplaceAll(strings.ToLower(q), "%", "") + "%"
+	sel := r.db.NewSelect().
+		TableExpr("users AS u").
+		ColumnExpr("u.id, u.display_name, u.email, u.username").
+		Where("u.is_guest = false").
+		Where(
+			"lower(u.display_name) LIKE ? OR lower(coalesce(u.email, '')) LIKE ? OR lower(coalesce(u.username, '')) LIKE ?",
+			pattern, pattern, pattern,
+		).
+		OrderExpr("u.display_name ASC").
+		Limit(int64(limit))
+
+	if strings.TrimSpace(excludeGroupID) != "" {
+		sel = sel.Where(
+			"u.id NOT IN (SELECT user_id FROM group_members WHERE group_id = ?)",
+			excludeGroupID,
+		)
+	}
+
+	var rows []struct {
+		ID          string  `bun:"id"`
+		DisplayName string  `bun:"display_name"`
+		Email       *string `bun:"email"`
+		Username    *string `bun:"username"`
+	}
+	if err := sel.Scan(ctx, &rows); err != nil {
+		return nil, err
+	}
+
+	out := make([]models.UserSearchHit, len(rows))
+	for i, row := range rows {
+		email := ""
+		if row.Email != nil {
+			email = *row.Email
+		}
+		username := ""
+		if row.Username != nil {
+			username = *row.Username
+		}
+		out[i] = models.UserSearchHit{
+			UserID:      row.ID,
+			DisplayName: row.DisplayName,
+			Email:       email,
+			Username:    username,
+		}
+	}
+
+	return out, nil
 }
 
 // UpdateUserPasswordHash replaces the password hash for a member account.

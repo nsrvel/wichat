@@ -43,6 +43,8 @@ func (s service) Send(ctx context.Context, in models.SendInput) error {
 		return s.sendPasswordReset(ctx, to, in.Locale, in.Vars)
 	case templates.TemplateEmailCode:
 		return s.sendEmailCode(ctx, to, in.Locale, in.Vars)
+	case templates.TemplateGroupInvite:
+		return s.sendGroupInvite(ctx, to, in.Locale, in.Vars)
 	default:
 		return exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "template_id"})
 	}
@@ -89,6 +91,30 @@ func (s service) sendEmailCode(ctx context.Context, to, locale string, vars map[
 		s.log.Error("smtp send failed", "err", err, "template", templates.TemplateEmailCode, "to", to)
 		if s.devRelaxed {
 			s.log.Warn("dev: email not delivered; use OTP from log", "to", to, "code", code)
+		}
+		return nil
+	}
+
+	return nil
+}
+
+func (s service) sendGroupInvite(ctx context.Context, to, locale string, vars map[string]string) error {
+	inviter := vars["inviter_name"]
+	groupName := vars["group_name"]
+	inviteURL := vars["invite_url"]
+	if strings.TrimSpace(inviteURL) == "" {
+		return exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "vars.invite_url"})
+	}
+
+	subject, html, err := templates.RenderGroupInvite(locale, inviter, groupName, inviteURL)
+	if err != nil {
+		return exception.Internal(err)
+	}
+
+	if err := s.mail.SendHTML(ctx, to, subject, html); err != nil {
+		s.log.Error("smtp send failed", "err", err, "template", templates.TemplateGroupInvite, "to", to)
+		if s.devRelaxed {
+			s.log.Warn("dev: invite email not delivered", "to", to, "url", inviteURL)
 		}
 		return nil
 	}

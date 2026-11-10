@@ -9,6 +9,7 @@ import {
 	deleteGroup,
 	joinGroup,
 	leaveGroup,
+	reorderMyGroups,
 } from "@/services/group/group.service";
 
 export function useCreateGroupMutation() {
@@ -49,6 +50,35 @@ export function useLeaveGroupMutation() {
 			);
 			void queryClient.invalidateQueries({ queryKey: [Q_MY_GROUPS] });
 			void queryClient.invalidateQueries({ queryKey: [Q_JOINABLE_GROUPS] });
+		},
+	});
+}
+
+export function useReorderMyGroupsMutation() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: reorderMyGroups,
+		onMutate: async (groupIds) => {
+			await queryClient.cancelQueries({ queryKey: [Q_MY_GROUPS] });
+			const previous = queryClient.getQueryData<Group[]>([Q_MY_GROUPS]);
+			if (previous) {
+				const byId = new Map(previous.map((g) => [g.id, g]));
+				const reordered = groupIds
+					.map((id) => byId.get(id))
+					.filter((g): g is Group => g != null);
+				if (reordered.length === previous.length) {
+					queryClient.setQueryData<Group[]>([Q_MY_GROUPS], reordered);
+				}
+			}
+			return { previous };
+		},
+		onError: (_err, _ids, ctx) => {
+			if (ctx?.previous) {
+				queryClient.setQueryData([Q_MY_GROUPS], ctx.previous);
+			}
+		},
+		onSettled: () => {
+			void queryClient.invalidateQueries({ queryKey: [Q_MY_GROUPS] });
 		},
 	});
 }

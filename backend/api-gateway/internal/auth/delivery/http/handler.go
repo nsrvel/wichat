@@ -3,6 +3,8 @@ package http
 import (
 	"io"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/wichat/wichat/backend/api-gateway/internal/middleware"
@@ -37,6 +39,7 @@ type Handler interface {
 	ForgotPasswordReset(w http.ResponseWriter, r *http.Request)
 	InstanceSetup(w http.ResponseWriter, r *http.Request)
 	ListMyGroups(w http.ResponseWriter, r *http.Request)
+	ReorderMyGroups(w http.ResponseWriter, r *http.Request)
 	ListJoinableGroups(w http.ResponseWriter, r *http.Request)
 	CreateGroup(w http.ResponseWriter, r *http.Request)
 	JoinGroup(w http.ResponseWriter, r *http.Request)
@@ -44,6 +47,12 @@ type Handler interface {
 	DeleteGroup(w http.ResponseWriter, r *http.Request)
 	ListGroupChannels(w http.ResponseWriter, r *http.Request)
 	UploadGroupIcon(w http.ResponseWriter, r *http.Request)
+	ListGroupMembers(w http.ResponseWriter, r *http.Request)
+	SearchUsers(w http.ResponseWriter, r *http.Request)
+	GetGroupInviteLink(w http.ResponseWriter, r *http.Request)
+	SendGroupInvites(w http.ResponseWriter, r *http.Request)
+	PreviewGroupInvite(w http.ResponseWriter, r *http.Request)
+	RedeemGroupInvite(w http.ResponseWriter, r *http.Request)
 }
 
 type handler struct {
@@ -476,6 +485,35 @@ func (h handler) ListMyGroups(w http.ResponseWriter, r *http.Request) {
 	}))
 }
 
+func (h handler) ReorderMyGroups(w http.ResponseWriter, r *http.Request) {
+	token := authHttp.Bearer(r)
+	if token == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.Unauthenticated(exception.MsgUnauthorized, nil))
+		return
+	}
+
+	var body authHttp.ReorderMyGroupsBody
+	if err := authHttp.DecodeJSON(w, r, &body); err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+	if len(body.GroupIDs) == 0 {
+		authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "group_ids"}))
+		return
+	}
+
+	_, err := h.ms.User.GRPC.Group.ReorderMyGroups(r.Context(), &userv1.ReorderMyGroupsRequest{
+		AccessToken: token,
+		GroupIds:    body.GroupIDs,
+	})
+	if err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	responsehttp.WriteJSON(w, http.StatusOK, map[string]any{"data": authHttp.OKBody{OK: true}})
+}
+
 func (h handler) ListJoinableGroups(w http.ResponseWriter, r *http.Request) {
 	token := authHttp.Bearer(r)
 	if token == "" {
@@ -680,4 +718,199 @@ func (h handler) UploadGroupIcon(w http.ResponseWriter, r *http.Request) {
 	}
 
 	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(authHttp.GroupFromPB(out.GetGroup())))
+}
+
+func (h handler) ListGroupMembers(w http.ResponseWriter, r *http.Request) {
+	token := authHttp.Bearer(r)
+	if token == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.Unauthenticated(exception.MsgUnauthorized, nil))
+		return
+	}
+
+	groupID := strings.TrimSpace(r.PathValue("id"))
+	if groupID == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "id"}))
+		return
+	}
+
+	limit := 20
+	if raw := strings.TrimSpace(r.URL.Query().Get("limit")); raw != "" {
+		if n, err := strconv.Atoi(raw); err == nil && n > 0 {
+			limit = n
+		}
+	}
+
+	out, err := h.ms.User.GRPC.Group.ListGroupMembers(r.Context(), &userv1.ListGroupMembersRequest{
+		AccessToken: token,
+		GroupId:     groupID,
+		Limit:       int32(limit), //nolint:gosec // G115 — query limit clamped above
+		Cursor:      strings.TrimSpace(r.URL.Query().Get("cursor")),
+	})
+	if err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(authHttp.GroupMembersPageBody{
+		Members:    authHttp.GroupMembersFromPB(out.GetMembers()),
+		NextCursor: out.GetNextCursor(),
+		Total:      int(out.GetTotal()),
+	}))
+}
+
+func (h handler) SearchUsers(w http.ResponseWriter, r *http.Request) {
+	token := authHttp.Bearer(r)
+	if token == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.Unauthenticated(exception.MsgUnauthorized, nil))
+		return
+	}
+
+	query := strings.TrimSpace(r.URL.Query().Get("q"))
+	groupID := strings.TrimSpace(r.URL.Query().Get("exclude_group_id"))
+	limit := 20
+	if raw := strings.TrimSpace(r.URL.Query().Get("limit")); raw != "" {
+		if n, err := strconv.Atoi(raw); err == nil && n > 0 {
+			limit = n
+		}
+	}
+
+	out, err := h.ms.User.GRPC.Group.SearchUsers(r.Context(), &userv1.SearchUsersRequest{
+		AccessToken: token,
+		Query:       query,
+		Limit:       int32(limit), //nolint:gosec // G115 — query limit clamped above
+		GroupId:     groupID,
+	})
+	if err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(authHttp.UserSearchBody{
+		Users: authHttp.UserSearchFromPB(out.GetUsers()),
+	}))
+}
+
+func (h handler) GetGroupInviteLink(w http.ResponseWriter, r *http.Request) {
+	token := authHttp.Bearer(r)
+	if token == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.Unauthenticated(exception.MsgUnauthorized, nil))
+		return
+	}
+
+	groupID := strings.TrimSpace(r.PathValue("id"))
+	if groupID == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "id"}))
+		return
+	}
+
+	out, err := h.ms.User.GRPC.Group.GetGroupInviteLink(r.Context(), &userv1.GetGroupInviteLinkRequest{
+		AccessToken: token,
+		GroupId:     groupID,
+		ChannelId:   strings.TrimSpace(r.URL.Query().Get("channel_id")),
+	})
+	if err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	inviteURL := h.webOrigin + "/invite/" + url.PathEscape(out.GetToken())
+
+	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(authHttp.GroupInviteLinkBody{
+		Token:     out.GetToken(),
+		URL:       inviteURL,
+		ExpiresAt: out.GetExpiresAt(),
+	}))
+}
+
+func (h handler) SendGroupInvites(w http.ResponseWriter, r *http.Request) {
+	token := authHttp.Bearer(r)
+	if token == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.Unauthenticated(exception.MsgUnauthorized, nil))
+		return
+	}
+
+	groupID := strings.TrimSpace(r.PathValue("id"))
+	if groupID == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "id"}))
+		return
+	}
+
+	var body authHttp.SendGroupInvitesBody
+	if err := authHttp.DecodeJSON(w, r, &body); err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	out, err := h.ms.User.GRPC.Group.SendGroupInvites(r.Context(), &userv1.SendGroupInvitesRequest{
+		AccessToken: token,
+		GroupId:     groupID,
+		ChannelId:   strings.TrimSpace(body.ChannelID),
+		UserIds:     body.UserIDs,
+		Emails:      body.Emails,
+	})
+	if err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(authHttp.SendGroupInvitesResultBody{
+		Added:   int(out.GetAdded()),
+		Emailed: int(out.GetEmailed()),
+		Skipped: int(out.GetSkipped()),
+	}))
+}
+
+func (h handler) PreviewGroupInvite(w http.ResponseWriter, r *http.Request) {
+	inviteToken := strings.TrimSpace(r.URL.Query().Get("invite"))
+	if inviteToken == "" {
+		inviteToken = strings.TrimSpace(r.URL.Query().Get("token"))
+	}
+	if inviteToken == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "invite"}))
+		return
+	}
+
+	out, err := h.ms.User.GRPC.Group.PreviewGroupInvite(r.Context(), &userv1.PreviewGroupInviteRequest{
+		Token: inviteToken,
+	})
+	if err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(authHttp.InvitePreviewBody{
+		Valid:       out.GetValid(),
+		GroupName:   out.GetGroupName(),
+		ChannelName: out.GetChannelName(),
+		ExpiresAt:   out.GetExpiresAt(),
+		Reason:      out.GetReason(),
+	}))
+}
+
+func (h handler) RedeemGroupInvite(w http.ResponseWriter, r *http.Request) {
+	token := authHttp.Bearer(r)
+	if token == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.Unauthenticated(exception.MsgUnauthorized, nil))
+		return
+	}
+
+	var body authHttp.RedeemInviteBody
+	if err := authHttp.DecodeJSON(w, r, &body); err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	out, err := h.ms.User.GRPC.Group.RedeemGroupInvite(r.Context(), &userv1.RedeemGroupInviteRequest{
+		AccessToken: token,
+		Token:       strings.TrimSpace(body.Token),
+	})
+	if err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(authHttp.RedeemInviteResultBody{
+		GroupID:   out.GetGroupId(),
+		ChannelID: out.GetChannelId(),
+	}))
 }

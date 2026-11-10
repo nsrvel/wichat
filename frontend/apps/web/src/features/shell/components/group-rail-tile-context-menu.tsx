@@ -2,140 +2,78 @@
 
 import { ContextMenu } from "@base-ui/react/context-menu";
 import type { Group } from "@wichat/contracts";
-import { useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
-import { useRef, useState, type ReactNode } from "react";
-import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
-import { translateError } from "@/integrations/i18n/translate-error";
-import { APP_HOME_PATH, channelPath } from "@/lib/app-routes";
-import { clearLastChannelIfGroup } from "@/lib/last-channel-storage";
-import { cn } from "@/lib/utils";
+import { useRef, type ReactNode } from "react";
+import { GroupMenuContent } from "@/features/shell/components/group-rail-menu/group-menu-content";
 import {
-	useDeleteGroupMutation,
-	useLeaveGroupMutation,
-} from "@/services/group/group.mutation";
-import { myGroupsQueryOpts } from "@/services/group/group.query";
-
-const menuPopupClass =
-	"z-50 min-w-[11rem] rounded-lg border border-border bg-popover p-1 text-sm text-popover-foreground shadow-md outline-none";
-
-const menuItemClass =
-	"flex w-full cursor-default select-none items-center rounded-md px-2.5 py-2 outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground";
+	GroupMenuKitProvider,
+	contextMenuKit,
+} from "@/features/shell/components/group-rail-menu/group-menu-kit";
+import {
+	menuPopupClass,
+	menuPositionerClass,
+} from "@/features/shell/components/group-rail-menu/menu-chrome";
+import { LeaveGroupConfirmDialog } from "@/features/shell/components/group-rail-menu/leave-group-confirm-dialog";
+import { useGroupMenuController } from "@/features/shell/components/group-rail-menu/use-group-menu-controller";
+import { WICHAT_CONTEXT_MENU_ATTR } from "@/lib/context-menu-chrome";
 
 type GroupRailTileContextMenuProps = {
 	group: Group;
 	activeGroupId?: string;
+	orderedGroupIds: string[];
 	children: ReactNode;
 };
 
 export function GroupRailTileContextMenu({
 	group,
 	activeGroupId,
+	orderedGroupIds,
 	children,
 }: GroupRailTileContextMenuProps) {
-	const { t } = useTranslation();
-	const router = useRouter();
-	const queryClient = useQueryClient();
-	const leaveGroup = useLeaveGroupMutation();
-	const deleteGroup = useDeleteGroupMutation();
 	const menuActionsRef = useRef<ContextMenu.Root.Actions>(null);
-	const [confirmDestructive, setConfirmDestructive] = useState(false);
+	const controller = useGroupMenuController({ group, activeGroupId });
 
-	// Owners delete; members leave. Missing role (stale API) → delete — backend rejects non-owners.
-	const isOwner = group.role !== "member";
-	const destructivePending = isOwner ? deleteGroup.isPending : leaveGroup.isPending;
-
-	const afterRemovedFromGroup = async () => {
-		clearLastChannelIfGroup(group.id);
-		const remaining = await queryClient.fetchQuery(myGroupsQueryOpts());
-		if (activeGroupId === group.id) {
-			const next = remaining[0];
-			if (next) {
-				router.push(channelPath(next.id, next.default_channel_id));
-			} else {
-				router.push(APP_HOME_PATH);
-			}
-		}
-	};
-
-	const runDestructive = () => {
-		const mutation = isOwner ? deleteGroup : leaveGroup;
-		mutation.mutate(group.id, {
-			onSuccess: () => {
-				setConfirmDestructive(false);
-				menuActionsRef.current?.close();
-				void afterRemovedFromGroup();
-			},
-			onError: (error) => {
-				toast.error(translateError(t, error));
-			},
-		});
+	const closeMenu = () => {
+		menuActionsRef.current?.close();
 	};
 
 	return (
+		<>
+		<LeaveGroupConfirmDialog
+			group={group}
+			open={controller.leaveDialogOpen}
+			onOpenChange={controller.setLeaveDialogOpen}
+			onConfirm={controller.confirmLeave}
+			confirmDisabled={controller.leavePending}
+		/>
 		<ContextMenu.Root
 			actionsRef={menuActionsRef}
 			onOpenChange={(open) => {
 				if (!open) {
-					setConfirmDestructive(false);
+					controller.resetMenuState();
 				}
 			}}
 		>
-			<ContextMenu.Trigger className="flex items-center justify-center">
+			<ContextMenu.Trigger
+				className="flex items-center justify-center"
+				{...{ [WICHAT_CONTEXT_MENU_ATTR]: "" }}
+			>
 				{children}
 			</ContextMenu.Trigger>
 			<ContextMenu.Portal>
-				<ContextMenu.Positioner>
+				<ContextMenu.Positioner className={menuPositionerClass}>
 					<ContextMenu.Popup className={menuPopupClass}>
-						{confirmDestructive ? (
-							<>
-								<ContextMenu.Group>
-									<ContextMenu.GroupLabel className="px-2.5 py-1.5 text-xs font-normal text-muted-foreground">
-										{isOwner
-											? t("shell.delete_group_confirm", { name: group.name })
-											: t("shell.leave_group_confirm", { name: group.name })}
-									</ContextMenu.GroupLabel>
-								</ContextMenu.Group>
-								<ContextMenu.Item
-									className={cn(
-										menuItemClass,
-										"text-destructive data-[highlighted]:bg-destructive/10",
-									)}
-									closeOnClick={false}
-									disabled={destructivePending}
-									onClick={() => runDestructive()}
-								>
-									{isOwner
-										? t("shell.delete_group_action")
-										: t("shell.leave_group_action")}
-								</ContextMenu.Item>
-								<ContextMenu.Item
-									className={menuItemClass}
-									disabled={destructivePending}
-									closeOnClick={false}
-									onClick={() => setConfirmDestructive(false)}
-								>
-									{isOwner
-										? t("shell.delete_group_cancel")
-										: t("shell.leave_group_cancel")}
-								</ContextMenu.Item>
-							</>
-						) : (
-							<ContextMenu.Item
-								className={cn(
-									menuItemClass,
-									"text-destructive data-[highlighted]:bg-destructive/10",
-								)}
-								closeOnClick={false}
-								onClick={() => setConfirmDestructive(true)}
-							>
-								{isOwner ? t("shell.delete_group") : t("shell.leave_group")}
-							</ContextMenu.Item>
-						)}
+						<GroupMenuKitProvider kit={contextMenuKit}>
+							<GroupMenuContent
+								group={group}
+								orderedGroupIds={orderedGroupIds}
+								closeMenu={closeMenu}
+								controller={controller}
+							/>
+						</GroupMenuKitProvider>
 					</ContextMenu.Popup>
 				</ContextMenu.Positioner>
 			</ContextMenu.Portal>
 		</ContextMenu.Root>
+		</>
 	);
 }

@@ -23,6 +23,7 @@ type Config struct {
 	MinioPublicBaseURL string `mapstructure:"minio_public_base_url"`
 	MinioUseSSL        bool   `mapstructure:"minio_use_ssl"`
 	MinioRegion        string `mapstructure:"minio_region"`
+	WebOrigin          string `mapstructure:"web_origin"`
 }
 
 // Defaults are applied when env / .env do not set a value.
@@ -32,6 +33,7 @@ var Defaults = Config{
 	Port:             "3001",
 	RedisURL:         "redis://localhost:6379/0",
 	NotificationHost: "localhost:3005",
+	WebOrigin:        "http://localhost:8080",
 }
 
 // Load reads configuration from defaults, optional envFile, and environment.

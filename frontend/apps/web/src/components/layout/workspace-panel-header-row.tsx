@@ -9,6 +9,7 @@ import type { QuickViewId } from "@/lib/app-routes";
 import { useShellChrome } from "@/components/layout/shell-chrome-context";
 import { useShellNavigation } from "@/components/layout/shell-navigation";
 import { WorkspaceSidebarHeader } from "@/components/layout/workspace-sidebar-header";
+import { WorkspaceGroupHeaderMenu } from "@/features/shell/components/workspace-group-header-menu";
 import { useMyGroupsQuery } from "@/hooks/use-my-groups-query";
 import * as channelQuery from "@/services/channel/channel.query";
 
@@ -45,8 +46,8 @@ export function WorkspacePanelHeaderRow({
 			? toChannelShellNavTarget(channelId, channels.data?.channels)
 			: mockActive;
 	const myGroups = useMyGroupsQuery();
-	const groupName =
-		myGroups.data?.find((g) => g.id === groupId)?.name ?? myGroups.data?.[0]?.name ?? "";
+	const activeGroup = groupId ? myGroups.data?.find((g) => g.id === groupId) : undefined;
+	const orderedGroupIds = (myGroups.data ?? []).map((g) => g.id);
 
 	return (
 		<div className="hidden shrink-0 border-b border-black lg:flex">
@@ -55,7 +56,19 @@ export function WorkspacePanelHeaderRow({
 				style={{ width: sidebarWidth }}
 			>
 				<div className="flex h-full w-full items-center pl-4 pr-1.5">
-					<WorkspaceSidebarHeader title={groupName} className="min-w-0 flex-1" />
+					{activeGroup ? (
+						<WorkspaceGroupHeaderMenu
+							group={activeGroup}
+							activeGroupId={groupId}
+							orderedGroupIds={orderedGroupIds}
+							className="min-w-0 flex-1"
+						/>
+					) : (
+						<WorkspaceSidebarHeader
+							title={myGroups.data?.[0]?.name ?? ""}
+							className="min-w-0 flex-1"
+						/>
+					)}
 				</div>
 			</div>
 			<div className="min-w-0 flex-1">

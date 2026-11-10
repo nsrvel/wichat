@@ -22,6 +22,7 @@ import {
 } from "@/features/auth/components/auth-shell";
 import { resendRateLimitCooldownSec } from "@/features/auth/lib/resend-cooldown";
 import { translateError } from "@/integrations/i18n/translate-error";
+import { postAuthRedirectPath } from "@/lib/auth-invite";
 import {
 	useLoginMutation,
 	useResendLoginCodeMutation,
@@ -35,7 +36,7 @@ const LoginFormSchema = z.object({
 
 type LoginFormValues = z.infer<typeof LoginFormSchema>;
 
-export function LoginForm() {
+export function LoginForm({ inviteToken }: { inviteToken?: string }) {
 	const { t, i18n } = useTranslation();
 	const router = useRouter();
 	const login = useLoginMutation();
@@ -79,7 +80,7 @@ export function LoginForm() {
 					resend.reset();
 					verify.mutate(
 						{ challenge_id: challenge.challenge_id, code },
-						{ onSuccess: () => router.push("/") },
+						{ onSuccess: () => router.push(postAuthRedirectPath(inviteToken)) },
 					);
 				}}
 			/>
@@ -102,7 +103,7 @@ export function LoginForm() {
 								setResendCooldown(step.challenge.resend_after_seconds);
 								return;
 							}
-							router.push("/");
+							router.push(postAuthRedirectPath(inviteToken));
 						},
 					});
 				})}

@@ -141,6 +141,10 @@ export const MyGroupsListSchema = z.object({
 	groups: z.array(MyGroupSchema),
 });
 
+export const ReorderMyGroupsRequestSchema = z.object({
+	group_ids: z.array(publicEntityIdSchema).min(1),
+});
+
 export const CreateGroupRequestSchema = z.object({
 	name: displayNameSchema,
 });
@@ -246,3 +250,63 @@ export type ForgotPasswordRequestResponse = z.infer<
 >;
 export type ForgotPasswordVerify = z.infer<typeof ForgotPasswordVerifySchema>;
 export type ForgotPasswordReset = z.infer<typeof ForgotPasswordResetSchema>;
+
+export const GroupMemberSchema = z.object({
+	user_id: z.string(),
+	display_name: z.string(),
+	email: z.string(),
+	role: groupMembershipRoleSchema,
+	joined_at: z.string(),
+});
+
+export const GroupMembersPageSchema = z.object({
+	members: z.array(GroupMemberSchema),
+	next_cursor: z.string().optional().default(""),
+	total: z.number().int().nonnegative(),
+});
+
+export const UserSearchHitSchema = z.object({
+	user_id: z.string(),
+	display_name: z.string(),
+	email: z.string(),
+	username: z.string(),
+});
+
+export const UserSearchSchema = z.object({
+	users: z.array(UserSearchHitSchema),
+});
+
+export const GroupInviteLinkSchema = z.object({
+	token: z.string(),
+	url: z.string(),
+	expires_at: z.string(),
+});
+
+export const SendGroupInvitesRequestSchema = z.object({
+	user_ids: z.array(z.string()).default([]),
+	emails: z.array(z.email()).default([]),
+	channel_id: z.string().optional(),
+});
+
+export const SendGroupInvitesResultSchema = z.object({
+	added: z.number().int().nonnegative(),
+	emailed: z.number().int().nonnegative(),
+	skipped: z.number().int().nonnegative(),
+});
+
+export const InvitePreviewSchema = z.object({
+	valid: z.boolean(),
+	group_name: z.string().optional(),
+	channel_name: z.string().optional(),
+	expires_at: z.string().optional(),
+	reason: z.string().optional(),
+});
+
+export const RedeemInviteRequestSchema = z.object({
+	token: z.string().trim().min(1),
+});
+
+export const RedeemInviteResultSchema = z.object({
+	group_id: publicEntityIdSchema,
+	channel_id: z.union([publicEntityIdSchema, z.literal("")]).optional(),
+});

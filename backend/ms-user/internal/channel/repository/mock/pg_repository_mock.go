@@ -23,6 +23,10 @@ func (pgRepositoryMock) FindByPublicIDInGroup(_ context.Context, _, _ string) (m
 	return models.Channel{}, nil
 }
 
+func (pgRepositoryMock) FindByID(_ context.Context, _ string) (models.Channel, error) {
+	return models.Channel{}, nil
+}
+
 func (pgRepositoryMock) SeedDefaultChannels(_ context.Context, _, _ string, _ time.Time) error {
 	return nil
 }

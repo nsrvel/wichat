@@ -16,8 +16,18 @@ export function TooltipProvider({
 	);
 }
 
-export function Tooltip({ children }: { children: ReactNode }) {
-	return <TooltipPrimitive.Root>{children}</TooltipPrimitive.Root>;
+type TooltipProps = {
+	children: ReactNode;
+	open?: boolean;
+	onOpenChange?: (open: boolean) => void;
+};
+
+export function Tooltip({ children, open, onOpenChange }: TooltipProps) {
+	return (
+		<TooltipPrimitive.Root open={open} onOpenChange={onOpenChange}>
+			{children}
+		</TooltipPrimitive.Root>
+	);
 }
 
 type TooltipContentProps = {
@@ -39,7 +49,7 @@ export function TooltipContent({
 				<TooltipPrimitive.Popup
 					className={cn(
 						"z-50 max-w-xs rounded-md border border-border bg-popover px-2.5 py-1.5 text-xs font-medium text-popover-foreground shadow-md",
-						"origin-[var(--transform-origin)] transition-[transform,scale,opacity] data-[starting-style]:scale-95 data-[starting-style]:opacity-0 data-[ending-style]:scale-95 data-[ending-style]:opacity-0",
+						"origin-[var(--transform-origin)] motion-reduce:transition-none",
 						className,
 					)}
 				>

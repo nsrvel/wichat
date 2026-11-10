@@ -36,8 +36,9 @@ func (g Group) Public() PublicGroup {
 
 // GroupMember links a user to a group with a preset role.
 type GroupMember struct {
-	GroupID   string
-	UserID    string
-	Role      string
-	CreatedAt time.Time
+	GroupID      string
+	UserID       string
+	Role         string
+	RailPosition *int
+	CreatedAt    time.Time
 }

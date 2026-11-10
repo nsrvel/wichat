@@ -290,7 +290,7 @@ export function ChannelSidebar({
 					role="separator"
 					aria-orientation="vertical"
 					aria-label="Resize sidebar"
-					className="absolute top-0 right-0 z-20 h-full w-1.5 translate-x-1/2 cursor-col-resize touch-none hover:bg-primary/15 active:bg-primary/25"
+					className="absolute top-0 right-0 z-10 h-full w-1.5 translate-x-1/2 cursor-col-resize touch-none hover:bg-primary/15 active:bg-primary/25"
 					onPointerDown={onResizePointerDown}
 				/>
 			) : null}

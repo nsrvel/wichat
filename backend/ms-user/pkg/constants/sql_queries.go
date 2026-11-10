@@ -28,7 +28,7 @@ const (
 		JOIN group_members AS m ON m.group_id = g.id
 		LEFT JOIN channels AS ch ON ch.group_id = g.id AND lower(ch.name) = 'general'
 		WHERE m.user_id = ?
-		ORDER BY s.name ASC`
+		ORDER BY m.rail_position ASC NULLS LAST, s.name ASC`
 
 	SQLListJoinableGroups = `
 		SELECT g.id AS g_id, g.public_id AS g_public_id, g.created_at AS g_created_at, g.updated_at AS g_updated_at,

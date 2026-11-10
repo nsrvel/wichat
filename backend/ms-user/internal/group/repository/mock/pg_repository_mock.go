@@ -2,6 +2,7 @@ package mock
 
 import (
 	"context"
+	"sort"
 	"time"
 
 	"github.com/wichat/wichat/backend/ms-user/internal/group/repository"
@@ -194,11 +195,75 @@ func (m pgRepositoryMock) UpdateGroupLogoURL(_ context.Context, groupID, logoURL
 	return constants.ErrNotFound
 }
 
+func (m pgRepositoryMock) SetRailPositions(_ context.Context, userID string, orderedGroupIDs []string) error {
+	m.st.Lock()
+	defer m.st.Unlock()
+
+	for i, groupID := range orderedGroupIDs {
+		found := false
+		for j := range m.st.Members {
+			if m.st.Members[j].UserID == userID && m.st.Members[j].GroupID == groupID {
+				pos := i
+				m.st.Members[j].RailPosition = &pos
+				found = true
+				break
+			}
+		}
+		if !found {
+			return constants.ErrNotFound
+		}
+	}
+
+	return nil
+}
+
+func (m pgRepositoryMock) CountGroupMembers(_ context.Context, groupID string) (int, error) {
+	m.st.Lock()
+	defer m.st.Unlock()
+	n := 0
+	for _, mem := range m.st.Members {
+		if mem.GroupID == groupID {
+			n++
+		}
+	}
+	return n, nil
+}
+
+func (m pgRepositoryMock) ListGroupMembersPage(
+	_ context.Context,
+	groupID string,
+	limit int,
+	_ *models.GroupMemberCursor,
+) ([]models.GroupMemberProfile, *models.GroupMemberCursor, error) {
+	m.st.Lock()
+	defer m.st.Unlock()
+	if limit <= 0 {
+		limit = 20
+	}
+	var out []models.GroupMemberProfile
+	for _, mem := range m.st.Members {
+		if mem.GroupID != groupID {
+			continue
+		}
+		out = append(out, models.GroupMemberProfile{
+			UserID:   mem.UserID,
+			Role:     mem.Role,
+			JoinedAt: mem.CreatedAt,
+		})
+		if len(out) >= limit {
+			break
+		}
+	}
+	return out, nil, nil
+}
+
 func groupsForUser(st *usermock.State, userID string) []models.Group {
 	memberOf := map[string]string{}
+	railPos := map[string]*int{}
 	for _, mem := range st.Members {
 		if mem.UserID == userID {
 			memberOf[mem.GroupID] = mem.Role
+			railPos[mem.GroupID] = mem.RailPosition
 		}
 	}
 	var out []models.Group
@@ -208,6 +273,23 @@ func groupsForUser(st *usermock.State, userID string) []models.Group {
 			out = append(out, g)
 		}
 	}
+
+	sort.SliceStable(out, func(i, j int) bool {
+		pi, pj := railPos[out[i].ID], railPos[out[j].ID]
+		if pi == nil && pj == nil {
+			return out[i].Name < out[j].Name
+		}
+		if pi == nil {
+			return false
+		}
+		if pj == nil {
+			return true
+		}
+		if *pi != *pj {
+			return *pi < *pj
+		}
+		return out[i].Name < out[j].Name
+	})
 
 	return out
 }

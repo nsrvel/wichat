@@ -266,6 +266,34 @@ func (fakeGroup) UploadGroupIcon(context.Context, *userv1.UploadGroupIconRequest
 	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
 
+func (fakeGroup) ReorderMyGroups(context.Context, *userv1.ReorderMyGroupsRequest) (*userv1.ReorderMyGroupsResponse, error) {
+	return &userv1.ReorderMyGroupsResponse{Ok: true}, nil
+}
+
+func (fakeGroup) ListGroupMembers(context.Context, *userv1.ListGroupMembersRequest) (*userv1.ListGroupMembersResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "error.internal")
+}
+
+func (fakeGroup) SearchUsers(context.Context, *userv1.SearchUsersRequest) (*userv1.SearchUsersResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "error.internal")
+}
+
+func (fakeGroup) GetGroupInviteLink(context.Context, *userv1.GetGroupInviteLinkRequest) (*userv1.GetGroupInviteLinkResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "error.internal")
+}
+
+func (fakeGroup) SendGroupInvites(context.Context, *userv1.SendGroupInvitesRequest) (*userv1.SendGroupInvitesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "error.internal")
+}
+
+func (fakeGroup) PreviewGroupInvite(context.Context, *userv1.PreviewGroupInviteRequest) (*userv1.PreviewGroupInviteResponse, error) {
+	return &userv1.PreviewGroupInviteResponse{Valid: true, GroupName: "Test Group"}, nil
+}
+
+func (fakeGroup) RedeemGroupInvite(context.Context, *userv1.RedeemGroupInviteRequest) (*userv1.RedeemGroupInviteResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "error.internal")
+}
+
 type fakeChannel struct{}
 
 func (fakeChannel) ListGroupChannels(context.Context, *userv1.ListGroupChannelsRequest) (*userv1.ListGroupChannelsResponse, error) {

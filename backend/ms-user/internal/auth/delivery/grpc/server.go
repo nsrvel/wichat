@@ -3,14 +3,18 @@ package grpc
 import (
 	"bytes"
 	"context"
+	"time"
 
 	authservice "github.com/wichat/wichat/backend/ms-user/internal/auth/service"
 	channelgrpc "github.com/wichat/wichat/backend/ms-user/internal/channel/delivery/grpc"
 	channelservice "github.com/wichat/wichat/backend/ms-user/internal/channel/service"
 	groupservice "github.com/wichat/wichat/backend/ms-user/internal/group/service"
+	inviteservice "github.com/wichat/wichat/backend/ms-user/internal/invite/service"
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
 	userservice "github.com/wichat/wichat/backend/ms-user/internal/user/service"
 	authPb "github.com/wichat/wichat/backend/ms-user/pkg/converter"
+	inviteCursor "github.com/wichat/wichat/backend/ms-user/pkg/invite"
+	"github.com/wichat/wichat/backend/wi-shared/exception"
 	userv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/user/v1"
 	responsegrpc "github.com/wichat/wichat/backend/wi-shared/response/grpc"
 )
@@ -25,6 +29,7 @@ type server struct {
 	auth       authservice.Service
 	user       userservice.Service
 	group      groupservice.Service
+	invite     inviteservice.Service
 	channelRPC *channelgrpc.Server
 }
 
@@ -33,12 +38,14 @@ func NewServer(
 	auth authservice.Service,
 	user userservice.Service,
 	group groupservice.Service,
+	invite inviteservice.Service,
 	channel channelservice.Service,
 ) Server {
 	return &server{
 		auth:       auth,
 		user:       user,
 		group:      group,
+		invite:     invite,
 		channelRPC: channelgrpc.NewServer(channel),
 	}
 }
@@ -324,6 +331,14 @@ func (s *server) JoinGroup(ctx context.Context, req *userv1.JoinGroupRequest) (*
 	return &userv1.JoinGroupResponse{Ok: true}, nil
 }
 
+func (s *server) ReorderMyGroups(ctx context.Context, req *userv1.ReorderMyGroupsRequest) (*userv1.ReorderMyGroupsResponse, error) {
+	if err := s.group.ReorderMyGroups(ctx, req.GetAccessToken(), req.GetGroupIds()); err != nil {
+		return nil, responsegrpc.ToStatus(err)
+	}
+
+	return &userv1.ReorderMyGroupsResponse{Ok: true}, nil
+}
+
 func (s *server) LeaveGroup(ctx context.Context, req *userv1.LeaveGroupRequest) (*userv1.LeaveGroupResponse, error) {
 	if err := s.group.LeaveGroup(ctx, req.GetAccessToken(), req.GetGroupId()); err != nil {
 		return nil, responsegrpc.ToStatus(err)
@@ -362,4 +377,92 @@ func (s *server) UploadGroupIcon(ctx context.Context, req *userv1.UploadGroupIco
 	}
 
 	return &userv1.UploadGroupIconResponse{Group: authPb.GroupSummary(*group)}, nil
+}
+
+func (s *server) ListGroupMembers(ctx context.Context, req *userv1.ListGroupMembersRequest) (*userv1.ListGroupMembersResponse, error) {
+	cursor, err := inviteCursor.DecodeMemberCursor(req.GetCursor())
+	if err != nil {
+		return nil, responsegrpc.ToStatus(exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "cursor"}))
+	}
+
+	page, err := s.invite.ListGroupMembers(ctx, req.GetAccessToken(), req.GetGroupId(), int(req.GetLimit()), cursor)
+	if err != nil {
+		return nil, responsegrpc.ToStatus(err)
+	}
+
+	return &userv1.ListGroupMembersResponse{
+		Members:    authPb.GroupMemberEntries(page.Members),
+		NextCursor: inviteCursor.EncodeMemberCursor(page.NextCursor),
+		Total:      int32(page.Total), //nolint:gosec // G115 — member totals are bounded by list limits
+	}, nil
+}
+
+func (s *server) SearchUsers(ctx context.Context, req *userv1.SearchUsersRequest) (*userv1.SearchUsersResponse, error) {
+	users, err := s.invite.SearchUsers(ctx, req.GetAccessToken(), req.GetQuery(), int(req.GetLimit()), req.GetGroupId())
+	if err != nil {
+		return nil, responsegrpc.ToStatus(err)
+	}
+
+	return &userv1.SearchUsersResponse{Users: authPb.UserSearchHits(users)}, nil
+}
+
+func (s *server) GetGroupInviteLink(ctx context.Context, req *userv1.GetGroupInviteLinkRequest) (*userv1.GetGroupInviteLinkResponse, error) {
+	link, err := s.invite.GetInviteLink(ctx, req.GetAccessToken(), req.GetGroupId(), req.GetChannelId())
+	if err != nil {
+		return nil, responsegrpc.ToStatus(err)
+	}
+
+	return &userv1.GetGroupInviteLinkResponse{
+		Token:     link.Token,
+		ExpiresAt: link.ExpiresAt.UTC().Format(time.RFC3339Nano),
+	}, nil
+}
+
+func (s *server) SendGroupInvites(ctx context.Context, req *userv1.SendGroupInvitesRequest) (*userv1.SendGroupInvitesResponse, error) {
+	out, err := s.invite.SendGroupInvites(ctx, req.GetAccessToken(), models.SendGroupInvitesInput{
+		GroupPublicID:   req.GetGroupId(),
+		ChannelPublicID: req.GetChannelId(),
+		UserIDs:         req.GetUserIds(),
+		Emails:          req.GetEmails(),
+	})
+	if err != nil {
+		return nil, responsegrpc.ToStatus(err)
+	}
+
+	return &userv1.SendGroupInvitesResponse{
+		Added:   int32(out.Added),   //nolint:gosec // G115 — batch capped by MaxInviteBatchSize
+		Emailed: int32(out.Emailed), //nolint:gosec
+		Skipped: int32(out.Skipped), //nolint:gosec
+	}, nil
+}
+
+func (s *server) PreviewGroupInvite(ctx context.Context, req *userv1.PreviewGroupInviteRequest) (*userv1.PreviewGroupInviteResponse, error) {
+	out, err := s.invite.PreviewInvite(ctx, req.GetToken())
+	if err != nil {
+		return nil, responsegrpc.ToStatus(err)
+	}
+
+	resp := &userv1.PreviewGroupInviteResponse{
+		Valid:       out.Valid,
+		GroupName:   out.GroupName,
+		ChannelName: out.ChannelName,
+		Reason:      out.Reason,
+	}
+	if !out.ExpiresAt.IsZero() {
+		resp.ExpiresAt = out.ExpiresAt.UTC().Format(time.RFC3339Nano)
+	}
+
+	return resp, nil
+}
+
+func (s *server) RedeemGroupInvite(ctx context.Context, req *userv1.RedeemGroupInviteRequest) (*userv1.RedeemGroupInviteResponse, error) {
+	out, err := s.invite.RedeemInvite(ctx, req.GetAccessToken(), req.GetToken())
+	if err != nil {
+		return nil, responsegrpc.ToStatus(err)
+	}
+
+	return &userv1.RedeemGroupInviteResponse{
+		GroupId:   out.GroupPublicID,
+		ChannelId: out.ChannelPublicID,
+	}, nil
 }

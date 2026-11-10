@@ -42,9 +42,7 @@ export function shellRailAsideClass(className?: string) {
 export function shellRailAsideInnerClass(className?: string) {
 	return cn(
 		"flex flex-col items-center gap-2 px-[var(--shell-rail-row-inset)]",
-		"transition-opacity duration-[var(--shell-rail-content-duration)] ease-[var(--shell-rail-motion-ease)] motion-reduce:transition-none",
-		"group-data-[state=open]/rail:opacity-100 group-data-[state=open]/rail:delay-[var(--shell-rail-content-delay-open)]",
-		"group-data-[state=closed]/rail:opacity-0 group-data-[state=closed]/rail:delay-0",
+		"motion-reduce:transition-none group-data-[state=closed]/rail:opacity-0",
 		className,
 	);
 }

@@ -5,6 +5,16 @@ import (
 	"testing"
 )
 
+func TestNewInviteTokenLength(t *testing.T) {
+	tok, err := NewInviteToken()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(tok) != 8 {
+		t.Fatalf("invite token length %d, want 8", len(tok))
+	}
+}
+
 func TestNewPublicIDFormat(t *testing.T) {
 	id, err := NewPublicID()
 	if err != nil {

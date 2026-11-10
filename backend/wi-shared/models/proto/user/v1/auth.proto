@@ -50,6 +50,8 @@ service AuthService {
   rpc CreateGroup(CreateGroupRequest) returns (CreateGroupResponse);
   // JoinGroup adds the caller as a member.
   rpc JoinGroup(JoinGroupRequest) returns (JoinGroupResponse);
+  // ReorderMyGroups persists the caller's workspace rail order.
+  rpc ReorderMyGroups(ReorderMyGroupsRequest) returns (ReorderMyGroupsResponse);
   // LeaveGroup removes the caller's membership in a group (not owners).
   rpc LeaveGroup(LeaveGroupRequest) returns (LeaveGroupResponse);
   // DeleteGroup removes a group; owner only.
@@ -60,6 +62,18 @@ service AuthService {
   rpc AssertGroupChannelAccess(AssertGroupChannelAccessRequest) returns (AssertGroupChannelAccessResponse);
   // UploadGroupIcon stores a group logo and updates group_settings.logo_url.
   rpc UploadGroupIcon(UploadGroupIconRequest) returns (UploadGroupIconResponse);
+  // ListGroupMembers pages members with access for the share UI.
+  rpc ListGroupMembers(ListGroupMembersRequest) returns (ListGroupMembersResponse);
+  // SearchUsers finds instance accounts for invite autocomplete.
+  rpc SearchUsers(SearchUsersRequest) returns (SearchUsersResponse);
+  // GetGroupInviteLink returns or creates a reusable share link token.
+  rpc GetGroupInviteLink(GetGroupInviteLinkRequest) returns (GetGroupInviteLinkResponse);
+  // SendGroupInvites adds members or emails invite links in batch.
+  rpc SendGroupInvites(SendGroupInvitesRequest) returns (SendGroupInvitesResponse);
+  // RedeemGroupInvite joins the group for the authenticated user.
+  rpc RedeemGroupInvite(RedeemGroupInviteRequest) returns (RedeemGroupInviteResponse);
+  // PreviewGroupInvite returns public metadata for an invite token without auth.
+  rpc PreviewGroupInvite(PreviewGroupInviteRequest) returns (PreviewGroupInviteResponse);
 }
 
 // User is the public account view.
@@ -338,6 +352,15 @@ message JoinGroupResponse {
   bool ok = 1;
 }
 
+message ReorderMyGroupsRequest {
+  string access_token = 1;
+  repeated string group_ids = 2;
+}
+
+message ReorderMyGroupsResponse {
+  bool ok = 1;
+}
+
 message LeaveGroupRequest {
   string access_token = 1;
   string group_id = 2;
@@ -398,4 +421,90 @@ message UploadGroupIconRequest {
 
 message UploadGroupIconResponse {
   GroupSummary group = 1;
+}
+
+message GroupMemberEntry {
+  string user_id = 1;
+  string display_name = 2;
+  string email = 3;
+  string role = 4;
+  string joined_at = 5;
+}
+
+message ListGroupMembersRequest {
+  string access_token = 1;
+  string group_id = 2;
+  int32 limit = 3;
+  string cursor = 4;
+}
+
+message ListGroupMembersResponse {
+  repeated GroupMemberEntry members = 1;
+  string next_cursor = 2;
+  int32 total = 3;
+}
+
+message UserSearchHit {
+  string user_id = 1;
+  string display_name = 2;
+  string email = 3;
+  string username = 4;
+}
+
+message SearchUsersRequest {
+  string access_token = 1;
+  string query = 2;
+  int32 limit = 3;
+  string group_id = 4;
+}
+
+message SearchUsersResponse {
+  repeated UserSearchHit users = 1;
+}
+
+message GetGroupInviteLinkRequest {
+  string access_token = 1;
+  string group_id = 2;
+  string channel_id = 3;
+}
+
+message GetGroupInviteLinkResponse {
+  string token = 1;
+  string expires_at = 2;
+}
+
+message SendGroupInvitesRequest {
+  string access_token = 1;
+  string group_id = 2;
+  string channel_id = 3;
+  repeated string user_ids = 4;
+  repeated string emails = 5;
+}
+
+message SendGroupInvitesResponse {
+  int32 added = 1;
+  int32 emailed = 2;
+  int32 skipped = 3;
+}
+
+message PreviewGroupInviteRequest {
+  string token = 1;
+}
+
+message PreviewGroupInviteResponse {
+  bool valid = 1;
+  string group_name = 2;
+  string channel_name = 3;
+  string expires_at = 4;
+  string reason = 5;
+}
+
+message RedeemGroupInviteRequest {
+  string access_token = 1;
+  string token = 2;
+}
+
+message RedeemGroupInviteResponse {
+  string group_id = 1;
+  string channel_id = 2;
 }

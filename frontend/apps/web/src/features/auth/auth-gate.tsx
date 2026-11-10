@@ -3,41 +3,49 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useMounted } from "@/hooks/use-mounted";
-import * as authQuery from "@/services/auth/auth.query";
-import { ensureAccessToken } from "@/integrations/api-client";
-import { prefetchMyGroups } from "@/services/group/prefetch-my-groups";
+import { bootstrapApp, Q_APP_BOOTSTRAP } from "@/services/auth/bootstrap-app";
+
+function AuthGateLoading() {
+	const { t } = useTranslation();
+	return (
+		<div
+			className="flex min-h-[50vh] flex-1 items-center justify-center bg-background text-sm text-muted-foreground"
+			suppressHydrationWarning
+		>
+			{t("shell.loading")}
+		</div>
+	);
+}
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
 	const router = useRouter();
 	const queryClient = useQueryClient();
 	const mounted = useMounted();
-	const session = useQuery({ ...authQuery.sessionQueryOpts(), enabled: mounted });
+	const bootstrap = useQuery({
+		queryKey: [Q_APP_BOOTSTRAP],
+		queryFn: () => bootstrapApp(queryClient),
+		enabled: mounted,
+		staleTime: 60_000,
+		retry: false,
+	});
 
 	useEffect(() => {
-		if (!mounted) {
+		if (!mounted || bootstrap.isPending) {
 			return;
 		}
-		void ensureAccessToken().then((token) => {
-			if (token) {
-				void prefetchMyGroups(queryClient);
-			}
-		});
-	}, [mounted, queryClient]);
-
-	useEffect(() => {
-		if (!mounted || session.isPending) {
-			return;
-		}
-		if (!session.data) {
+		if (!bootstrap.data) {
 			router.replace("/sign-in");
-			return;
 		}
-		void prefetchMyGroups(queryClient);
-	}, [mounted, queryClient, router, session.data, session.isPending]);
+	}, [bootstrap.data, bootstrap.isPending, mounted, router]);
 
-	if (!mounted || session.isPending || !session.data) {
-		return <div className="flex-1" suppressHydrationWarning />;
+	if (!mounted || bootstrap.isPending) {
+		return <AuthGateLoading />;
+	}
+
+	if (!bootstrap.data) {
+		return <AuthGateLoading />;
 	}
 
 	return children;

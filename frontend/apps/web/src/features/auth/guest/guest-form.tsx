@@ -18,6 +18,7 @@ import {
 	authSubmitClass,
 } from "@/features/auth/components/auth-shell";
 import { translateError } from "@/integrations/i18n/translate-error";
+import { postAuthRedirectPath } from "@/lib/auth-invite";
 import { birthPartsDefaults, formatBirthDate, refineMinAgeBirth } from "@/lib/auth-validators";
 import { useRegisterGuestMutation } from "@/services/auth/auth.mutation";
 
@@ -43,7 +44,7 @@ function toGuestRegisterRequest(values: GuestRegisterFormValues): GuestRegisterR
 	};
 }
 
-export function GuestForm() {
+export function GuestForm({ inviteToken }: { inviteToken?: string }) {
 	const { t } = useTranslation();
 	const router = useRouter();
 	const registerGuest = useRegisterGuestMutation();
@@ -61,7 +62,7 @@ export function GuestForm() {
 				className={authFormClass}
 				onSubmit={form.handleSubmit((values) => {
 					registerGuest.mutate(toGuestRegisterRequest(values), {
-						onSuccess: () => router.push("/"),
+						onSuccess: () => router.push(postAuthRedirectPath(inviteToken)),
 					});
 				})}
 			>

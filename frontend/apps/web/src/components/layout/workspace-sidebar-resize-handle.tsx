@@ -20,7 +20,7 @@ export function WorkspaceSidebarResizeHandle({
 			aria-orientation="vertical"
 			aria-label="Resize sidebar"
 			className={cn(
-				"absolute top-0 bottom-0 z-20 w-1.5 -translate-x-1/2 cursor-col-resize touch-none hover:bg-primary/15 active:bg-primary/25",
+				"absolute top-0 bottom-0 z-10 w-1.5 -translate-x-1/2 cursor-col-resize touch-none hover:bg-primary/15 active:bg-primary/25",
 				className,
 			)}
 			style={{ left: sidebarWidth }}

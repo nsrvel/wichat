@@ -113,9 +113,18 @@ export function SidebarListAvatar({
 	variant?: SidebarListIconVariant;
 }) {
 	const px = variant === "header" ? 32 : 26;
+	const staticAsset = src.startsWith("/icons/") || src.startsWith("/avatars/");
 	return (
 		<SidebarListIconBox className="p-0" variant={variant}>
-			<Image src={src} alt={alt} width={px} height={px} className="h-full w-full object-cover" />
+			<Image
+				src={src}
+				alt={alt}
+				width={px}
+				height={px}
+				className="h-full w-full object-cover"
+				unoptimized={staticAsset}
+				loading={staticAsset ? "eager" : "lazy"}
+			/>
 		</SidebarListIconBox>
 	);
 }

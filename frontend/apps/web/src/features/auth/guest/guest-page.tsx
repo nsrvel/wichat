@@ -42,7 +42,7 @@ export function GuestPage({
 			notice={notice}
 			redirectIfUnauthenticated={!isInviteFlow}
 		>
-			<GuestForm />
+			<GuestForm inviteToken={inviteToken} />
 		</AuthSessionLayout>
 	);
 }

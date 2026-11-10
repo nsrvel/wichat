@@ -41,11 +41,18 @@ const (
 	AuthService_ListJoinableGroups_FullMethodName       = "/user.v1.AuthService/ListJoinableGroups"
 	AuthService_CreateGroup_FullMethodName              = "/user.v1.AuthService/CreateGroup"
 	AuthService_JoinGroup_FullMethodName                = "/user.v1.AuthService/JoinGroup"
+	AuthService_ReorderMyGroups_FullMethodName          = "/user.v1.AuthService/ReorderMyGroups"
 	AuthService_LeaveGroup_FullMethodName               = "/user.v1.AuthService/LeaveGroup"
 	AuthService_DeleteGroup_FullMethodName              = "/user.v1.AuthService/DeleteGroup"
 	AuthService_ListGroupChannels_FullMethodName        = "/user.v1.AuthService/ListGroupChannels"
 	AuthService_AssertGroupChannelAccess_FullMethodName = "/user.v1.AuthService/AssertGroupChannelAccess"
 	AuthService_UploadGroupIcon_FullMethodName          = "/user.v1.AuthService/UploadGroupIcon"
+	AuthService_ListGroupMembers_FullMethodName         = "/user.v1.AuthService/ListGroupMembers"
+	AuthService_SearchUsers_FullMethodName              = "/user.v1.AuthService/SearchUsers"
+	AuthService_GetGroupInviteLink_FullMethodName       = "/user.v1.AuthService/GetGroupInviteLink"
+	AuthService_SendGroupInvites_FullMethodName         = "/user.v1.AuthService/SendGroupInvites"
+	AuthService_RedeemGroupInvite_FullMethodName        = "/user.v1.AuthService/RedeemGroupInvite"
+	AuthService_PreviewGroupInvite_FullMethodName       = "/user.v1.AuthService/PreviewGroupInvite"
 )
 
 // AuthServiceClient is the client API for AuthService service.
@@ -98,6 +105,8 @@ type AuthServiceClient interface {
 	CreateGroup(ctx context.Context, in *CreateGroupRequest, opts ...grpc.CallOption) (*CreateGroupResponse, error)
 	// JoinGroup adds the caller as a member.
 	JoinGroup(ctx context.Context, in *JoinGroupRequest, opts ...grpc.CallOption) (*JoinGroupResponse, error)
+	// ReorderMyGroups persists the caller's workspace rail order.
+	ReorderMyGroups(ctx context.Context, in *ReorderMyGroupsRequest, opts ...grpc.CallOption) (*ReorderMyGroupsResponse, error)
 	// LeaveGroup removes the caller's membership in a group (not owners).
 	LeaveGroup(ctx context.Context, in *LeaveGroupRequest, opts ...grpc.CallOption) (*LeaveGroupResponse, error)
 	// DeleteGroup removes a group; owner only.
@@ -108,6 +117,18 @@ type AuthServiceClient interface {
 	AssertGroupChannelAccess(ctx context.Context, in *AssertGroupChannelAccessRequest, opts ...grpc.CallOption) (*AssertGroupChannelAccessResponse, error)
 	// UploadGroupIcon stores a group logo and updates group_settings.logo_url.
 	UploadGroupIcon(ctx context.Context, in *UploadGroupIconRequest, opts ...grpc.CallOption) (*UploadGroupIconResponse, error)
+	// ListGroupMembers pages members with access for the share UI.
+	ListGroupMembers(ctx context.Context, in *ListGroupMembersRequest, opts ...grpc.CallOption) (*ListGroupMembersResponse, error)
+	// SearchUsers finds instance accounts for invite autocomplete.
+	SearchUsers(ctx context.Context, in *SearchUsersRequest, opts ...grpc.CallOption) (*SearchUsersResponse, error)
+	// GetGroupInviteLink returns or creates a reusable share link token.
+	GetGroupInviteLink(ctx context.Context, in *GetGroupInviteLinkRequest, opts ...grpc.CallOption) (*GetGroupInviteLinkResponse, error)
+	// SendGroupInvites adds members or emails invite links in batch.
+	SendGroupInvites(ctx context.Context, in *SendGroupInvitesRequest, opts ...grpc.CallOption) (*SendGroupInvitesResponse, error)
+	// RedeemGroupInvite joins the group for the authenticated user.
+	RedeemGroupInvite(ctx context.Context, in *RedeemGroupInviteRequest, opts ...grpc.CallOption) (*RedeemGroupInviteResponse, error)
+	// PreviewGroupInvite returns public metadata for an invite token without auth.
+	PreviewGroupInvite(ctx context.Context, in *PreviewGroupInviteRequest, opts ...grpc.CallOption) (*PreviewGroupInviteResponse, error)
 }
 
 type authServiceClient struct {
@@ -338,6 +359,16 @@ func (c *authServiceClient) JoinGroup(ctx context.Context, in *JoinGroupRequest,
 	return out, nil
 }
 
+func (c *authServiceClient) ReorderMyGroups(ctx context.Context, in *ReorderMyGroupsRequest, opts ...grpc.CallOption) (*ReorderMyGroupsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ReorderMyGroupsResponse)
+	err := c.cc.Invoke(ctx, AuthService_ReorderMyGroups_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *authServiceClient) LeaveGroup(ctx context.Context, in *LeaveGroupRequest, opts ...grpc.CallOption) (*LeaveGroupResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(LeaveGroupResponse)
@@ -382,6 +413,66 @@ func (c *authServiceClient) UploadGroupIcon(ctx context.Context, in *UploadGroup
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(UploadGroupIconResponse)
 	err := c.cc.Invoke(ctx, AuthService_UploadGroupIcon_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) ListGroupMembers(ctx context.Context, in *ListGroupMembersRequest, opts ...grpc.CallOption) (*ListGroupMembersResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListGroupMembersResponse)
+	err := c.cc.Invoke(ctx, AuthService_ListGroupMembers_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) SearchUsers(ctx context.Context, in *SearchUsersRequest, opts ...grpc.CallOption) (*SearchUsersResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SearchUsersResponse)
+	err := c.cc.Invoke(ctx, AuthService_SearchUsers_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) GetGroupInviteLink(ctx context.Context, in *GetGroupInviteLinkRequest, opts ...grpc.CallOption) (*GetGroupInviteLinkResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetGroupInviteLinkResponse)
+	err := c.cc.Invoke(ctx, AuthService_GetGroupInviteLink_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) SendGroupInvites(ctx context.Context, in *SendGroupInvitesRequest, opts ...grpc.CallOption) (*SendGroupInvitesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SendGroupInvitesResponse)
+	err := c.cc.Invoke(ctx, AuthService_SendGroupInvites_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) RedeemGroupInvite(ctx context.Context, in *RedeemGroupInviteRequest, opts ...grpc.CallOption) (*RedeemGroupInviteResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RedeemGroupInviteResponse)
+	err := c.cc.Invoke(ctx, AuthService_RedeemGroupInvite_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) PreviewGroupInvite(ctx context.Context, in *PreviewGroupInviteRequest, opts ...grpc.CallOption) (*PreviewGroupInviteResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PreviewGroupInviteResponse)
+	err := c.cc.Invoke(ctx, AuthService_PreviewGroupInvite_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -438,6 +529,8 @@ type AuthServiceServer interface {
 	CreateGroup(context.Context, *CreateGroupRequest) (*CreateGroupResponse, error)
 	// JoinGroup adds the caller as a member.
 	JoinGroup(context.Context, *JoinGroupRequest) (*JoinGroupResponse, error)
+	// ReorderMyGroups persists the caller's workspace rail order.
+	ReorderMyGroups(context.Context, *ReorderMyGroupsRequest) (*ReorderMyGroupsResponse, error)
 	// LeaveGroup removes the caller's membership in a group (not owners).
 	LeaveGroup(context.Context, *LeaveGroupRequest) (*LeaveGroupResponse, error)
 	// DeleteGroup removes a group; owner only.
@@ -448,6 +541,18 @@ type AuthServiceServer interface {
 	AssertGroupChannelAccess(context.Context, *AssertGroupChannelAccessRequest) (*AssertGroupChannelAccessResponse, error)
 	// UploadGroupIcon stores a group logo and updates group_settings.logo_url.
 	UploadGroupIcon(context.Context, *UploadGroupIconRequest) (*UploadGroupIconResponse, error)
+	// ListGroupMembers pages members with access for the share UI.
+	ListGroupMembers(context.Context, *ListGroupMembersRequest) (*ListGroupMembersResponse, error)
+	// SearchUsers finds instance accounts for invite autocomplete.
+	SearchUsers(context.Context, *SearchUsersRequest) (*SearchUsersResponse, error)
+	// GetGroupInviteLink returns or creates a reusable share link token.
+	GetGroupInviteLink(context.Context, *GetGroupInviteLinkRequest) (*GetGroupInviteLinkResponse, error)
+	// SendGroupInvites adds members or emails invite links in batch.
+	SendGroupInvites(context.Context, *SendGroupInvitesRequest) (*SendGroupInvitesResponse, error)
+	// RedeemGroupInvite joins the group for the authenticated user.
+	RedeemGroupInvite(context.Context, *RedeemGroupInviteRequest) (*RedeemGroupInviteResponse, error)
+	// PreviewGroupInvite returns public metadata for an invite token without auth.
+	PreviewGroupInvite(context.Context, *PreviewGroupInviteRequest) (*PreviewGroupInviteResponse, error)
 	mustEmbedUnimplementedAuthServiceServer()
 }
 
@@ -524,6 +629,9 @@ func (UnimplementedAuthServiceServer) CreateGroup(context.Context, *CreateGroupR
 func (UnimplementedAuthServiceServer) JoinGroup(context.Context, *JoinGroupRequest) (*JoinGroupResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method JoinGroup not implemented")
 }
+func (UnimplementedAuthServiceServer) ReorderMyGroups(context.Context, *ReorderMyGroupsRequest) (*ReorderMyGroupsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ReorderMyGroups not implemented")
+}
 func (UnimplementedAuthServiceServer) LeaveGroup(context.Context, *LeaveGroupRequest) (*LeaveGroupResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method LeaveGroup not implemented")
 }
@@ -538,6 +646,24 @@ func (UnimplementedAuthServiceServer) AssertGroupChannelAccess(context.Context, 
 }
 func (UnimplementedAuthServiceServer) UploadGroupIcon(context.Context, *UploadGroupIconRequest) (*UploadGroupIconResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method UploadGroupIcon not implemented")
+}
+func (UnimplementedAuthServiceServer) ListGroupMembers(context.Context, *ListGroupMembersRequest) (*ListGroupMembersResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListGroupMembers not implemented")
+}
+func (UnimplementedAuthServiceServer) SearchUsers(context.Context, *SearchUsersRequest) (*SearchUsersResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SearchUsers not implemented")
+}
+func (UnimplementedAuthServiceServer) GetGroupInviteLink(context.Context, *GetGroupInviteLinkRequest) (*GetGroupInviteLinkResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetGroupInviteLink not implemented")
+}
+func (UnimplementedAuthServiceServer) SendGroupInvites(context.Context, *SendGroupInvitesRequest) (*SendGroupInvitesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SendGroupInvites not implemented")
+}
+func (UnimplementedAuthServiceServer) RedeemGroupInvite(context.Context, *RedeemGroupInviteRequest) (*RedeemGroupInviteResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RedeemGroupInvite not implemented")
+}
+func (UnimplementedAuthServiceServer) PreviewGroupInvite(context.Context, *PreviewGroupInviteRequest) (*PreviewGroupInviteResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method PreviewGroupInvite not implemented")
 }
 func (UnimplementedAuthServiceServer) mustEmbedUnimplementedAuthServiceServer() {}
 func (UnimplementedAuthServiceServer) testEmbeddedByValue()                     {}
@@ -956,6 +1082,24 @@ func _AuthService_JoinGroup_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthService_ReorderMyGroups_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReorderMyGroupsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).ReorderMyGroups(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_ReorderMyGroups_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).ReorderMyGroups(ctx, req.(*ReorderMyGroupsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AuthService_LeaveGroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(LeaveGroupRequest)
 	if err := dec(in); err != nil {
@@ -1042,6 +1186,114 @@ func _AuthService_UploadGroupIcon_Handler(srv interface{}, ctx context.Context, 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AuthServiceServer).UploadGroupIcon(ctx, req.(*UploadGroupIconRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_ListGroupMembers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListGroupMembersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).ListGroupMembers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_ListGroupMembers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).ListGroupMembers(ctx, req.(*ListGroupMembersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_SearchUsers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchUsersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).SearchUsers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_SearchUsers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).SearchUsers(ctx, req.(*SearchUsersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_GetGroupInviteLink_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetGroupInviteLinkRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).GetGroupInviteLink(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_GetGroupInviteLink_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).GetGroupInviteLink(ctx, req.(*GetGroupInviteLinkRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_SendGroupInvites_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SendGroupInvitesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).SendGroupInvites(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_SendGroupInvites_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).SendGroupInvites(ctx, req.(*SendGroupInvitesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_RedeemGroupInvite_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RedeemGroupInviteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).RedeemGroupInvite(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_RedeemGroupInvite_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).RedeemGroupInvite(ctx, req.(*RedeemGroupInviteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_PreviewGroupInvite_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PreviewGroupInviteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).PreviewGroupInvite(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_PreviewGroupInvite_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).PreviewGroupInvite(ctx, req.(*PreviewGroupInviteRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1142,6 +1394,10 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AuthService_JoinGroup_Handler,
 		},
 		{
+			MethodName: "ReorderMyGroups",
+			Handler:    _AuthService_ReorderMyGroups_Handler,
+		},
+		{
 			MethodName: "LeaveGroup",
 			Handler:    _AuthService_LeaveGroup_Handler,
 		},
@@ -1160,6 +1416,30 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UploadGroupIcon",
 			Handler:    _AuthService_UploadGroupIcon_Handler,
+		},
+		{
+			MethodName: "ListGroupMembers",
+			Handler:    _AuthService_ListGroupMembers_Handler,
+		},
+		{
+			MethodName: "SearchUsers",
+			Handler:    _AuthService_SearchUsers_Handler,
+		},
+		{
+			MethodName: "GetGroupInviteLink",
+			Handler:    _AuthService_GetGroupInviteLink_Handler,
+		},
+		{
+			MethodName: "SendGroupInvites",
+			Handler:    _AuthService_SendGroupInvites_Handler,
+		},
+		{
+			MethodName: "RedeemGroupInvite",
+			Handler:    _AuthService_RedeemGroupInvite_Handler,
+		},
+		{
+			MethodName: "PreviewGroupInvite",
+			Handler:    _AuthService_PreviewGroupInvite_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

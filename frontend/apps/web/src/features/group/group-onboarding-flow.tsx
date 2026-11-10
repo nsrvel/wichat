@@ -1,16 +1,16 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ChevronRight } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { useForm, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { TextField } from "@/components/form/text-field";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Form } from "@/components/ui/form";
 import {
 	WiChatDialog,
@@ -32,11 +32,12 @@ import { GroupIconUpload } from "@/features/group/components/group-icon-upload";
 import { translateError } from "@/integrations/i18n/translate-error";
 import { displayNameSchema, type Group } from "@wichat/contracts";
 import { cn } from "@/lib/utils";
-import * as groupQuery from "@/services/group/group.query";
+import { normalizeInviteToken } from "@/features/invite/lib/normalize-invite-token";
 import { channelPath } from "@/lib/app-routes";
 import { Q_MY_GROUPS } from "@/services/group/group.key";
 import { uploadGroupIcon } from "@/services/group/group.service";
-import { useCreateGroupMutation, useJoinGroupMutation } from "@/services/group/group.mutation";
+import { useCreateGroupMutation } from "@/services/group/group.mutation";
+import { redeemInvite } from "@/services/invite/invite.service";
 
 const GROUP_ONBOARDING_TITLE_ID = "group-onboarding-title";
 const GROUP_CREATE_FORM_ID = "wichat-group-create-form";
@@ -44,7 +45,9 @@ const authFormFooterButtonClass = "w-auto min-w-[7.5rem] max-w-[55%] shrink-0 px
 
 const createSchema = z.object({ name: displayNameSchema });
 
-type Mode = "pick" | "create" | "join";
+export type GroupOnboardingMode = "pick" | "create" | "join";
+
+type Mode = GroupOnboardingMode;
 
 const GROUP_TEMPLATES = [
 	{
@@ -93,20 +96,32 @@ function modeStepIndex(mode: Mode): number {
 type GroupOnboardingFlowProps = {
 	onComplete?: () => void;
 	presentation?: "dialog" | "page";
+	initialMode?: Mode;
 };
 
 export function GroupOnboardingFlow({
 	onComplete,
 	presentation = "page",
+	initialMode = "pick",
 }: GroupOnboardingFlowProps) {
 	const { t } = useTranslation();
-	const [mode, setMode] = useState<Mode>("pick");
+	const [mode, setMode] = useState<Mode>(initialMode);
 	const stepIndex = modeStepIndex(mode);
-	const joinable = useQuery({ ...groupQuery.joinableGroupsQueryOpts(), enabled: mode === "join" });
 	const router = useRouter();
 	const queryClient = useQueryClient();
 	const createGroup = useCreateGroupMutation();
-	const joinGroup = useJoinGroupMutation();
+	const [inviteCode, setInviteCode] = useState("");
+	const joinByInvite = useMutation({
+		mutationFn: (token: string) => redeemInvite(token),
+		onSuccess: async (result) => {
+			await queryClient.invalidateQueries({ queryKey: [Q_MY_GROUPS] });
+			if (result.channel_id) {
+				openGroupChannel(result.group_id, result.channel_id);
+				return;
+			}
+			finish();
+		},
+	});
 	const form = useForm<z.infer<typeof createSchema>>({
 		resolver: zodResolver(createSchema),
 		defaultValues: { name: "" },
@@ -308,56 +323,46 @@ export function GroupOnboardingFlow({
 			/>
 			<WiChatDialogBody>
 				<div className="space-y-4 pb-4 sm:pb-5">
-					{joinable.isPending ? (
-						<p className="text-center text-sm text-muted-foreground">{t("group.home.loading")}</p>
-					) : (joinable.data ?? []).length === 0 ? (
-						<div className="space-y-4 rounded-xl border border-dashed border-border bg-muted/50 px-4 py-8 text-center">
-							<p className="text-sm text-muted-foreground">{t("group.home.join_empty")}</p>
-							<Button type="button" className={authSubmitClass} onClick={() => startCreate()}>
-								{t("group.home.create")}
-							</Button>
-						</div>
-					) : (
-						<ul className="divide-y divide-border overflow-hidden rounded-xl border border-border">
-							{(joinable.data ?? []).map((g) => (
-								<li
-									key={g.id}
-									className="flex items-center justify-between gap-3 bg-card px-4 py-3.5"
-								>
-									<span className="font-medium">{g.name}</span>
-									<Button
-										type="button"
-										size="sm"
-										disabled={joinGroup.isPending}
-										onClick={() =>
-											joinGroup.mutate(g.id, {
-												onSuccess: async () => {
-													const groups = await queryClient.fetchQuery(
-														groupQuery.myGroupsQueryOpts(),
-													);
-													const joined = groups.find((row) => row.id === g.id);
-													if (joined?.default_channel_id) {
-														openGroupChannel(joined.id, joined.default_channel_id);
-														return;
-													}
-													finish();
-												},
-											})
-										}
-									>
-										{t("group.home.join_action")}
-									</Button>
-								</li>
-							))}
-						</ul>
-					)}
+					<div className="space-y-2">
+						<label htmlFor="group-invite-code" className={authFieldLabelClass}>
+							{t("group.home.join_code_label")}
+						</label>
+						<Input
+							id="group-invite-code"
+							value={inviteCode}
+							onChange={(e) => setInviteCode(e.target.value)}
+							placeholder={t("group.home.join_code_placeholder")}
+							className={authInputClass}
+							autoComplete="off"
+							disabled={joinByInvite.isPending}
+						/>
+					</div>
+					{joinByInvite.isError ? (
+						<p className="text-destructive text-[11px] font-medium">
+							{translateError(t, joinByInvite.error)}
+						</p>
+					) : null}
 				</div>
 			</WiChatDialogBody>
 			<WiChatDialogFooter>
-				<Button type="button" variant="ghost" className="px-2" onClick={backToPick}>
-					<ArrowLeft className="mr-1 h-4 w-4" aria-hidden />
-					{t("auth.back")}
-				</Button>
+				<WiChatDialogFooterActions
+					backLabel={t("auth.back")}
+					onBack={backToPick}
+					primaryLabel={
+						joinByInvite.isPending ? t("group.home.joining") : t("group.home.join_code_submit")
+					}
+					primaryType="button"
+					primaryDisabled={joinByInvite.isPending || !inviteCode.trim()}
+					onPrimary={() => {
+						const token = normalizeInviteToken(inviteCode);
+						if (!token) {
+							return;
+						}
+						joinByInvite.mutate(token);
+					}}
+					backClassName={cn(authSubmitGhostClass, authFormFooterButtonClass)}
+					primaryClassName={cn(authSubmitClass, authFormFooterButtonClass)}
+				/>
 			</WiChatDialogFooter>
 		</>
 	);
@@ -389,12 +394,24 @@ export function GroupOnboardingFlow({
 type GroupOnboardingDialogProps = {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
+	entryMode?: GroupOnboardingMode;
 };
 
-export function GroupOnboardingDialog({ open, onOpenChange }: GroupOnboardingDialogProps) {
+export function GroupOnboardingDialog({
+	open,
+	onOpenChange,
+	entryMode = "pick",
+}: GroupOnboardingDialogProps) {
 	return (
 		<WiChatDialog open={open} onOpenChange={onOpenChange} titleId={GROUP_ONBOARDING_TITLE_ID}>
-			<GroupOnboardingFlow presentation="dialog" onComplete={() => onOpenChange(false)} />
+			{open ? (
+				<GroupOnboardingFlow
+					key={entryMode}
+					initialMode={entryMode}
+					presentation="dialog"
+					onComplete={() => onOpenChange(false)}
+				/>
+			) : null}
 		</WiChatDialog>
 	);
 }

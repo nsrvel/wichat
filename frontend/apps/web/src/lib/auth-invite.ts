@@ -27,9 +27,20 @@ export function resolveSignInMode(
 	return as === "account" ? "account" : "guest";
 }
 
+export function inviteLandingPath(invite: string): string {
+	return `/invite/${encodeURIComponent(invite.trim())}`;
+}
+
+export function postAuthRedirectPath(inviteToken?: string): string {
+	if (inviteToken?.trim()) {
+		return inviteLandingPath(inviteToken);
+	}
+	return "/";
+}
+
 export function authPath(
 	path: "/sign-in" | "/sign-up",
-	opts?: { invite?: string; as?: "account" },
+	opts?: { invite?: string; as?: "account"; flow?: "register" },
 ): string {
 	if (!opts?.invite) {
 		return path;
@@ -38,6 +49,9 @@ export function authPath(
 	q.set("invite", opts.invite);
 	if (opts.as === "account") {
 		q.set("as", "account");
+	}
+	if (opts.flow === "register") {
+		q.set("flow", "register");
 	}
 	return `${path}?${q.toString()}`;
 }

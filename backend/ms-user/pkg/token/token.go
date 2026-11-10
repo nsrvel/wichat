@@ -51,3 +51,13 @@ func NewPublicID() (string, error) {
 
 	return hex.EncodeToString(b[:]), nil
 }
+
+// NewInviteToken returns a URL-safe opaque token for group invite links (8 chars, 48-bit).
+func NewInviteToken() (string, error) {
+	var raw [6]byte
+	if _, err := rand.Read(raw[:]); err != nil {
+		return "", err
+	}
+
+	return base64.RawURLEncoding.EncodeToString(raw[:]), nil
+}

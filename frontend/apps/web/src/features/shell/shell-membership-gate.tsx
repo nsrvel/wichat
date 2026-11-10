@@ -27,7 +27,9 @@ export function ShellMembershipGate({ groupId, children }: Props) {
 		}
 	}, [groupId, myGroups.data, myGroups.isError, myGroups.isPending, router]);
 
-	if (myGroups.isLoading) {
+	const groups = myGroups.isError ? [] : (myGroups.data ?? []);
+
+	if (myGroups.isPending && groups.length === 0) {
 		return (
 			<div
 				className="flex flex-1 items-center justify-center bg-background text-sm text-muted-foreground"
@@ -38,7 +40,6 @@ export function ShellMembershipGate({ groupId, children }: Props) {
 		);
 	}
 
-	const groups = myGroups.isError ? [] : (myGroups.data ?? []);
 	if (!groups.some((g) => g.id === groupId)) {
 		return (
 			<div

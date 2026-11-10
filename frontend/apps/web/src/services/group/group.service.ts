@@ -3,6 +3,7 @@ import {
 	GroupSchema,
 	GroupsListSchema,
 	OkSchema,
+	ReorderMyGroupsRequestSchema,
 	type CreateGroupRequest,
 	type Group,
 	isPublicEntityId,
@@ -32,6 +33,11 @@ function normalizeMyGroup(raw: Group): MyGroup | null {
 		return null;
 	}
 	return { ...raw, role };
+}
+
+export async function reorderMyGroups(groupIds: string[]) {
+	const body = ReorderMyGroupsRequestSchema.parse({ group_ids: groupIds });
+	return api.put("/groups/mine/order", OkSchema, body);
 }
 
 export async function listMyGroups() {

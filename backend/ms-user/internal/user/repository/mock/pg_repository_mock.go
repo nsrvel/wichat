@@ -311,6 +311,10 @@ func (m *pgRepositoryMock) FindUserByID(_ context.Context, id string) (models.Us
 	return models.User{}, constants.ErrNotFound
 }
 
+func (m *pgRepositoryMock) SearchUsers(_ context.Context, _ string, _ int, _ string) ([]models.UserSearchHit, error) {
+	return nil, nil
+}
+
 func (m *pgRepositoryMock) UpdateUserPasswordHash(_ context.Context, userID, hash string, now time.Time) error {
 	m.st.mu.Lock()
 	defer m.st.mu.Unlock()

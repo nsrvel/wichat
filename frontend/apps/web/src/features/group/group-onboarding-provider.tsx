@@ -2,13 +2,16 @@
 
 import { usePathname } from "next/navigation";
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
-import { GroupOnboardingDialog } from "@/features/group/group-onboarding-flow";
+import {
+	GroupOnboardingDialog,
+	type GroupOnboardingMode,
+} from "@/features/group/group-onboarding-flow";
 import { useMyGroupsQuery } from "@/hooks/use-my-groups-query";
 import { APP_HOME_PATH } from "@/lib/app-routes";
 
 type GroupOnboardingContextValue = {
 	open: boolean;
-	openOnboarding: () => void;
+	openOnboarding: (mode?: GroupOnboardingMode) => void;
 	closeOnboarding: () => void;
 };
 
@@ -18,6 +21,7 @@ export function GroupOnboardingProvider({ children }: { children: ReactNode }) {
 	const pathname = usePathname();
 	const myGroups = useMyGroupsQuery();
 	const [manualOpen, setManualOpen] = useState(false);
+	const [entryMode, setEntryMode] = useState<GroupOnboardingMode>("pick");
 	const [dismissedOnHome, setDismissedOnHome] = useState(false);
 
 	const onHome = pathname === APP_HOME_PATH;
@@ -25,7 +29,8 @@ export function GroupOnboardingProvider({ children }: { children: ReactNode }) {
 	const autoOpen = onHome && noGroups && !dismissedOnHome;
 	const open = manualOpen || autoOpen;
 
-	const openOnboarding = useCallback(() => {
+	const openOnboarding = useCallback((mode: GroupOnboardingMode = "pick") => {
+		setEntryMode(mode);
 		setDismissedOnHome(false);
 		setManualOpen(true);
 	}, []);
@@ -54,7 +59,7 @@ export function GroupOnboardingProvider({ children }: { children: ReactNode }) {
 	return (
 		<GroupOnboardingContext.Provider value={value}>
 			{children}
-			<GroupOnboardingDialog open={open} onOpenChange={setOpen} />
+			<GroupOnboardingDialog open={open} onOpenChange={setOpen} entryMode={entryMode} />
 		</GroupOnboardingContext.Provider>
 	);
 }

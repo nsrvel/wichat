@@ -26,6 +26,9 @@ type PgRepository interface {
 	DeleteGroup(ctx context.Context, groupID string) error
 	UpdateGroupDisplayName(ctx context.Context, groupID, name string, now time.Time) error
 	UpdateGroupLogoURL(ctx context.Context, groupID, logoURL string, now time.Time) error
+	SetRailPositions(ctx context.Context, userID string, orderedGroupIDs []string) error
+	CountGroupMembers(ctx context.Context, groupID string) (int, error)
+	ListGroupMembersPage(ctx context.Context, groupID string, limit int, cursor *models.GroupMemberCursor) ([]models.GroupMemberProfile, *models.GroupMemberCursor, error)
 }
 
 type pgRepository struct {
@@ -55,7 +58,7 @@ func (r pgRepository) GetFirstGroup(ctx context.Context) (models.Group, error) {
 	return groupFromRows(joined.Group, joined.Settings, joined.DefaultChannelPublicID, ""), nil
 }
 
-// ListGroupsForUser returns groups the user belongs to, ordered by name.
+// ListGroupsForUser returns groups the user belongs to, ordered by rail preference then name.
 func (r pgRepository) ListGroupsForUser(ctx context.Context, userID string) ([]models.Group, error) {
 	return r.listGroupsRaw(ctx, constants.SQLListGroupsForUser, userID, "ListGroupsForUser")
 }
@@ -247,6 +250,110 @@ func (r pgRepository) listGroupsRaw(ctx context.Context, query, userID, op strin
 	}
 
 	return out, nil
+}
+
+// CountGroupMembers returns how many users belong to a group.
+func (r pgRepository) CountGroupMembers(ctx context.Context, groupID string) (int, error) {
+	n, err := r.db.NewSelect().Model((*models.GroupMemberRow)(nil)).
+		Where("group_id = ?", groupID).
+		Count(ctx)
+	if err != nil {
+		r.logIfInfraErr("CountGroupMembers", err)
+	}
+	return int(n), err
+}
+
+type groupMemberJoinedRow struct {
+	UserID      string    `bun:"user_id"`
+	DisplayName string    `bun:"display_name"`
+	Email       *string   `bun:"email"`
+	Role        string    `bun:"role"`
+	CreatedAt   time.Time `bun:"created_at"`
+}
+
+// ListGroupMembersPage returns members ordered by join time then user id.
+func (r pgRepository) ListGroupMembersPage(
+	ctx context.Context,
+	groupID string,
+	limit int,
+	cursor *models.GroupMemberCursor,
+) ([]models.GroupMemberProfile, *models.GroupMemberCursor, error) {
+	if limit <= 0 {
+		limit = constants.DefaultMemberListLimit
+	}
+	if limit > constants.MaxMemberListLimit {
+		limit = constants.MaxMemberListLimit
+	}
+
+	q := r.db.NewSelect().
+		TableExpr("group_members AS m").
+		ColumnExpr("m.user_id, m.role, m.created_at").
+		ColumnExpr("u.display_name, u.email").
+		Join("JOIN users AS u ON u.id = m.user_id").
+		Where("m.group_id = ?", groupID).
+		OrderExpr("m.created_at ASC, m.user_id ASC").
+		Limit(int64(limit + 1))
+
+	if cursor != nil {
+		q = q.Where(
+			"(m.created_at, m.user_id) > (?, ?)",
+			cursor.CreatedAt,
+			cursor.UserID,
+		)
+	}
+
+	var rows []groupMemberJoinedRow
+	if err := q.Scan(ctx, &rows); err != nil {
+		r.logIfInfraErr("ListGroupMembersPage", err)
+		return nil, nil, err
+	}
+
+	var next *models.GroupMemberCursor
+	if len(rows) > limit {
+		last := rows[limit-1]
+		next = &models.GroupMemberCursor{CreatedAt: last.CreatedAt, UserID: last.UserID}
+		rows = rows[:limit]
+	}
+
+	out := make([]models.GroupMemberProfile, len(rows))
+	for i, row := range rows {
+		email := ""
+		if row.Email != nil {
+			email = *row.Email
+		}
+		out[i] = models.GroupMemberProfile{
+			UserID:      row.UserID,
+			DisplayName: row.DisplayName,
+			Email:       email,
+			Role:        row.Role,
+			JoinedAt:    row.CreatedAt,
+		}
+	}
+
+	return out, next, nil
+}
+
+// SetRailPositions sets per-user rail order (0..n-1) for the caller's memberships.
+func (r pgRepository) SetRailPositions(ctx context.Context, userID string, orderedGroupIDs []string) error {
+	err := r.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
+		for i, groupID := range orderedGroupIDs {
+			res, err := tx.NewUpdate().Model((*models.GroupMemberRow)(nil)).
+				Set("rail_position = ?", i).
+				Where("user_id = ? AND group_id = ?", userID, groupID).
+				Exec(ctx)
+			if err != nil {
+				return err
+			}
+			if n, _ := res.RowsAffected(); n != 1 {
+				return constants.ErrNotFound
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		r.logIfInfraErr("SetRailPositions", err)
+	}
+	return err
 }
 
 func (r pgRepository) logIfInfraErr(op string, err error) {
