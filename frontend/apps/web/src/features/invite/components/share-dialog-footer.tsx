@@ -5,10 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { WiChatDialogFooter } from "@/components/ui/wichat-dialog";
 import { shareDialogFooterButtonClass } from "@/features/invite/lib/share-dialog-chrome";
-import {
-	authSubmitClass,
-	authSubmitGhostClass,
-} from "@/features/auth/components/auth-shell";
+import { authSubmitClass, authSubmitGhostClass } from "@/features/auth/components/auth-shell";
 import { cn } from "@/lib/utils";
 import type { RegistrationMode } from "@wichat/contracts";
 

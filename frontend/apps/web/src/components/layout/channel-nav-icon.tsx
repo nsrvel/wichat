@@ -1,4 +1,16 @@
-import { AtSign, Bell, Cloud, Compass, FileText, Hash, ListTodo, MessageCircle, Server, Tv } from "lucide-react";
+import {
+	AtSign,
+	Bell,
+	Cloud,
+	Compass,
+	FileText,
+	Hash,
+	ListTodo,
+	MessageCircle,
+	Server,
+	Tv,
+	Users,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import type { ShellNavTarget } from "@/components/layout/shell-navigation";
 import {
@@ -79,6 +91,8 @@ function quickViewGlyph(id: string, variant: SidebarListIconVariant): ReactNode 
 			return <Compass className={g} strokeWidth={2} />;
 		case "qv-drafts":
 			return <FileText className={g} strokeWidth={2} />;
+		case "qv-members":
+			return <Users className={g} strokeWidth={2} />;
 		default:
 			return <AtSign className={g} strokeWidth={2} />;
 	}

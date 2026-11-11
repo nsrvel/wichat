@@ -1,118 +1,100 @@
 "use client";
 
-import { Menu } from "@base-ui/react/menu";
 import { GroupMemberSchema } from "@wichat/contracts";
-import { Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
-import { useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight, Crown } from "lucide-react";
+import { useMemo } from "react";
 import type { z } from "zod";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { userInitials } from "@/features/invite/lib/user-initials";
 import {
-	menuDropdownTriggerChevronClass,
 	menuDropdownTriggerClass,
 	menuDropdownTriggerLabelClass,
-	menuDropdownTriggerOpenClass,
-	menuItemClass,
-	menuPopupClass,
-	menuPositionerClass,
 } from "@/features/shell/components/group-rail-menu/menu-chrome";
 import { cn } from "@/lib/utils";
 
 type Member = z.infer<typeof GroupMemberSchema>;
-
-const MEMBER_ROLES = ["owner", "member"] as const;
 
 type GroupAccessListProps = {
 	members: Member[];
 	loading: boolean;
 	failed?: boolean;
 	filterQuery?: string;
-	canChangeRoles?: boolean;
 	hasPrev: boolean;
 	hasNext: boolean;
 	onPrev: () => void;
 	onNext: () => void;
 };
 
-function MemberRoleBadge({ role }: { role: Member["role"] }) {
-	const { t } = useTranslation();
-	const label = t(`invite.role_${role}`);
-
+function MemberAvatar({
+	displayName,
+	email,
+	isOnline,
+	onlineLabel,
+}: {
+	displayName: string;
+	email: string;
+	isOnline?: boolean;
+	onlineLabel: string;
+}) {
 	return (
-		<span
-			className="flex min-h-[34px] shrink-0 items-center px-2 py-1.5 lg:min-h-[36px] lg:h-[36px]"
-			aria-label={t("invite.member_role_menu", { role: label })}
-		>
-			<span className={cn(menuDropdownTriggerLabelClass, "max-w-[6.5rem] text-muted-foreground")}>
-				{label}
-			</span>
-		</span>
+		<div className="relative shrink-0">
+			<div
+				className="flex h-9 w-9 items-center justify-center rounded-full bg-background text-xs font-semibold text-foreground ring-1 ring-border/60"
+				aria-hidden
+			>
+				{userInitials(displayName, email)}
+			</div>
+			{isOnline ? (
+				<span
+					className="absolute right-0 bottom-0 size-2.5 rounded-full border-2 border-[color-mix(in_oklab,var(--card)_88%,var(--background))] bg-presence-online"
+					role="img"
+					aria-label={onlineLabel}
+				/>
+			) : null}
+		</div>
 	);
 }
 
-function MemberRoleMenu({ role }: { role: Member["role"] }) {
+function MemberOwnerBadge() {
 	const { t } = useTranslation();
-	const [open, setOpen] = useState(false);
-	const label = t(`invite.role_${role}`);
+	const label = t("invite.role_owner");
 
 	return (
-		<Menu.Root
-			open={open}
-			onOpenChange={setOpen}
+		<span
+			className={cn(
+				menuDropdownTriggerClass,
+				"pointer-events-none shrink-0 cursor-default px-2.5 hover:bg-transparent",
+			)}
+			aria-label={t("invite.member_role_menu", { role: label })}
 		>
-			<Menu.Trigger
-				nativeButton
-				render={
-					<button
-						type="button"
-						className={cn(
-							menuDropdownTriggerClass,
-							"shrink-0",
-							open && menuDropdownTriggerOpenClass,
-						)}
-						aria-haspopup="menu"
-						aria-expanded={open}
-						aria-label={t("invite.member_role_menu", { role: label })}
-					/>
-				}
-			>
-				<span className={cn(menuDropdownTriggerLabelClass, "max-w-[6.5rem]")}>{label}</span>
-				{open ? (
-					<ChevronUp className={menuDropdownTriggerChevronClass} strokeWidth={2.4} aria-hidden />
-				) : (
-					<ChevronDown className={menuDropdownTriggerChevronClass} strokeWidth={2.4} aria-hidden />
-				)}
-			</Menu.Trigger>
-			<Menu.Portal>
-				<Menu.Positioner className={menuPositionerClass} side="bottom" align="end" sideOffset={4}>
-					<Menu.Popup className={menuPopupClass}>
-						{MEMBER_ROLES.map((r) => (
-							<Menu.Item key={r} className={menuItemClass} closeOnClick={false}>
-								<span className="flex min-w-0 flex-1 items-center justify-between gap-2">
-									<span>{t(`invite.role_${r}`)}</span>
-									{r === role ? (
-										<Check className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-									) : null}
-								</span>
-							</Menu.Item>
-						))}
-					</Menu.Popup>
-				</Menu.Positioner>
-			</Menu.Portal>
-		</Menu.Root>
+			<Crown
+				className="h-3.5 w-3.5 shrink-0 text-amber-500 dark:text-amber-400"
+				strokeWidth={2.2}
+				aria-hidden
+			/>
+			<span className={cn(menuDropdownTriggerLabelClass, "max-w-[6.5rem]")}>{label}</span>
+		</span>
 	);
 }
 
 const rowSkeletonClass =
 	"flex items-center gap-3 px-3 py-2.5 animate-pulse first:rounded-t-xl last:rounded-b-xl";
 
+function compareMembersOwnerFirst(a: Member, b: Member): number {
+	const rank = (role: Member["role"]) => (role === "owner" ? 0 : 1);
+	const byRole = rank(a.role) - rank(b.role);
+	if (byRole !== 0) {
+		return byRole;
+	}
+	return a.display_name.localeCompare(b.display_name, undefined, { sensitivity: "base" });
+}
+
 export function GroupAccessList({
 	members,
 	loading,
 	failed = false,
 	filterQuery = "",
-	canChangeRoles = false,
 	hasPrev,
 	hasNext,
 	onPrev,
@@ -121,19 +103,19 @@ export function GroupAccessList({
 	const { t } = useTranslation();
 	const filter = filterQuery.trim().toLowerCase();
 	const visibleMembers = useMemo(() => {
-		if (!filter) {
-			return members;
-		}
-		return members.filter((member) => {
-			const name = member.display_name.trim().toLowerCase();
-			const email = (member.email ?? "").trim().toLowerCase();
-			return name.includes(filter) || email.includes(filter);
-		});
+		const rows = !filter
+			? [...members]
+			: members.filter((member) => {
+					const name = member.display_name.trim().toLowerCase();
+					const email = (member.email ?? "").trim().toLowerCase();
+					return name.includes(filter) || email.includes(filter);
+				});
+		rows.sort(compareMembersOwnerFirst);
+		return rows;
 	}, [filter, members]);
 	const filtering = filter.length > 0;
 	const showPager = !filtering && (hasPrev || hasNext);
-	const showFilterEmpty =
-		filtering && !loading && !failed && visibleMembers.length === 0;
+	const showFilterEmpty = filtering && !loading && !failed && visibleMembers.length === 0;
 
 	return (
 		<div className="space-y-2">
@@ -181,7 +163,6 @@ export function GroupAccessList({
 									<div className="min-w-0 flex-1">
 										<div className="h-3.5 w-28 rounded bg-muted" />
 									</div>
-									<div className="h-5 w-14 shrink-0 rounded-md bg-muted" aria-hidden />
 								</li>
 							))
 						: null}
@@ -190,22 +171,18 @@ export function GroupAccessList({
 							key={member.user_id}
 							className="flex items-center gap-3 px-3 py-2.5 first:rounded-t-xl last:rounded-b-xl"
 						>
-							<div
-								className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-background text-xs font-semibold text-foreground ring-1 ring-border/60"
-								aria-hidden
-							>
-								{userInitials(member.display_name, member.email)}
-							</div>
+							<MemberAvatar
+								displayName={member.display_name}
+								email={member.email}
+								isOnline={member.is_online === true}
+								onlineLabel={t("invite.member_online")}
+							/>
 							<div className="min-w-0 flex-1">
 								<p className="truncate text-sm font-medium text-foreground">
 									{member.display_name.trim() || t("invite.member_name_fallback")}
 								</p>
 							</div>
-							{canChangeRoles ? (
-							<MemberRoleMenu role={member.role} />
-						) : (
-							<MemberRoleBadge role={member.role} />
-						)}
+							{member.role === "owner" ? <MemberOwnerBadge /> : null}
 						</li>
 					))}
 					{failed ? (

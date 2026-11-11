@@ -56,7 +56,9 @@ export function MessageRow({
 			<div className="min-w-0 max-w-full flex-1">
 				<div className="mb-1 flex items-baseline gap-2 px-0.5">
 					<span className="text-[13px] font-semibold text-foreground">{authorDisplayName}</span>
-					{timeLabel ? <span className="text-[11px] text-muted-foreground">{timeLabel}</span> : null}
+					{timeLabel ? (
+						<span className="text-[11px] text-muted-foreground">{timeLabel}</span>
+					) : null}
 				</div>
 				<div className={bubbleClass}>{children}</div>
 				{reactions ? (

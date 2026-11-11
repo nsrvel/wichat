@@ -1,9 +1,14 @@
 /** Signed-in hub when the user has no group membership (create / join). */
 export const APP_HOME_PATH = "/home";
 
-export type QuickViewId = "mentions" | "discover" | "drafts";
+export type QuickViewId = "mentions" | "discover" | "drafts" | "members";
 
-export const QUICK_VIEW_IDS: readonly QuickViewId[] = ["mentions", "discover", "drafts"] as const;
+export const QUICK_VIEW_IDS: readonly QuickViewId[] = [
+	"mentions",
+	"discover",
+	"drafts",
+	"members",
+] as const;
 
 export function isQuickViewId(value: string): value is QuickViewId {
 	return (QUICK_VIEW_IDS as readonly string[]).includes(value);

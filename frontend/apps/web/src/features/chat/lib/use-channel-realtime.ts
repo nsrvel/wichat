@@ -18,18 +18,15 @@ export function useChannelRealtime(groupId: string, channelId: string) {
 			groupId,
 			channelId,
 			onMessageCreated: (message) => {
-				queryClient.setQueryData<MessagesList>(
-					[Q_CHANNEL_MESSAGES, groupId, channelId],
-					(prev) => {
-						if (!prev) {
-							return { messages: [message] };
-						}
-						if (prev.messages.some((m) => m.id === message.id)) {
-							return prev;
-						}
-						return { messages: [...prev.messages, message] };
-					},
-				);
+				queryClient.setQueryData<MessagesList>([Q_CHANNEL_MESSAGES, groupId, channelId], (prev) => {
+					if (!prev) {
+						return { messages: [message] };
+					}
+					if (prev.messages.some((m) => m.id === message.id)) {
+						return prev;
+					}
+					return { messages: [...prev.messages, message] };
+				});
 			},
 		});
 	}, [groupId, channelId, queryClient]);

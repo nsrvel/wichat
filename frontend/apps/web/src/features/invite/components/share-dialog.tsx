@@ -19,10 +19,13 @@ import { shareDialogShellClass } from "@/features/invite/lib/share-dialog-chrome
 import { ShareDialogSection } from "@/features/invite/lib/share-dialog-section";
 import { instancePolicyQueryOpts } from "@/services/auth/auth.query";
 import { Q_MY_GROUPS } from "@/services/group/group.key";
-import { myGroupsQueryOpts } from "@/services/group/group.query";
 import { copyTextToClipboard } from "@/lib/copy-to-clipboard";
 import { searchUsers, sendGroupInvites } from "@/services/invite/invite.service";
-import { Q_INVITE_MEMBERS, groupInviteLinkQueryOpts, groupMembersQueryOpts } from "@/services/invite/invite.query";
+import {
+	Q_INVITE_MEMBERS,
+	groupInviteLinkQueryOpts,
+	groupMembersQueryOpts,
+} from "@/services/invite/invite.query";
 
 const SHARE_DIALOG_TITLE_ID = "wichat-share-dialog-title";
 
@@ -52,18 +55,6 @@ export function ShareDialog({ open, onOpenChange, target }: ShareDialogProps) {
 	const cursor = cursorStack[cursorStack.length - 1] ?? "";
 
 	const { data: policy } = useQuery({ ...instancePolicyQueryOpts(), enabled: open });
-	const { data: myGroups = [] } = useQuery({
-		...myGroupsQueryOpts(),
-		enabled: open,
-	});
-
-	const isOwner = useMemo(() => {
-		if (!groupId) {
-			return false;
-		}
-		return myGroups.some((g) => g.id === groupId && g.role === "owner");
-	}, [groupId, myGroups]);
-
 	// ponytail: wire from group invite settings when they exist
 	const canInviteAndCopy = true;
 
@@ -193,53 +184,52 @@ export function ShareDialog({ open, onOpenChange, target }: ShareDialogProps) {
 			/>
 			<WiChatDialogBody className="space-y-6 pt-1">
 				{canInviteAndCopy ? (
-				<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-					<InviteRecipientField
-						chips={chips}
-						onChangeChips={setChips}
-						searchHits={searchQuery.data?.users ?? []}
-						searchLoading={searchQuery.isFetching}
-						query={query}
-						onQueryChange={setQuery}
-						onPickUser={(hit) => {
-							const chip = {
-								kind: "user" as const,
-								id: hit.user_id,
-								label: hit.display_name || hit.email,
-								email: hit.email,
-							};
-							if (!chips.some((c) => c.kind === "user" && c.id === chip.id)) {
-								setChips([...chips, chip]);
-							}
-							setQuery("");
-						}}
-						disabled={sendMutation.isPending}
-					/>
-					<InviteRecipientActions
-						onShare={() => sendMutation.mutate()}
-						shareDisabled={shareDisabled}
-						pending={sendMutation.isPending}
-					/>
-				</div>
+					<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+						<InviteRecipientField
+							chips={chips}
+							onChangeChips={setChips}
+							searchHits={searchQuery.data?.users ?? []}
+							searchLoading={searchQuery.isFetching}
+							query={query}
+							onQueryChange={setQuery}
+							onPickUser={(hit) => {
+								const chip = {
+									kind: "user" as const,
+									id: hit.user_id,
+									label: hit.display_name || hit.email,
+									email: hit.email,
+								};
+								if (!chips.some((c) => c.kind === "user" && c.id === chip.id)) {
+									setChips([...chips, chip]);
+								}
+								setQuery("");
+							}}
+							disabled={sendMutation.isPending}
+						/>
+						<InviteRecipientActions
+							onShare={() => sendMutation.mutate()}
+							shareDisabled={shareDisabled}
+							pending={sendMutation.isPending}
+						/>
+					</div>
 				) : null}
 
 				<ShareDialogSection label={t("invite.section_members")}>
-				<GroupAccessList
-					members={members}
-					loading={membersPending || membersQuery.isFetching}
-					failed={membersFailed}
-					filterQuery={membersFilterQuery}
-					canChangeRoles={isOwner}
-					hasPrev={hasPrev}
-					hasNext={hasNext}
-					onPrev={() => setCursorStack((s) => (s.length > 1 ? s.slice(0, -1) : s))}
-					onNext={() => {
-						const next = membersQuery.data?.next_cursor;
-						if (next) {
-							setCursorStack((s) => [...s, next]);
-						}
-					}}
-				/>
+					<GroupAccessList
+						members={members}
+						loading={membersPending || membersQuery.isFetching}
+						failed={membersFailed}
+						filterQuery={membersFilterQuery}
+						hasPrev={hasPrev}
+						hasNext={hasNext}
+						onPrev={() => setCursorStack((s) => (s.length > 1 ? s.slice(0, -1) : s))}
+						onNext={() => {
+							const next = membersQuery.data?.next_cursor;
+							if (next) {
+								setCursorStack((s) => [...s, next]);
+							}
+						}}
+					/>
 				</ShareDialogSection>
 			</WiChatDialogBody>
 			<ShareDialogFooter

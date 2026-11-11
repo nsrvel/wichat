@@ -167,9 +167,7 @@ export function InviteRecipientField({
 					placeholder={hasChips ? "" : t("invite.search_placeholder")}
 					className={cn(
 						"min-w-[7rem] flex-1 border-0 bg-transparent px-0 py-0 text-sm leading-normal shadow-none focus-visible:ring-0",
-						hasChips
-							? "h-8 min-h-8 self-center sm:h-8 sm:min-h-8"
-							: "h-full min-h-0 self-center",
+						hasChips ? "h-8 min-h-8 self-center sm:h-8 sm:min-h-8" : "h-full min-h-0 self-center",
 					)}
 					aria-expanded={showDropdown}
 					aria-controls={listId}
@@ -187,12 +185,14 @@ export function InviteRecipientField({
 					id={listId}
 					role="listbox"
 					className={cn(
-						"absolute top-[calc(100%+6px)] z-[90] max-h-52 w-full overflow-y-auto rounded-xl border border-border bg-card shadow-elevated",
+						"thin-scroll absolute top-[calc(100%+6px)] z-[90] max-h-52 w-full overflow-y-auto rounded-xl border border-border bg-card shadow-elevated",
 						emailOnlySuggest ? "p-1.5" : "py-1",
 					)}
 				>
 					{searchLoading ? (
-						<li className="px-3 py-2.5 text-sm text-muted-foreground">{t("invite.search_loading")}</li>
+						<li className="px-3 py-2.5 text-sm text-muted-foreground">
+							{t("invite.search_loading")}
+						</li>
 					) : null}
 					{searchHits.map((hit) => (
 						<li key={hit.user_id}>
@@ -245,7 +245,9 @@ export function InviteRecipientField({
 						</li>
 					) : null}
 					{!searchLoading && searchHits.length === 0 && !showEmailHint ? (
-						<li className="px-3 py-2.5 text-sm text-muted-foreground">{t("invite.search_empty")}</li>
+						<li className="px-3 py-2.5 text-sm text-muted-foreground">
+							{t("invite.search_empty")}
+						</li>
 					) : null}
 				</ul>
 			) : null}

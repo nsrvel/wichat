@@ -4,17 +4,17 @@ import {
 	GroupsListSchema,
 	OkSchema,
 	ReorderMyGroupsRequestSchema,
+	UpdateGroupProfileBodySchema,
 	type CreateGroupRequest,
 	type Group,
+	type UpdateGroupProfileBody,
 	isPublicEntityId,
 } from "@wichat/contracts";
 import { api } from "@/integrations/api-client";
 
 export type MyGroup = Group;
 
-function normalizeMembershipRole(
-	role: string | undefined,
-): "owner" | "member" | undefined {
+function normalizeMembershipRole(role: string | undefined): "owner" | "member" | undefined {
 	if (role === "owner") {
 		return "owner";
 	}
@@ -42,9 +42,7 @@ export async function reorderMyGroups(groupIds: string[]) {
 
 export async function listMyGroups() {
 	const data = await api.get("/groups/mine", GroupsListSchema);
-	const groups = data.groups
-		.map(normalizeMyGroup)
-		.filter((g): g is MyGroup => g !== null);
+	const groups = data.groups.map(normalizeMyGroup).filter((g): g is MyGroup => g !== null);
 	return { groups };
 }
 
@@ -76,4 +74,32 @@ export async function uploadGroupIcon(groupId: string, file: File) {
 	return api.postForm(`/groups/${encodeURIComponent(groupId)}/icon`, GroupSchema, form);
 }
 
-export type { Group };
+export async function uploadGroupBanner(groupId: string, file: File) {
+	const form = new FormData();
+	form.append("file", file);
+	return api.postForm(`/groups/${encodeURIComponent(groupId)}/banner`, GroupSchema, form);
+}
+
+export async function updateGroupProfile(groupId: string, body: UpdateGroupProfileBody) {
+	const payload = UpdateGroupProfileBodySchema.parse(body);
+	return api.patch(`/groups/${encodeURIComponent(groupId)}/profile`, GroupSchema, payload);
+}
+
+export type SaveGroupProfileInput = UpdateGroupProfileBody & {
+	iconFile?: File | null;
+	bannerFile?: File | null;
+};
+
+export async function saveGroupProfile(groupId: string, input: SaveGroupProfileInput) {
+	const { iconFile, bannerFile, ...body } = input;
+	let group = await updateGroupProfile(groupId, body);
+	if (iconFile) {
+		group = await uploadGroupIcon(groupId, iconFile);
+	}
+	if (bannerFile) {
+		group = await uploadGroupBanner(groupId, bannerFile);
+	}
+	return group;
+}
+
+export type { Group, UpdateGroupProfileBody };

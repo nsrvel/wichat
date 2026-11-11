@@ -3,7 +3,6 @@
 import { Camera, Plus, Trash2 } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { groupInitials } from "@/features/shell/lib/group-initials";
 import { cn } from "@/lib/utils";
 
 // Keep in sync with ms-user/pkg/constants.MaxGroupIconBytes (5 MiB).
@@ -21,15 +20,20 @@ const CAMERA_ICON_CLASS = "relative z-[1] size-8 sm:size-9";
 type GroupIconUploadProps = {
 	value: File | null;
 	onChange: (file: File | null) => void;
-	/** Group display name — drives default initials avatar (e.g. Wirang Corp → WC). */
+	/** Reserved for accessibility copy later; empty state stays dashed until an image is set. */
 	displayName?: string;
+	/** Existing logo URL when editing a group (shown until the user picks a new file). */
+	logoUrl?: string;
+	/** Called when the user removes an existing server logo (not a fresh file pick). */
+	onClearExistingLogo?: () => void;
 	className?: string;
 };
 
 export function GroupIconUpload({
 	value,
 	onChange,
-	displayName = "",
+	logoUrl = "",
+	onClearExistingLogo,
 	className,
 }: GroupIconUploadProps) {
 	const { t } = useTranslation();
@@ -44,11 +48,6 @@ export function GroupIconUpload({
 		}
 		return () => URL.revokeObjectURL(previewUrl);
 	}, [previewUrl]);
-
-	const clearPhoto = () => {
-		setError(null);
-		onChange(null);
-	};
 
 	const pickFile = (file: File | undefined) => {
 		if (!file) {
@@ -66,16 +65,29 @@ export function GroupIconUpload({
 		onChange(file);
 	};
 
-	const hasPreview = Boolean(previewUrl);
-	const trimmedName = displayName.trim();
-	const initials = trimmedName ? groupInitials(trimmedName) : null;
-	const showInitials = !hasPreview && initials !== null;
-	const showCameraOnHover = hasPreview || showInitials;
+	const remoteLogoUrl = logoUrl.trim();
+	const hasFilePreview = Boolean(previewUrl);
+	const hasRemotePreview = !hasFilePreview && remoteLogoUrl !== "";
+	const hasPreview = hasFilePreview || hasRemotePreview;
+	const previewSrc = hasFilePreview ? previewUrl! : remoteLogoUrl;
+	const showCameraOnHover = hasPreview;
+	const showRemoveBadge = hasFilePreview || hasRemotePreview;
+
+	const clearPhoto = () => {
+		setError(null);
+		if (hasFilePreview) {
+			onChange(null);
+			return;
+		}
+		if (hasRemotePreview) {
+			onClearExistingLogo?.();
+		}
+	};
 
 	return (
 		<div className={cn("flex flex-col items-center gap-2.5", className)}>
 			<div className={cn("relative flex items-center justify-center", OUTER_CLASS)}>
-				{!hasPreview && !showInitials ? (
+				{!hasPreview ? (
 					<svg
 						className="pointer-events-none absolute inset-0 text-foreground/15 dark:text-foreground/25"
 						viewBox="0 0 108 108"
@@ -116,16 +128,8 @@ export function GroupIconUpload({
 					onClick={() => inputRef.current?.click()}
 				>
 					{hasPreview ? (
-						// eslint-disable-next-line @next/next/no-img-element -- local blob preview
-						<img src={previewUrl!} alt="" className="h-full w-full object-cover" />
-					) : null}
-					{showInitials ? (
-						<span
-							className="absolute inset-0 flex items-center justify-center bg-[color-mix(in_oklch,var(--primary)_12%,var(--field))] text-lg font-semibold tracking-tight text-foreground/80 sm:text-xl"
-							aria-hidden
-						>
-							{initials}
-						</span>
+						// eslint-disable-next-line @next/next/no-img-element -- blob or CDN logo
+						<img src={previewSrc} alt="" className="h-full w-full object-cover" />
 					) : null}
 					<span
 						className="pointer-events-none absolute inset-0 flex items-center justify-center"
@@ -153,7 +157,7 @@ export function GroupIconUpload({
 					</span>
 				</button>
 
-				{hasPreview ? (
+				{showRemoveBadge ? (
 					<button
 						type="button"
 						className={cn(

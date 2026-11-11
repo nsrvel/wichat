@@ -34,11 +34,7 @@ export function GroupRailStubSubmenu({ label, sublabel }: GroupRailStubSubmenuPr
 				<ChevronRight className={menuChevronClass} aria-hidden />
 			</ContextMenu.SubmenuTrigger>
 			<ContextMenu.Portal>
-				<ContextMenu.Positioner
-					className={menuPositionerClass}
-					alignOffset={-4}
-					sideOffset={-4}
-				>
+				<ContextMenu.Positioner className={menuPositionerClass} alignOffset={-4} sideOffset={-4}>
 					<ContextMenu.Popup className={menuPopupClass}>
 						<ContextMenu.Item className={menuItemClass} disabled>
 							{t("shell.group_rail_menu.submenu_placeholder")}

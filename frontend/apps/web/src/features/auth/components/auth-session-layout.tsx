@@ -49,9 +49,7 @@ export function AuthSessionLayout({
 		}
 	}, [redirectIfUnauthenticated, router, session.data, session.isPending]);
 
-	const authLoading = !mounted || session.isPending;
-
-	if (session.data) {
+	if (mounted && session.data) {
 		return <div className={authPageBackdropClass} aria-hidden suppressHydrationWarning />;
 	}
 
@@ -63,14 +61,17 @@ export function AuthSessionLayout({
 		return <p className="text-destructive p-6 text-sm">{translateError(t, session.error)}</p>;
 	}
 
+	// Session refetch must not swap the whole card — skeleton only until client mount (SSR/hydration).
+	const shellReady = mounted;
+
 	return (
 		<AuthShell
-			headline={authLoading ? loadingHeadline : headline}
-			lead={authLoading ? null : lead}
-			inviteBanner={authLoading ? null : inviteBanner}
+			headline={shellReady ? headline : loadingHeadline}
+			lead={shellReady ? lead : null}
+			inviteBanner={shellReady ? inviteBanner : null}
 			notice={notice ? t(notice, { defaultValue: t("error.unknown") }) : null}
 		>
-			{authLoading ? <AuthFormSkeleton /> : children}
+			{shellReady ? children : <AuthFormSkeleton />}
 		</AuthShell>
 	);
 }

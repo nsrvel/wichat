@@ -4,11 +4,12 @@ import { AtSign, Compass, FileText } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ConversationHeader } from "@/features/chat/components/conversation-header";
 import { toQuickViewShellNavTarget } from "@/features/channel/lib/quick-view-shell-nav-target";
+import { GroupMembersWorkspacePage } from "@/features/group-settings/components/members/group-members-workspace-page";
 import { WorkspaceComingSoonState } from "@/features/shell/components/workspace-coming-soon-state";
 import type { QuickViewId } from "@/lib/app-routes";
 
 const QUICK_VIEW_META: Record<
-	QuickViewId,
+	Exclude<QuickViewId, "members">,
 	{ labelKey: string; descriptionKey: string; icon: typeof AtSign }
 > = {
 	mentions: {
@@ -35,8 +36,12 @@ type QuickViewRoutePageProps = {
 };
 
 export function QuickViewRoutePage({ groupId, quickView, onOpenSidebar }: QuickViewRoutePageProps) {
-	void groupId;
 	const { t } = useTranslation();
+
+	if (quickView === "members") {
+		return <GroupMembersWorkspacePage groupId={groupId} />;
+	}
+
 	const meta = QUICK_VIEW_META[quickView];
 	const label = t(meta.labelKey);
 	const active = toQuickViewShellNavTarget(quickView, label);

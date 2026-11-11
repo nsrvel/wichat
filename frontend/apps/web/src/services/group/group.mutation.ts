@@ -10,6 +10,8 @@ import {
 	joinGroup,
 	leaveGroup,
 	reorderMyGroups,
+	saveGroupProfile,
+	type SaveGroupProfileInput,
 } from "@/services/group/group.service";
 
 export function useCreateGroupMutation() {
@@ -63,9 +65,7 @@ export function useReorderMyGroupsMutation() {
 			const previous = queryClient.getQueryData<Group[]>([Q_MY_GROUPS]);
 			if (previous) {
 				const byId = new Map(previous.map((g) => [g.id, g]));
-				const reordered = groupIds
-					.map((id) => byId.get(id))
-					.filter((g): g is Group => g != null);
+				const reordered = groupIds.map((id) => byId.get(id)).filter((g): g is Group => g != null);
 				if (reordered.length === previous.length) {
 					queryClient.setQueryData<Group[]>([Q_MY_GROUPS], reordered);
 				}
@@ -78,6 +78,22 @@ export function useReorderMyGroupsMutation() {
 			}
 		},
 		onSettled: () => {
+			void queryClient.invalidateQueries({ queryKey: [Q_MY_GROUPS] });
+		},
+	});
+}
+
+export function useSaveGroupProfileMutation() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: ({ groupId, input }: { groupId: string; input: SaveGroupProfileInput }) =>
+			saveGroupProfile(groupId, input),
+		onSuccess: (group) => {
+			queryClient.setQueryData<Group[]>([Q_MY_GROUPS], (prev) =>
+				(prev ?? []).map((g) =>
+					g.id === group.id ? { ...g, ...group, role: g.role ?? group.role } : g,
+				),
+			);
 			void queryClient.invalidateQueries({ queryKey: [Q_MY_GROUPS] });
 		},
 	});

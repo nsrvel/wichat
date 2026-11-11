@@ -52,9 +52,11 @@ export function WorkspacePanel({
 	}, [width, setSidebarWidth]);
 
 	const sidebarNode =
-		sidebar != null
-			? sidebarWithPanelWidth(sidebar, width)
-			: <ChannelSidebar layout="list" width={width} panelResizeHandle />;
+		sidebar != null ? (
+			sidebarWithPanelWidth(sidebar, width)
+		) : (
+			<ChannelSidebar layout="list" width={width} panelResizeHandle />
+		);
 
 	return (
 		<div className="relative flex h-full min-h-0 min-w-0 flex-col overflow-hidden">

@@ -29,6 +29,8 @@ type WiChatDialogProps = {
 	closeLabel?: string;
 	children: ReactNode;
 	className?: string;
+	/** Stack above group settings overlay (`z-[60]`). */
+	elevated?: boolean;
 };
 
 export function WiChatDialog({
@@ -38,6 +40,7 @@ export function WiChatDialog({
 	closeLabel,
 	children,
 	className,
+	elevated,
 }: WiChatDialogProps) {
 	const { t } = useTranslation();
 	const label = closeLabel ?? t("dialog.close");
@@ -47,7 +50,12 @@ export function WiChatDialog({
 	}
 
 	return (
-		<div className="fixed inset-0 z-50 grid place-items-center p-4 sm:p-6">
+		<div
+			className={cn(
+				"fixed inset-0 grid place-items-center p-4 sm:p-6",
+				elevated ? "z-[70]" : "z-50",
+			)}
+		>
 			<button
 				type="button"
 				className="absolute inset-0 bg-black/50"
@@ -199,7 +207,13 @@ type WiChatDialogBodyProps = {
 
 export function WiChatDialogBody({ children, className }: WiChatDialogBodyProps) {
 	return (
-		<div className={cn(authCardInsetXClass, "min-h-0 overflow-y-auto overscroll-contain", className)}>
+		<div
+			className={cn(
+				authCardInsetXClass,
+				"overlay-scroll min-h-0 overflow-y-auto overscroll-contain",
+				className,
+			)}
+		>
 			{children}
 		</div>
 	);

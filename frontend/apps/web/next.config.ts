@@ -6,8 +6,7 @@ import { remotePatternsFromPublicUrls } from "./src/lib/image-remote-patterns";
 // next.config runs before Next injects .env.local into process.env — load explicitly for images.remotePatterns.
 loadEnvConfig(process.cwd());
 
-const gatewayProxy =
-	process.env.API_GATEWAY_PROXY_TARGET?.trim() || "http://127.0.0.1:3000";
+const gatewayProxy = process.env.API_GATEWAY_PROXY_TARGET?.trim() || "http://127.0.0.1:3000";
 
 const isDev = process.env.NODE_ENV === "development";
 
@@ -32,7 +31,10 @@ const nextConfig: NextConfig = {
 		}
 		return [
 			// Public object bucket (group icons) — same-origin for next/image + <img>
-			{ source: "/wichat-public/:path*", destination: "http://127.0.0.1:9000/wichat-public/:path*" },
+			{
+				source: "/wichat-public/:path*",
+				destination: "http://127.0.0.1:9000/wichat-public/:path*",
+			},
 			// Dev: browser calls same origin (:8080) — no CORS preflight for DELETE etc.
 			{ source: "/api/:path*", destination: `${gatewayProxy}/api/:path*` },
 		];

@@ -6,10 +6,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import {
-	canManageGroup,
-	isGroupMember,
-} from "@/features/shell/lib/group-permissions";
+import { canManageGroup, isGroupMember } from "@/features/shell/lib/group-permissions";
 import { translateError } from "@/integrations/i18n/translate-error";
 import { APP_HOME_PATH, channelPath } from "@/lib/app-routes";
 import { clearLastChannelIfGroup } from "@/lib/last-channel-storage";

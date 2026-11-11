@@ -1,8 +1,4 @@
-export function railOrderMove(
-	ids: string[],
-	targetId: string,
-	where: "first" | "last",
-): string[] {
+export function railOrderMove(ids: string[], targetId: string, where: "first" | "last"): string[] {
 	if (!ids.includes(targetId)) {
 		return ids;
 	}

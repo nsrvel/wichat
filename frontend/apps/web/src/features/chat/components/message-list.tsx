@@ -15,7 +15,7 @@ type MessageListProps = {
 
 export function MessageList({ children, scrollRef, className, innerClassName }: MessageListProps) {
 	return (
-		<div ref={scrollRef} className={cn("flex-1 overflow-y-auto thin-scroll", className)}>
+		<div ref={scrollRef} className={cn("overlay-scroll flex-1 overflow-y-auto", className)}>
 			<div className={cn(MESSAGE_LIST_GUTTER_CLASS, innerClassName)}>{children}</div>
 		</div>
 	);

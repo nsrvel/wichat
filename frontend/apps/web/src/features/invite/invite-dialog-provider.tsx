@@ -1,14 +1,7 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import {
-	createContext,
-	useCallback,
-	useContext,
-	useMemo,
-	useState,
-	type ReactNode,
-} from "react";
+import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 import { InviteDialog } from "@/features/invite/components/invite-dialog";
 import type { InviteTarget } from "@/features/invite/lib/invite-target";
 import { groupMembersQueryOpts } from "@/services/invite/invite.query";
@@ -45,10 +38,7 @@ export function InviteDialogProvider({ children }: { children: ReactNode }) {
 		}
 	}, []);
 
-	const value = useMemo(
-		() => ({ openInvite, closeInvite }),
-		[openInvite, closeInvite],
-	);
+	const value = useMemo(() => ({ openInvite, closeInvite }), [openInvite, closeInvite]);
 
 	return (
 		<InviteDialogContext.Provider value={value}>

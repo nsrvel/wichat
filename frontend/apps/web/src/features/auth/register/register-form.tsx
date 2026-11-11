@@ -56,7 +56,7 @@ function toRegisterRequest(values: RegisterFormValues, locale: string): Register
 	};
 }
 
-export function RegisterForm({ inviteToken }: { inviteToken?: string }) {
+export function RegisterForm({ authReturnTo = "/" }: { authReturnTo?: string }) {
 	const { t, i18n } = useTranslation();
 	const router = useRouter();
 	const register = useRegisterMutation();
@@ -105,7 +105,7 @@ export function RegisterForm({ inviteToken }: { inviteToken?: string }) {
 					resend.reset();
 					verify.mutate(
 						{ challenge_id: challenge.challenge_id, code },
-						{ onSuccess: () => router.push(postAuthRedirectPath(inviteToken)) },
+						{ onSuccess: () => router.push(postAuthRedirectPath(authReturnTo)) },
 					);
 				}}
 			/>
@@ -124,7 +124,7 @@ export function RegisterForm({ inviteToken }: { inviteToken?: string }) {
 								setResendCooldown(step.challenge.resend_after_seconds);
 								return;
 							}
-							router.push(postAuthRedirectPath(inviteToken));
+							router.push(postAuthRedirectPath(authReturnTo));
 						},
 					});
 				})}

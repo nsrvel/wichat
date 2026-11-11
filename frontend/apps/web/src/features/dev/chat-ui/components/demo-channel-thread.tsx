@@ -5,7 +5,11 @@ import {
 	MentionToneProvider,
 	MessageMentionText,
 } from "@/features/dev/chat-ui/lib/mention-text";
-import { demoAvatar, demoMentionHandles, demoName } from "@/features/dev/chat-ui/lib/demo-channel-messages";
+import {
+	demoAvatar,
+	demoMentionHandles,
+	demoName,
+} from "@/features/dev/chat-ui/lib/demo-channel-messages";
 import {
 	DemoAddReaction,
 	DemoReaction,
@@ -56,7 +60,12 @@ export function DemoChannelThread() {
 				</p>
 			</MessageRow>
 
-			<MessageRow authorDisplayName={demoName.self} authorAvatarUrl={demoAvatar.self} timeLabel="2 hari lalu" mine>
+			<MessageRow
+				authorDisplayName={demoName.self}
+				authorAvatarUrl={demoAvatar.self}
+				timeLabel="2 hari lalu"
+				mine
+			>
 				<p>
 					Mantap. Nanti tab Chat / Pinned / Shared juga jangan sampai geser alignment-nya pas resize
 					sidebar. Kemarin sempat aneh pas nav stretch.
@@ -76,8 +85,8 @@ export function DemoChannelThread() {
 			>
 				<MentionToneProvider tone="incoming">
 					<p>
-						Compose bar-nya udah mirip Slack — satu baris, warna bubble. Tinggal wiring kirim pesan ke
-						ms-chat kalau gateway-nya ready.
+						Compose bar-nya udah mirip Slack — satu baris, warna bubble. Tinggal wiring kirim pesan
+						ke ms-chat kalau gateway-nya ready.
 					</p>
 					<p className="mt-[9px]">
 						<MessageMentionText
@@ -88,7 +97,11 @@ export function DemoChannelThread() {
 				</MentionToneProvider>
 			</MessageRow>
 
-			<MessageRow authorAvatarUrl={demoAvatar.yanto} authorDisplayName={demoName.yanto} timeLabel="5 jam lalu">
+			<MessageRow
+				authorAvatarUrl={demoAvatar.yanto}
+				authorDisplayName={demoName.yanto}
+				timeLabel="5 jam lalu"
+			>
 				<MentionToneProvider tone="incoming">
 					<p>
 						<MessageMentionText
@@ -112,15 +125,19 @@ export function DemoChannelThread() {
 				}
 			>
 				<p>
-					Oke semua. Isi channel WiChat sekarang pakai kita bertiga aja biar realistis — avatar ngikut
-					sidebar. Next slice: websocket + history scroll.
+					Oke semua. Isi channel WiChat sekarang pakai kita bertiga aja biar realistis — avatar
+					ngikut sidebar. Next slice: websocket + history scroll.
 				</p>
 			</MessageRow>
 
-			<MessageRow authorAvatarUrl={demoAvatar.yadi} authorDisplayName={demoName.yadi} timeLabel="1 jam lalu">
+			<MessageRow
+				authorAvatarUrl={demoAvatar.yadi}
+				authorDisplayName={demoName.yadi}
+				timeLabel="1 jam lalu"
+			>
 				<p>
-					Sip, lanjut pelan-pelan. Kalau ada yang blocking di port lokal kabarin di sini aja, jangan di
-					thread lain biar ke-track.
+					Sip, lanjut pelan-pelan. Kalau ada yang blocking di port lokal kabarin di sini aja, jangan
+					di thread lain biar ke-track.
 				</p>
 			</MessageRow>
 		</>

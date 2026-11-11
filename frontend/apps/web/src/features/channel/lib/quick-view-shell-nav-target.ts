@@ -5,6 +5,7 @@ const QUICK_VIEW_NAV_IDS: Record<QuickViewId, string> = {
 	mentions: "qv-mentions",
 	discover: "qv-discover",
 	drafts: "qv-drafts",
+	members: "qv-members",
 };
 
 export function toQuickViewShellNavTarget(view: QuickViewId, label: string): ShellNavTarget {

@@ -27,7 +27,13 @@ function GoogleIcon() {
 	);
 }
 
-export function GoogleButton({ label }: { label: string }) {
+export function GoogleButton({
+	label,
+	authReturnTo = "/",
+}: {
+	label: string;
+	authReturnTo?: string;
+}) {
 	return (
 		<button
 			type="button"
@@ -36,7 +42,7 @@ export function GoogleButton({ label }: { label: string }) {
 				"inline-flex cursor-pointer items-center justify-center gap-2 px-2.5 font-medium sm:gap-2.5 sm:px-3 [&_svg]:shrink-0",
 			)}
 			onClick={() => {
-				window.location.assign(googleStartUrl());
+				window.location.assign(googleStartUrl(authReturnTo));
 			}}
 		>
 			<GoogleIcon />

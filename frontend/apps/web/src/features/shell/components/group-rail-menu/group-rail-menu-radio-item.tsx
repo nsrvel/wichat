@@ -14,11 +14,7 @@ export function GroupRailMenuRadioItem({ label, value }: GroupRailMenuRadioItemP
 	const { RadioItem } = useGroupMenuKit();
 
 	return (
-		<RadioItem
-			className={cn(menuRadioItemClass, "group/radio")}
-			value={value}
-			closeOnClick={false}
-		>
+		<RadioItem className={cn(menuRadioItemClass, "group/radio")} value={value} closeOnClick={false}>
 			<span className="min-w-0 flex-1 pr-1">{label}</span>
 			<MenuRadioControl />
 		</RadioItem>

@@ -12,7 +12,9 @@ export function ChannelEmptyState() {
 			</div>
 			<div className="max-w-sm space-y-1">
 				<p className="text-[15px] font-semibold text-sidebar-foreground">{t("chat.empty_title")}</p>
-				<p className="text-[13px] leading-relaxed text-muted-foreground">{t("chat.empty_description")}</p>
+				<p className="text-[13px] leading-relaxed text-muted-foreground">
+					{t("chat.empty_description")}
+				</p>
 			</div>
 		</div>
 	);

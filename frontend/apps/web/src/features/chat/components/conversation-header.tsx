@@ -37,6 +37,7 @@ export function ConversationHeader({
 }: ConversationHeaderProps) {
 	const [tab, setTab] = useState<ConversationTab>("Chat");
 	const selfDm = isSelfDm(active);
+	const membersQuickView = active.kind === "quickView" && active.id === "qv-members";
 	return (
 		<div
 			className={cn(
@@ -67,57 +68,64 @@ export function ConversationHeader({
 				</span>
 			</div>
 
-			<ConversationTabNav>
-				{CONVERSATION_TABS.map((label) => {
-					const selected = tab === label;
-					return (
-						<ConversationTabRow key={label} selected={selected}>
-							<button
-								type="button"
-								onClick={() => setTab(label)}
-								className={cn(
-									"shrink-0 text-xs font-medium transition-colors lg:text-[13px]",
-									selected
-										? "text-sidebar-foreground"
-										: "text-muted-foreground hover:text-sidebar-foreground",
-								)}
-								aria-current={selected ? "page" : undefined}
-							>
-								{label}
-							</button>
-						</ConversationTabRow>
-					);
-				})}
-				<ConversationTabActionRow>
-					<WorkspaceHeaderIconButton className="shrink-0" aria-label="Add tab">
-						<Plus className="h-4 w-4" strokeWidth={2} />
-					</WorkspaceHeaderIconButton>
-				</ConversationTabActionRow>
-			</ConversationTabNav>
-
-			<div className="ml-auto flex shrink-0 items-center gap-0.5">
-				{!selfDm ? (
-					<>
-						<div className="hidden sm:flex">
-							<WorkspaceSplitIconControl mainAriaLabel="Start call" optionsAriaLabel="Call options">
-								<Phone className={workspaceHeaderIconClass} strokeWidth={2} />
-							</WorkspaceSplitIconControl>
-						</div>
-						<WorkspaceHeaderIconButton className="hidden sm:flex" aria-label="Add people">
-							<UserPlus className={workspaceHeaderIconClass} strokeWidth={2} />
+			{membersQuickView ? null : (
+				<ConversationTabNav>
+					{CONVERSATION_TABS.map((label) => {
+						const selected = tab === label;
+						return (
+							<ConversationTabRow key={label} selected={selected}>
+								<button
+									type="button"
+									onClick={() => setTab(label)}
+									className={cn(
+										"shrink-0 text-xs font-medium transition-colors lg:text-[13px]",
+										selected
+											? "text-sidebar-foreground"
+											: "text-muted-foreground hover:text-sidebar-foreground",
+									)}
+									aria-current={selected ? "page" : undefined}
+								>
+									{label}
+								</button>
+							</ConversationTabRow>
+						);
+					})}
+					<ConversationTabActionRow>
+						<WorkspaceHeaderIconButton className="shrink-0" aria-label="Add tab">
+							<Plus className="h-4 w-4" strokeWidth={2} />
 						</WorkspaceHeaderIconButton>
-					</>
-				) : null}
-				<WorkspaceHeaderIconButton aria-label="Search in conversation">
-					<Search className={workspaceHeaderIconClass} strokeWidth={2} />
-				</WorkspaceHeaderIconButton>
-				<WorkspaceHeaderIconButton className="hidden lg:flex" aria-label="Open details panel">
-					<PanelRight className={workspaceHeaderIconClass} strokeWidth={2} />
-				</WorkspaceHeaderIconButton>
-				<WorkspaceHeaderIconButton aria-label="More actions">
-					<MoreHorizontal className={workspaceHeaderIconClass} strokeWidth={2} />
-				</WorkspaceHeaderIconButton>
-			</div>
+					</ConversationTabActionRow>
+				</ConversationTabNav>
+			)}
+
+			{membersQuickView ? null : (
+				<div className="ml-auto flex shrink-0 items-center gap-0.5">
+					{!selfDm ? (
+						<>
+							<div className="hidden sm:flex">
+								<WorkspaceSplitIconControl
+									mainAriaLabel="Start call"
+									optionsAriaLabel="Call options"
+								>
+									<Phone className={workspaceHeaderIconClass} strokeWidth={2} />
+								</WorkspaceSplitIconControl>
+							</div>
+							<WorkspaceHeaderIconButton className="hidden sm:flex" aria-label="Add people">
+								<UserPlus className={workspaceHeaderIconClass} strokeWidth={2} />
+							</WorkspaceHeaderIconButton>
+						</>
+					) : null}
+					<WorkspaceHeaderIconButton aria-label="Search in conversation">
+						<Search className={workspaceHeaderIconClass} strokeWidth={2} />
+					</WorkspaceHeaderIconButton>
+					<WorkspaceHeaderIconButton className="hidden lg:flex" aria-label="Open details panel">
+						<PanelRight className={workspaceHeaderIconClass} strokeWidth={2} />
+					</WorkspaceHeaderIconButton>
+					<WorkspaceHeaderIconButton aria-label="More actions">
+						<MoreHorizontal className={workspaceHeaderIconClass} strokeWidth={2} />
+					</WorkspaceHeaderIconButton>
+				</div>
+			)}
 		</div>
 	);
 }

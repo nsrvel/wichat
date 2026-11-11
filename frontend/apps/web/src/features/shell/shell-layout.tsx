@@ -11,6 +11,7 @@ import { WorkspacePanel } from "@/components/layout/workspace-panel";
 import { ProductionChannelSidebar } from "@/features/channel/components/production-channel-sidebar";
 import type { QuickViewId } from "@/lib/app-routes";
 import { GroupOnboardingProvider } from "@/features/group/group-onboarding-provider";
+import { GroupSettingsProvider } from "@/features/group-settings/group-settings-provider";
 import { InviteDialogProvider } from "@/features/invite/invite-dialog-provider";
 import { useRedeemInviteFromQuery } from "@/features/invite/hooks/use-redeem-invite";
 import { ShellGroupRail } from "@/features/shell/shell-group-rail";
@@ -60,7 +61,7 @@ export function ShellLayout({ children, groupId, channelId, quickView }: ShellLa
 										/>
 									}
 								>
-									{children}
+									<ShellMembershipGate groupId={groupId}>{children}</ShellMembershipGate>
 								</WorkspacePanel>
 							) : (
 								children
@@ -75,8 +76,10 @@ export function ShellLayout({ children, groupId, channelId, quickView }: ShellLa
 	return (
 		<GroupOnboardingProvider>
 			<InviteDialogProvider>
-				<ShellInviteEffects />
-				{groupId ? <ShellMembershipGate groupId={groupId}>{chrome}</ShellMembershipGate> : chrome}
+				<GroupSettingsProvider>
+					<ShellInviteEffects />
+					{chrome}
+				</GroupSettingsProvider>
 			</InviteDialogProvider>
 		</GroupOnboardingProvider>
 	);

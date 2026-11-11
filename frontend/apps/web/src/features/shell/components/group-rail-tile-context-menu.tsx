@@ -38,42 +38,42 @@ export function GroupRailTileContextMenu({
 
 	return (
 		<>
-		<LeaveGroupConfirmDialog
-			group={group}
-			open={controller.leaveDialogOpen}
-			onOpenChange={controller.setLeaveDialogOpen}
-			onConfirm={controller.confirmLeave}
-			confirmDisabled={controller.leavePending}
-		/>
-		<ContextMenu.Root
-			actionsRef={menuActionsRef}
-			onOpenChange={(open) => {
-				if (!open) {
-					controller.resetMenuState();
-				}
-			}}
-		>
-			<ContextMenu.Trigger
-				className="flex items-center justify-center"
-				{...{ [WICHAT_CONTEXT_MENU_ATTR]: "" }}
+			<LeaveGroupConfirmDialog
+				group={group}
+				open={controller.leaveDialogOpen}
+				onOpenChange={controller.setLeaveDialogOpen}
+				onConfirm={controller.confirmLeave}
+				confirmDisabled={controller.leavePending}
+			/>
+			<ContextMenu.Root
+				actionsRef={menuActionsRef}
+				onOpenChange={(open) => {
+					if (!open) {
+						controller.resetMenuState();
+					}
+				}}
 			>
-				{children}
-			</ContextMenu.Trigger>
-			<ContextMenu.Portal>
-				<ContextMenu.Positioner className={menuPositionerClass}>
-					<ContextMenu.Popup className={menuPopupClass}>
-						<GroupMenuKitProvider kit={contextMenuKit}>
-							<GroupMenuContent
-								group={group}
-								orderedGroupIds={orderedGroupIds}
-								closeMenu={closeMenu}
-								controller={controller}
-							/>
-						</GroupMenuKitProvider>
-					</ContextMenu.Popup>
-				</ContextMenu.Positioner>
-			</ContextMenu.Portal>
-		</ContextMenu.Root>
+				<ContextMenu.Trigger
+					className="flex items-center justify-center"
+					{...{ [WICHAT_CONTEXT_MENU_ATTR]: "" }}
+				>
+					{children}
+				</ContextMenu.Trigger>
+				<ContextMenu.Portal>
+					<ContextMenu.Positioner className={menuPositionerClass}>
+						<ContextMenu.Popup className={menuPopupClass}>
+							<GroupMenuKitProvider kit={contextMenuKit}>
+								<GroupMenuContent
+									group={group}
+									orderedGroupIds={orderedGroupIds}
+									closeMenu={closeMenu}
+									controller={controller}
+								/>
+							</GroupMenuKitProvider>
+						</ContextMenu.Popup>
+					</ContextMenu.Positioner>
+				</ContextMenu.Portal>
+			</ContextMenu.Root>
 		</>
 	);
 }

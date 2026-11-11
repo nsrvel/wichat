@@ -17,6 +17,7 @@ const QUICK_VIEW_LABEL_KEYS: Record<QuickViewId, string> = {
 	mentions: "shell.sidebar.mentions",
 	discover: "shell.sidebar.discover",
 	drafts: "shell.sidebar.drafts",
+	members: "group_settings.nav.members",
 };
 
 type WorkspacePanelHeaderRowProps = {

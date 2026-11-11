@@ -151,6 +151,11 @@
 	--shell-rail-motion-ease: cubic-bezier(0.33, 1, 0.68, 1);
 	--shell-rail-content-duration: 200ms;
 	--shell-rail-content-delay-open: 70ms;
+	/* Scrollbars — track is always transparent; thumb follows theme */
+	--scrollbar-size: 6px;
+	--scrollbar-thumb: color-mix(in oklch, var(--muted-foreground) 42%, transparent);
+	--scrollbar-thumb-hover: color-mix(in oklch, var(--muted-foreground) 62%, transparent);
+	--scrollbar-thumb-subtle: color-mix(in oklch, var(--muted-foreground) 26%, transparent);
 }
 
 .dark {
@@ -215,6 +220,9 @@
 	--shadow-elevated: 0 8px 30px rgb(0 0 0 / 0.3);
 	--shadow-elevated-lg: 0 8px 30px rgb(0 0 0 / 0.3);
 	--focus-ring: oklch(1 0 0 / 15%);
+	--scrollbar-thumb: color-mix(in oklch, var(--muted-foreground) 50%, transparent);
+	--scrollbar-thumb-hover: color-mix(in oklch, var(--muted-foreground) 72%, transparent);
+	--scrollbar-thumb-subtle: color-mix(in oklch, var(--muted-foreground) 32%, transparent);
 }
 
 @layer components {
@@ -241,27 +249,63 @@
 	}
 }
 
-/* Shell / chat scrollbars + composer caret */
-.thin-scroll::-webkit-scrollbar {
-	width: 5px;
-}
-.thin-scroll::-webkit-scrollbar-track {
-	background: transparent;
-}
-.thin-scroll::-webkit-scrollbar-thumb {
-	background: #d4d4d8;
-	border-radius: 999px;
-}
-.thin-scroll {
+/* Shared scrollbars (shell, chat, settings) — opt-in via class, never on `*` */
+.thin-scroll,
+.overlay-scroll {
 	scrollbar-width: thin;
-	scrollbar-color: #d4d4d8 transparent;
 }
 
-.dark .thin-scroll::-webkit-scrollbar-thumb {
-	background: oklch(0.4 0 0);
+.thin-scroll {
+	scrollbar-color: var(--scrollbar-thumb) transparent;
 }
-.dark .thin-scroll {
-	scrollbar-color: oklch(0.4 0 0) transparent;
+
+.overlay-scroll {
+	scrollbar-color: var(--scrollbar-thumb-subtle) transparent;
+}
+
+.overlay-scroll:hover {
+	scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+.thin-scroll::-webkit-scrollbar,
+.overlay-scroll::-webkit-scrollbar {
+	width: var(--scrollbar-size);
+	height: var(--scrollbar-size);
+}
+
+.thin-scroll::-webkit-scrollbar-track,
+.overlay-scroll::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+.thin-scroll::-webkit-scrollbar-thumb,
+.overlay-scroll::-webkit-scrollbar-thumb {
+	background: var(--scrollbar-thumb);
+	border: 2px solid transparent;
+	border-radius: 999px;
+	background-clip: padding-box;
+}
+
+.thin-scroll::-webkit-scrollbar-thumb:hover,
+.overlay-scroll::-webkit-scrollbar-thumb:hover {
+	background: var(--scrollbar-thumb-hover);
+	background-clip: padding-box;
+}
+
+.overlay-scroll::-webkit-scrollbar-thumb {
+	background: var(--scrollbar-thumb-subtle);
+}
+
+.overlay-scroll:hover::-webkit-scrollbar-thumb {
+	background: var(--scrollbar-thumb);
+}
+
+.scrollbar-none {
+	scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+	display: none;
 }
 
 @keyframes caret-blink {
@@ -276,4 +320,33 @@
 }
 .caret-blink {
 	animation: caret-blink 1.1s step-end infinite;
+}
+
+@keyframes group-settings-footer-nudge {
+	0%,
+	100% {
+		transform: translateX(0);
+	}
+	18% {
+		transform: translateX(-5px);
+	}
+	36% {
+		transform: translateX(5px);
+	}
+	54% {
+		transform: translateX(-3px);
+	}
+	72% {
+		transform: translateX(3px);
+	}
+}
+
+.group-settings-footer-nudge {
+	animation: group-settings-footer-nudge 0.42s ease-in-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.group-settings-footer-nudge {
+		animation: none;
+	}
 }

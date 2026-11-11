@@ -1,6 +1,7 @@
 "use client";
 
-import { AtSign, Compass, FileText } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { AtSign, Compass, FileText, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -23,7 +24,7 @@ import { cn } from "@/lib/utils";
 import { formatChannelDisplayName } from "@/features/channel/lib/channel-display";
 import { partitionChannelsBySidebarSection } from "@/features/channel/lib/partition-group-channels";
 import * as channelQuery from "@/services/channel/channel.query";
-import { useQuery } from "@tanstack/react-query";
+import { myGroupsQueryOpts } from "@/services/group/group.query";
 
 type ProductionChannelSidebarProps = {
 	groupId: string;
@@ -43,6 +44,8 @@ export function ProductionChannelSidebar({
 	const { t } = useTranslation();
 	const router = useRouter();
 	const channels = useQuery(channelQuery.groupChannelsQueryOpts(groupId));
+	const { data: myGroups = [] } = useQuery(myGroupsQueryOpts());
+	const isGroupOwner = myGroups.some((g) => g.id === groupId && g.role === "owner");
 
 	const embeddedInPanel = controlledWidth !== undefined;
 	const { width: internalWidth } = useResizableSidebarWidth(!embeddedInPanel);
@@ -106,6 +109,17 @@ export function ProductionChannelSidebar({
 									icon={<FileText className={sidebarNavGlyphIconClass} strokeWidth={2} />}
 									label={t("shell.sidebar.drafts")}
 								/>
+								{isGroupOwner ? (
+									<SidebarNavItem
+										menuId="qv-members"
+										activeMenuId={activeMenuId}
+										onActiveMenuIdChange={setActiveMenuId}
+										selected={activeQuickView === "members"}
+										onSelect={() => router.push(quickViewPath(groupId, "members"))}
+										icon={<Users className={sidebarNavGlyphIconClass} strokeWidth={2} />}
+										label={t("shell.sidebar.members")}
+									/>
+								) : null}
 							</nav>
 						) : null}
 					</div>
@@ -141,7 +155,9 @@ export function ProductionChannelSidebar({
 									))}
 								</div>
 							) : (
-								<SidebarCategoryEmptyHint>{t("shell.sidebar.empty_favorites")}</SidebarCategoryEmptyHint>
+								<SidebarCategoryEmptyHint>
+									{t("shell.sidebar.empty_favorites")}
+								</SidebarCategoryEmptyHint>
 							)
 						) : null}
 					</div>
@@ -177,7 +193,9 @@ export function ProductionChannelSidebar({
 									))}
 								</div>
 							) : channels.isPending ? null : (
-								<SidebarCategoryEmptyHint>{t("shell.sidebar.empty_channels")}</SidebarCategoryEmptyHint>
+								<SidebarCategoryEmptyHint>
+									{t("shell.sidebar.empty_channels")}
+								</SidebarCategoryEmptyHint>
 							)
 						) : null}
 					</div>

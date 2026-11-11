@@ -12,7 +12,6 @@ import {
 	login,
 	logout,
 	register,
-	registerGuest,
 	resendLoginCode,
 	resendRegisterCode,
 	verifyLogin,
@@ -74,17 +73,6 @@ export function useVerifyRegisterMutation() {
 
 export function useResendRegisterCodeMutation() {
 	return useMutation({ mutationFn: resendRegisterCode });
-}
-
-export function useRegisterGuestMutation() {
-	const queryClient = useQueryClient();
-	return useMutation({
-		mutationFn: registerGuest,
-		onSuccess: (session) => {
-			queryClient.setQueryData([Q_SESSION], session.user);
-			void queryClient.invalidateQueries({ queryKey: [Q_INSTANCE_POLICY] });
-		},
-	});
 }
 
 export function useForgotPasswordRequestMutation() {

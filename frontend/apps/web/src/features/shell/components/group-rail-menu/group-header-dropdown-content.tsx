@@ -21,6 +21,7 @@ import {
 	menuItemClass,
 	menuSeparatorClass,
 } from "@/features/shell/components/group-rail-menu/menu-chrome";
+import { useGroupSettings } from "@/features/group-settings/group-settings-provider";
 import { useInviteDialog } from "@/features/invite/invite-dialog-provider";
 import type { useGroupMenuController } from "@/features/shell/components/group-rail-menu/use-group-menu-controller";
 
@@ -40,6 +41,22 @@ export function GroupHeaderDropdownContent({
 	const { t } = useTranslation();
 	const kit = useGroupMenuKit();
 	const { openInvite } = useInviteDialog();
+	const { openGroupSettings } = useGroupSettings();
+
+	const openGroupSettingsForGroup = () => {
+		openGroupSettings({
+			groupId: group.id,
+			groupName: group.name,
+			logoUrl: group.logo_url,
+			description: group.description,
+			bannerUrl: group.banner_url,
+			bannerColor: group.banner_color,
+			isPrivate: group.is_private,
+			role: group.role,
+			section: "profile",
+		});
+		closeMenu();
+	};
 	const {
 		manage,
 		showMemberLeave,
@@ -70,7 +87,7 @@ export function GroupHeaderDropdownContent({
 			{manage ? (
 				<>
 					<kit.Separator className={menuSeparatorClass} />
-					<kit.Item className={menuItemClass} onClick={showComingSoon}>
+					<kit.Item className={menuItemClass} onClick={openGroupSettingsForGroup}>
 						<Settings className={menuIconClass} aria-hidden />
 						{t("shell.group_header_menu.group_settings")}
 					</kit.Item>
@@ -102,10 +119,17 @@ export function GroupHeaderDropdownContent({
 				<Shield className={menuIconClass} aria-hidden />
 				{t("shell.group_rail_menu.privacy_settings")}
 			</kit.Item>
-			<kit.Item className={menuItemClass} onClick={showComingSoon}>
-				<Pencil className={menuIconClass} aria-hidden />
-				{t("shell.group_rail_menu.edit_group_profile")}
-			</kit.Item>
+			{manage ? (
+				<kit.Item className={menuItemClass} onClick={openGroupSettingsForGroup}>
+					<Pencil className={menuIconClass} aria-hidden />
+					{t("shell.group_rail_menu.edit_group_profile")}
+				</kit.Item>
+			) : (
+				<kit.Item className={menuItemClass} onClick={showComingSoon}>
+					<Pencil className={menuIconClass} aria-hidden />
+					{t("shell.group_rail_menu.edit_group_profile")}
+				</kit.Item>
+			)}
 
 			{showMemberLeave ? (
 				<>

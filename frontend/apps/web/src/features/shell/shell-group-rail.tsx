@@ -11,9 +11,7 @@ import {
 	shellRailChromeState,
 } from "@/components/layout/shell-rail/shell-rail-aside";
 import { IconRailTooltipTile } from "@/components/layout/shell-rail/icon-rail-tile-button";
-import {
-	IconRailActionRow,
-} from "@/components/layout/shell-rail/icon-rail-row";
+import { IconRailActionRow } from "@/components/layout/shell-rail/icon-rail-row";
 import { ICON_RAIL_WIDTH_PX } from "@/components/layout/shell-chrome-context";
 import { useMyGroupsQuery } from "@/hooks/use-my-groups-query";
 import { channelPath } from "@/lib/app-routes";

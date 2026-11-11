@@ -55,8 +55,7 @@ export function GroupRailMoveSubmenu({
 						<kit.Item
 							className={menuItemClass}
 							disabled={
-								reorder.isPending ||
-								orderedGroupIds[orderedGroupIds.length - 1] === groupId
+								reorder.isPending || orderedGroupIds[orderedGroupIds.length - 1] === groupId
 							}
 							onClick={() => move("last")}
 						>

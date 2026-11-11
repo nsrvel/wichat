@@ -11,7 +11,6 @@ import {
 	type ForgotPasswordRequest,
 	type ForgotPasswordReset,
 	type ForgotPasswordVerify,
-	type GuestRegisterRequest,
 	type LoginRequest,
 	type PasswordAuthStep,
 	type RegisterRequest,
@@ -24,8 +23,13 @@ import { ApiError } from "@wichat/api-client/api-error";
 import { env } from "@/env";
 import { api, ensureAccessToken, setAccessToken } from "@/integrations/api-client";
 
-export function googleStartUrl() {
-	return new URL("/api/v1/auth/google", env.NEXT_PUBLIC_API_URL).toString();
+export function googleStartUrl(returnTo?: string) {
+	const url = new URL("/api/v1/auth/google", env.NEXT_PUBLIC_API_URL);
+	const next = returnTo?.trim();
+	if (next?.startsWith("/") && !next.startsWith("//")) {
+		url.searchParams.set("next", next);
+	}
+	return url.toString();
 }
 
 export async function getInstancePolicy() {
@@ -70,12 +74,6 @@ export async function resendLoginCode(payload: ResendEmailCode) {
 
 export async function resendRegisterCode(payload: ResendEmailCode) {
 	return api.post("/auth/register/resend", ResendEmailCodeResponseSchema, payload);
-}
-
-export async function registerGuest(payload: GuestRegisterRequest) {
-	const session = await api.post("/auth/register/guest", SessionSchema, payload);
-	setAccessToken(session.access_token);
-	return session;
 }
 
 export async function logout() {

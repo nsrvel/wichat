@@ -57,4 +57,3 @@ export function shellMainPaneChromeClass(railOpen: boolean, className?: string) 
 		className,
 	);
 }
-

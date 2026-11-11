@@ -21,6 +21,10 @@ export const authHeadlineInsetXClass =
 export const authHeadlineClass =
 	"w-full min-w-0 max-w-full text-pretty font-normal leading-[1.08] tracking-tight text-foreground [font-family:var(--font-serif,Georgia,serif)] text-[length:clamp(1.375rem,7.5cqi+0.35rem,2.75rem)]";
 
+/** Product / workspace titles on auth surfaces (invite group name, etc.) — sans, not marketing serif. */
+export const authProductHeadlineClass =
+	"w-full min-w-0 max-w-full text-pretty text-[length:clamp(1.5rem,6.5cqi+0.4rem,2.25rem)] font-semibold leading-tight tracking-tight text-foreground";
+
 export const authLeadClass =
 	"mx-auto w-full min-w-0 max-w-[min(100%,34ch)] text-pretty text-xs leading-relaxed font-light text-muted-foreground sm:max-w-[min(100%,38ch)] sm:text-sm md:max-w-[min(100%,42ch)] [&_p]:m-0";
 

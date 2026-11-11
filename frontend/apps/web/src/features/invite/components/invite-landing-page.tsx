@@ -1,27 +1,27 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
 	AuthShell,
-	authLeadSwitchClass,
-	authLinkClass,
 	authPageBackdropClass,
-	authSubmitClass,
 	groupOnboardingCardShellClass,
 } from "@/features/auth/components/auth-shell";
+import { InviteAcceptCard } from "@/features/invite/components/invite-accept-card";
+import { InviteAcceptCardSkeleton } from "@/features/invite/components/invite-accept-card-skeleton";
 import { translateError } from "@/integrations/i18n/translate-error";
-import { authPath } from "@/lib/auth-invite";
+import { authPathWithReturn, inviteLandingPath } from "@/lib/auth-invite";
 import { channelPath } from "@/lib/app-routes";
 import { useMounted } from "@/hooks/use-mounted";
 import * as authQuery from "@/services/auth/auth.query";
 import { Q_SESSION } from "@/services/auth/auth.key";
 import { Q_MY_GROUPS } from "@/services/group/group.key";
-import { previewInvite, redeemInvite } from "@/services/invite/invite.service";
+import { Q_INVITE_PREVIEW, invitePreviewQueryOpts } from "@/services/invite/invite.query";
+import { readInvitePreviewCache } from "@/services/invite/invite-preview-cache";
+import { redeemInvite } from "@/services/invite/invite.service";
 
 type InviteLandingPageProps = {
 	inviteToken: string;
@@ -32,15 +32,23 @@ export function InviteLandingPage({ inviteToken }: InviteLandingPageProps) {
 	const router = useRouter();
 	const queryClient = useQueryClient();
 	const mounted = useMounted();
-	const redeemStarted = useRef(false);
 
+	const token = inviteToken.trim();
 	const session = useQuery({ ...authQuery.sessionQueryOpts(), enabled: mounted });
 	const preview = useQuery({
-		queryKey: ["invite", "preview", inviteToken],
-		queryFn: () => previewInvite(inviteToken),
-		enabled: Boolean(inviteToken),
-		retry: 1,
+		...invitePreviewQueryOpts(inviteToken),
+		enabled: mounted && Boolean(token),
 	});
+
+	useEffect(() => {
+		if (!mounted || !token) {
+			return;
+		}
+		const cached = readInvitePreviewCache(token);
+		if (cached) {
+			queryClient.setQueryData([Q_INVITE_PREVIEW, token], cached);
+		}
+	}, [mounted, token, queryClient]);
 
 	const redeem = useMutation({
 		mutationFn: () => redeemInvite(inviteToken),
@@ -59,19 +67,59 @@ export function InviteLandingPage({ inviteToken }: InviteLandingPageProps) {
 		},
 	});
 
+	const returnTo = inviteLandingPath(inviteToken);
+	const authReady = mounted && !session.isPending;
+	const previewData = preview.data;
+	const previewValid = previewData?.valid === true;
+	const previewInvalid = preview.isSuccess && previewData?.valid === false;
+	const needsSignIn = authReady && !session.data && previewValid;
+
+	const sessionKnown = Boolean(session.data) || session.isPending || !authReady;
+	const showAcceptCard =
+		mounted && previewValid && Boolean(previewData) && sessionKnown && !needsSignIn;
+	const showAcceptSkeleton = !previewData && preview.isPending && !preview.isError;
+
 	useEffect(() => {
-		if (
-			!session.data ||
-			!preview.data?.valid ||
-			redeemStarted.current ||
-			redeem.isPending ||
-			redeem.isSuccess
-		) {
+		if (!needsSignIn) {
 			return;
 		}
-		redeemStarted.current = true;
+		router.replace(authPathWithReturn("/sign-in", returnTo));
+	}, [needsSignIn, returnTo, router]);
+
+	const invalidLead =
+		previewData?.reason === "expired"
+			? t("invite.landing_reason_expired")
+			: previewData?.reason === "redeemed"
+				? t("invite.landing_reason_redeemed")
+				: previewInvalid
+					? t("invite.landing_reason_not_found")
+					: null;
+
+	const headline = !mounted ? (
+		<span className="sr-only">{t("invite.landing_loading")}</span>
+	) : previewValid ? (
+		<span className="sr-only">
+			{t("invite.landing_title", { name: previewData?.group_name ?? "" })}
+		</span>
+	) : previewData ? (
+		t("invite.landing_title_invalid")
+	) : (
+		<span className="sr-only">{t("invite.landing_loading")}</span>
+	);
+
+	const lead = invalidLead ? <p className="text-sm text-muted-foreground">{invalidLead}</p> : null;
+
+	const handleAccept = () => {
+		if (!session.data) {
+			router.push(authPathWithReturn("/sign-in", returnTo));
+			return;
+		}
 		redeem.mutate();
-	}, [session.data, preview.data?.valid, redeem]);
+	};
+
+	if (needsSignIn) {
+		return <div className={authPageBackdropClass} aria-hidden suppressHydrationWarning />;
+	}
 
 	if (!inviteToken) {
 		return (
@@ -85,51 +133,22 @@ export function InviteLandingPage({ inviteToken }: InviteLandingPageProps) {
 		);
 	}
 
-	const headline = preview.data?.valid
-		? t("invite.landing_title", { name: preview.data.group_name })
-		: t("invite.landing_title_invalid");
-
-	const subtitle = preview.data?.valid
-		? preview.data.channel_name
-			? t("invite.landing_lead_channel", { channel: preview.data.channel_name })
-			: t("invite.landing_lead")
-		: preview.data?.reason === "expired"
-			? t("invite.landing_reason_expired")
-			: preview.data?.reason === "redeemed"
-				? t("invite.landing_reason_redeemed")
-				: t("invite.landing_reason_not_found");
-
-	const showAuthCta = !session.data && preview.data?.valid;
+	const showLoggedOutPreviewWait = authReady && !session.data && showAcceptSkeleton;
 
 	return (
-		<AuthShell headline={headline} lead={<p className="text-sm text-muted-foreground">{subtitle}</p>}>
-			{preview.isPending ? (
-				<p className="text-center text-sm text-muted-foreground">{t("invite.landing_loading")}</p>
-			) : null}
-			{preview.isError ? (
+		<AuthShell headline={headline} lead={lead}>
+			{preview.isError && !previewData ? (
 				<p className="text-center text-sm text-destructive">{translateError(t, preview.error)}</p>
 			) : null}
-			{session.data && preview.data?.valid ? (
-				<p className="text-center text-sm text-muted-foreground">{t("invite.landing_joining")}</p>
+			{showAcceptCard ? (
+				<InviteAcceptCard
+					preview={previewData}
+					acceptPending={redeem.isPending}
+					onAccept={handleAccept}
+				/>
 			) : null}
-			{showAuthCta ? (
-				<div className="flex flex-col gap-3">
-					<Link
-						href={authPath("/sign-up", { invite: inviteToken, flow: "register" })}
-						className={authSubmitClass}
-					>
-						{t("invite.landing_sign_up")}
-					</Link>
-					<p className={authLeadSwitchClass}>
-						<span>{t("auth.have_account")}</span>
-						<Link
-							href={authPath("/sign-in", { invite: inviteToken, as: "account" })}
-							className={authLinkClass}
-						>
-							{t("auth.to_login")}
-						</Link>
-					</p>
-				</div>
+			{!showAcceptCard && (showAcceptSkeleton || showLoggedOutPreviewWait) ? (
+				<InviteAcceptCardSkeleton />
 			) : null}
 		</AuthShell>
 	);

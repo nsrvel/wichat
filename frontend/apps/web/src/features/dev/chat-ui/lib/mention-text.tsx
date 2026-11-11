@@ -54,7 +54,13 @@ export function MentionText({
 
 const MentionToneContext = createContext<MentionTone>("incoming");
 
-export function MentionToneProvider({ tone, children }: { tone: MentionTone; children: ReactNode }) {
+export function MentionToneProvider({
+	tone,
+	children,
+}: {
+	tone: MentionTone;
+	children: ReactNode;
+}) {
 	return <MentionToneContext.Provider value={tone}>{children}</MentionToneContext.Provider>;
 }
 

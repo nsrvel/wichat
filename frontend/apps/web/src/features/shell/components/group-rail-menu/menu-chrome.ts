@@ -21,16 +21,12 @@ export const menuSeparatorClass = "mx-2.5 my-2 h-px bg-border/70";
 
 export const menuHintClass = "text-[11px] font-normal leading-snug text-muted-foreground";
 
-export const submenuTriggerClass = cn(
-	menuItemClass,
-	"justify-between gap-2.5 py-2.5 pr-1.5",
-);
+export const submenuTriggerClass = cn(menuItemClass, "justify-between gap-2.5 py-2.5 pr-1.5");
 
 export const menuChevronClass = "h-3.5 w-3.5 shrink-0 text-muted-foreground/80";
 
 /** Chevron on compact dropdown triggers (group header, invite member role, …). */
-export const menuDropdownTriggerChevronClass =
-	"h-3.5 w-3.5 shrink-0 text-muted-foreground";
+export const menuDropdownTriggerChevronClass = "h-3.5 w-3.5 shrink-0 text-muted-foreground";
 
 /** Matches `WorkspaceGroupHeaderMenu` title dropdown trigger. */
 export const menuDropdownTriggerClass = cn(
@@ -53,10 +49,7 @@ export const menuCheckboxBoxClass = cn(
 	"group-data-[checked]/checkbox:border-primary group-data-[checked]/checkbox:bg-primary group-data-[checked]/checkbox:text-primary-foreground",
 );
 
-export const menuRadioItemClass = cn(
-	menuCheckboxItemClass,
-	"group/radio",
-);
+export const menuRadioItemClass = cn(menuCheckboxItemClass, "group/radio");
 
 export const menuRadioCircleClass = cn(
 	"relative box-border size-4 shrink-0 rounded-full border border-border bg-muted/30",
@@ -65,7 +58,6 @@ export const menuRadioCircleClass = cn(
 	"after:rounded-full after:bg-primary after:opacity-0 after:content-['']",
 	"group-data-[checked]/radio:after:opacity-100",
 );
-
 
 export const menuDestructiveItemClass = cn(
 	menuItemClass,

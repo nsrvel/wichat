@@ -15,9 +15,7 @@ export function IconRailSelectionBar({ selected = false, className }: IconRailSe
 			aria-hidden
 			className={cn(
 				"block w-1 shrink-0 rounded-r-full bg-sidebar-foreground transition-opacity duration-150",
-				selected
-					? "h-10 opacity-100"
-					: "h-2.5 opacity-35 group-hover:h-6 group-hover:opacity-75",
+				selected ? "h-10 opacity-100" : "h-2.5 opacity-35 group-hover:h-6 group-hover:opacity-75",
 				className,
 			)}
 		/>

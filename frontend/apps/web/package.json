@@ -22,6 +22,7 @@
 		"@t3-oss/env-nextjs": "^0.13.11",
 		"@tanstack/react-query": "^5.104.1",
 		"@tanstack/react-query-devtools": "^5.104.1",
+		"@tanstack/react-table": "^8.21.3",
 		"@wichat/api-client": "workspace:*",
 		"@wichat/contracts": "workspace:*",
 		"@wichat/i18n": "workspace:*",

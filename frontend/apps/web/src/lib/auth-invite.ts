@@ -3,7 +3,8 @@ export type AuthSearchParams = {
 	token?: string;
 	server?: string;
 	serverName?: string;
-	as?: string;
+	next?: string;
+	flow?: string;
 };
 
 export function pickInviteToken(params: AuthSearchParams): string | undefined {
@@ -16,42 +17,57 @@ export function pickServerName(params: AuthSearchParams): string | undefined {
 	return value?.trim() ? value.trim() : undefined;
 }
 
-/** Sign-in: invite link defaults to guest; `as=account` = existing member login. */
-export function resolveSignInMode(
-	inviteToken: string | undefined,
-	as: string | undefined,
-): "account" | "guest" {
-	if (!inviteToken) {
-		return "account";
+/** Safe in-app return path for post-auth redirect (invite landing, etc.). */
+export function pickAuthReturnTo(
+	params: Pick<AuthSearchParams, "next" | "invite" | "token">,
+): string {
+	const next = params.next?.trim();
+	if (next?.startsWith("/") && !next.startsWith("//")) {
+		return next;
 	}
-	return as === "account" ? "account" : "guest";
+	const invite = pickInviteToken(params);
+	if (invite) {
+		return inviteLandingPath(invite);
+	}
+	return "/";
 }
 
 export function inviteLandingPath(invite: string): string {
 	return `/invite/${encodeURIComponent(invite.trim())}`;
 }
 
-export function postAuthRedirectPath(inviteToken?: string): string {
-	if (inviteToken?.trim()) {
-		return inviteLandingPath(inviteToken);
+export function postAuthRedirectPath(returnTo?: string): string {
+	const path = returnTo?.trim();
+	if (path?.startsWith("/") && !path.startsWith("//")) {
+		return path;
 	}
 	return "/";
 }
 
+export function authPathWithReturn(
+	path: "/sign-in" | "/sign-up",
+	returnTo: string,
+	opts?: { flow?: "register"; serverName?: string },
+): string {
+	const q = new URLSearchParams();
+	q.set("next", returnTo);
+	if (opts?.flow === "register") {
+		q.set("flow", "register");
+	}
+	const serverName = opts?.serverName?.trim();
+	if (serverName) {
+		q.set("serverName", serverName);
+	}
+	return `${path}?${q.toString()}`;
+}
+
+/** @deprecated Prefer authPathWithReturn + next= */
 export function authPath(
 	path: "/sign-in" | "/sign-up",
-	opts?: { invite?: string; as?: "account"; flow?: "register" },
+	opts?: { invite?: string; flow?: "register" },
 ): string {
 	if (!opts?.invite) {
 		return path;
 	}
-	const q = new URLSearchParams();
-	q.set("invite", opts.invite);
-	if (opts.as === "account") {
-		q.set("as", "account");
-	}
-	if (opts.flow === "register") {
-		q.set("flow", "register");
-	}
-	return `${path}?${q.toString()}`;
+	return authPathWithReturn(path, inviteLandingPath(opts.invite), { flow: opts.flow });
 }
