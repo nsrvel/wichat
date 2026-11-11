@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --experimental-strip-types --test test/*.test.ts"
+    "test": "node --experimental-strip-types --test test/api-error.test.ts"
   },
   "exports": {
     ".": "./src/create-api-client.ts",

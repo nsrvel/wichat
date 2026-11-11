@@ -1,4 +1,4 @@
-import { isClientErrorCode } from "./client-error-code";
+import { isClientErrorCode } from "./client-error-code.ts";
 
 export class ApiError extends Error {
 	readonly code: string;

@@ -1,6 +1,6 @@
 import { SessionSchema } from "@wichat/contracts";
-import { ApiError } from "./api-error";
-import { refreshAccessToken, type TokenStorage } from "./token-storage";
+import { ApiError } from "./api-error.ts";
+import { refreshAccessToken, type TokenStorage } from "./token-storage.ts";
 
 type Schema<T> = { parse: (input: unknown) => T };
 
@@ -143,6 +143,19 @@ export function createApiClient({
 				schema,
 				{
 					method: "PUT",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify(body),
+				},
+				true,
+			);
+		},
+
+		async patch<T>(path: string, schema: Schema<T>, body: unknown): Promise<T> {
+			return send(
+				path,
+				schema,
+				{
+					method: "PATCH",
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify(body),
 				},

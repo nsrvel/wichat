@@ -12,7 +12,6 @@ export const UserSchema = z.object({
 	email: z.string(),
 	display_name: z.string(),
 	username: z.string().optional().default(""),
-	is_guest: z.boolean().optional().default(false),
 });
 
 export const SessionSchema = z.object({
@@ -49,7 +48,6 @@ export const RegistrationModeSchema = z.enum([
 
 export const InstancePolicySchema = z.object({
 	registration_mode: RegistrationModeSchema,
-	guest_enabled: z.boolean(),
 	username_enabled: z.boolean(),
 });
 
@@ -121,6 +119,10 @@ export const GroupSchema = z.object({
 	id: publicEntityIdSchema,
 	name: z.string(),
 	logo_url: z.string(),
+	description: z.string().default(""),
+	is_private: z.boolean().default(false),
+	banner_color: z.string().default(""),
+	banner_url: z.string().default(""),
 	default_channel_id: z.union([publicEntityIdSchema, z.literal("")]),
 	role: z.preprocess(
 		(v) => (v === "" || v == null ? undefined : v),
@@ -149,6 +151,15 @@ export const CreateGroupRequestSchema = z.object({
 	name: displayNameSchema,
 });
 
+export const UpdateGroupProfileBodySchema = z.object({
+	name: displayNameSchema,
+	description: z.string().trim().max(2000),
+	is_private: z.boolean(),
+	banner_color: z.string(),
+	clear_logo: z.boolean(),
+	clear_banner_image: z.boolean(),
+});
+
 export const ForgotPasswordRequestResponseSchema = z.object({
 	ok: z.boolean(),
 	resend_cooldown_seconds: z.number().int().nonnegative(),
@@ -168,11 +179,6 @@ export const RegisterRequestSchema = z.object({
 	display_name: displayNameSchema,
 	birth_date: birthDateSchema,
 	locale: z.string().trim().optional(),
-});
-
-export const GuestRegisterRequestSchema = z.object({
-	display_name: displayNameSchema,
-	birth_date: birthDateSchema,
 });
 
 /** @deprecated Use RegisterRequestSchema */
@@ -209,7 +215,6 @@ export type SetupStatus = InstancePolicy;
 export type RegistrationMode = z.infer<typeof RegistrationModeSchema>;
 export type LoginRequest = z.infer<typeof LoginRequestSchema>;
 export type RegisterRequest = z.infer<typeof RegisterRequestSchema>;
-export type GuestRegisterRequest = z.infer<typeof GuestRegisterRequestSchema>;
 export type SetupRequest = RegisterRequest;
 export type Channel = z.infer<typeof ChannelSchema>;
 export type ChannelsList = z.infer<typeof ChannelsListSchema>;
@@ -224,6 +229,9 @@ export function isPublicEntityId(value: string): boolean {
 	return publicEntityIdSchema.safeParse(value).success;
 }
 export type CreateGroupRequest = z.infer<typeof CreateGroupRequestSchema>;
+export type UpdateGroupProfileBody = z.infer<
+	typeof UpdateGroupProfileBodySchema
+>;
 
 export const ForgotPasswordRequestSchema = z.object({
 	email: z.email(),
@@ -257,6 +265,8 @@ export const GroupMemberSchema = z.object({
 	email: z.string(),
 	role: groupMembershipRoleSchema,
 	joined_at: z.string(),
+	/** Set when presence is on ListGroupMembers; omit when unknown. */
+	is_online: z.boolean().optional(),
 });
 
 export const GroupMembersPageSchema = z.object({
@@ -294,13 +304,24 @@ export const SendGroupInvitesResultSchema = z.object({
 	skipped: z.number().int().nonnegative(),
 });
 
-export const InvitePreviewSchema = z.object({
-	valid: z.boolean(),
-	group_name: z.string().optional(),
-	channel_name: z.string().optional(),
-	expires_at: z.string().optional(),
-	reason: z.string().optional(),
-});
+export const InvitePreviewSchema = z
+	.object({
+		valid: z.boolean(),
+		group_name: z.string().optional(),
+		channel_name: z.string().optional(),
+		group_logo_url: z.string().optional(),
+		groupLogoUrl: z.string().optional(),
+		member_count: z.number().int().nonnegative().optional(),
+		online_count: z.number().int().nonnegative().optional(),
+		expires_at: z.string().optional(),
+		reason: z.string().optional(),
+	})
+	.transform(({ groupLogoUrl, group_logo_url, ...rest }) => ({
+		...rest,
+		group_logo_url: group_logo_url ?? groupLogoUrl,
+	}));
+
+export type InvitePreview = z.infer<typeof InvitePreviewSchema>;
 
 export const RedeemInviteRequestSchema = z.object({
 	token: z.string().trim().min(1),
