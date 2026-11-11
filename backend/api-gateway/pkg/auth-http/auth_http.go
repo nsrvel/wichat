@@ -21,6 +21,9 @@ const maxBodyBytes = 1 << 20
 // MaxGroupIconBytes is the largest accepted group icon upload.
 const MaxGroupIconBytes = 5 * 1024 * 1024
 
+// MaxGroupBannerBytes is the largest accepted group banner upload.
+const MaxGroupBannerBytes = 8 * 1024 * 1024
+
 // SetupBody is the deprecated JSON body for POST /api/v1/auth/setup.
 type SetupBody = RegisterBody
 
@@ -65,16 +68,9 @@ type ResendEmailCodeData struct {
 	ResendAfterSeconds int32 `json:"resend_after_seconds"`
 }
 
-// GuestRegisterBody is the JSON body for POST /api/v1/auth/register/guest.
-type GuestRegisterBody struct {
-	DisplayName string `json:"display_name"`
-	BirthDate   string `json:"birth_date"`
-}
-
 // SetupStatusBody is the JSON data for GET /api/v1/auth/setup-status (instance policy).
 type SetupStatusBody struct {
 	RegistrationMode string `json:"registration_mode"`
-	GuestEnabled     bool   `json:"guest_enabled"`
 	UsernameEnabled  bool   `json:"username_enabled"`
 }
 
@@ -84,7 +80,6 @@ type InstanceSetupBody struct {
 	LogoURL          string `json:"logo_url"`
 	UsernameEnabled  bool   `json:"username_enabled"`
 	RegistrationMode string `json:"registration_mode"`
-	GuestEnabled     bool   `json:"guest_enabled"`
 }
 
 // SessionBody is the public session JSON (refresh token is HttpOnly cookie only).
@@ -100,7 +95,6 @@ type UserBody struct {
 	Email       string `json:"email"`
 	DisplayName string `json:"display_name"`
 	Username    string `json:"username"`
-	IsGuest     bool   `json:"is_guest"`
 }
 
 // OKBody is a minimal success payload.
@@ -113,8 +107,22 @@ type GroupBody struct {
 	ID               string `json:"id"`
 	Name             string `json:"name"`
 	LogoURL          string `json:"logo_url"`
+	Description      string `json:"description"`
+	IsPrivate        bool   `json:"is_private"`
+	BannerColor      string `json:"banner_color"`
+	BannerURL        string `json:"banner_url"`
 	DefaultChannelID string `json:"default_channel_id"`
 	Role             string `json:"role,omitempty"`
+}
+
+// UpdateGroupProfileBody is PATCH /api/v1/groups/{id}/profile.
+type UpdateGroupProfileBody struct {
+	Name             string `json:"name"`
+	Description      string `json:"description"`
+	IsPrivate        bool   `json:"is_private"`
+	BannerColor      string `json:"banner_color"`
+	ClearLogo        bool   `json:"clear_logo"`
+	ClearBannerImage bool   `json:"clear_banner_image"`
 }
 
 // ChannelBody is channel metadata in JSON responses.
@@ -199,11 +207,14 @@ type SendGroupInvitesResultBody struct {
 
 // InvitePreviewBody is GET /api/v1/invites/preview.
 type InvitePreviewBody struct {
-	Valid       bool   `json:"valid"`
-	GroupName   string `json:"group_name,omitempty"`
-	ChannelName string `json:"channel_name,omitempty"`
-	ExpiresAt   string `json:"expires_at,omitempty"`
-	Reason      string `json:"reason,omitempty"`
+	Valid        bool   `json:"valid"`
+	GroupName    string `json:"group_name,omitempty"`
+	ChannelName  string `json:"channel_name,omitempty"`
+	GroupLogoURL string `json:"group_logo_url"`
+	MemberCount  int    `json:"member_count"`
+	OnlineCount  int    `json:"online_count"`
+	ExpiresAt    string `json:"expires_at,omitempty"`
+	Reason       string `json:"reason,omitempty"`
 }
 
 // RedeemInviteBody is POST /api/v1/invites/redeem.
@@ -277,6 +288,10 @@ func GroupFromPB(g *userv1.GroupSummary) GroupBody {
 		ID:               g.GetId(),
 		Name:             g.GetName(),
 		LogoURL:          g.GetLogoUrl(),
+		Description:      g.GetDescription(),
+		IsPrivate:        g.GetIsPrivate(),
+		BannerColor:      g.GetBannerColor(),
+		BannerURL:        g.GetBannerUrl(),
 		DefaultChannelID: g.GetDefaultChannelId(),
 		Role:             g.GetRole(),
 	}
@@ -362,7 +377,6 @@ func UserFromPB(user *userv1.User) UserBody {
 		Email:       user.GetEmail(),
 		DisplayName: user.GetDisplayName(),
 		Username:    user.GetUsername(),
-		IsGuest:     user.GetIsGuest(),
 	}
 }
 
@@ -433,6 +447,19 @@ func GRPCMessageCode(err error) string {
 	}
 
 	return string(parsed.Code)
+}
+
+// SafeReturnPath allows only same-app absolute paths (no open redirect).
+func SafeReturnPath(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return "/"
+	}
+	if !strings.HasPrefix(raw, "/") || strings.HasPrefix(raw, "//") {
+		return "/"
+	}
+
+	return raw
 }
 
 // RedirectSignIn sends the browser to the web sign-in page with an error query param.

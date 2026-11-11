@@ -15,7 +15,6 @@ func (routeStub) Setup(http.ResponseWriter, *http.Request)                 {}
 func (routeStub) Register(http.ResponseWriter, *http.Request)              {}
 func (routeStub) VerifyRegister(http.ResponseWriter, *http.Request)        {}
 func (routeStub) ResendRegisterCode(http.ResponseWriter, *http.Request)    {}
-func (routeStub) RegisterGuest(http.ResponseWriter, *http.Request)         {}
 func (routeStub) Login(http.ResponseWriter, *http.Request)                 {}
 func (routeStub) VerifyLogin(http.ResponseWriter, *http.Request)           {}
 func (routeStub) ResendLoginCode(http.ResponseWriter, *http.Request)       {}
@@ -37,6 +36,8 @@ func (routeStub) LeaveGroup(http.ResponseWriter, *http.Request)            {}
 func (routeStub) DeleteGroup(http.ResponseWriter, *http.Request)           {}
 func (routeStub) ListGroupChannels(http.ResponseWriter, *http.Request)     {}
 func (routeStub) UploadGroupIcon(http.ResponseWriter, *http.Request)       {}
+func (routeStub) UpdateGroupProfile(http.ResponseWriter, *http.Request)    {}
+func (routeStub) UploadGroupBanner(http.ResponseWriter, *http.Request)     {}
 func (routeStub) ListGroupMembers(http.ResponseWriter, *http.Request)      {}
 func (routeStub) SearchUsers(http.ResponseWriter, *http.Request)           {}
 func (routeStub) GetGroupInviteLink(http.ResponseWriter, *http.Request)    {}

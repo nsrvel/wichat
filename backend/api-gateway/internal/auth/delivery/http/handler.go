@@ -25,7 +25,6 @@ type Handler interface {
 	Register(w http.ResponseWriter, r *http.Request)
 	VerifyRegister(w http.ResponseWriter, r *http.Request)
 	ResendRegisterCode(w http.ResponseWriter, r *http.Request)
-	RegisterGuest(w http.ResponseWriter, r *http.Request)
 	Login(w http.ResponseWriter, r *http.Request)
 	VerifyLogin(w http.ResponseWriter, r *http.Request)
 	ResendLoginCode(w http.ResponseWriter, r *http.Request)
@@ -47,6 +46,8 @@ type Handler interface {
 	DeleteGroup(w http.ResponseWriter, r *http.Request)
 	ListGroupChannels(w http.ResponseWriter, r *http.Request)
 	UploadGroupIcon(w http.ResponseWriter, r *http.Request)
+	UpdateGroupProfile(w http.ResponseWriter, r *http.Request)
+	UploadGroupBanner(w http.ResponseWriter, r *http.Request)
 	ListGroupMembers(w http.ResponseWriter, r *http.Request)
 	SearchUsers(w http.ResponseWriter, r *http.Request)
 	GetGroupInviteLink(w http.ResponseWriter, r *http.Request)
@@ -83,7 +84,6 @@ func (h handler) SetupStatus(w http.ResponseWriter, r *http.Request) {
 	// Response
 	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(authHttp.SetupStatusBody{
 		RegistrationMode: out.GetRegistrationMode(),
-		GuestEnabled:     out.GetGuestEnabled(),
 		UsernameEnabled:  out.GetUsernameEnabled(),
 	}))
 }
@@ -108,7 +108,6 @@ func (h handler) InstanceSetup(w http.ResponseWriter, r *http.Request) {
 		LogoUrl:          body.LogoURL,
 		UsernameEnabled:  body.UsernameEnabled,
 		RegistrationMode: body.RegistrationMode,
-		GuestEnabled:     body.GuestEnabled,
 	})
 	if err != nil {
 		authHttp.WriteOutbound(w, r, h.log, err)
@@ -187,30 +186,6 @@ func (h handler) ResendRegisterCode(w http.ResponseWriter, r *http.Request) {
 	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(authHttp.ResendEmailCodeData{
 		ResendAfterSeconds: out.GetResendCooldownSeconds(),
 	}))
-}
-
-func (h handler) RegisterGuest(w http.ResponseWriter, r *http.Request) {
-	// Bind
-	var body authHttp.GuestRegisterBody
-	if err := authHttp.DecodeJSON(w, r, &body); err != nil {
-		authHttp.WriteOutbound(w, r, h.log, err)
-		return
-	}
-
-	// Service
-	out, err := h.ms.User.GRPC.User.RegisterGuest(r.Context(), &userv1.RegisterGuestRequest{
-		DisplayName: body.DisplayName,
-		BirthDate:   body.BirthDate,
-		UserAgent:   middleware.UserAgent(r),
-		ClientIp:    middleware.ClientIP(r),
-	})
-	if err != nil {
-		authHttp.WriteOutbound(w, r, h.log, err)
-		return
-	}
-
-	// Response
-	authHttp.WriteSession(w, out.GetSession(), h.secureCookie)
 }
 
 func (h handler) Login(w http.ResponseWriter, r *http.Request) {
@@ -354,6 +329,7 @@ func (h handler) GoogleStart(w http.ResponseWriter, r *http.Request) {
 
 	// Response
 	cookie.SetOAuth(w, out.GetState(), out.GetCodeVerifier(), h.secureCookie)
+	cookie.SetOAuthReturn(w, authHttp.SafeReturnPath(r.URL.Query().Get("next")), h.secureCookie)
 	http.Redirect(w, r, out.GetAuthorizationUrl(), http.StatusFound)
 }
 
@@ -391,7 +367,9 @@ func (h handler) GoogleCallback(w http.ResponseWriter, r *http.Request) {
 
 	// Response
 	cookie.SetRefresh(w, sess.GetRefreshToken(), h.secureCookie)
-	http.Redirect(w, r, h.webOrigin+"/", http.StatusFound)
+	returnTo := authHttp.SafeReturnPath(cookie.OAuthReturn(r))
+	origin := strings.TrimRight(strings.TrimSpace(h.webOrigin), "/")
+	http.Redirect(w, r, origin+returnTo, http.StatusFound)
 }
 
 func (h handler) ForgotPasswordRequest(w http.ResponseWriter, r *http.Request) {
@@ -720,6 +698,97 @@ func (h handler) UploadGroupIcon(w http.ResponseWriter, r *http.Request) {
 	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(authHttp.GroupFromPB(out.GetGroup())))
 }
 
+func (h handler) UpdateGroupProfile(w http.ResponseWriter, r *http.Request) {
+	token := authHttp.Bearer(r)
+	if token == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.Unauthenticated(exception.MsgUnauthorized, nil))
+		return
+	}
+
+	groupID := strings.TrimSpace(r.PathValue("id"))
+	if groupID == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "id"}))
+		return
+	}
+
+	var body authHttp.UpdateGroupProfileBody
+	if err := authHttp.DecodeJSON(w, r, &body); err != nil {
+		return
+	}
+
+	out, err := h.ms.User.GRPC.Group.UpdateGroupProfile(r.Context(), &userv1.UpdateGroupProfileRequest{
+		AccessToken:      token,
+		GroupId:          groupID,
+		Name:             body.Name,
+		Description:      body.Description,
+		IsPrivate:        body.IsPrivate,
+		BannerColor:      body.BannerColor,
+		ClearLogo:        body.ClearLogo,
+		ClearBannerImage: body.ClearBannerImage,
+	})
+	if err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(authHttp.GroupFromPB(out.GetGroup())))
+}
+
+func (h handler) UploadGroupBanner(w http.ResponseWriter, r *http.Request) {
+	token := authHttp.Bearer(r)
+	if token == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.Unauthenticated(exception.MsgUnauthorized, nil))
+		return
+	}
+
+	groupID := strings.TrimSpace(r.PathValue("id"))
+	if groupID == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "id"}))
+		return
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, authHttp.MaxGroupBannerBytes+(1<<20))
+	if err := r.ParseMultipartForm(authHttp.MaxGroupBannerBytes + (1 << 10)); err != nil {
+		authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "file"}))
+		return
+	}
+
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "file"}))
+		return
+	}
+	defer func() { _ = file.Close() }()
+
+	data, err := io.ReadAll(io.LimitReader(file, authHttp.MaxGroupBannerBytes+1))
+	if err != nil {
+		authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "file"}))
+		return
+	}
+	if len(data) == 0 || len(data) > authHttp.MaxGroupBannerBytes {
+		authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "file"}))
+		return
+	}
+
+	contentType := header.Header.Get("Content-Type")
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
+
+	out, err := h.ms.User.GRPC.Group.UploadGroupBanner(r.Context(), &userv1.UploadGroupBannerRequest{
+		AccessToken: token,
+		GroupId:     groupID,
+		ContentType: contentType,
+		Data:        data,
+	})
+	if err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(authHttp.GroupFromPB(out.GetGroup())))
+}
+
 func (h handler) ListGroupMembers(w http.ResponseWriter, r *http.Request) {
 	token := authHttp.Bearer(r)
 	if token == "" {
@@ -879,11 +948,14 @@ func (h handler) PreviewGroupInvite(w http.ResponseWriter, r *http.Request) {
 	}
 
 	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(authHttp.InvitePreviewBody{
-		Valid:       out.GetValid(),
-		GroupName:   out.GetGroupName(),
-		ChannelName: out.GetChannelName(),
-		ExpiresAt:   out.GetExpiresAt(),
-		Reason:      out.GetReason(),
+		Valid:        out.GetValid(),
+		GroupName:    out.GetGroupName(),
+		ChannelName:  out.GetChannelName(),
+		GroupLogoURL: out.GetGroupLogoUrl(),
+		MemberCount:  int(out.GetMemberCount()),
+		OnlineCount:  int(out.GetOnlineCount()),
+		ExpiresAt:    out.GetExpiresAt(),
+		Reason:       out.GetReason(),
 	}))
 }
 

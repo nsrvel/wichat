@@ -215,10 +215,6 @@ func (fakeUser) CompleteInstanceSetup(context.Context, *userv1.CompleteInstanceS
 	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
 
-func (fakeUser) RegisterGuest(context.Context, *userv1.RegisterGuestRequest) (*userv1.RegisterGuestResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "error.internal")
-}
-
 type fakeGroup struct {
 	createGroup func(context.Context, *userv1.CreateGroupRequest) (*userv1.CreateGroupResponse, error)
 	joinGroup   func(context.Context, *userv1.JoinGroupRequest) (*userv1.JoinGroupResponse, error)
@@ -264,6 +260,17 @@ func (f fakeGroup) DeleteGroup(ctx context.Context, in *userv1.DeleteGroupReques
 
 func (fakeGroup) UploadGroupIcon(context.Context, *userv1.UploadGroupIconRequest) (*userv1.UploadGroupIconResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "error.internal")
+}
+
+func (f fakeGroup) UpdateGroupProfile(_ context.Context, in *userv1.UpdateGroupProfileRequest) (*userv1.UpdateGroupProfileResponse, error) {
+	return &userv1.UpdateGroupProfileResponse{Group: &userv1.GroupSummary{
+		Id: in.GetGroupId(), Name: in.GetName(), Description: in.GetDescription(),
+		IsPrivate: in.GetIsPrivate(), BannerColor: in.GetBannerColor(),
+	}}, nil
+}
+
+func (fakeGroup) UploadGroupBanner(context.Context, *userv1.UploadGroupBannerRequest) (*userv1.UploadGroupBannerResponse, error) {
+	return &userv1.UploadGroupBannerResponse{Group: &userv1.GroupSummary{BannerUrl: "https://cdn/b.png"}}, nil
 }
 
 func (fakeGroup) ReorderMyGroups(context.Context, *userv1.ReorderMyGroupsRequest) (*userv1.ReorderMyGroupsResponse, error) {
@@ -323,7 +330,8 @@ func TestGoogleCallbackRedirectsWithRefreshCookie(t *testing.T) {
 	rec := httptest.NewRecorder()
 	handler.GoogleCallback(rec, req)
 
-	if rec.Code != http.StatusFound || rec.Header().Get("Location") != "http://localhost:8080/" {
+	wantLocation := "http://localhost:8080/"
+	if rec.Code != http.StatusFound || rec.Header().Get("Location") != wantLocation {
 		t.Fatalf("redirect: %d %s", rec.Code, rec.Header().Get("Location"))
 	}
 	if strings.Contains(rec.Header().Get("Location"), refreshSecret) || verifier != "verifier-1" {
@@ -340,6 +348,29 @@ func TestGoogleCallbackRedirectsWithRefreshCookie(t *testing.T) {
 	}
 	if cookie == nil || cookie.Value != refreshSecret || !cookie.HttpOnly {
 		t.Fatalf("cookie: %+v", cookie)
+	}
+}
+
+func TestGoogleCallbackRedirectsToOAuthReturnCookie(t *testing.T) {
+	handler := authdelivery.NewHandler(testClients(msUserFakes{Auth: fakeAuth{
+		googleFinish: func(_ context.Context, _ *userv1.GoogleFinishRequest) (*userv1.GoogleFinishResponse, error) {
+			return &userv1.GoogleFinishResponse{Session: &userv1.Session{
+				AccessToken:  "access-token",
+				ExpiresIn:    900,
+				RefreshToken: refreshSecret,
+				User:         &userv1.User{Id: "u1", Email: "ada@example.com", DisplayName: "Ada"},
+			}}, nil
+		},
+	}}), testLog(), false, "http://localhost:8080")
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/google/callback?code=abc&state=state-1", nil)
+	req.AddCookie(&http.Cookie{Name: "wichat_oauth", Value: "state-1.verifier-1"})
+	req.AddCookie(&http.Cookie{Name: "wichat_oauth_return", Value: "/invite/LK1FjUZy", Path: "/api"})
+	rec := httptest.NewRecorder()
+	handler.GoogleCallback(rec, req)
+
+	if rec.Code != http.StatusFound || rec.Header().Get("Location") != "http://localhost:8080/invite/LK1FjUZy" {
+		t.Fatalf("redirect: %d %s", rec.Code, rec.Header().Get("Location"))
 	}
 }
 
@@ -370,7 +401,6 @@ func TestSetupStatusReturnsInstancePolicy(t *testing.T) {
 		setupStatus: func(context.Context, *userv1.SetupStatusRequest) (*userv1.SetupStatusResponse, error) {
 			return &userv1.SetupStatusResponse{
 				RegistrationMode: "invite_only",
-				GuestEnabled:     true,
 				UsernameEnabled:  false,
 			}, nil
 		},
@@ -386,7 +416,6 @@ func TestSetupStatusReturnsInstancePolicy(t *testing.T) {
 	var body struct {
 		Data struct {
 			RegistrationMode string `json:"registration_mode"`
-			GuestEnabled     bool   `json:"guest_enabled"`
 			UsernameEnabled  bool   `json:"username_enabled"`
 			NeedsAccount     *bool  `json:"needs_account"`
 		} `json:"data"`
@@ -394,7 +423,7 @@ func TestSetupStatusReturnsInstancePolicy(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
 		t.Fatal(err)
 	}
-	if body.Data.RegistrationMode != "invite_only" || !body.Data.GuestEnabled || body.Data.UsernameEnabled {
+	if body.Data.RegistrationMode != "invite_only" || body.Data.UsernameEnabled {
 		t.Fatalf("policy: %+v", body.Data)
 	}
 	if body.Data.NeedsAccount != nil {

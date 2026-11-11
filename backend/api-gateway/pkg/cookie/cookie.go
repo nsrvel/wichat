@@ -11,9 +11,10 @@ const (
 	RefreshPath   = "/api/v1/auth"
 	refreshMaxAge = 30 * 24 * 60 * 60
 
-	OAuthName   = "wichat_oauth"
-	OAuthPath   = "/api" // covers /api/v1/auth/google and /api/auth/callback/google
-	oauthMaxAge = 10 * 60
+	OAuthName       = "wichat_oauth"
+	OAuthReturnName = "wichat_oauth_return"
+	OAuthPath       = "/api" // covers /api/v1/auth/google and /api/auth/callback/google
+	oauthMaxAge     = 10 * 60
 )
 
 func SetRefresh(w http.ResponseWriter, token string, secure bool) {
@@ -56,16 +57,39 @@ func SetOAuth(w http.ResponseWriter, state, verifier string, secure bool) {
 	})
 }
 
-func ClearOAuth(w http.ResponseWriter, secure bool) {
+func SetOAuthReturn(w http.ResponseWriter, returnPath string, secure bool) {
+	returnPath = strings.TrimSpace(returnPath)
+	if returnPath == "" || returnPath == "/" {
+		return
+	}
+
 	http.SetCookie(w, &http.Cookie{
-		Name:     OAuthName,
-		Value:    "",
+		Name:     OAuthReturnName,
+		Value:    returnPath,
 		Path:     OAuthPath,
-		MaxAge:   -1,
+		MaxAge:   oauthMaxAge,
 		HttpOnly: true,
 		Secure:   secure,
 		SameSite: http.SameSiteLaxMode,
 	})
+}
+
+func OAuthReturn(r *http.Request) string {
+	return strings.TrimSpace(value(r, OAuthReturnName))
+}
+
+func ClearOAuth(w http.ResponseWriter, secure bool) {
+	for _, name := range []string{OAuthName, OAuthReturnName} {
+		http.SetCookie(w, &http.Cookie{
+			Name:     name,
+			Value:    "",
+			Path:     OAuthPath,
+			MaxAge:   -1,
+			HttpOnly: true,
+			Secure:   secure,
+			SameSite: http.SameSiteLaxMode,
+		})
+	}
 }
 
 func OAuthStateVerifier(r *http.Request) (state, verifier string) {
