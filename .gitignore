@@ -82,3 +82,7 @@ test-results/
 playwright-report/
 .terraform/
 *.tfstate*
+
+# Agent skills cache & metadata
+.agents/
+skills-lock.json

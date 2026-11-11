@@ -82,7 +82,6 @@ Table instance_settings {
   id smallint [pk, note: 'Singleton row id = 1']
   username_enabled boolean [not null, default: true]
   registration_mode text [not null, default: 'invite_only', note: 'invite_only | approval_required | open']
-  guest_enabled boolean [not null, default: false]
   setup_completed boolean [not null, default: false]
   created_at timestamptz [not null]
   updated_at timestamptz [not null]
