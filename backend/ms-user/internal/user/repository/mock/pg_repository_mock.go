@@ -53,7 +53,6 @@ func defaultInstanceSettings() models.InstanceSettings {
 	return models.InstanceSettings{
 		UsernameEnabled:  true,
 		RegistrationMode: constants.RegistrationInviteOnly,
-		GuestEnabled:     false,
 		SetupCompleted:   false,
 	}
 }
@@ -210,7 +209,6 @@ func (m *pgRepositoryMock) CompleteInstanceSetup(_ context.Context, ownerUserID 
 	m.st.Settings = models.InstanceSettings{
 		UsernameEnabled:  payload.UsernameEnabled,
 		RegistrationMode: payload.RegistrationMode,
-		GuestEnabled:     payload.GuestEnabled,
 		SetupCompleted:   true,
 	}
 	m.st.Groups = append(m.st.Groups, models.Group{

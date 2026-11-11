@@ -8,10 +8,25 @@ type Group struct {
 	PublicID               string
 	Name                   string
 	LogoURL                string
+	Description            string
+	IsPrivate              bool
+	BannerColor            string
+	BannerURL              string
 	DefaultChannelPublicID string
 	CallerRole             string
 	CreatedAt              time.Time
 	UpdatedAt              time.Time
+}
+
+// GroupProfilePatch is a full scalar profile replace from clients (owner save).
+type GroupProfilePatch struct {
+	Name             string
+	Description      string
+	IsPrivate        bool
+	BannerColor      string
+	BannerURL        string
+	LogoURL          string
+	ClearBannerAsset bool
 }
 
 // PublicGroup is the group view returned to clients.
@@ -19,6 +34,10 @@ type PublicGroup struct {
 	ID               string
 	Name             string
 	LogoURL          string
+	Description      string
+	IsPrivate        bool
+	BannerColor      string
+	BannerURL        string
 	DefaultChannelID string
 	Role             string
 }
@@ -29,6 +48,10 @@ func (g Group) Public() PublicGroup {
 		ID:               g.PublicID,
 		Name:             g.Name,
 		LogoURL:          g.LogoURL,
+		Description:      g.Description,
+		IsPrivate:        g.IsPrivate,
+		BannerColor:      g.BannerColor,
+		BannerURL:        g.BannerURL,
 		DefaultChannelID: g.DefaultChannelPublicID,
 		Role:             g.CallerRole,
 	}

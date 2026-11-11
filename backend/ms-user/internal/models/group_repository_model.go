@@ -23,6 +23,10 @@ type GroupSettingsRow struct {
 	GroupID            string    `bun:"group_id,pk,type:uuid"`
 	Name               string    `bun:"name"`
 	LogoURL            string    `bun:"logo_url"`
+	Description        string    `bun:"description"`
+	IsPrivate          bool      `bun:"is_private"`
+	BannerColor        string    `bun:"banner_color"`
+	BannerURL          string    `bun:"banner_url"`
 	RetentionDays      int       `bun:"retention_days"`
 	TrashRetentionDays int       `bun:"trash_retention_days"`
 	CreatedAt          time.Time `bun:"created_at"`

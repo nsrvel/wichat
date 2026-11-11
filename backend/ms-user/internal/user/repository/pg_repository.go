@@ -71,7 +71,6 @@ func (r pgRepository) CompleteInstanceSetup(ctx context.Context, ownerUserID str
 		res, err := tx.NewUpdate().Model(&models.InstanceSettingsRow{}).
 			Set("username_enabled = ?", payload.UsernameEnabled).
 			Set("registration_mode = ?", payload.RegistrationMode).
-			Set("guest_enabled = ?", payload.GuestEnabled).
 			Set("setup_completed = ?", true).
 			Set("updated_at = ?", now).
 			Where("id = ? AND setup_completed = ?", 1, false).

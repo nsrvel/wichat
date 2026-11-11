@@ -12,6 +12,8 @@ import (
 type MinioRepository interface {
 	PutGroupIcon(ctx context.Context, groupPublicID, contentType string, body io.Reader, size int64) (publicURL string, err error)
 	RemoveGroupIcon(ctx context.Context, groupPublicID string) error
+	PutGroupBanner(ctx context.Context, groupPublicID, contentType string, body io.Reader, size int64) (publicURL string, err error)
+	RemoveGroupBanner(ctx context.Context, groupPublicID string) error
 }
 
 type minioRepository struct {
@@ -35,6 +37,29 @@ func (r minioRepository) PutGroupIcon(ctx context.Context, groupPublicID, conten
 
 func (r minioRepository) RemoveGroupIcon(ctx context.Context, groupPublicID string) error {
 	return r.client.DeletePrefix(ctx, "groups/"+groupPublicID+"/icon.")
+}
+
+func (r minioRepository) PutGroupBanner(ctx context.Context, groupPublicID, contentType string, body io.Reader, size int64) (string, error) {
+	ext := iconExtension(contentType)
+	key := groupBannerObjectKey(groupPublicID, ext)
+	if err := r.client.Upload(ctx, key, contentType, body, size); err != nil {
+		return "", err
+	}
+
+	return r.client.PublicURL(key), nil
+}
+
+func (r minioRepository) RemoveGroupBanner(ctx context.Context, groupPublicID string) error {
+	return r.client.DeletePrefix(ctx, "groups/"+groupPublicID+"/banner.")
+}
+
+func groupBannerObjectKey(groupPublicID, ext string) string {
+	ext = strings.TrimPrefix(strings.ToLower(ext), ".")
+	if ext == "" {
+		ext = "bin"
+	}
+
+	return "groups/" + groupPublicID + "/banner." + ext
 }
 
 func groupIconObjectKey(groupPublicID, ext string) string {

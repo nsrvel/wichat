@@ -795,21 +795,6 @@ func TestVerifyLoginMissingChallenge(t *testing.T) {
 	}
 }
 
-func TestRegisterGuestOpensSession(t *testing.T) {
-	st := usermock.NewState()
-	st.SetInstanceSettings(models.InstanceSettings{GuestEnabled: true})
-	svc, _, _, _, _, _ := testSupport.NewAuthService(t, st, nil)
-	ctx := context.Background()
-
-	out, err := svc.RegisterGuest(ctx, models.GuestRegisterInput{DisplayName: "G", BirthDate: "2000-01-15"})
-	if err != nil || out.AccessToken == "" || !out.User.IsGuest {
-		t.Fatalf("%+v %v", out, err)
-	}
-	if _, err := svc.Me(ctx, out.AccessToken); err != nil {
-		t.Fatal(err)
-	}
-}
-
 func TestMeRejectsExpiredAccessWindow(t *testing.T) {
 	clock := time.Now().UTC()
 	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), func() time.Time { return clock })

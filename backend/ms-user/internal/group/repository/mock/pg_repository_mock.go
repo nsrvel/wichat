@@ -195,6 +195,26 @@ func (m pgRepositoryMock) UpdateGroupLogoURL(_ context.Context, groupID, logoURL
 	return constants.ErrNotFound
 }
 
+func (m pgRepositoryMock) UpdateGroupProfile(_ context.Context, groupID string, patch models.GroupProfilePatch, _ time.Time) error {
+	m.st.Lock()
+	defer m.st.Unlock()
+
+	for i := range m.st.Groups {
+		if m.st.Groups[i].ID == groupID {
+			m.st.Groups[i].Name = patch.Name
+			m.st.Groups[i].Description = patch.Description
+			m.st.Groups[i].IsPrivate = patch.IsPrivate
+			m.st.Groups[i].BannerColor = patch.BannerColor
+			m.st.Groups[i].BannerURL = patch.BannerURL
+			m.st.Groups[i].LogoURL = patch.LogoURL
+
+			return nil
+		}
+	}
+
+	return constants.ErrNotFound
+}
+
 func (m pgRepositoryMock) SetRailPositions(_ context.Context, userID string, orderedGroupIDs []string) error {
 	m.st.Lock()
 	defer m.st.Unlock()

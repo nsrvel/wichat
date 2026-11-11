@@ -34,6 +34,12 @@ func (FakeGroupMinio) PutGroupIcon(_ context.Context, groupPublicID, _ string, _
 
 func (FakeGroupMinio) RemoveGroupIcon(context.Context, string) error { return nil }
 
+func (FakeGroupMinio) PutGroupBanner(_ context.Context, groupPublicID, _ string, _ io.Reader, _ int64) (string, error) {
+	return "https://cdn.example/groups/" + groupPublicID + "/banner.png", nil
+}
+
+func (FakeGroupMinio) RemoveGroupBanner(context.Context, string) error { return nil }
+
 // NewGroupService wires the group service against in-memory repos.
 func NewGroupService(t *testing.T, st *usermock.State) (groupservice.Service, grouprepo.PgRepository, userrepo.PgRepository, authrepo.SessionRepository) {
 	t.Helper()

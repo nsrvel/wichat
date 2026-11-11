@@ -34,7 +34,6 @@ func TestInstanceSetupHappyPath(t *testing.T) {
 		LogoURL:          "https://cdn.example/logo.png",
 		UsernameEnabled:  true,
 		RegistrationMode: constants.RegistrationOpen,
-		GuestEnabled:     true,
 	})
 	if err != nil || payload.GroupName != "WiChat" {
 		t.Fatalf("%+v %v", payload, err)

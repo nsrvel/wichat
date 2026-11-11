@@ -146,6 +146,47 @@ func TestCreateGroupWithOwnerListAndJoinable(t *testing.T) {
 	}
 }
 
+func TestUpdateGroupProfilePg(t *testing.T) {
+	users, groups, _, cleanup := newGroupPgRepositories(t)
+	defer cleanup()
+	ctx := context.Background()
+	now := time.Now().UTC().Truncate(time.Microsecond)
+
+	ownerID := "dddddddd-dddd-4ddd-8ddd-dddddddddddd"
+	if err := users.CreateFirstUser(ctx, models.User{
+		ID: ownerID, Email: "profile-pg@example.com", PasswordHash: "hash", DisplayName: "Owner",
+		CreatedAt: now, UpdatedAt: now,
+	}); err != nil {
+		t.Fatalf("CreateFirstUser: %v", err)
+	}
+
+	groupID := "cccccccc-cccc-4ccc-8ccc-cccccccccccc"
+	publicID := "cccccccccccccccccccccccc"
+	g := models.Group{
+		ID: groupID, PublicID: publicID, Name: "Before",
+		CreatedAt: now, UpdatedAt: now,
+	}
+	if err := groups.CreateGroupWithOwner(ctx, g, models.GroupMember{
+		GroupID: groupID, UserID: ownerID,
+		Role: constants.GroupRoleOwner, CreatedAt: now,
+	}); err != nil {
+		t.Fatalf("CreateGroupWithOwner: %v", err)
+	}
+
+	patch := models.GroupProfilePatch{
+		Name: "After", Description: "About", IsPrivate: true,
+		BannerColor: "sky", BannerURL: "", LogoURL: "https://cdn/icon.png",
+	}
+	if err := groups.UpdateGroupProfile(ctx, groupID, patch, now); err != nil {
+		t.Fatalf("UpdateGroupProfile: %v", err)
+	}
+
+	got, err := groups.FindGroupByID(ctx, groupID)
+	if err != nil || got.Name != "After" || got.Description != "About" || !got.IsPrivate || got.BannerColor != "sky" {
+		t.Fatalf("profile %+v err %v", got, err)
+	}
+}
+
 func newGroupPgRepositories(t *testing.T) (userrepo.PgRepository, grouprepo.PgRepository, channelrepo.PgRepository, func()) {
 	t.Helper()
 	ctx := context.Background()

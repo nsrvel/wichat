@@ -19,6 +19,8 @@ const (
 	SQLListGroupsForUser = `
 		SELECT g.id AS g_id, g.public_id AS g_public_id, g.created_at AS g_created_at, g.updated_at AS g_updated_at,
 		       s.group_id AS s_group_id, s.name AS s_name, s.logo_url AS s_logo_url,
+		       s.description AS s_description, s.is_private AS s_is_private,
+		       s.banner_color AS s_banner_color, s.banner_url AS s_banner_url,
 		       s.retention_days AS s_retention_days, s.trash_retention_days AS s_trash_retention_days,
 		       s.created_at AS s_created_at, s.updated_at AS s_updated_at,
 		       ch.public_id AS ch_public_id,
@@ -33,6 +35,8 @@ const (
 	SQLListJoinableGroups = `
 		SELECT g.id AS g_id, g.public_id AS g_public_id, g.created_at AS g_created_at, g.updated_at AS g_updated_at,
 		       s.group_id AS s_group_id, s.name AS s_name, s.logo_url AS s_logo_url,
+		       s.description AS s_description, s.is_private AS s_is_private,
+		       s.banner_color AS s_banner_color, s.banner_url AS s_banner_url,
 		       s.retention_days AS s_retention_days, s.trash_retention_days AS s_trash_retention_days,
 		       s.created_at AS s_created_at, s.updated_at AS s_updated_at,
 		       ch.public_id AS ch_public_id

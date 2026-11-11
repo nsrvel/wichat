@@ -51,7 +51,6 @@ type InstanceSettingsRow struct {
 	ID               int16     `bun:"id,pk"`
 	UsernameEnabled  bool      `bun:"username_enabled"`
 	RegistrationMode string    `bun:"registration_mode"`
-	GuestEnabled     bool      `bun:"guest_enabled"`
 	SetupCompleted   bool      `bun:"setup_completed"`
 	CreatedAt        time.Time `bun:"created_at"`
 	UpdatedAt        time.Time `bun:"updated_at"`
@@ -61,7 +60,6 @@ func (r InstanceSettingsRow) ToModel() InstanceSettings {
 	return InstanceSettings{
 		UsernameEnabled:  r.UsernameEnabled,
 		RegistrationMode: r.RegistrationMode,
-		GuestEnabled:     r.GuestEnabled,
 		SetupCompleted:   r.SetupCompleted,
 	}
 }

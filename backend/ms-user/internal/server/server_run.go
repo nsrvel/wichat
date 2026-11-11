@@ -112,7 +112,10 @@ func (s *server) Run(ctx context.Context) error {
 	channelSvc := channelservice.NewService(channelPg, groupPg, authSessions, secret, s.log)
 	groupSvc := groupservice.NewService(groupPg, channelSvc, userPg, groupMinio, authSessions, secret, s.log)
 	invitePg := inviterepo.NewPgRepository(db, s.log)
-	inviteSvc := inviteservice.NewService(groupPg, channelPg, invitePg, userPg, authSessions, notifyClient, secret, s.cfg.WebOrigin, s.log)
+	inviteSvc := inviteservice.NewService(
+		groupPg, channelPg, invitePg, userPg, authSessions, notifyClient, secret,
+		s.cfg.WebOrigin, s.cfg.MinioPublicBaseURL, s.log,
+	)
 	authSvc, err := authservice.NewService(userPg, authSessions, authRefresh, secret, s.log, googleoauth.Config{
 		ClientID:     s.cfg.GoogleClientID,
 		ClientSecret: s.cfg.GoogleClientSecret,

@@ -337,3 +337,101 @@ func TestUploadGroupIconWhenMinioDisabled(t *testing.T) {
 		t.Fatalf("expected file invalid, got %v", err)
 	}
 }
+
+func TestUpdateGroupProfileOwner(t *testing.T) {
+	st := usermock.NewState()
+	authSvc, notify, _, _, _, _ := testSupport.NewAuthService(t, st, nil)
+	groupSvc := testSupport.NewGroupServiceWithFakeMinio(t, st)
+	ctx := context.Background()
+
+	owner := testSupport.RegisterSession(t, authSvc, notify, registerInput("profile-owner@example.com"))
+	created, err := groupSvc.CreateGroup(ctx, owner.AccessToken, "Acme")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	updated, err := groupSvc.UpdateGroupProfile(
+		ctx, owner.AccessToken, created.ID,
+		"New Name", "About us", true, "volcano", false, false,
+	)
+	if err != nil || updated.Name != "New Name" || updated.Description != "About us" || !updated.IsPrivate || updated.BannerColor != "volcano" {
+		t.Fatalf("update: %+v err %v", updated, err)
+	}
+
+	mine, err := groupSvc.ListMyGroups(ctx, owner.AccessToken)
+	if err != nil || len(mine) != 1 || mine[0].Name != "New Name" {
+		t.Fatalf("list after update: %+v err %v", mine, err)
+	}
+}
+
+func TestUpdateGroupProfileForbiddenForMember(t *testing.T) {
+	st := usermock.NewState()
+	authSvc, notify, _, _, groupSvc, _ := testSupport.NewAuthService(t, st, nil)
+	ctx := context.Background()
+
+	owner := testSupport.RegisterSession(t, authSvc, notify, registerInput("profile-owner2@example.com"))
+	created, err := groupSvc.CreateGroup(ctx, owner.AccessToken, "Team")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	member := testSupport.RegisterSession(t, authSvc, notify, registerInput("profile-member@example.com"))
+	if err := groupSvc.JoinGroup(ctx, member.AccessToken, created.ID); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = groupSvc.UpdateGroupProfile(ctx, member.AccessToken, created.ID, "Hacked", "", false, "", false, false)
+	ex, ok := exception.As(err)
+	if !ok || ex.Kind != exception.KindPermissionDenied {
+		t.Fatalf("expected forbidden, got %v", err)
+	}
+}
+
+func TestUpdateGroupProfileClearsLogoAndSolidBanner(t *testing.T) {
+	st := usermock.NewState()
+	authSvc, notify, _, _, _, _ := testSupport.NewAuthService(t, st, nil)
+	groupSvc := testSupport.NewGroupServiceWithFakeMinio(t, st)
+	ctx := context.Background()
+
+	owner := testSupport.RegisterSession(t, authSvc, notify, registerInput("profile-clear@example.com"))
+	created, err := groupSvc.CreateGroup(ctx, owner.AccessToken, "ClearCo")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	withBanner, err := groupSvc.UploadGroupBanner(ctx, owner.AccessToken, created.ID, "image/png", strings.NewReader("banner"), 6)
+	if err != nil || withBanner.BannerURL == "" {
+		t.Fatalf("banner: %+v %v", withBanner, err)
+	}
+
+	withIcon, err := groupSvc.UploadGroupIcon(ctx, owner.AccessToken, created.ID, "image/png", strings.NewReader("icon"), 4)
+	if err != nil || withIcon.LogoURL == "" {
+		t.Fatalf("icon: %+v %v", withIcon, err)
+	}
+
+	updated, err := groupSvc.UpdateGroupProfile(
+		ctx, owner.AccessToken, created.ID,
+		"ClearCo", "desc", false, "gold", true, true,
+	)
+	if err != nil || updated.LogoURL != "" || updated.BannerURL != "" || updated.BannerColor != "gold" {
+		t.Fatalf("cleared: %+v err %v", updated, err)
+	}
+}
+
+func TestUploadGroupBannerByOwner(t *testing.T) {
+	st := usermock.NewState()
+	authSvc, notify, _, _, _, _ := testSupport.NewAuthService(t, st, nil)
+	groupSvc := testSupport.NewGroupServiceWithFakeMinio(t, st)
+	ctx := context.Background()
+
+	owner := testSupport.RegisterSession(t, authSvc, notify, registerInput("banner-owner@example.com"))
+	created, err := groupSvc.CreateGroup(ctx, owner.AccessToken, "BannerCo")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	updated, err := groupSvc.UploadGroupBanner(ctx, owner.AccessToken, created.ID, "image/png", strings.NewReader("banner"), 6)
+	if err != nil || updated.BannerURL == "" || updated.BannerColor != "" {
+		t.Fatalf("upload banner: %+v err %v", updated, err)
+	}
+}

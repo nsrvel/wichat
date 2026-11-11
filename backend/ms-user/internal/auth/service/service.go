@@ -34,7 +34,6 @@ type Notifier interface {
 type Service interface {
 	Setup(ctx context.Context, in models.SetupInput) (*models.SessionResult, error)
 	Register(ctx context.Context, in models.RegisterInput) (*models.PasswordAuthResult, error)
-	RegisterGuest(ctx context.Context, in models.GuestRegisterInput) (*models.SessionResult, error)
 	Login(ctx context.Context, in models.LoginInput) (*models.PasswordAuthResult, error)
 	VerifyRegister(ctx context.Context, challengeID, code string) (*models.SessionResult, error)
 	VerifyLogin(ctx context.Context, challengeID, code string) (*models.SessionResult, error)
@@ -257,20 +256,6 @@ func (s service) createUserFromPending(ctx context.Context, pending models.Regis
 	}
 
 	return user, nil
-}
-
-// RegisterGuest creates a guest account and opens a session.
-func (s service) RegisterGuest(ctx context.Context, in models.GuestRegisterInput) (*models.SessionResult, error) {
-	if err := s.sessions.DeleteExpired(ctx, s.now()); err != nil {
-		return nil, err
-	}
-
-	user, err := s.workspace.CreateGuest(ctx, in)
-	if err != nil {
-		return nil, err
-	}
-
-	return s.openSession(ctx, user, in.ClientMeta)
 }
 
 // Login checks login/password and starts email OTP (no session until VerifyLogin).

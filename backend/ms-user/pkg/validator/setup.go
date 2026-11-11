@@ -40,6 +40,5 @@ func InstanceSetup(in models.CompleteInstanceSetupInput) (models.InstanceSetupPa
 		GroupLogoURL:     logoURL,
 		UsernameEnabled:  in.UsernameEnabled,
 		RegistrationMode: mode,
-		GuestEnabled:     in.GuestEnabled,
 	}, nil
 }

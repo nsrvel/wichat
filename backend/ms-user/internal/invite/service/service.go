@@ -16,6 +16,7 @@ import (
 	userrepo "github.com/wichat/wichat/backend/ms-user/internal/user/repository"
 	"github.com/wichat/wichat/backend/ms-user/pkg/access"
 	"github.com/wichat/wichat/backend/ms-user/pkg/constants"
+	"github.com/wichat/wichat/backend/ms-user/pkg/objecturl"
 	"github.com/wichat/wichat/backend/ms-user/pkg/token"
 	"github.com/wichat/wichat/backend/ms-user/pkg/validator"
 	"github.com/wichat/wichat/backend/wi-shared/exception"
@@ -39,16 +40,17 @@ type Service interface {
 }
 
 type service struct {
-	groups   grouprepo.PgRepository
-	channels channelrepo.PgRepository
-	invites  inviterepo.PgRepository
-	users    userrepo.PgRepository
-	sessions authrepo.SessionRepository
-	notify   Notifier
-	secret   []byte
-	webBase  string
-	log      logger.Logger
-	now      func() time.Time
+	groups           grouprepo.PgRepository
+	channels         channelrepo.PgRepository
+	invites          inviterepo.PgRepository
+	users            userrepo.PgRepository
+	sessions         authrepo.SessionRepository
+	notify           Notifier
+	secret           []byte
+	webBase          string
+	objectPublicBase string
+	log              logger.Logger
+	now              func() time.Time
 }
 
 // NewService builds invite use cases.
@@ -61,22 +63,24 @@ func NewService(
 	notify Notifier,
 	secret []byte,
 	webOrigin string,
+	objectPublicBase string,
 	log logger.Logger,
 ) Service {
 	copied := make([]byte, len(secret))
 	copy(copied, secret)
 
 	return service{
-		groups:   groups,
-		channels: channels,
-		invites:  invites,
-		users:    users,
-		sessions: sessions,
-		notify:   notify,
-		secret:   copied,
-		webBase:  strings.TrimRight(strings.TrimSpace(webOrigin), "/"),
-		log:      log,
-		now:      func() time.Time { return time.Now().UTC() },
+		groups:           groups,
+		channels:         channels,
+		invites:          invites,
+		users:            users,
+		sessions:         sessions,
+		notify:           notify,
+		secret:           copied,
+		webBase:          strings.TrimRight(strings.TrimSpace(webOrigin), "/"),
+		objectPublicBase: strings.TrimSpace(objectPublicBase),
+		log:              log,
+		now:              func() time.Time { return time.Now().UTC() },
 	}
 }
 
@@ -363,11 +367,20 @@ func (s service) PreviewInvite(ctx context.Context, inviteToken string) (*models
 		}
 	}
 
+	memberCount, err := s.groups.CountGroupMembers(ctx, group.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	// ponytail: presence not wired; upgrade when Redis presence exists
 	return &models.InvitePreviewResult{
-		Valid:       true,
-		GroupName:   group.Name,
-		ChannelName: channelName,
-		ExpiresAt:   row.ExpiresAt,
+		Valid:        true,
+		GroupName:    group.Name,
+		ChannelName:  channelName,
+		GroupLogoURL: objecturl.Public(group.LogoURL, s.objectPublicBase),
+		MemberCount:  memberCount,
+		OnlineCount:  0,
+		ExpiresAt:    row.ExpiresAt,
 	}, nil
 }
 

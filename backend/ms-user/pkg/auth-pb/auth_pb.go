@@ -60,7 +60,6 @@ func User(user models.PublicUser) *userv1.User {
 		Email:       user.Email,
 		DisplayName: user.DisplayName,
 		Username:    user.Username,
-		IsGuest:     user.IsGuest,
 	}
 }
 
@@ -72,6 +71,10 @@ func GroupSummary(g models.PublicGroup) *userv1.GroupSummary {
 		LogoUrl:          g.LogoURL,
 		DefaultChannelId: g.DefaultChannelID,
 		Role:             g.Role,
+		Description:      g.Description,
+		IsPrivate:        g.IsPrivate,
+		BannerColor:      g.BannerColor,
+		BannerUrl:        g.BannerURL,
 	}
 }
 

@@ -53,9 +53,9 @@ func TestUserMockCRUD(t *testing.T) {
 		t.Fatalf("link %+v %v", again, err)
 	}
 
-	st.SetInstanceSettings(models.InstanceSettings{GuestEnabled: true, UsernameEnabled: true})
+	st.SetInstanceSettings(models.InstanceSettings{UsernameEnabled: true})
 	got, err := repo.GetInstanceSettings(ctx)
-	if err != nil || !got.GuestEnabled {
+	if err != nil || !got.UsernameEnabled {
 		t.Fatalf("%+v %v", got, err)
 	}
 

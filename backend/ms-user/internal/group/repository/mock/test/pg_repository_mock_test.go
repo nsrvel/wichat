@@ -26,6 +26,16 @@ func TestGroupMockUpdatesAndMembersPage(t *testing.T) {
 	if err := repo.UpdateGroupLogoURL(ctx, "g1", "https://cdn/x.png", now); err != nil {
 		t.Fatal(err)
 	}
+	if err := repo.UpdateGroupProfile(ctx, "g1", models.GroupProfilePatch{
+		Name: "New", Description: "About", IsPrivate: true,
+		BannerColor: "volcano", BannerURL: "", LogoURL: "https://cdn/x.png",
+	}, now); err != nil {
+		t.Fatal(err)
+	}
+	got, err := repo.FindGroupByID(ctx, "g1")
+	if err != nil || got.Description != "About" || !got.IsPrivate || got.BannerColor != "volcano" {
+		t.Fatalf("profile %+v %v", got, err)
+	}
 	if err := repo.SetRailPositions(ctx, "u1", []string{"g1"}); err != nil {
 		t.Fatal(err)
 	}

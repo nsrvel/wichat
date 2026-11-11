@@ -39,7 +39,8 @@ func TestPreviewInviteValid(t *testing.T) {
 	t.Parallel()
 
 	st := usermock.NewState()
-	st.Groups = []models.Group{{ID: "g1", Name: "Team"}}
+	st.Groups = []models.Group{{ID: "g1", Name: "Team", LogoURL: "https://cdn.example/icon.png"}}
+	st.Members = []models.GroupMember{{GroupID: "g1", UserID: "u1", Role: constants.GroupRoleOwner}}
 	st.Invites = []models.GroupInviteRow{
 		{
 			ID:        "inv1",
@@ -56,8 +57,11 @@ func TestPreviewInviteValid(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !out.Valid || out.GroupName != "Team" {
+	if !out.Valid || out.GroupName != "Team" || out.GroupLogoURL != "https://cdn.example/icon.png" {
 		t.Fatalf("%+v", out)
+	}
+	if out.MemberCount != 1 || out.OnlineCount != 0 {
+		t.Fatalf("counts: %+v", out)
 	}
 }
 
@@ -161,6 +165,7 @@ func TestSendGroupInvitesEmailsUnknownUser(t *testing.T) {
 		notifier,
 		[]byte(testSupport.TestJWTSecret),
 		"https://app.test",
+		"",
 		logger.New(logger.Options{Service: "invite-test", Env: "test", Level: "error"}),
 	)
 
@@ -437,6 +442,7 @@ func newInviteService(t *testing.T, st *usermock.State) inviteservice.Service {
 		&testSupport.FakeNotifier{},
 		[]byte(testSupport.TestJWTSecret),
 		"https://app.test",
+		"",
 		logger.New(logger.Options{Service: "invite-test", Env: "test", Level: "error"}),
 	)
 }
@@ -446,6 +452,7 @@ func newInviteServiceNoWebBase(t *testing.T, st *usermock.State) inviteservice.S
 	users, groups, sessions := testSupport.TestRepos(st)
 	return inviteservice.NewService(groups, testSupport.ChannelRepo(st), invitemock.NewPgRepositoryMock(st), users, sessions,
 		&testSupport.FakeNotifier{}, []byte(testSupport.TestJWTSecret), "",
+		"",
 		logger.New(logger.Options{Service: "invite", Env: "test", Level: "error"}))
 }
 
@@ -802,7 +809,7 @@ func TestSendGroupInvitesEmailStillCountsWhenNotifyFails(t *testing.T) {
 
 	users, groups, sessions := testSupport.TestRepos(st)
 	svc := inviteservice.NewService(groups, testSupport.ChannelRepo(st), invitemock.NewPgRepositoryMock(st), users, sessions,
-		failInviteNotifier{}, []byte(testSupport.TestJWTSecret), "https://app.test",
+		failInviteNotifier{}, []byte(testSupport.TestJWTSecret), "https://app.test", "",
 		logger.New(logger.Options{Service: "invite", Env: "test", Level: "error"}))
 
 	res, err := svc.SendGroupInvites(ctx, owner.AccessToken, models.SendGroupInvitesInput{

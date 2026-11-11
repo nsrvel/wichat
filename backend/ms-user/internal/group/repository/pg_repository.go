@@ -26,6 +26,7 @@ type PgRepository interface {
 	DeleteGroup(ctx context.Context, groupID string) error
 	UpdateGroupDisplayName(ctx context.Context, groupID, name string, now time.Time) error
 	UpdateGroupLogoURL(ctx context.Context, groupID, logoURL string, now time.Time) error
+	UpdateGroupProfile(ctx context.Context, groupID string, patch models.GroupProfilePatch, now time.Time) error
 	SetRailPositions(ctx context.Context, userID string, orderedGroupIDs []string) error
 	CountGroupMembers(ctx context.Context, groupID string) (int, error)
 	ListGroupMembersPage(ctx context.Context, groupID string, limit int, cursor *models.GroupMemberCursor) ([]models.GroupMemberProfile, *models.GroupMemberCursor, error)
@@ -208,6 +209,23 @@ func (r pgRepository) UpdateGroupLogoURL(ctx context.Context, groupID, logoURL s
 	return err
 }
 
+// UpdateGroupProfile replaces owner-editable group_settings profile fields.
+func (r pgRepository) UpdateGroupProfile(ctx context.Context, groupID string, patch models.GroupProfilePatch, now time.Time) error {
+	_, err := r.db.NewUpdate().Model((*models.GroupSettingsRow)(nil)).
+		Set("name = ?", patch.Name).
+		Set("description = ?", patch.Description).
+		Set("is_private = ?", patch.IsPrivate).
+		Set("banner_color = ?", patch.BannerColor).
+		Set("banner_url = ?", patch.BannerURL).
+		Set("logo_url = ?", patch.LogoURL).
+		Set("updated_at = ?", now).
+		Where("group_id = ?", groupID).
+		Exec(ctx)
+	r.logIfInfraErr("UpdateGroupProfile", err)
+
+	return err
+}
+
 type groupJoinedRow struct {
 	Group                  models.GroupRow         `bun:"embed:g_"`
 	Settings               models.GroupSettingsRow `bun:"embed:s_"`
@@ -219,6 +237,8 @@ func groupJoinSelect(q *bun.SelectQuery) *bun.SelectQuery {
 	return q.
 		ColumnExpr("g.id AS g_id, g.public_id AS g_public_id, g.created_at AS g_created_at, g.updated_at AS g_updated_at").
 		ColumnExpr("s.group_id AS s_group_id, s.name AS s_name, s.logo_url AS s_logo_url").
+		ColumnExpr("s.description AS s_description, s.is_private AS s_is_private").
+		ColumnExpr("s.banner_color AS s_banner_color, s.banner_url AS s_banner_url").
 		ColumnExpr("s.retention_days AS s_retention_days, s.trash_retention_days AS s_trash_retention_days").
 		ColumnExpr("s.created_at AS s_created_at, s.updated_at AS s_updated_at").
 		ColumnExpr("ch.public_id AS ch_public_id").
@@ -229,6 +249,8 @@ func groupJoinSelect(q *bun.SelectQuery) *bun.SelectQuery {
 func groupFromRows(g models.GroupRow, s models.GroupSettingsRow, defaultChannelPublicID, callerRole string) models.Group {
 	return models.Group{
 		ID: g.ID, PublicID: g.PublicID, Name: s.Name, LogoURL: s.LogoURL,
+		Description: s.Description, IsPrivate: s.IsPrivate,
+		BannerColor: s.BannerColor, BannerURL: s.BannerURL,
 		DefaultChannelPublicID: defaultChannelPublicID,
 		CallerRole:             callerRole,
 		CreatedAt:              g.CreatedAt, UpdatedAt: g.UpdatedAt,

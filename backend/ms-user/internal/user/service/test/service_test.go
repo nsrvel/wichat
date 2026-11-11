@@ -43,7 +43,7 @@ func TestSetupStatusDefaultsBeforeWizard(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if status.RegistrationMode != constants.RegistrationInviteOnly || !status.UsernameEnabled || status.GuestEnabled {
+	if status.RegistrationMode != constants.RegistrationInviteOnly || !status.UsernameEnabled {
 		t.Fatalf("%+v", status)
 	}
 }
@@ -64,20 +64,6 @@ func TestCompleteInstanceSetupRejectsNonOwner(t *testing.T) {
 	})
 	if codeOf(t, err) != string(exception.MsgForbidden) {
 		t.Fatalf("%v", err)
-	}
-}
-
-func TestGuestDisabledByDefault(t *testing.T) {
-	st := usermock.NewState()
-	authSvc, _, _, _, _, _ := testSupport.NewAuthService(t, st, nil)
-	ctx := context.Background()
-
-	_, err := authSvc.RegisterGuest(ctx, models.GuestRegisterInput{
-		DisplayName: "Visitor",
-		BirthDate:   "2000-01-15",
-	})
-	if codeOf(t, err) != string(exception.MsgGuestDisabled) {
-		t.Fatalf("guest: %v", err)
 	}
 }
 
@@ -110,28 +96,6 @@ func TestCompleteInstanceSetupCreatesFirstGroup(t *testing.T) {
 	}
 }
 
-func TestGuestRegisterWhenEnabled(t *testing.T) {
-	st := usermock.NewState()
-	st.SetInstanceSettings(models.InstanceSettings{
-		UsernameEnabled:  true,
-		RegistrationMode: constants.RegistrationInviteOnly,
-		GuestEnabled:     true,
-	})
-	authSvc, _, _, _, _, _ := testSupport.NewAuthService(t, st, nil)
-	ctx := context.Background()
-
-	guest, err := authSvc.RegisterGuest(ctx, models.GuestRegisterInput{
-		DisplayName: "Visitor",
-		BirthDate:   "2000-01-15",
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !guest.User.IsGuest {
-		t.Fatalf("guest user: %+v", guest.User)
-	}
-}
-
 func TestCompleteInstanceSetupOwnerOnly(t *testing.T) {
 	st := usermock.NewState()
 	authSvc, notify, _, userSvc, _, _ := testSupport.NewAuthService(t, st, nil)
@@ -158,6 +122,5 @@ func completeInstanceSetup(t *testing.T, svc userservice.Service, token string) 
 		Name:             "WiChat",
 		RegistrationMode: constants.RegistrationInviteOnly,
 		UsernameEnabled:  true,
-		GuestEnabled:     false,
 	})
 }

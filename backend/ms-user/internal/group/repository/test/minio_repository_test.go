@@ -78,3 +78,32 @@ func TestRemoveGroupIconPrefix(t *testing.T) {
 		t.Fatalf("prefix %q", stub.lastKey)
 	}
 }
+
+func TestPutGroupBannerKeyAndURL(t *testing.T) {
+	stub := &stubMinio{publicBase: "https://cdn.example.com/bucket"}
+	repo := grouprepo.NewMinioRepository(stub)
+
+	url, err := repo.PutGroupBanner(context.Background(), "abc123", "image/webp", bytes.NewReader(nil), 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stub.lastKey != "groups/abc123/banner.webp" {
+		t.Fatalf("key %q", stub.lastKey)
+	}
+	want := "https://cdn.example.com/bucket/groups/abc123/banner.webp"
+	if url != want {
+		t.Fatalf("url %q want %q", url, want)
+	}
+}
+
+func TestRemoveGroupBannerPrefix(t *testing.T) {
+	stub := &stubMinio{}
+	repo := grouprepo.NewMinioRepository(stub)
+
+	if err := repo.RemoveGroupBanner(context.Background(), "abc123"); err != nil {
+		t.Fatal(err)
+	}
+	if stub.lastKey != "groups/abc123/banner." {
+		t.Fatalf("prefix %q", stub.lastKey)
+	}
+}

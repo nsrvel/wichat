@@ -20,7 +20,6 @@ import (
 type Service interface {
 	SetupStatus(ctx context.Context) (*models.SetupStatus, error)
 	CompleteInstanceSetup(ctx context.Context, accessToken string, in models.CompleteInstanceSetupInput) error
-	CreateGuest(ctx context.Context, in models.GuestRegisterInput) (models.User, error)
 	UsernameEnabledForNewUsers(ctx context.Context) (bool, error)
 }
 
@@ -54,7 +53,6 @@ func (s service) SetupStatus(ctx context.Context) (*models.SetupStatus, error) {
 
 	return &models.SetupStatus{
 		RegistrationMode: settings.RegistrationMode,
-		GuestEnabled:     settings.GuestEnabled,
 		UsernameEnabled:  settings.UsernameEnabled,
 	}, nil
 }
@@ -104,37 +102,6 @@ func (s service) CompleteInstanceSetup(ctx context.Context, accessToken string, 
 	return nil
 }
 
-func (s service) CreateGuest(ctx context.Context, in models.GuestRegisterInput) (models.User, error) {
-	name, birth, err := validator.GuestRegister(in)
-	if err != nil {
-		return models.User{}, err
-	}
-
-	if err := s.allowGuestRegistration(ctx); err != nil {
-		return models.User{}, err
-	}
-
-	now := s.now()
-	id, err := token.NewID()
-	if err != nil {
-		return models.User{}, exception.Internal(err)
-	}
-
-	user := models.User{
-		ID:          id,
-		DisplayName: name,
-		BirthDate:   birth,
-		IsGuest:     true,
-		CreatedAt:   now,
-		UpdatedAt:   now,
-	}
-	if err := s.users.CreateUser(ctx, user); err != nil {
-		return models.User{}, err
-	}
-
-	return user, nil
-}
-
 func (s service) UsernameEnabledForNewUsers(ctx context.Context) (bool, error) {
 	settings, err := s.users.GetInstanceSettings(ctx)
 	if err != nil {
@@ -142,16 +109,4 @@ func (s service) UsernameEnabledForNewUsers(ctx context.Context) (bool, error) {
 	}
 
 	return settings.UsernameEnabled, nil
-}
-
-func (s service) allowGuestRegistration(ctx context.Context) error {
-	settings, err := s.users.GetInstanceSettings(ctx)
-	if err != nil {
-		return err
-	}
-	if !settings.GuestEnabled {
-		return exception.PermissionDenied(exception.MsgGuestDisabled, nil)
-	}
-
-	return nil
 }

@@ -60,7 +60,6 @@ func (s *server) SetupStatus(ctx context.Context, _ *userv1.SetupStatusRequest) 
 	// Response
 	return &userv1.SetupStatusResponse{
 		RegistrationMode: out.RegistrationMode,
-		GuestEnabled:     out.GuestEnabled,
 		UsernameEnabled:  out.UsernameEnabled,
 	}, nil
 }
@@ -72,7 +71,6 @@ func (s *server) CompleteInstanceSetup(ctx context.Context, req *userv1.Complete
 		LogoURL:          req.GetLogoUrl(),
 		UsernameEnabled:  req.GetUsernameEnabled(),
 		RegistrationMode: req.GetRegistrationMode(),
-		GuestEnabled:     req.GetGuestEnabled(),
 	}
 
 	// Service
@@ -124,24 +122,6 @@ func (s *server) Register(ctx context.Context, req *userv1.RegisterRequest) (*us
 	// Response
 	sess, ch := authPb.PasswordAuth(out)
 	return &userv1.RegisterResponse{Session: sess, Challenge: ch}, nil
-}
-
-func (s *server) RegisterGuest(ctx context.Context, req *userv1.RegisterGuestRequest) (*userv1.RegisterGuestResponse, error) {
-	// Bind
-	in := models.GuestRegisterInput{
-		DisplayName: req.GetDisplayName(),
-		BirthDate:   req.GetBirthDate(),
-		ClientMeta:  authPb.Meta(req.GetUserAgent(), req.GetClientIp()),
-	}
-
-	// Service
-	out, err := s.auth.RegisterGuest(ctx, in)
-	if err != nil {
-		return nil, responsegrpc.ToStatus(err)
-	}
-
-	// Response
-	return &userv1.RegisterGuestResponse{Session: authPb.Session(out)}, nil
 }
 
 func (s *server) Login(ctx context.Context, req *userv1.LoginRequest) (*userv1.LoginResponse, error) {
@@ -379,6 +359,41 @@ func (s *server) UploadGroupIcon(ctx context.Context, req *userv1.UploadGroupIco
 	return &userv1.UploadGroupIconResponse{Group: authPb.GroupSummary(*group)}, nil
 }
 
+func (s *server) UpdateGroupProfile(ctx context.Context, req *userv1.UpdateGroupProfileRequest) (*userv1.UpdateGroupProfileResponse, error) {
+	group, err := s.group.UpdateGroupProfile(
+		ctx,
+		req.GetAccessToken(),
+		req.GetGroupId(),
+		req.GetName(),
+		req.GetDescription(),
+		req.GetIsPrivate(),
+		req.GetBannerColor(),
+		req.GetClearLogo(),
+		req.GetClearBannerImage(),
+	)
+	if err != nil {
+		return nil, responsegrpc.ToStatus(err)
+	}
+
+	return &userv1.UpdateGroupProfileResponse{Group: authPb.GroupSummary(*group)}, nil
+}
+
+func (s *server) UploadGroupBanner(ctx context.Context, req *userv1.UploadGroupBannerRequest) (*userv1.UploadGroupBannerResponse, error) {
+	group, err := s.group.UploadGroupBanner(
+		ctx,
+		req.GetAccessToken(),
+		req.GetGroupId(),
+		req.GetContentType(),
+		bytes.NewReader(req.GetData()),
+		int64(len(req.GetData())),
+	)
+	if err != nil {
+		return nil, responsegrpc.ToStatus(err)
+	}
+
+	return &userv1.UploadGroupBannerResponse{Group: authPb.GroupSummary(*group)}, nil
+}
+
 func (s *server) ListGroupMembers(ctx context.Context, req *userv1.ListGroupMembersRequest) (*userv1.ListGroupMembersResponse, error) {
 	cursor, err := inviteCursor.DecodeMemberCursor(req.GetCursor())
 	if err != nil {
@@ -443,10 +458,13 @@ func (s *server) PreviewGroupInvite(ctx context.Context, req *userv1.PreviewGrou
 	}
 
 	resp := &userv1.PreviewGroupInviteResponse{
-		Valid:       out.Valid,
-		GroupName:   out.GroupName,
-		ChannelName: out.ChannelName,
-		Reason:      out.Reason,
+		Valid:        out.Valid,
+		GroupName:    out.GroupName,
+		ChannelName:  out.ChannelName,
+		GroupLogoUrl: out.GroupLogoURL,
+		MemberCount:  int32(out.MemberCount), //nolint:gosec
+		OnlineCount:  int32(out.OnlineCount), //nolint:gosec
+		Reason:       out.Reason,
 	}
 	if !out.ExpiresAt.IsZero() {
 		resp.ExpiresAt = out.ExpiresAt.UTC().Format(time.RFC3339Nano)

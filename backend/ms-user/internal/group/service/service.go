@@ -30,6 +30,18 @@ type Service interface {
 	LeaveGroup(ctx context.Context, accessToken, groupID string) error
 	DeleteGroup(ctx context.Context, accessToken, groupID string) error
 	UploadGroupIcon(ctx context.Context, accessToken, groupPublicID, contentType string, body io.Reader, size int64) (*models.PublicGroup, error)
+	UpdateGroupProfile(
+		ctx context.Context,
+		accessToken,
+		groupPublicID,
+		name,
+		description string,
+		isPrivate bool,
+		bannerColor string,
+		clearLogo,
+		clearBannerImage bool,
+	) (*models.PublicGroup, error)
+	UploadGroupBanner(ctx context.Context, accessToken, groupPublicID, contentType string, body io.Reader, size int64) (*models.PublicGroup, error)
 }
 
 type service struct {
@@ -409,6 +421,188 @@ func (s service) UploadGroupIcon(
 
 	now := s.now()
 	if err := s.groups.UpdateGroupLogoURL(ctx, group.ID, logoURL, now); err != nil {
+		return nil, err
+	}
+
+	saved, err := s.groups.FindGroupByID(ctx, group.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	pub := saved.Public()
+	pub.Role = member.Role
+
+	return &pub, nil
+}
+
+func (s service) UpdateGroupProfile(
+	ctx context.Context,
+	accessToken,
+	groupPublicID,
+	name,
+	description string,
+	isPrivate bool,
+	bannerColor string,
+	clearLogo,
+	clearBannerImage bool,
+) (*models.PublicGroup, error) {
+	userID, err := access.UserIDFromAccessToken(ctx, accessToken, s.secret, s.sessions, s.now())
+	if err != nil {
+		return nil, err
+	}
+
+	trimmedName, err := validator.GroupName(name)
+	if err != nil {
+		return nil, err
+	}
+
+	trimmedDescription, err := validator.GroupDescription(description)
+	if err != nil {
+		return nil, err
+	}
+
+	normalizedBannerColor, err := validator.GroupBannerColor(bannerColor)
+	if err != nil {
+		return nil, err
+	}
+
+	publicID, err := validator.GroupPublicID(groupPublicID)
+	if err != nil {
+		return nil, err
+	}
+
+	group, err := s.groups.FindGroupByPublicID(ctx, publicID)
+	if err != nil {
+		if errors.Is(err, constants.ErrNotFound) {
+			return nil, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "group_id"})
+		}
+
+		return nil, err
+	}
+
+	member, err := s.groups.FindGroupMember(ctx, group.ID, userID)
+	if err != nil {
+		if errors.Is(err, constants.ErrNotFound) {
+			return nil, exception.PermissionDenied(exception.MsgForbidden, nil)
+		}
+
+		return nil, err
+	}
+	if member.Role != constants.GroupRoleOwner {
+		return nil, exception.PermissionDenied(exception.MsgForbidden, nil)
+	}
+
+	logoURL := group.LogoURL
+	if clearLogo {
+		if err := s.objects.RemoveGroupIcon(ctx, group.PublicID); err != nil && !errors.Is(err, minio.ErrDisabled) {
+			return nil, err
+		}
+		logoURL = ""
+	}
+
+	bannerURL := group.BannerURL
+	removeBannerObject := clearBannerImage || normalizedBannerColor != ""
+	if removeBannerObject && bannerURL != "" {
+		if err := s.objects.RemoveGroupBanner(ctx, group.PublicID); err != nil && !errors.Is(err, minio.ErrDisabled) {
+			return nil, err
+		}
+		bannerURL = ""
+	}
+	if normalizedBannerColor != "" {
+		bannerURL = ""
+	}
+
+	now := s.now()
+	patch := models.GroupProfilePatch{
+		Name:             trimmedName,
+		Description:      trimmedDescription,
+		IsPrivate:        isPrivate,
+		BannerColor:      normalizedBannerColor,
+		BannerURL:        bannerURL,
+		LogoURL:          logoURL,
+		ClearBannerAsset: removeBannerObject,
+	}
+	if err := s.groups.UpdateGroupProfile(ctx, group.ID, patch, now); err != nil {
+		return nil, err
+	}
+
+	saved, err := s.groups.FindGroupByID(ctx, group.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	pub := saved.Public()
+	pub.Role = member.Role
+
+	return &pub, nil
+}
+
+func (s service) UploadGroupBanner(
+	ctx context.Context,
+	accessToken,
+	groupPublicID,
+	contentType string,
+	body io.Reader,
+	size int64,
+) (*models.PublicGroup, error) {
+	userID, err := access.UserIDFromAccessToken(ctx, accessToken, s.secret, s.sessions, s.now())
+	if err != nil {
+		return nil, err
+	}
+
+	if err := validator.GroupBannerUpload(contentType, size); err != nil {
+		return nil, err
+	}
+
+	publicID, err := validator.GroupPublicID(groupPublicID)
+	if err != nil {
+		return nil, err
+	}
+
+	group, err := s.groups.FindGroupByPublicID(ctx, publicID)
+	if err != nil {
+		if errors.Is(err, constants.ErrNotFound) {
+			return nil, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "group_id"})
+		}
+
+		return nil, err
+	}
+
+	member, err := s.groups.FindGroupMember(ctx, group.ID, userID)
+	if err != nil {
+		if errors.Is(err, constants.ErrNotFound) {
+			return nil, exception.PermissionDenied(exception.MsgForbidden, nil)
+		}
+
+		return nil, err
+	}
+	if member.Role != constants.GroupRoleOwner {
+		return nil, exception.PermissionDenied(exception.MsgForbidden, nil)
+	}
+
+	if group.BannerURL != "" {
+		_ = s.objects.RemoveGroupBanner(ctx, group.PublicID)
+	}
+
+	bannerURL, err := s.objects.PutGroupBanner(ctx, group.PublicID, contentType, body, size)
+	if err != nil {
+		if errors.Is(err, minio.ErrDisabled) {
+			return nil, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "file"})
+		}
+
+		return nil, err
+	}
+
+	now := s.now()
+	patch := models.GroupProfilePatch{
+		Name:        group.Name,
+		Description: group.Description,
+		IsPrivate:   group.IsPrivate,
+		BannerColor: "",
+		BannerURL:   bannerURL,
+		LogoURL:     group.LogoURL,
+	}
+	if err := s.groups.UpdateGroupProfile(ctx, group.ID, patch, now); err != nil {
 		return nil, err
 	}
 

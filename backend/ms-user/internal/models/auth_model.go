@@ -25,14 +25,12 @@ type User struct {
 type InstanceSettings struct {
 	UsernameEnabled  bool
 	RegistrationMode string
-	GuestEnabled     bool
 	SetupCompleted   bool
 }
 
 // SetupStatus is the public instance policy snapshot for the auth UI.
 type SetupStatus struct {
 	RegistrationMode string
-	GuestEnabled     bool
 	UsernameEnabled  bool
 }
 
@@ -42,7 +40,6 @@ type CompleteInstanceSetupInput struct {
 	LogoURL          string
 	UsernameEnabled  bool
 	RegistrationMode string
-	GuestEnabled     bool
 }
 
 // InstanceSetupPayload is the validated wizard data passed to the repository.
@@ -53,7 +50,6 @@ type InstanceSetupPayload struct {
 	GroupLogoURL     string
 	UsernameEnabled  bool
 	RegistrationMode string
-	GuestEnabled     bool
 }
 
 // Public returns the account fields safe to send to clients.
@@ -63,7 +59,6 @@ func (u User) Public() PublicUser {
 		Email:       u.Email,
 		Username:    u.Username,
 		DisplayName: u.DisplayName,
-		IsGuest:     u.IsGuest,
 	}
 }
 
@@ -73,7 +68,6 @@ type PublicUser struct {
 	Email       string
 	Username    string
 	DisplayName string
-	IsGuest     bool
 }
 
 // ClientMeta is the device hint stored on a session.
@@ -100,13 +94,6 @@ type RegisterInput struct {
 	DisplayName string
 	BirthDate   string
 	Locale      string
-	ClientMeta
-}
-
-// GuestRegisterInput is the guest registration form.
-type GuestRegisterInput struct {
-	DisplayName string
-	BirthDate   string
 	ClientMeta
 }
 

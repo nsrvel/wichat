@@ -61,9 +61,12 @@ type RedeemInviteResult struct {
 
 // InvitePreviewResult is public invite metadata for the landing page.
 type InvitePreviewResult struct {
-	Valid       bool
-	GroupName   string
-	ChannelName string
-	ExpiresAt   time.Time
-	Reason      string
+	Valid        bool
+	GroupName    string
+	ChannelName  string
+	GroupLogoURL string
+	MemberCount  int
+	OnlineCount  int
+	ExpiresAt    time.Time
+	Reason       string
 }

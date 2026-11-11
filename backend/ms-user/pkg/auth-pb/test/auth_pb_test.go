@@ -44,8 +44,12 @@ func TestMappersNilAndValues(t *testing.T) {
 		t.Fatal("user")
 	}
 
-	group := models.PublicGroup{ID: "g1", Name: "Team", LogoURL: "https://x/l.png", Role: "owner"}
-	if authPb.GroupSummary(group).Name != "Team" {
+	group := models.PublicGroup{
+		ID: "g1", Name: "Team", LogoURL: "https://x/l.png", Role: "owner",
+		Description: "About", IsPrivate: true, BannerColor: "sky", BannerURL: "https://x/b.png",
+	}
+	summary := authPb.GroupSummary(group)
+	if summary.Name != "Team" || summary.Description != "About" || !summary.IsPrivate || summary.BannerColor != "sky" {
 		t.Fatal("group")
 	}
 

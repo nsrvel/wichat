@@ -2,7 +2,7 @@
 
 Auth domain in the same process as user/workspace: `repository/` → `service/` → `delivery/grpc/` when implemented.
 
-Covers login, OAuth, sessions, refresh rotation, first-run admin, guest tokens (per system design).
+Covers login, OAuth, sessions, refresh rotation, first-run admin (per system design).
 
 Domain types live in [`internal/models/auth_model.go`](../models/auth_model.go). Bun table mapping: [`internal/models/auth_repository_model.go`](../models/auth_repository_model.go).
 
@@ -27,7 +27,7 @@ Persistence errors: `errors.Is(err, constants.ErrNotFound)` from [`pkg/constants
 
 **Tests:** [`service/test/service_test.go`](service/test/service_test.go) only; wiring via [`pkg/test-support`](../../pkg/test-support). Postgres mocks: [`user/repository/mock`](../user/repository/mock) + [`auth/repository/mock`](repository/mock). Redis: miniredis + real `redis_*` stores.
 
-**Related services:** [`user/service`](../user/service/service.go) (setup, guest), [`group/service`](../group/service/service.go) (membership) — same gRPC `AuthService` delivery.
+**Related services:** [`user/service`](../user/service/service.go) (setup), [`group/service`](../group/service/service.go) (membership) — same gRPC `AuthService` delivery.
 
 ## Delivery (gRPC)
 

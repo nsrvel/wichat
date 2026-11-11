@@ -14,10 +14,25 @@ const (
 
 // Group and instance setup limits.
 const (
-	MaxGroupNameRunes = 80
-	MaxLogoURLRunes   = 2048
-	MaxGroupIconBytes = 5 * 1024 * 1024
+	MaxGroupNameRunes        = 80
+	MaxGroupDescriptionRunes = 2000
+	MaxLogoURLRunes          = 2048
+	MaxGroupIconBytes        = 5 * 1024 * 1024
+	MaxGroupBannerBytes      = 8 * 1024 * 1024
 )
+
+// AllowedGroupBannerColors are solid banner palette ids (matches web presets minus image).
+var AllowedGroupBannerColors = map[string]struct{}{
+	"default": {},
+	"blossom": {},
+	"volcano": {},
+	"sunset":  {},
+	"gold":    {},
+	"grape":   {},
+	"sky":     {},
+	"forest":  {},
+	"onyx":    {},
+}
 
 // Group invite and member list limits.
 const (
