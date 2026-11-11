@@ -27,7 +27,7 @@ func (s *setupStatusServer) SetupStatus(context.Context, *userv1.SetupStatusRequ
 		return nil, status.Error(codes.Unavailable, "try again")
 	}
 
-	return &userv1.SetupStatusResponse{GuestEnabled: true}, nil
+	return &userv1.SetupStatusResponse{UsernameEnabled: true}, nil
 }
 
 func TestSetupStatusRetriesIdempotent(t *testing.T) {
@@ -65,7 +65,7 @@ func TestSetupStatusRetriesIdempotent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !out.GetGuestEnabled() {
+	if !out.GetUsernameEnabled() {
 		t.Fatalf("unexpected response: %+v", out)
 	}
 }

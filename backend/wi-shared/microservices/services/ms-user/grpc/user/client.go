@@ -13,7 +13,6 @@ import (
 type Client interface {
 	SetupStatus(ctx context.Context, in *userv1.SetupStatusRequest) (*userv1.SetupStatusResponse, error)
 	CompleteInstanceSetup(ctx context.Context, in *userv1.CompleteInstanceSetupRequest) (*userv1.CompleteInstanceSetupResponse, error)
-	RegisterGuest(ctx context.Context, in *userv1.RegisterGuestRequest) (*userv1.RegisterGuestResponse, error)
 }
 
 type client struct {
@@ -48,11 +47,5 @@ func (c *client) SetupStatus(ctx context.Context, in *userv1.SetupStatusRequest)
 func (c *client) CompleteInstanceSetup(ctx context.Context, in *userv1.CompleteInstanceSetupRequest) (*userv1.CompleteInstanceSetupResponse, error) {
 	return utils.CallUnaryResult(ctx, c.none, c.log, "auth.AuthService/CompleteInstanceSetup", func(callCtx context.Context) (*userv1.CompleteInstanceSetupResponse, error) {
 		return c.stub.CompleteInstanceSetup(callCtx, in)
-	})
-}
-
-func (c *client) RegisterGuest(ctx context.Context, in *userv1.RegisterGuestRequest) (*userv1.RegisterGuestResponse, error) {
-	return utils.CallUnaryResult(ctx, c.none, c.log, "auth.AuthService/RegisterGuest", func(callCtx context.Context) (*userv1.RegisterGuestResponse, error) {
-		return c.stub.RegisterGuest(callCtx, in)
 	})
 }

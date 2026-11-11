@@ -22,7 +22,6 @@ const (
 	AuthService_SetupStatus_FullMethodName              = "/user.v1.AuthService/SetupStatus"
 	AuthService_Setup_FullMethodName                    = "/user.v1.AuthService/Setup"
 	AuthService_Register_FullMethodName                 = "/user.v1.AuthService/Register"
-	AuthService_RegisterGuest_FullMethodName            = "/user.v1.AuthService/RegisterGuest"
 	AuthService_Login_FullMethodName                    = "/user.v1.AuthService/Login"
 	AuthService_VerifyRegister_FullMethodName           = "/user.v1.AuthService/VerifyRegister"
 	AuthService_VerifyLogin_FullMethodName              = "/user.v1.AuthService/VerifyLogin"
@@ -47,6 +46,8 @@ const (
 	AuthService_ListGroupChannels_FullMethodName        = "/user.v1.AuthService/ListGroupChannels"
 	AuthService_AssertGroupChannelAccess_FullMethodName = "/user.v1.AuthService/AssertGroupChannelAccess"
 	AuthService_UploadGroupIcon_FullMethodName          = "/user.v1.AuthService/UploadGroupIcon"
+	AuthService_UpdateGroupProfile_FullMethodName       = "/user.v1.AuthService/UpdateGroupProfile"
+	AuthService_UploadGroupBanner_FullMethodName        = "/user.v1.AuthService/UploadGroupBanner"
 	AuthService_ListGroupMembers_FullMethodName         = "/user.v1.AuthService/ListGroupMembers"
 	AuthService_SearchUsers_FullMethodName              = "/user.v1.AuthService/SearchUsers"
 	AuthService_GetGroupInviteLink_FullMethodName       = "/user.v1.AuthService/GetGroupInviteLink"
@@ -67,8 +68,6 @@ type AuthServiceClient interface {
 	Setup(ctx context.Context, in *SetupRequest, opts ...grpc.CallOption) (*SetupResponse, error)
 	// Register creates a member account and opens a session.
 	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error)
-	// RegisterGuest creates a guest account and opens a session.
-	RegisterGuest(ctx context.Context, in *RegisterGuestRequest, opts ...grpc.CallOption) (*RegisterGuestResponse, error)
 	// Login checks login identifier and password, then starts email OTP.
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
 	// VerifyRegister completes signup after email OTP.
@@ -117,6 +116,10 @@ type AuthServiceClient interface {
 	AssertGroupChannelAccess(ctx context.Context, in *AssertGroupChannelAccessRequest, opts ...grpc.CallOption) (*AssertGroupChannelAccessResponse, error)
 	// UploadGroupIcon stores a group logo and updates group_settings.logo_url.
 	UploadGroupIcon(ctx context.Context, in *UploadGroupIconRequest, opts ...grpc.CallOption) (*UploadGroupIconResponse, error)
+	// UpdateGroupProfile replaces owner-editable group profile scalars.
+	UpdateGroupProfile(ctx context.Context, in *UpdateGroupProfileRequest, opts ...grpc.CallOption) (*UpdateGroupProfileResponse, error)
+	// UploadGroupBanner stores a banner image and updates group_settings.banner_url.
+	UploadGroupBanner(ctx context.Context, in *UploadGroupBannerRequest, opts ...grpc.CallOption) (*UploadGroupBannerResponse, error)
 	// ListGroupMembers pages members with access for the share UI.
 	ListGroupMembers(ctx context.Context, in *ListGroupMembersRequest, opts ...grpc.CallOption) (*ListGroupMembersResponse, error)
 	// SearchUsers finds instance accounts for invite autocomplete.
@@ -163,16 +166,6 @@ func (c *authServiceClient) Register(ctx context.Context, in *RegisterRequest, o
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(RegisterResponse)
 	err := c.cc.Invoke(ctx, AuthService_Register_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *authServiceClient) RegisterGuest(ctx context.Context, in *RegisterGuestRequest, opts ...grpc.CallOption) (*RegisterGuestResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(RegisterGuestResponse)
-	err := c.cc.Invoke(ctx, AuthService_RegisterGuest_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -419,6 +412,26 @@ func (c *authServiceClient) UploadGroupIcon(ctx context.Context, in *UploadGroup
 	return out, nil
 }
 
+func (c *authServiceClient) UpdateGroupProfile(ctx context.Context, in *UpdateGroupProfileRequest, opts ...grpc.CallOption) (*UpdateGroupProfileResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateGroupProfileResponse)
+	err := c.cc.Invoke(ctx, AuthService_UpdateGroupProfile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) UploadGroupBanner(ctx context.Context, in *UploadGroupBannerRequest, opts ...grpc.CallOption) (*UploadGroupBannerResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UploadGroupBannerResponse)
+	err := c.cc.Invoke(ctx, AuthService_UploadGroupBanner_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *authServiceClient) ListGroupMembers(ctx context.Context, in *ListGroupMembersRequest, opts ...grpc.CallOption) (*ListGroupMembersResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListGroupMembersResponse)
@@ -491,8 +504,6 @@ type AuthServiceServer interface {
 	Setup(context.Context, *SetupRequest) (*SetupResponse, error)
 	// Register creates a member account and opens a session.
 	Register(context.Context, *RegisterRequest) (*RegisterResponse, error)
-	// RegisterGuest creates a guest account and opens a session.
-	RegisterGuest(context.Context, *RegisterGuestRequest) (*RegisterGuestResponse, error)
 	// Login checks login identifier and password, then starts email OTP.
 	Login(context.Context, *LoginRequest) (*LoginResponse, error)
 	// VerifyRegister completes signup after email OTP.
@@ -541,6 +552,10 @@ type AuthServiceServer interface {
 	AssertGroupChannelAccess(context.Context, *AssertGroupChannelAccessRequest) (*AssertGroupChannelAccessResponse, error)
 	// UploadGroupIcon stores a group logo and updates group_settings.logo_url.
 	UploadGroupIcon(context.Context, *UploadGroupIconRequest) (*UploadGroupIconResponse, error)
+	// UpdateGroupProfile replaces owner-editable group profile scalars.
+	UpdateGroupProfile(context.Context, *UpdateGroupProfileRequest) (*UpdateGroupProfileResponse, error)
+	// UploadGroupBanner stores a banner image and updates group_settings.banner_url.
+	UploadGroupBanner(context.Context, *UploadGroupBannerRequest) (*UploadGroupBannerResponse, error)
 	// ListGroupMembers pages members with access for the share UI.
 	ListGroupMembers(context.Context, *ListGroupMembersRequest) (*ListGroupMembersResponse, error)
 	// SearchUsers finds instance accounts for invite autocomplete.
@@ -571,9 +586,6 @@ func (UnimplementedAuthServiceServer) Setup(context.Context, *SetupRequest) (*Se
 }
 func (UnimplementedAuthServiceServer) Register(context.Context, *RegisterRequest) (*RegisterResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Register not implemented")
-}
-func (UnimplementedAuthServiceServer) RegisterGuest(context.Context, *RegisterGuestRequest) (*RegisterGuestResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method RegisterGuest not implemented")
 }
 func (UnimplementedAuthServiceServer) Login(context.Context, *LoginRequest) (*LoginResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Login not implemented")
@@ -646,6 +658,12 @@ func (UnimplementedAuthServiceServer) AssertGroupChannelAccess(context.Context, 
 }
 func (UnimplementedAuthServiceServer) UploadGroupIcon(context.Context, *UploadGroupIconRequest) (*UploadGroupIconResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method UploadGroupIcon not implemented")
+}
+func (UnimplementedAuthServiceServer) UpdateGroupProfile(context.Context, *UpdateGroupProfileRequest) (*UpdateGroupProfileResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateGroupProfile not implemented")
+}
+func (UnimplementedAuthServiceServer) UploadGroupBanner(context.Context, *UploadGroupBannerRequest) (*UploadGroupBannerResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UploadGroupBanner not implemented")
 }
 func (UnimplementedAuthServiceServer) ListGroupMembers(context.Context, *ListGroupMembersRequest) (*ListGroupMembersResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListGroupMembers not implemented")
@@ -736,24 +754,6 @@ func _AuthService_Register_Handler(srv interface{}, ctx context.Context, dec fun
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AuthServiceServer).Register(ctx, req.(*RegisterRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AuthService_RegisterGuest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RegisterGuestRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AuthServiceServer).RegisterGuest(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AuthService_RegisterGuest_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AuthServiceServer).RegisterGuest(ctx, req.(*RegisterGuestRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1190,6 +1190,42 @@ func _AuthService_UploadGroupIcon_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthService_UpdateGroupProfile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateGroupProfileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).UpdateGroupProfile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_UpdateGroupProfile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).UpdateGroupProfile(ctx, req.(*UpdateGroupProfileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_UploadGroupBanner_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UploadGroupBannerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).UploadGroupBanner(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_UploadGroupBanner_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).UploadGroupBanner(ctx, req.(*UploadGroupBannerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AuthService_ListGroupMembers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListGroupMembersRequest)
 	if err := dec(in); err != nil {
@@ -1318,10 +1354,6 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AuthService_Register_Handler,
 		},
 		{
-			MethodName: "RegisterGuest",
-			Handler:    _AuthService_RegisterGuest_Handler,
-		},
-		{
 			MethodName: "Login",
 			Handler:    _AuthService_Login_Handler,
 		},
@@ -1416,6 +1448,14 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UploadGroupIcon",
 			Handler:    _AuthService_UploadGroupIcon_Handler,
+		},
+		{
+			MethodName: "UpdateGroupProfile",
+			Handler:    _AuthService_UpdateGroupProfile_Handler,
+		},
+		{
+			MethodName: "UploadGroupBanner",
+			Handler:    _AuthService_UploadGroupBanner_Handler,
 		},
 		{
 			MethodName: "ListGroupMembers",

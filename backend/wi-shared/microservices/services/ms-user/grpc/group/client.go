@@ -19,6 +19,8 @@ type Client interface {
 	LeaveGroup(ctx context.Context, in *userv1.LeaveGroupRequest) (*userv1.LeaveGroupResponse, error)
 	DeleteGroup(ctx context.Context, in *userv1.DeleteGroupRequest) (*userv1.DeleteGroupResponse, error)
 	UploadGroupIcon(ctx context.Context, in *userv1.UploadGroupIconRequest) (*userv1.UploadGroupIconResponse, error)
+	UpdateGroupProfile(ctx context.Context, in *userv1.UpdateGroupProfileRequest) (*userv1.UpdateGroupProfileResponse, error)
+	UploadGroupBanner(ctx context.Context, in *userv1.UploadGroupBannerRequest) (*userv1.UploadGroupBannerResponse, error)
 	ListGroupMembers(ctx context.Context, in *userv1.ListGroupMembersRequest) (*userv1.ListGroupMembersResponse, error)
 	SearchUsers(ctx context.Context, in *userv1.SearchUsersRequest) (*userv1.SearchUsersResponse, error)
 	GetGroupInviteLink(ctx context.Context, in *userv1.GetGroupInviteLinkRequest) (*userv1.GetGroupInviteLinkResponse, error)
@@ -95,6 +97,18 @@ func (c *client) DeleteGroup(ctx context.Context, in *userv1.DeleteGroupRequest)
 func (c *client) UploadGroupIcon(ctx context.Context, in *userv1.UploadGroupIconRequest) (*userv1.UploadGroupIconResponse, error) {
 	return utils.CallUnaryResult(ctx, c.none, c.log, "auth.AuthService/UploadGroupIcon", func(callCtx context.Context) (*userv1.UploadGroupIconResponse, error) {
 		return c.stub.UploadGroupIcon(callCtx, in)
+	})
+}
+
+func (c *client) UpdateGroupProfile(ctx context.Context, in *userv1.UpdateGroupProfileRequest) (*userv1.UpdateGroupProfileResponse, error) {
+	return utils.CallUnaryResult(ctx, c.none, c.log, "auth.AuthService/UpdateGroupProfile", func(callCtx context.Context) (*userv1.UpdateGroupProfileResponse, error) {
+		return c.stub.UpdateGroupProfile(callCtx, in)
+	})
+}
+
+func (c *client) UploadGroupBanner(ctx context.Context, in *userv1.UploadGroupBannerRequest) (*userv1.UploadGroupBannerResponse, error) {
+	return utils.CallUnaryResult(ctx, c.none, c.log, "auth.AuthService/UploadGroupBanner", func(callCtx context.Context) (*userv1.UploadGroupBannerResponse, error) {
+		return c.stub.UploadGroupBanner(callCtx, in)
 	})
 }
 

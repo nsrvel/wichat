@@ -12,8 +12,6 @@ service AuthService {
   rpc Setup(SetupRequest) returns (SetupResponse);
   // Register creates a member account and opens a session.
   rpc Register(RegisterRequest) returns (RegisterResponse);
-  // RegisterGuest creates a guest account and opens a session.
-  rpc RegisterGuest(RegisterGuestRequest) returns (RegisterGuestResponse);
   // Login checks login identifier and password, then starts email OTP.
   rpc Login(LoginRequest) returns (LoginResponse);
   // VerifyRegister completes signup after email OTP.
@@ -62,6 +60,10 @@ service AuthService {
   rpc AssertGroupChannelAccess(AssertGroupChannelAccessRequest) returns (AssertGroupChannelAccessResponse);
   // UploadGroupIcon stores a group logo and updates group_settings.logo_url.
   rpc UploadGroupIcon(UploadGroupIconRequest) returns (UploadGroupIconResponse);
+  // UpdateGroupProfile replaces owner-editable group profile scalars.
+  rpc UpdateGroupProfile(UpdateGroupProfileRequest) returns (UpdateGroupProfileResponse);
+  // UploadGroupBanner stores a banner image and updates group_settings.banner_url.
+  rpc UploadGroupBanner(UploadGroupBannerRequest) returns (UploadGroupBannerResponse);
   // ListGroupMembers pages members with access for the share UI.
   rpc ListGroupMembers(ListGroupMembersRequest) returns (ListGroupMembersResponse);
   // SearchUsers finds instance accounts for invite autocomplete.
@@ -82,7 +84,8 @@ message User {
   string email = 2;
   string display_name = 3;
   string username = 4;
-  bool is_guest = 5;
+  reserved 5;
+  reserved "is_guest";
 }
 
 // Session is the credential pair returned to the gateway.
@@ -99,10 +102,9 @@ message SetupStatusRequest {}
 
 // SetupStatusResponse reports instance policy for the auth UI.
 message SetupStatusResponse {
-  reserved 1, 2, 6;
-  reserved "needs_account", "needs_instance_setup", "group_name";
+  reserved 1, 2, 4, 6;
+  reserved "needs_account", "needs_instance_setup", "group_name", "guest_enabled";
   string registration_mode = 3;
-  bool guest_enabled = 4;
   bool username_enabled = 5;
 }
 
@@ -113,7 +115,8 @@ message CompleteInstanceSetupRequest {
   string logo_url = 3;
   bool username_enabled = 4;
   string registration_mode = 5;
-  bool guest_enabled = 6;
+  reserved 6;
+  reserved "guest_enabled";
 }
 
 // CompleteInstanceSetupResponse acknowledges saved settings.
@@ -159,19 +162,6 @@ message RegisterRequest {
 message RegisterResponse {
   Session session = 1;
   AuthChallenge challenge = 2;
-}
-
-// RegisterGuestRequest is the guest registration form.
-message RegisterGuestRequest {
-  string display_name = 1;
-  string birth_date = 2;
-  string user_agent = 3;
-  string client_ip = 4;
-}
-
-// RegisterGuestResponse carries the new session.
-message RegisterGuestResponse {
-  Session session = 1;
 }
 
 // LoginRequest is a login identifier and password.
@@ -316,6 +306,10 @@ message GroupSummary {
   string default_channel_id = 4;
   // role is the caller's membership role (ListMyGroups / CreateGroup); empty for joinable list.
   string role = 5;
+  string description = 6;
+  bool is_private = 7;
+  string banner_color = 8;
+  string banner_url = 9;
 }
 
 message ListMyGroupsRequest {
@@ -423,6 +417,32 @@ message UploadGroupIconResponse {
   GroupSummary group = 1;
 }
 
+message UpdateGroupProfileRequest {
+  string access_token = 1;
+  string group_id = 2;
+  string name = 3;
+  string description = 4;
+  bool is_private = 5;
+  string banner_color = 6;
+  bool clear_logo = 7;
+  bool clear_banner_image = 8;
+}
+
+message UpdateGroupProfileResponse {
+  GroupSummary group = 1;
+}
+
+message UploadGroupBannerRequest {
+  string access_token = 1;
+  string group_id = 2;
+  string content_type = 3;
+  bytes data = 4;
+}
+
+message UploadGroupBannerResponse {
+  GroupSummary group = 1;
+}
+
 message GroupMemberEntry {
   string user_id = 1;
   string display_name = 2;
@@ -497,6 +517,9 @@ message PreviewGroupInviteResponse {
   string channel_name = 3;
   string expires_at = 4;
   string reason = 5;
+  string group_logo_url = 6;
+  int32 member_count = 7;
+  int32 online_count = 8;
 }
 
 message RedeemGroupInviteRequest {
