@@ -398,20 +398,22 @@ export function GroupSettingsMembersTable({
 				cell: ({ row }) => {
 					const name = row.original.member.display_name.trim() || t("invite.member_name_fallback");
 					return (
-						<button
-							type="button"
-							className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"
-							aria-label={t("group_settings.members.row_actions_aria", { name })}
-							onClick={(event) => {
-								event.stopPropagation();
-							}}
-							onContextMenu={(event) => {
-								event.preventDefault();
-								event.stopPropagation();
-							}}
-						>
-							<EllipsisVertical className="h-4 w-4" strokeWidth={2} aria-hidden />
-						</button>
+						<div className="flex justify-end">
+							<button
+								type="button"
+								className="flex h-8 min-w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground"
+								aria-label={t("group_settings.members.row_actions_aria", { name })}
+								onClick={(event) => {
+									event.stopPropagation();
+								}}
+								onContextMenu={(event) => {
+									event.preventDefault();
+									event.stopPropagation();
+								}}
+							>
+								<EllipsisVertical className="h-4 w-4" strokeWidth={2} aria-hidden />
+							</button>
+						</div>
 					);
 				},
 			},

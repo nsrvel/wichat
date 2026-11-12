@@ -85,20 +85,22 @@ export function GroupSettingsRolesTable({
 						? t(`invite.role_${row.original.name}`)
 						: row.original.name;
 					return (
-						<button
-							type="button"
-							className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"
-							aria-label={t("group_settings.roles.row_actions_aria", { name: label })}
-							onClick={(event) => {
-								event.stopPropagation();
-							}}
-							onContextMenu={(event) => {
-								event.preventDefault();
-								event.stopPropagation();
-							}}
-						>
-							<EllipsisVertical className="h-4 w-4" strokeWidth={2} aria-hidden />
-						</button>
+						<div className="flex justify-end">
+							<button
+								type="button"
+								className="flex h-8 min-w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground"
+								aria-label={t("group_settings.roles.row_actions_aria", { name: label })}
+								onClick={(event) => {
+									event.stopPropagation();
+								}}
+								onContextMenu={(event) => {
+									event.preventDefault();
+									event.stopPropagation();
+								}}
+							>
+								<EllipsisVertical className="h-4 w-4" strokeWidth={2} aria-hidden />
+							</button>
+						</div>
 					);
 				},
 			},
