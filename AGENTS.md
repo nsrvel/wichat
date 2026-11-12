@@ -43,23 +43,26 @@ Phases in system design §15 — implement in order unless explicitly reprioriti
 
 License: [LICENSE](LICENSE) (AGPL-3.0-or-later at repo root; no per-file SPDX/copyright headers). Do not add proprietary-licensed dependencies without explicit approval.
 
-## Cursor rules
+## Cursor & Antigravity rules
 
-**Always-on:** program + core. **File-scoped:** Go and web when touching those paths.
+Equivalent configurations exist in `.cursor/` (Cursor IDE) and `.agents/` (Google Antigravity).
 
-| Rule                           | Scope                                                                                               |
-| ------------------------------ | --------------------------------------------------------------------------------------------------- |
-| `wichat-program.mdc`           | How we work: `main` (prod) / `release` (staging), micro-steps, vertical slices                      |
-| `wichat-folder-grouping.mdc`   | Crowded folders → subfolders by shared feature/prefix (always on)                                   |
-| `wichat-core.mdc`              | Product + architecture guardrails                                                                   |
-| `wichat-go.mdc`                | Go backend: tests under `<pkg>/test/`, per-module `make check`, wi-shared patterns                  |
-| `wichat-go-layers.mdc`         | Go backend: repository / service / delivery layout                                                  |
-| `wichat-backend-quality.mdc`   | Go backend: `check-layout`, scoped coverage, repository mocks                                       |
-| `wichat-go-style.mdc`          | Go backend: `//` step comments, wiring spacing                                                      |
-| `wichat-web-layout.mdc`        | `frontend/apps/web/**` — app vs features, TSX-only UI folders, no micro-FE                          |
-| `wichat-web-data.mdc`          | `frontend/apps/web/**` + `frontend/packages/**` — `@wichat/*`, TanStack Query services, WS vs Query |
-| `wichat-no-export-barrels.mdc` | `frontend/**` — no re-export-only `index.ts`; import defining modules directly                      |
+| Cursor (`.cursor/rules/`)      | Antigravity (`.agents/rules/`)   | Scope                                                                                               |
+| ------------------------------ | -------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `wichat-program.mdc`           | `wichat-program.md`              | How we work: `main` (prod) / `release` (staging), micro-steps, vertical slices                      |
+| `wichat-folder-grouping.mdc`   | `wichat-folder-grouping.md`      | Crowded folders → subfolders by shared feature/prefix (always on)                                   |
+| `wichat-core.mdc`              | `wichat-core.md`                 | Product + architecture guardrails                                                                   |
+| `wichat-go.mdc`                | `wichat-go.md`                   | Go backend: tests under `<pkg>/test/`, per-module `make check`, wi-shared patterns                  |
+| `wichat-go-layers.mdc`         | `wichat-go-layers.md`            | Go backend: repository / service / delivery layout                                                  |
+| `wichat-backend-quality.mdc`   | `wichat-backend-quality.md`      | Go backend: `check-layout`, scoped coverage, repository mocks                                       |
+| `wichat-go-style.mdc`          | `wichat-go-style.md`             | Go backend: `//` step comments, wiring spacing                                                      |
+| `wichat-web-layout.mdc`        | `wichat-web-layout.md`           | `frontend/apps/web/**` — app vs features, TSX-only UI folders, no micro-FE                          |
+| `wichat-web-data.mdc`          | `wichat-web-data.md`             | `frontend/apps/web/**` + `frontend/packages/**` — `@wichat/*`, TanStack Query services, WS vs Query |
+| `wichat-no-export-barrels.mdc` | `wichat-no-export-barrels.md`    | `frontend/**` — no re-export-only `index.ts`; import defining modules directly                      |
+| `wichat-ui-taste.mdc`          | `wichat-ui-taste.md`             | `frontend/apps/web/**` — UI polish via design-taste-frontend                                        |
 
-**Skill:** `.cursor/skills/wichat-web-client/` — scaffold and feature slices for web-client.
+**Skills:**
+- `.cursor/skills/wichat-web-client/` & `.agents/skills/wichat-web-client/` — scaffold and feature slices for web-client.
+- `.agents/skills/design-taste-frontend/` — taste skill (UI design & polish).
 
 Detail standards: [system design](docs/architecture/wichat-system-design.md) and this file.
