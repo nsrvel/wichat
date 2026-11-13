@@ -96,7 +96,7 @@ function MemberTableCheckbox({
 			data-checked={checked || indeterminate ? "" : undefined}
 			onClick={() => onCheckedChange(!checked)}
 		>
-			{checked ? <Check className="h-3 w-3" strokeWidth={2.5} aria-hidden /> : null}
+			{checked ? <Check className="size-3" strokeWidth={2.5} aria-hidden /> : null}
 			{indeterminate && !checked ? (
 				<span className="block h-0.5 w-2 rounded-full bg-primary-foreground" aria-hidden />
 			) : null}
@@ -124,15 +124,10 @@ type GroupSettingsMembersTableProps = {
 };
 
 /** ponytail: local multi-role UI until SetMemberRoles ships; at least one role stays checked. */
-function MemberRolesMenu({ memberId, roles }: { memberId: string; roles: string[] }) {
+function MemberRolesMenu({ roles }: { roles: string[] }) {
 	const { t } = useTranslation();
 	const [open, setOpen] = useState(false);
 	const [selected, setSelected] = useState<MemberRoleKey[]>(() => normalizeSelectedRoles(roles));
-
-	useEffect(() => {
-		// eslint-disable-next-line react-hooks/set-state-in-effect -- sync local state when external roles/member change
-		setSelected(normalizeSelectedRoles(roles));
-	}, [memberId, roles]);
 
 	const toggleRole = (role: MemberRoleKey, next: boolean) => {
 		setSelected((prev) => {
@@ -156,7 +151,7 @@ function MemberRolesMenu({ memberId, roles }: { memberId: string; roles: string[
 						<button
 							type="button"
 							className={cn(
-								"flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors",
+								"flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors",
 								"hover:bg-sidebar-accent hover:text-foreground",
 								open && "bg-sidebar-accent text-foreground",
 							)}
@@ -166,7 +161,7 @@ function MemberRolesMenu({ memberId, roles }: { memberId: string; roles: string[
 						/>
 					}
 				>
-					<Plus className="h-4 w-4" strokeWidth={2} aria-hidden />
+					<Plus className="size-4" strokeWidth={2} aria-hidden />
 				</Menu.Trigger>
 				<Menu.Portal>
 					<Menu.Positioner className={menuPositionerClass} side="bottom" align="end" sideOffset={4}>
@@ -185,9 +180,9 @@ function MemberRolesMenu({ memberId, roles }: { memberId: string; roles: string[
 										<span className={menuCheckboxBoxClass} aria-hidden>
 											<Menu.CheckboxItemIndicator
 												keepMounted
-												className="flex items-center justify-center opacity-0 data-[checked]:opacity-100"
+												className="flex items-center justify-center opacity-0 data-checked:opacity-100"
 											>
-												<Check className="h-3 w-3" strokeWidth={2.5} />
+												<Check className="size-3" strokeWidth={2.5} />
 											</Menu.CheckboxItemIndicator>
 										</span>
 									</Menu.CheckboxItem>
@@ -211,7 +206,7 @@ function RoleBadges({
 	memberId: string;
 }) {
 	if (canChangeRoles) {
-		return <MemberRolesMenu memberId={memberId} roles={roles} />;
+		return <MemberRolesMenu key={`${memberId}:${roles.join(",")}`} roles={roles} />;
 	}
 
 	if (roles.length === 0) {
@@ -295,7 +290,7 @@ export function GroupSettingsMembersTable({
 					return (
 						<div className="flex min-w-0 items-center gap-3">
 							<div
-								className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-background text-xs font-semibold text-foreground ring-1 ring-border/60"
+								className="flex size-9 shrink-0 items-center justify-center rounded-full bg-background text-xs font-semibold text-foreground ring-1 ring-border/60"
 								aria-hidden
 							>
 								{userInitials(member.display_name, member.email)}
@@ -411,7 +406,7 @@ export function GroupSettingsMembersTable({
 									event.stopPropagation();
 								}}
 							>
-								<EllipsisVertical className="h-4 w-4" strokeWidth={2} aria-hidden />
+								<EllipsisVertical className="size-4" strokeWidth={2} aria-hidden />
 							</button>
 						</div>
 					);

@@ -19,8 +19,9 @@ type Channel struct {
 
 // ChannelAccess holds internal ids after token, membership, and channel resolution.
 type ChannelAccess struct {
-	ChannelID string
-	UserID    string
+	ChannelID   string
+	UserID      string
+	Permissions []string
 }
 
 // PublicChannel is returned to clients (JSON id is public_id).

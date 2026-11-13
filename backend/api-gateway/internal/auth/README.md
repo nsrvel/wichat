@@ -1,6 +1,6 @@
 # auth (api-gateway)
 
-Public **HTTP** auth routes only — no local repository or service. Use cases run in **ms-user**; delivery calls `ms.User.GRPC.Auth` for credentials, `User` for setup policy, `Group` for workspaces, and `Channel` for channel metadata.
+Public **HTTP** auth routes only — no local repository or service. Use cases run in **ms-user**; delivery calls `ms.User.GRPC.Auth` for credentials and sessions. Other domains (`user`, `group`, `group-member`, `group-role`, `channel`, `invite`) each own their own `internal/<domain>/delivery/http/`.
 
 ## Delivery
 

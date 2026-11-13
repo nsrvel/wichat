@@ -9,6 +9,7 @@ type GroupMemberProfile struct {
 	Email       string
 	Role        string
 	JoinedAt    time.Time
+	Roles       []GroupRoleSummary
 }
 
 // GroupMemberCursor pages group_members by (created_at, user_id).

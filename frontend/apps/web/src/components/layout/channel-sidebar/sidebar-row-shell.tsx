@@ -38,7 +38,7 @@ export function SidebarRowShell({
 			{unread ? (
 				<span
 					className={cn(
-						"pointer-events-none absolute top-1/2 right-2 z-[2] h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-primary transition-opacity",
+						"pointer-events-none absolute top-1/2 right-2 z-[2] size-1.5 -translate-y-1/2 rounded-full bg-primary transition-opacity",
 						menuOpen ? "opacity-0" : "group-hover/row:opacity-0",
 					)}
 					aria-hidden

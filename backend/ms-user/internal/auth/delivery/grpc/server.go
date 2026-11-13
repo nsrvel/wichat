@@ -1,89 +1,33 @@
 package grpc
 
 import (
-	"bytes"
 	"context"
-	"time"
 
 	authservice "github.com/wichat/wichat/backend/ms-user/internal/auth/service"
-	channelgrpc "github.com/wichat/wichat/backend/ms-user/internal/channel/delivery/grpc"
-	channelservice "github.com/wichat/wichat/backend/ms-user/internal/channel/service"
-	groupservice "github.com/wichat/wichat/backend/ms-user/internal/group/service"
-	inviteservice "github.com/wichat/wichat/backend/ms-user/internal/invite/service"
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
-	userservice "github.com/wichat/wichat/backend/ms-user/internal/user/service"
 	authPb "github.com/wichat/wichat/backend/ms-user/pkg/auth-pb"
-	inviteCursor "github.com/wichat/wichat/backend/ms-user/pkg/invite"
-	"github.com/wichat/wichat/backend/wi-shared/exception"
 	userv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/user/v1"
 	responsegrpc "github.com/wichat/wichat/backend/wi-shared/response/grpc"
 )
 
-// Server is the auth gRPC delivery (proto service + orchestration).
+// Server implements userv1.AuthServiceServer.
 type Server interface {
 	userv1.AuthServiceServer
 }
 
 type server struct {
 	userv1.UnimplementedAuthServiceServer
-	auth       authservice.Service
-	user       userservice.Service
-	group      groupservice.Service
-	invite     inviteservice.Service
-	channelRPC *channelgrpc.Server
+	auth authservice.Service
 }
 
-// NewServer binds auth, user, group, and channel services to the Auth gRPC surface.
-func NewServer(
-	auth authservice.Service,
-	user userservice.Service,
-	group groupservice.Service,
-	invite inviteservice.Service,
-	channel channelservice.Service,
-) Server {
+// NewServer binds the auth service to the Auth gRPC surface.
+func NewServer(auth authservice.Service) Server {
 	return &server{
-		auth:       auth,
-		user:       user,
-		group:      group,
-		invite:     invite,
-		channelRPC: channelgrpc.NewServer(channel),
+		auth: auth,
 	}
-}
-
-func (s *server) SetupStatus(ctx context.Context, _ *userv1.SetupStatusRequest) (*userv1.SetupStatusResponse, error) {
-	// Service
-	out, err := s.user.SetupStatus(ctx)
-	if err != nil {
-		return nil, responsegrpc.ToStatus(err)
-	}
-
-	// Response
-	return &userv1.SetupStatusResponse{
-		RegistrationMode: out.RegistrationMode,
-		UsernameEnabled:  out.UsernameEnabled,
-	}, nil
-}
-
-func (s *server) CompleteInstanceSetup(ctx context.Context, req *userv1.CompleteInstanceSetupRequest) (*userv1.CompleteInstanceSetupResponse, error) {
-	// Bind
-	in := models.CompleteInstanceSetupInput{
-		Name:             req.GetName(),
-		LogoURL:          req.GetLogoUrl(),
-		UsernameEnabled:  req.GetUsernameEnabled(),
-		RegistrationMode: req.GetRegistrationMode(),
-	}
-
-	// Service
-	if err := s.user.CompleteInstanceSetup(ctx, req.GetAccessToken(), in); err != nil {
-		return nil, responsegrpc.ToStatus(err)
-	}
-
-	// Response
-	return &userv1.CompleteInstanceSetupResponse{Ok: true}, nil
 }
 
 func (s *server) Setup(ctx context.Context, req *userv1.SetupRequest) (*userv1.SetupResponse, error) {
-	// Bind
 	in := models.RegisterInput{
 		Email:       req.GetEmail(),
 		Password:    req.GetPassword(),
@@ -91,19 +35,16 @@ func (s *server) Setup(ctx context.Context, req *userv1.SetupRequest) (*userv1.S
 		ClientMeta:  authPb.Meta(req.GetUserAgent(), req.GetClientIp()),
 	}
 
-	// Service
 	out, err := s.auth.Register(ctx, in)
 	if err != nil {
 		return nil, responsegrpc.ToStatus(err)
 	}
 
-	// Response
 	sess, _ := authPb.PasswordAuth(out)
 	return &userv1.SetupResponse{Session: sess}, nil
 }
 
 func (s *server) Register(ctx context.Context, req *userv1.RegisterRequest) (*userv1.RegisterResponse, error) {
-	// Bind
 	in := models.RegisterInput{
 		Email:       req.GetEmail(),
 		Password:    req.GetPassword(),
@@ -113,19 +54,16 @@ func (s *server) Register(ctx context.Context, req *userv1.RegisterRequest) (*us
 		ClientMeta:  authPb.Meta(req.GetUserAgent(), req.GetClientIp()),
 	}
 
-	// Service
 	out, err := s.auth.Register(ctx, in)
 	if err != nil {
 		return nil, responsegrpc.ToStatus(err)
 	}
 
-	// Response
 	sess, ch := authPb.PasswordAuth(out)
 	return &userv1.RegisterResponse{Session: sess, Challenge: ch}, nil
 }
 
 func (s *server) Login(ctx context.Context, req *userv1.LoginRequest) (*userv1.LoginResponse, error) {
-	// Bind
 	in := models.LoginInput{
 		Login:      req.GetLogin(),
 		Password:   req.GetPassword(),
@@ -133,13 +71,11 @@ func (s *server) Login(ctx context.Context, req *userv1.LoginRequest) (*userv1.L
 		ClientMeta: authPb.Meta(req.GetUserAgent(), req.GetClientIp()),
 	}
 
-	// Service
 	out, err := s.auth.Login(ctx, in)
 	if err != nil {
 		return nil, responsegrpc.ToStatus(err)
 	}
 
-	// Response
 	sess, ch := authPb.PasswordAuth(out)
 	return &userv1.LoginResponse{Session: sess, Challenge: ch}, nil
 }
@@ -181,37 +117,30 @@ func (s *server) ResendLoginCode(ctx context.Context, req *userv1.ResendLoginCod
 }
 
 func (s *server) Refresh(ctx context.Context, req *userv1.RefreshRequest) (*userv1.RefreshResponse, error) {
-	// Bind
 	meta := authPb.Meta(req.GetUserAgent(), req.GetClientIp())
 
-	// Service
 	out, err := s.auth.Refresh(ctx, req.GetRefreshToken(), meta)
 	if err != nil {
 		return nil, responsegrpc.ToStatus(err)
 	}
 
-	// Response
 	return &userv1.RefreshResponse{Session: authPb.Session(out)}, nil
 }
 
 func (s *server) Logout(ctx context.Context, req *userv1.LogoutRequest) (*userv1.LogoutResponse, error) {
-	// Service
 	if err := s.auth.Logout(ctx, req.GetRefreshToken()); err != nil {
 		return nil, responsegrpc.ToStatus(err)
 	}
 
-	// Response
 	return &userv1.LogoutResponse{Ok: true}, nil
 }
 
 func (s *server) GoogleStart(ctx context.Context, _ *userv1.GoogleStartRequest) (*userv1.GoogleStartResponse, error) {
-	// Service
 	authURL, state, verifier, err := s.auth.GoogleStart(ctx)
 	if err != nil {
 		return nil, responsegrpc.ToStatus(err)
 	}
 
-	// Response
 	return &userv1.GoogleStartResponse{
 		AuthorizationUrl: authURL,
 		State:            state,
@@ -220,24 +149,20 @@ func (s *server) GoogleStart(ctx context.Context, _ *userv1.GoogleStartRequest) 
 }
 
 func (s *server) GoogleFinish(ctx context.Context, req *userv1.GoogleFinishRequest) (*userv1.GoogleFinishResponse, error) {
-	// Service
 	out, err := s.auth.GoogleFinish(ctx, req.GetCode(), req.GetCodeVerifier(), authPb.Meta(req.GetUserAgent(), req.GetClientIp()))
 	if err != nil {
 		return nil, responsegrpc.ToStatus(err)
 	}
 
-	// Response
 	return &userv1.GoogleFinishResponse{Session: authPb.Session(out)}, nil
 }
 
 func (s *server) RequestPasswordReset(ctx context.Context, req *userv1.RequestPasswordResetRequest) (*userv1.RequestPasswordResetResponse, error) {
-	// Service
 	secs, err := s.auth.RequestPasswordReset(ctx, req.GetEmail(), req.GetLocale())
 	if err != nil {
 		return nil, responsegrpc.ToStatus(err)
 	}
 
-	// Response
 	return &userv1.RequestPasswordResetResponse{
 		Ok:                    true,
 		ResendCooldownSeconds: int32(secs), //nolint:gosec // G115 — service returns bounded cooldown seconds
@@ -245,242 +170,27 @@ func (s *server) RequestPasswordReset(ctx context.Context, req *userv1.RequestPa
 }
 
 func (s *server) VerifyPasswordReset(ctx context.Context, req *userv1.VerifyPasswordResetRequest) (*userv1.VerifyPasswordResetResponse, error) {
-	// Service
 	token, err := s.auth.VerifyPasswordReset(ctx, req.GetEmail(), req.GetCode())
 	if err != nil {
 		return nil, responsegrpc.ToStatus(err)
 	}
 
-	// Response
 	return &userv1.VerifyPasswordResetResponse{ResetToken: token}, nil
 }
 
 func (s *server) CompletePasswordReset(ctx context.Context, req *userv1.CompletePasswordResetRequest) (*userv1.CompletePasswordResetResponse, error) {
-	// Service
 	if err := s.auth.CompletePasswordReset(ctx, req.GetResetToken(), req.GetPassword()); err != nil {
 		return nil, responsegrpc.ToStatus(err)
 	}
 
-	// Response
 	return &userv1.CompletePasswordResetResponse{Ok: true}, nil
 }
 
 func (s *server) Me(ctx context.Context, req *userv1.MeRequest) (*userv1.MeResponse, error) {
-	// Service
 	user, err := s.auth.Me(ctx, req.GetAccessToken())
 	if err != nil {
 		return nil, responsegrpc.ToStatus(err)
 	}
 
-	// Response
 	return &userv1.MeResponse{User: authPb.User(*user)}, nil
-}
-
-func (s *server) ListMyGroups(ctx context.Context, req *userv1.ListMyGroupsRequest) (*userv1.ListMyGroupsResponse, error) {
-	groups, err := s.group.ListMyGroups(ctx, req.GetAccessToken())
-	if err != nil {
-		return nil, responsegrpc.ToStatus(err)
-	}
-
-	return &userv1.ListMyGroupsResponse{Groups: authPb.GroupSummaries(groups)}, nil
-}
-
-func (s *server) ListJoinableGroups(ctx context.Context, req *userv1.ListJoinableGroupsRequest) (*userv1.ListJoinableGroupsResponse, error) {
-	groups, err := s.group.ListJoinableGroups(ctx, req.GetAccessToken())
-	if err != nil {
-		return nil, responsegrpc.ToStatus(err)
-	}
-
-	return &userv1.ListJoinableGroupsResponse{Groups: authPb.GroupSummaries(groups)}, nil
-}
-
-func (s *server) CreateGroup(ctx context.Context, req *userv1.CreateGroupRequest) (*userv1.CreateGroupResponse, error) {
-	group, err := s.group.CreateGroup(ctx, req.GetAccessToken(), req.GetName())
-	if err != nil {
-		return nil, responsegrpc.ToStatus(err)
-	}
-
-	return &userv1.CreateGroupResponse{Group: authPb.GroupSummary(*group)}, nil
-}
-
-func (s *server) JoinGroup(ctx context.Context, req *userv1.JoinGroupRequest) (*userv1.JoinGroupResponse, error) {
-	if err := s.group.JoinGroup(ctx, req.GetAccessToken(), req.GetGroupId()); err != nil {
-		return nil, responsegrpc.ToStatus(err)
-	}
-
-	return &userv1.JoinGroupResponse{Ok: true}, nil
-}
-
-func (s *server) ReorderMyGroups(ctx context.Context, req *userv1.ReorderMyGroupsRequest) (*userv1.ReorderMyGroupsResponse, error) {
-	if err := s.group.ReorderMyGroups(ctx, req.GetAccessToken(), req.GetGroupIds()); err != nil {
-		return nil, responsegrpc.ToStatus(err)
-	}
-
-	return &userv1.ReorderMyGroupsResponse{Ok: true}, nil
-}
-
-func (s *server) LeaveGroup(ctx context.Context, req *userv1.LeaveGroupRequest) (*userv1.LeaveGroupResponse, error) {
-	if err := s.group.LeaveGroup(ctx, req.GetAccessToken(), req.GetGroupId()); err != nil {
-		return nil, responsegrpc.ToStatus(err)
-	}
-
-	return &userv1.LeaveGroupResponse{Ok: true}, nil
-}
-
-func (s *server) DeleteGroup(ctx context.Context, req *userv1.DeleteGroupRequest) (*userv1.DeleteGroupResponse, error) {
-	if err := s.group.DeleteGroup(ctx, req.GetAccessToken(), req.GetGroupId()); err != nil {
-		return nil, responsegrpc.ToStatus(err)
-	}
-
-	return &userv1.DeleteGroupResponse{Ok: true}, nil
-}
-
-func (s *server) ListGroupChannels(ctx context.Context, req *userv1.ListGroupChannelsRequest) (*userv1.ListGroupChannelsResponse, error) {
-	return s.channelRPC.ListGroupChannels(ctx, req)
-}
-
-func (s *server) AssertGroupChannelAccess(ctx context.Context, req *userv1.AssertGroupChannelAccessRequest) (*userv1.AssertGroupChannelAccessResponse, error) {
-	return s.channelRPC.AssertGroupChannelAccess(ctx, req)
-}
-
-func (s *server) UploadGroupIcon(ctx context.Context, req *userv1.UploadGroupIconRequest) (*userv1.UploadGroupIconResponse, error) {
-	group, err := s.group.UploadGroupIcon(
-		ctx,
-		req.GetAccessToken(),
-		req.GetGroupId(),
-		req.GetContentType(),
-		bytes.NewReader(req.GetData()),
-		int64(len(req.GetData())),
-	)
-	if err != nil {
-		return nil, responsegrpc.ToStatus(err)
-	}
-
-	return &userv1.UploadGroupIconResponse{Group: authPb.GroupSummary(*group)}, nil
-}
-
-func (s *server) UpdateGroupProfile(ctx context.Context, req *userv1.UpdateGroupProfileRequest) (*userv1.UpdateGroupProfileResponse, error) {
-	group, err := s.group.UpdateGroupProfile(
-		ctx,
-		req.GetAccessToken(),
-		req.GetGroupId(),
-		req.GetName(),
-		req.GetDescription(),
-		req.GetIsPrivate(),
-		req.GetBannerColor(),
-		req.GetClearLogo(),
-		req.GetClearBannerImage(),
-	)
-	if err != nil {
-		return nil, responsegrpc.ToStatus(err)
-	}
-
-	return &userv1.UpdateGroupProfileResponse{Group: authPb.GroupSummary(*group)}, nil
-}
-
-func (s *server) UploadGroupBanner(ctx context.Context, req *userv1.UploadGroupBannerRequest) (*userv1.UploadGroupBannerResponse, error) {
-	group, err := s.group.UploadGroupBanner(
-		ctx,
-		req.GetAccessToken(),
-		req.GetGroupId(),
-		req.GetContentType(),
-		bytes.NewReader(req.GetData()),
-		int64(len(req.GetData())),
-	)
-	if err != nil {
-		return nil, responsegrpc.ToStatus(err)
-	}
-
-	return &userv1.UploadGroupBannerResponse{Group: authPb.GroupSummary(*group)}, nil
-}
-
-func (s *server) ListGroupMembers(ctx context.Context, req *userv1.ListGroupMembersRequest) (*userv1.ListGroupMembersResponse, error) {
-	cursor, err := inviteCursor.DecodeMemberCursor(req.GetCursor())
-	if err != nil {
-		return nil, responsegrpc.ToStatus(exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "cursor"}))
-	}
-
-	page, err := s.invite.ListGroupMembers(ctx, req.GetAccessToken(), req.GetGroupId(), int(req.GetLimit()), cursor)
-	if err != nil {
-		return nil, responsegrpc.ToStatus(err)
-	}
-
-	return &userv1.ListGroupMembersResponse{
-		Members:    authPb.GroupMemberEntries(page.Members),
-		NextCursor: inviteCursor.EncodeMemberCursor(page.NextCursor),
-		Total:      int32(page.Total), //nolint:gosec // G115 — member totals are bounded by list limits
-	}, nil
-}
-
-func (s *server) SearchUsers(ctx context.Context, req *userv1.SearchUsersRequest) (*userv1.SearchUsersResponse, error) {
-	users, err := s.invite.SearchUsers(ctx, req.GetAccessToken(), req.GetQuery(), int(req.GetLimit()), req.GetGroupId())
-	if err != nil {
-		return nil, responsegrpc.ToStatus(err)
-	}
-
-	return &userv1.SearchUsersResponse{Users: authPb.UserSearchHits(users)}, nil
-}
-
-func (s *server) GetGroupInviteLink(ctx context.Context, req *userv1.GetGroupInviteLinkRequest) (*userv1.GetGroupInviteLinkResponse, error) {
-	link, err := s.invite.GetInviteLink(ctx, req.GetAccessToken(), req.GetGroupId(), req.GetChannelId())
-	if err != nil {
-		return nil, responsegrpc.ToStatus(err)
-	}
-
-	return &userv1.GetGroupInviteLinkResponse{
-		Token:     link.Token,
-		ExpiresAt: link.ExpiresAt.UTC().Format(time.RFC3339Nano),
-	}, nil
-}
-
-func (s *server) SendGroupInvites(ctx context.Context, req *userv1.SendGroupInvitesRequest) (*userv1.SendGroupInvitesResponse, error) {
-	out, err := s.invite.SendGroupInvites(ctx, req.GetAccessToken(), models.SendGroupInvitesInput{
-		GroupPublicID:   req.GetGroupId(),
-		ChannelPublicID: req.GetChannelId(),
-		UserIDs:         req.GetUserIds(),
-		Emails:          req.GetEmails(),
-	})
-	if err != nil {
-		return nil, responsegrpc.ToStatus(err)
-	}
-
-	return &userv1.SendGroupInvitesResponse{
-		Added:   int32(out.Added),   //nolint:gosec // G115 — batch capped by MaxInviteBatchSize
-		Emailed: int32(out.Emailed), //nolint:gosec
-		Skipped: int32(out.Skipped), //nolint:gosec
-	}, nil
-}
-
-func (s *server) PreviewGroupInvite(ctx context.Context, req *userv1.PreviewGroupInviteRequest) (*userv1.PreviewGroupInviteResponse, error) {
-	out, err := s.invite.PreviewInvite(ctx, req.GetToken())
-	if err != nil {
-		return nil, responsegrpc.ToStatus(err)
-	}
-
-	resp := &userv1.PreviewGroupInviteResponse{
-		Valid:        out.Valid,
-		GroupName:    out.GroupName,
-		ChannelName:  out.ChannelName,
-		GroupLogoUrl: out.GroupLogoURL,
-		MemberCount:  int32(out.MemberCount), //nolint:gosec
-		OnlineCount:  int32(out.OnlineCount), //nolint:gosec
-		Reason:       out.Reason,
-	}
-	if !out.ExpiresAt.IsZero() {
-		resp.ExpiresAt = out.ExpiresAt.UTC().Format(time.RFC3339Nano)
-	}
-
-	return resp, nil
-}
-
-func (s *server) RedeemGroupInvite(ctx context.Context, req *userv1.RedeemGroupInviteRequest) (*userv1.RedeemGroupInviteResponse, error) {
-	out, err := s.invite.RedeemInvite(ctx, req.GetAccessToken(), req.GetToken())
-	if err != nil {
-		return nil, responsegrpc.ToStatus(err)
-	}
-
-	return &userv1.RedeemGroupInviteResponse{
-		GroupId:   out.GroupPublicID,
-		ChannelId: out.ChannelPublicID,
-	}, nil
 }

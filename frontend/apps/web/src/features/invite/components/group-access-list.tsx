@@ -40,7 +40,7 @@ function MemberAvatar({
 	return (
 		<div className="relative shrink-0">
 			<div
-				className="flex h-9 w-9 items-center justify-center rounded-full bg-background text-xs font-semibold text-foreground ring-1 ring-border/60"
+				className="flex size-9 items-center justify-center rounded-full bg-background text-xs font-semibold text-foreground ring-1 ring-border/60"
 				aria-hidden
 			>
 				{userInitials(displayName, email)}
@@ -69,7 +69,7 @@ function MemberOwnerBadge() {
 			aria-label={t("invite.member_role_menu", { role: label })}
 		>
 			<Crown
-				className="h-3.5 w-3.5 shrink-0 text-amber-500 dark:text-amber-400"
+				className="size-3.5 shrink-0 text-amber-500 dark:text-amber-400"
 				strokeWidth={2.2}
 				aria-hidden
 			/>
@@ -125,23 +125,23 @@ export function GroupAccessList({
 						type="button"
 						variant="ghost"
 						size="icon"
-						className="h-8 w-8 text-muted-foreground"
+						className="size-8 text-muted-foreground"
 						disabled={!hasPrev || loading}
 						aria-label={t("invite.members_prev")}
 						onClick={onPrev}
 					>
-						<ChevronLeft className="h-4 w-4" aria-hidden />
+						<ChevronLeft className="size-4" aria-hidden />
 					</Button>
 					<Button
 						type="button"
 						variant="ghost"
 						size="icon"
-						className="h-8 w-8 text-muted-foreground"
+						className="size-8 text-muted-foreground"
 						disabled={!hasNext || loading}
 						aria-label={t("invite.members_next")}
 						onClick={onNext}
 					>
-						<ChevronRight className="h-4 w-4" aria-hidden />
+						<ChevronRight className="size-4" aria-hidden />
 					</Button>
 				</div>
 			) : null}
@@ -159,7 +159,7 @@ export function GroupAccessList({
 					{loading && visibleMembers.length === 0
 						? [0, 1, 2].map((key) => (
 								<li key={key} className={rowSkeletonClass}>
-									<div className="h-9 w-9 shrink-0 rounded-full bg-muted" aria-hidden />
+									<div className="size-9 shrink-0 rounded-full bg-muted" aria-hidden />
 									<div className="min-w-0 flex-1">
 										<div className="h-3.5 w-28 rounded bg-muted" />
 									</div>

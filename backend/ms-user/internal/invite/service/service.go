@@ -10,6 +10,8 @@ import (
 
 	authrepo "github.com/wichat/wichat/backend/ms-user/internal/auth/repository"
 	channelrepo "github.com/wichat/wichat/backend/ms-user/internal/channel/repository"
+	groupmemberrepo "github.com/wichat/wichat/backend/ms-user/internal/group-member/repository"
+	grouprolerepo "github.com/wichat/wichat/backend/ms-user/internal/group-role/repository"
 	grouprepo "github.com/wichat/wichat/backend/ms-user/internal/group/repository"
 	inviterepo "github.com/wichat/wichat/backend/ms-user/internal/invite/repository"
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
@@ -31,8 +33,6 @@ type Notifier interface {
 
 // Service is the group invite and share use-case API.
 type Service interface {
-	ListGroupMembers(ctx context.Context, accessToken, groupPublicID string, limit int, cursor *models.GroupMemberCursor) (*models.GroupMemberPage, error)
-	SearchUsers(ctx context.Context, accessToken, query string, limit int, groupPublicID string) ([]models.UserSearchHit, error)
 	GetInviteLink(ctx context.Context, accessToken, groupPublicID, channelPublicID string) (*models.InviteLinkResult, error)
 	SendGroupInvites(ctx context.Context, accessToken string, in models.SendGroupInvitesInput) (*models.SendGroupInvitesResult, error)
 	PreviewInvite(ctx context.Context, inviteToken string) (*models.InvitePreviewResult, error)
@@ -41,6 +41,8 @@ type Service interface {
 
 type service struct {
 	groups           grouprepo.PgRepository
+	members          groupmemberrepo.PgRepository
+	roles            grouprolerepo.PgRepository
 	channels         channelrepo.PgRepository
 	invites          inviterepo.PgRepository
 	users            userrepo.PgRepository
@@ -56,6 +58,8 @@ type service struct {
 // NewService builds invite use cases.
 func NewService(
 	groups grouprepo.PgRepository,
+	members groupmemberrepo.PgRepository,
+	roles grouprolerepo.PgRepository,
 	channels channelrepo.PgRepository,
 	invites inviterepo.PgRepository,
 	users userrepo.PgRepository,
@@ -71,6 +75,8 @@ func NewService(
 
 	return service{
 		groups:           groups,
+		members:          members,
+		roles:            roles,
 		channels:         channels,
 		invites:          invites,
 		users:            users,
@@ -84,51 +90,21 @@ func NewService(
 	}
 }
 
-func (s service) ListGroupMembers(
-	ctx context.Context,
-	accessToken, groupPublicID string,
-	limit int,
-	cursor *models.GroupMemberCursor,
-) (*models.GroupMemberPage, error) {
-	group, _, err := s.loadGroupMember(ctx, accessToken, groupPublicID)
-	if err != nil {
-		return nil, err
-	}
-
-	total, err := s.groups.CountGroupMembers(ctx, group.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	members, next, err := s.groups.ListGroupMembersPage(ctx, group.ID, limit, cursor)
-	if err != nil {
-		return nil, err
-	}
-
-	return &models.GroupMemberPage{Members: members, NextCursor: next, Total: total}, nil
-}
-
-func (s service) SearchUsers(
-	ctx context.Context,
-	accessToken, query string,
-	limit int,
-	groupPublicID string,
-) ([]models.UserSearchHit, error) {
-	group, _, err := s.loadGroupMember(ctx, accessToken, groupPublicID)
-	if err != nil {
-		return nil, err
-	}
-
-	return s.users.SearchUsers(ctx, query, limit, group.ID)
-}
-
 func (s service) GetInviteLink(
 	ctx context.Context,
 	accessToken, groupPublicID, channelPublicID string,
 ) (*models.InviteLinkResult, error) {
-	group, _, err := s.loadGroupMember(ctx, accessToken, groupPublicID)
+	group, member, err := s.loadGroupMember(ctx, accessToken, groupPublicID)
 	if err != nil {
 		return nil, err
+	}
+
+	perms, err := s.roles.GetEffectivePermissions(ctx, group.ID, member.UserID)
+	if err != nil {
+		return nil, err
+	}
+	if !access.HasPermission(member.Role == constants.GroupRoleOwner, perms, constants.PermCreateInvite) {
+		return nil, exception.PermissionDenied(exception.MsgForbidden, nil)
 	}
 
 	var channelID *string
@@ -180,9 +156,17 @@ func (s service) SendGroupInvites(
 	accessToken string,
 	in models.SendGroupInvitesInput,
 ) (*models.SendGroupInvitesResult, error) {
-	group, _, err := s.loadGroupMember(ctx, accessToken, in.GroupPublicID)
+	group, member, err := s.loadGroupMember(ctx, accessToken, in.GroupPublicID)
 	if err != nil {
 		return nil, err
+	}
+
+	perms, err := s.roles.GetEffectivePermissions(ctx, group.ID, member.UserID)
+	if err != nil {
+		return nil, err
+	}
+	if !access.HasPermission(member.Role == constants.GroupRoleOwner, perms, constants.PermCreateInvite) {
+		return nil, exception.PermissionDenied(exception.MsgForbidden, nil)
 	}
 
 	var channelID *string
@@ -224,7 +208,7 @@ func (s service) SendGroupInvites(
 		}
 		seenUsers[id] = struct{}{}
 
-		if _, err := s.groups.FindGroupMember(ctx, group.ID, id); err == nil {
+		if _, err := s.members.FindGroupMember(ctx, group.ID, id); err == nil {
 			out.Skipped++
 			continue
 		} else if !errors.Is(err, constants.ErrNotFound) {
@@ -238,7 +222,7 @@ func (s service) SendGroupInvites(
 			return nil, err
 		}
 
-		if err := s.groups.InsertGroupMember(ctx, models.GroupMember{
+		if err := s.members.InsertGroupMember(ctx, models.GroupMember{
 			GroupID: group.ID, UserID: id, Role: constants.GroupRoleMember, CreatedAt: now,
 		}); err != nil {
 			if errors.Is(err, constants.ErrConflict) {
@@ -265,13 +249,13 @@ func (s service) SendGroupInvites(
 
 		user, err := s.users.FindUserByEmail(ctx, email)
 		if err == nil {
-			if _, err := s.groups.FindGroupMember(ctx, group.ID, user.ID); err == nil {
+			if _, err := s.members.FindGroupMember(ctx, group.ID, user.ID); err == nil {
 				out.Skipped++
 				continue
 			} else if !errors.Is(err, constants.ErrNotFound) {
 				return nil, err
 			}
-			if err := s.groups.InsertGroupMember(ctx, models.GroupMember{
+			if err := s.members.InsertGroupMember(ctx, models.GroupMember{
 				GroupID: group.ID, UserID: user.ID, Role: constants.GroupRoleMember, CreatedAt: now,
 			}); err != nil {
 				if errors.Is(err, constants.ErrConflict) {
@@ -367,12 +351,11 @@ func (s service) PreviewInvite(ctx context.Context, inviteToken string) (*models
 		}
 	}
 
-	memberCount, err := s.groups.CountGroupMembers(ctx, group.ID)
+	memberCount, err := s.members.CountGroupMembers(ctx, group.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	// ponytail: presence not wired; upgrade when Redis presence exists
 	return &models.InvitePreviewResult{
 		Valid:        true,
 		GroupName:    group.Name,
@@ -422,11 +405,17 @@ func (s service) RedeemInvite(ctx context.Context, accessToken, inviteToken stri
 		return nil, err
 	}
 
-	if _, err := s.groups.FindGroupMember(ctx, group.ID, userID); err != nil {
+	if banned, err := s.members.IsMemberBanned(ctx, group.ID, userID); err != nil {
+		return nil, err
+	} else if banned {
+		return nil, exception.PermissionDenied("user is banned from this group", nil)
+	}
+
+	if _, err := s.members.FindGroupMember(ctx, group.ID, userID); err != nil {
 		if !errors.Is(err, constants.ErrNotFound) {
 			return nil, err
 		}
-		if err := s.groups.InsertGroupMember(ctx, models.GroupMember{
+		if err := s.members.InsertGroupMember(ctx, models.GroupMember{
 			GroupID: group.ID, UserID: userID, Role: constants.GroupRoleMember, CreatedAt: now,
 		}); err != nil && !errors.Is(err, constants.ErrConflict) {
 			return nil, err
@@ -500,7 +489,7 @@ func (s service) loadGroupMember(ctx context.Context, accessToken, groupPublicID
 		return models.Group{}, models.GroupMember{}, err
 	}
 
-	member, err := s.groups.FindGroupMember(ctx, group.ID, userID)
+	member, err := s.members.FindGroupMember(ctx, group.ID, userID)
 	if errors.Is(err, constants.ErrNotFound) {
 		return models.Group{}, models.GroupMember{}, exception.PermissionDenied(exception.MsgForbidden, nil)
 	}

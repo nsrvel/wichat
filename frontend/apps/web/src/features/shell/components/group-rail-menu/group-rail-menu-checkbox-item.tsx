@@ -36,9 +36,9 @@ export function GroupRailMenuCheckboxItem({
 			<span className={menuCheckboxBoxClass} aria-hidden>
 				<CheckboxItemIndicator
 					keepMounted
-					className="flex items-center justify-center opacity-0 data-[checked]:opacity-100"
+					className="flex items-center justify-center opacity-0 data-checked:opacity-100"
 				>
-					<Check className="h-3 w-3" strokeWidth={2.5} />
+					<Check className="size-3" strokeWidth={2.5} />
 				</CheckboxItemIndicator>
 			</span>
 		</CheckboxItem>

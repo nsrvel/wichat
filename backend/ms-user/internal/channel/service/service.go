@@ -7,6 +7,8 @@ import (
 
 	authrepo "github.com/wichat/wichat/backend/ms-user/internal/auth/repository"
 	channelrepo "github.com/wichat/wichat/backend/ms-user/internal/channel/repository"
+	groupmemberrepo "github.com/wichat/wichat/backend/ms-user/internal/group-member/repository"
+	grouprolerepo "github.com/wichat/wichat/backend/ms-user/internal/group-role/repository"
 	grouprepo "github.com/wichat/wichat/backend/ms-user/internal/group/repository"
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
 	"github.com/wichat/wichat/backend/ms-user/pkg/access"
@@ -26,6 +28,8 @@ type Service interface {
 type service struct {
 	channels channelrepo.PgRepository
 	groups   grouprepo.PgRepository
+	members  groupmemberrepo.PgRepository
+	roles    grouprolerepo.PgRepository
 	sessions authrepo.SessionRepository
 	secret   []byte
 	log      logger.Logger
@@ -36,6 +40,8 @@ type service struct {
 func NewService(
 	channels channelrepo.PgRepository,
 	groups grouprepo.PgRepository,
+	members groupmemberrepo.PgRepository,
+	roles grouprolerepo.PgRepository,
 	sessions authrepo.SessionRepository,
 	secret []byte,
 	log logger.Logger,
@@ -46,6 +52,8 @@ func NewService(
 	return service{
 		channels: channels,
 		groups:   groups,
+		members:  members,
+		roles:    roles,
 		sessions: sessions,
 		secret:   copied,
 		log:      log,
@@ -73,7 +81,7 @@ func (s service) ListGroupChannels(ctx context.Context, accessToken, groupPublic
 		return nil, err
 	}
 
-	if _, err := s.groups.FindGroupMember(ctx, group.ID, userID); err != nil {
+	if _, err := s.members.FindGroupMember(ctx, group.ID, userID); err != nil {
 		if errors.Is(err, constants.ErrNotFound) {
 			return nil, exception.PermissionDenied(exception.MsgForbidden, nil)
 		}
@@ -119,7 +127,7 @@ func (s service) AssertGroupChannelAccess(ctx context.Context, accessToken, grou
 		return models.ChannelAccess{}, err
 	}
 
-	if _, err := s.groups.FindGroupMember(ctx, group.ID, userID); err != nil {
+	if _, err := s.members.FindGroupMember(ctx, group.ID, userID); err != nil {
 		if errors.Is(err, constants.ErrNotFound) {
 			return models.ChannelAccess{}, exception.PermissionDenied(exception.MsgForbidden, nil)
 		}
@@ -136,7 +144,15 @@ func (s service) AssertGroupChannelAccess(ctx context.Context, accessToken, grou
 		return models.ChannelAccess{}, err
 	}
 
-	return models.ChannelAccess{ChannelID: ch.ID, UserID: userID}, nil
+	var perms []string
+	if s.roles != nil {
+		p, err := s.roles.GetEffectivePermissions(ctx, group.ID, userID)
+		if err == nil {
+			perms = p
+		}
+	}
+
+	return models.ChannelAccess{ChannelID: ch.ID, UserID: userID, Permissions: perms}, nil
 }
 
 func (s service) SeedDefaultChannels(ctx context.Context, groupID, ownerUserID string, createdAt time.Time) error {

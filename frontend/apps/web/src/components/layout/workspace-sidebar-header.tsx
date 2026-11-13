@@ -49,7 +49,7 @@ export function WorkspaceSidebarHeader({
 				<span className="truncate text-[16px] font-bold tracking-tight text-sidebar-foreground lg:text-[15px]">
 					{title}
 				</span>
-				<ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" strokeWidth={2.4} />
+				<ChevronDown className="size-3.5 shrink-0 text-muted-foreground" strokeWidth={2.4} />
 			</button>
 			<HeaderIconButtons onSearchClick={onSearchClick} onNewMessageClick={onNewMessageClick} />
 		</div>

@@ -71,7 +71,7 @@ func TestCreateJoinGroupFlow(t *testing.T) {
 		t.Fatalf("joinable: %+v err %v", joinable, err)
 	}
 
-	if err := groupSvc.JoinGroup(ctx, member.AccessToken, created.ID); err != nil {
+	if err := testSupport.NewGroupMemberService(t, st).JoinGroup(ctx, member.AccessToken, created.ID); err != nil {
 		t.Fatal(err)
 	}
 
@@ -149,7 +149,7 @@ func TestOwnerCannotLeaveGroup(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	leaveErr := groupSvc.LeaveGroup(ctx, owner.AccessToken, created.ID)
+	leaveErr := testSupport.NewGroupMemberService(t, st).LeaveGroup(ctx, owner.AccessToken, created.ID)
 	if leaveErr == nil {
 		t.Fatal("expected owner leave to be forbidden")
 	}
@@ -192,10 +192,10 @@ func TestMemberCanLeaveGroup(t *testing.T) {
 	}
 
 	member := testSupport.RegisterSession(t, authSvc, notify, registerInput("member-leave@example.com"))
-	if err := groupSvc.JoinGroup(ctx, member.AccessToken, created.ID); err != nil {
+	if err := testSupport.NewGroupMemberService(t, st).JoinGroup(ctx, member.AccessToken, created.ID); err != nil {
 		t.Fatal(err)
 	}
-	if err := groupSvc.LeaveGroup(ctx, member.AccessToken, created.ID); err != nil {
+	if err := testSupport.NewGroupMemberService(t, st).LeaveGroup(ctx, member.AccessToken, created.ID); err != nil {
 		t.Fatalf("member leave: %v", err)
 	}
 
@@ -254,21 +254,21 @@ func TestJoinGroupTwiceIsIdempotent(t *testing.T) {
 	}
 
 	member := testSupport.RegisterSession(t, authSvc, notify, registerInput("member-idem@example.com"))
-	if err := groupSvc.JoinGroup(ctx, member.AccessToken, created.ID); err != nil {
+	if err := testSupport.NewGroupMemberService(t, st).JoinGroup(ctx, member.AccessToken, created.ID); err != nil {
 		t.Fatal(err)
 	}
-	if err := groupSvc.JoinGroup(ctx, member.AccessToken, created.ID); err != nil {
+	if err := testSupport.NewGroupMemberService(t, st).JoinGroup(ctx, member.AccessToken, created.ID); err != nil {
 		t.Fatalf("second join: %v", err)
 	}
 }
 
 func TestJoinGroupRejectsInvalidPublicID(t *testing.T) {
 	st := usermock.NewState()
-	authSvc, notify, _, _, groupSvc, _ := testSupport.NewAuthService(t, st, nil)
+	authSvc, notify, _, _, _, _ := testSupport.NewAuthService(t, st, nil)
 	ctx := context.Background()
 
 	member := testSupport.RegisterSession(t, authSvc, notify, registerInput("member@example.com"))
-	if err := groupSvc.JoinGroup(ctx, member.AccessToken, "not-a-public-id"); err == nil {
+	if err := testSupport.NewGroupMemberService(t, st).JoinGroup(ctx, member.AccessToken, "not-a-public-id"); err == nil {
 		t.Fatal("expected invalid group_id")
 	}
 }
@@ -285,7 +285,7 @@ func TestMemberDeleteForbiddenWhenJoined(t *testing.T) {
 	}
 
 	member := testSupport.RegisterSession(t, authSvc, notify, registerInput("member-mem-del@example.com"))
-	if err := groupSvc.JoinGroup(ctx, member.AccessToken, created.ID); err != nil {
+	if err := testSupport.NewGroupMemberService(t, st).JoinGroup(ctx, member.AccessToken, created.ID); err != nil {
 		t.Fatal(err)
 	}
 
@@ -376,7 +376,7 @@ func TestUpdateGroupProfileForbiddenForMember(t *testing.T) {
 	}
 
 	member := testSupport.RegisterSession(t, authSvc, notify, registerInput("profile-member@example.com"))
-	if err := groupSvc.JoinGroup(ctx, member.AccessToken, created.ID); err != nil {
+	if err := testSupport.NewGroupMemberService(t, st).JoinGroup(ctx, member.AccessToken, created.ID); err != nil {
 		t.Fatal(err)
 	}
 

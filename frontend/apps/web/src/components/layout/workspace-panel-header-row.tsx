@@ -56,7 +56,7 @@ export function WorkspacePanelHeaderRow({
 				className="flex h-14 shrink-0 items-center border-r border-sidebar-border bg-sidebar lg:h-[46px]"
 				style={{ width: sidebarWidth }}
 			>
-				<div className="flex h-full w-full items-center pl-4 pr-1.5">
+				<div className="flex size-full items-center pl-4 pr-1.5">
 					{activeGroup ? (
 						<WorkspaceGroupHeaderMenu
 							group={activeGroup}

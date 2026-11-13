@@ -2,12 +2,12 @@ syntax = "proto3";
 
 package user.v1;
 
+import "user/v1/user.proto";
+
 option go_package = "github.com/wichat/wichat/backend/wi-shared/models/gen/user/v1;userv1";
 
 // AuthService issues browser sessions for the instance account.
 service AuthService {
-  // SetupStatus reports instance policy flags for the auth UI.
-  rpc SetupStatus(SetupStatusRequest) returns (SetupStatusResponse);
   // Setup is deprecated; use Register. Kept for older clients.
   rpc Setup(SetupRequest) returns (SetupResponse);
   // Register creates a member account and opens a session.
@@ -28,8 +28,6 @@ service AuthService {
   rpc Logout(LogoutRequest) returns (LogoutResponse);
   // Me returns the account for a valid access token.
   rpc Me(MeRequest) returns (MeResponse);
-  // CompleteInstanceSetup is deprecated; use CreateGroup and future admin settings APIs.
-  rpc CompleteInstanceSetup(CompleteInstanceSetupRequest) returns (CompleteInstanceSetupResponse);
   // GoogleStart builds the Google authorization redirect.
   rpc GoogleStart(GoogleStartRequest) returns (GoogleStartResponse);
   // GoogleFinish exchanges the authorization code and opens a session.
@@ -40,52 +38,6 @@ service AuthService {
   rpc VerifyPasswordReset(VerifyPasswordResetRequest) returns (VerifyPasswordResetResponse);
   // CompletePasswordReset sets a new password and revokes sessions.
   rpc CompletePasswordReset(CompletePasswordResetRequest) returns (CompletePasswordResetResponse);
-  // ListMyGroups returns groups the caller belongs to.
-  rpc ListMyGroups(ListMyGroupsRequest) returns (ListMyGroupsResponse);
-  // ListJoinableGroups returns instance groups the caller is not in.
-  rpc ListJoinableGroups(ListJoinableGroupsRequest) returns (ListJoinableGroupsResponse);
-  // CreateGroup creates a group; caller becomes owner.
-  rpc CreateGroup(CreateGroupRequest) returns (CreateGroupResponse);
-  // JoinGroup adds the caller as a member.
-  rpc JoinGroup(JoinGroupRequest) returns (JoinGroupResponse);
-  // ReorderMyGroups persists the caller's workspace rail order.
-  rpc ReorderMyGroups(ReorderMyGroupsRequest) returns (ReorderMyGroupsResponse);
-  // LeaveGroup removes the caller's membership in a group (not owners).
-  rpc LeaveGroup(LeaveGroupRequest) returns (LeaveGroupResponse);
-  // DeleteGroup removes a group; owner only.
-  rpc DeleteGroup(DeleteGroupRequest) returns (DeleteGroupResponse);
-  // ListGroupChannels returns channels in a group the caller belongs to.
-  rpc ListGroupChannels(ListGroupChannelsRequest) returns (ListGroupChannelsResponse);
-  // AssertGroupChannelAccess validates membership and resolves internal channel and user ids.
-  rpc AssertGroupChannelAccess(AssertGroupChannelAccessRequest) returns (AssertGroupChannelAccessResponse);
-  // UploadGroupIcon stores a group logo and updates group_settings.logo_url.
-  rpc UploadGroupIcon(UploadGroupIconRequest) returns (UploadGroupIconResponse);
-  // UpdateGroupProfile replaces owner-editable group profile scalars.
-  rpc UpdateGroupProfile(UpdateGroupProfileRequest) returns (UpdateGroupProfileResponse);
-  // UploadGroupBanner stores a banner image and updates group_settings.banner_url.
-  rpc UploadGroupBanner(UploadGroupBannerRequest) returns (UploadGroupBannerResponse);
-  // ListGroupMembers pages members with access for the share UI.
-  rpc ListGroupMembers(ListGroupMembersRequest) returns (ListGroupMembersResponse);
-  // SearchUsers finds instance accounts for invite autocomplete.
-  rpc SearchUsers(SearchUsersRequest) returns (SearchUsersResponse);
-  // GetGroupInviteLink returns or creates a reusable share link token.
-  rpc GetGroupInviteLink(GetGroupInviteLinkRequest) returns (GetGroupInviteLinkResponse);
-  // SendGroupInvites adds members or emails invite links in batch.
-  rpc SendGroupInvites(SendGroupInvitesRequest) returns (SendGroupInvitesResponse);
-  // RedeemGroupInvite joins the group for the authenticated user.
-  rpc RedeemGroupInvite(RedeemGroupInviteRequest) returns (RedeemGroupInviteResponse);
-  // PreviewGroupInvite returns public metadata for an invite token without auth.
-  rpc PreviewGroupInvite(PreviewGroupInviteRequest) returns (PreviewGroupInviteResponse);
-}
-
-// User is the public account view.
-message User {
-  string id = 1;
-  string email = 2;
-  string display_name = 3;
-  string username = 4;
-  reserved 5;
-  reserved "is_guest";
 }
 
 // Session is the credential pair returned to the gateway.
@@ -95,33 +47,6 @@ message Session {
   int32 expires_in = 2;
   string refresh_token = 3;
   User user = 4;
-}
-
-// SetupStatusRequest is empty.
-message SetupStatusRequest {}
-
-// SetupStatusResponse reports instance policy for the auth UI.
-message SetupStatusResponse {
-  reserved 1, 2, 4, 6;
-  reserved "needs_account", "needs_instance_setup", "group_name", "guest_enabled";
-  string registration_mode = 3;
-  bool username_enabled = 5;
-}
-
-// CompleteInstanceSetupRequest is the owner setup wizard payload.
-message CompleteInstanceSetupRequest {
-  string access_token = 1;
-  string name = 2;
-  string logo_url = 3;
-  bool username_enabled = 4;
-  string registration_mode = 5;
-  reserved 6;
-  reserved "guest_enabled";
-}
-
-// CompleteInstanceSetupResponse acknowledges saved settings.
-message CompleteInstanceSetupResponse {
-  bool ok = 1;
 }
 
 // SetupRequest is the legacy first-account form (alias of Register).
@@ -294,240 +219,4 @@ message CompletePasswordResetRequest {
 
 message CompletePasswordResetResponse {
   bool ok = 1;
-}
-
-// GroupSummary is a public group row.
-// id is the 24-char lowercase hex public_id (not the internal UUID).
-message GroupSummary {
-  string id = 1;
-  string name = 2;
-  string logo_url = 3;
-  // default_channel_id is the public id of the #general channel (24-char hex).
-  string default_channel_id = 4;
-  // role is the caller's membership role (ListMyGroups / CreateGroup); empty for joinable list.
-  string role = 5;
-  string description = 6;
-  bool is_private = 7;
-  string banner_color = 8;
-  string banner_url = 9;
-}
-
-message ListMyGroupsRequest {
-  string access_token = 1;
-}
-
-message ListMyGroupsResponse {
-  repeated GroupSummary groups = 1;
-}
-
-message ListJoinableGroupsRequest {
-  string access_token = 1;
-}
-
-message ListJoinableGroupsResponse {
-  repeated GroupSummary groups = 1;
-}
-
-message CreateGroupRequest {
-  string access_token = 1;
-  string name = 2;
-}
-
-message CreateGroupResponse {
-  GroupSummary group = 1;
-}
-
-message JoinGroupRequest {
-  string access_token = 1;
-  string group_id = 2;
-}
-
-message JoinGroupResponse {
-  bool ok = 1;
-}
-
-message ReorderMyGroupsRequest {
-  string access_token = 1;
-  repeated string group_ids = 2;
-}
-
-message ReorderMyGroupsResponse {
-  bool ok = 1;
-}
-
-message LeaveGroupRequest {
-  string access_token = 1;
-  string group_id = 2;
-}
-
-message LeaveGroupResponse {
-  bool ok = 1;
-}
-
-message DeleteGroupRequest {
-  string access_token = 1;
-  string group_id = 2;
-}
-
-message DeleteGroupResponse {
-  bool ok = 1;
-}
-
-// ChannelSummary is channel metadata for the sidebar.
-message ChannelSummary {
-  string id = 1;
-  string name = 2;
-  string type = 3;
-  // Sidebar bucket: favorites | channels (see ms-user channels.sidebar_section).
-  string sidebar_section = 4;
-  // Preset key or uploaded URL; empty uses client default by type.
-  string image_url = 5;
-  // Group channel visibility; always false when type is dm.
-  bool is_private = 6;
-}
-
-message ListGroupChannelsRequest {
-  string access_token = 1;
-  string group_id = 2;
-}
-
-message ListGroupChannelsResponse {
-  repeated ChannelSummary channels = 1;
-}
-
-message AssertGroupChannelAccessRequest {
-  string access_token = 1;
-  string group_id = 2;
-  string channel_id = 3;
-}
-
-message AssertGroupChannelAccessResponse {
-  string channel_uuid = 1;
-  string user_uuid = 2;
-}
-
-message UploadGroupIconRequest {
-  string access_token = 1;
-  string group_id = 2;
-  string content_type = 3;
-  bytes data = 4;
-}
-
-message UploadGroupIconResponse {
-  GroupSummary group = 1;
-}
-
-message UpdateGroupProfileRequest {
-  string access_token = 1;
-  string group_id = 2;
-  string name = 3;
-  string description = 4;
-  bool is_private = 5;
-  string banner_color = 6;
-  bool clear_logo = 7;
-  bool clear_banner_image = 8;
-}
-
-message UpdateGroupProfileResponse {
-  GroupSummary group = 1;
-}
-
-message UploadGroupBannerRequest {
-  string access_token = 1;
-  string group_id = 2;
-  string content_type = 3;
-  bytes data = 4;
-}
-
-message UploadGroupBannerResponse {
-  GroupSummary group = 1;
-}
-
-message GroupMemberEntry {
-  string user_id = 1;
-  string display_name = 2;
-  string email = 3;
-  string role = 4;
-  string joined_at = 5;
-}
-
-message ListGroupMembersRequest {
-  string access_token = 1;
-  string group_id = 2;
-  int32 limit = 3;
-  string cursor = 4;
-}
-
-message ListGroupMembersResponse {
-  repeated GroupMemberEntry members = 1;
-  string next_cursor = 2;
-  int32 total = 3;
-}
-
-message UserSearchHit {
-  string user_id = 1;
-  string display_name = 2;
-  string email = 3;
-  string username = 4;
-}
-
-message SearchUsersRequest {
-  string access_token = 1;
-  string query = 2;
-  int32 limit = 3;
-  string group_id = 4;
-}
-
-message SearchUsersResponse {
-  repeated UserSearchHit users = 1;
-}
-
-message GetGroupInviteLinkRequest {
-  string access_token = 1;
-  string group_id = 2;
-  string channel_id = 3;
-}
-
-message GetGroupInviteLinkResponse {
-  string token = 1;
-  string expires_at = 2;
-}
-
-message SendGroupInvitesRequest {
-  string access_token = 1;
-  string group_id = 2;
-  string channel_id = 3;
-  repeated string user_ids = 4;
-  repeated string emails = 5;
-}
-
-message SendGroupInvitesResponse {
-  int32 added = 1;
-  int32 emailed = 2;
-  int32 skipped = 3;
-}
-
-message PreviewGroupInviteRequest {
-  string token = 1;
-}
-
-message PreviewGroupInviteResponse {
-  bool valid = 1;
-  string group_name = 2;
-  string channel_name = 3;
-  string expires_at = 4;
-  string reason = 5;
-  string group_logo_url = 6;
-  int32 member_count = 7;
-  int32 online_count = 8;
-}
-
-message RedeemGroupInviteRequest {
-  string access_token = 1;
-  string token = 2;
-}
-
-message RedeemGroupInviteResponse {
-  string group_id = 1;
-  string channel_id = 2;
 }

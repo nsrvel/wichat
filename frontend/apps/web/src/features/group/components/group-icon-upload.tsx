@@ -1,6 +1,7 @@
 "use client";
 
 import { Camera, Plus, Trash2 } from "lucide-react";
+import Image from "next/image";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
@@ -128,8 +129,7 @@ export function GroupIconUpload({
 					onClick={() => inputRef.current?.click()}
 				>
 					{hasPreview ? (
-						// eslint-disable-next-line @next/next/no-img-element -- blob or CDN logo
-						<img src={previewSrc} alt="" className="h-full w-full object-cover" />
+						<Image src={previewSrc} alt="" fill unoptimized sizes="96px" className="object-cover" />
 					) : null}
 					<span
 						className="pointer-events-none absolute inset-0 flex items-center justify-center"

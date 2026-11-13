@@ -16,13 +16,23 @@ import (
 	authgrpc "github.com/wichat/wichat/backend/ms-user/internal/auth/delivery/grpc"
 	authrepo "github.com/wichat/wichat/backend/ms-user/internal/auth/repository"
 	authservice "github.com/wichat/wichat/backend/ms-user/internal/auth/service"
+	channelgrpc "github.com/wichat/wichat/backend/ms-user/internal/channel/delivery/grpc"
 	channelrepo "github.com/wichat/wichat/backend/ms-user/internal/channel/repository"
 	channelservice "github.com/wichat/wichat/backend/ms-user/internal/channel/service"
 	generalgrpc "github.com/wichat/wichat/backend/ms-user/internal/general/delivery/grpc"
+	groupmembergrpc "github.com/wichat/wichat/backend/ms-user/internal/group-member/delivery/grpc"
+	groupmemberrepo "github.com/wichat/wichat/backend/ms-user/internal/group-member/repository"
+	groupmemberservice "github.com/wichat/wichat/backend/ms-user/internal/group-member/service"
+	grouprolegrpc "github.com/wichat/wichat/backend/ms-user/internal/group-role/delivery/grpc"
+	grouprolerepo "github.com/wichat/wichat/backend/ms-user/internal/group-role/repository"
+	grouproleservice "github.com/wichat/wichat/backend/ms-user/internal/group-role/service"
+	groupgrpc "github.com/wichat/wichat/backend/ms-user/internal/group/delivery/grpc"
 	grouprepo "github.com/wichat/wichat/backend/ms-user/internal/group/repository"
 	groupservice "github.com/wichat/wichat/backend/ms-user/internal/group/service"
+	invitegrpc "github.com/wichat/wichat/backend/ms-user/internal/invite/delivery/grpc"
 	inviterepo "github.com/wichat/wichat/backend/ms-user/internal/invite/repository"
 	inviteservice "github.com/wichat/wichat/backend/ms-user/internal/invite/service"
+	usergrpc "github.com/wichat/wichat/backend/ms-user/internal/user/delivery/grpc"
 	userrepo "github.com/wichat/wichat/backend/ms-user/internal/user/repository"
 	userservice "github.com/wichat/wichat/backend/ms-user/internal/user/service"
 	googleoauth "github.com/wichat/wichat/backend/ms-user/pkg/oauth"
@@ -85,9 +95,11 @@ func (s *server) Run(ctx context.Context) error {
 		notifyClient = msNotification.NewGRPC(notifConn, utils.DefaultSettings, s.log).Notify
 	}
 
-	// Services
+	// Repositories
 	userPg := userrepo.NewPgRepository(db)
 	groupPg := grouprepo.NewPgRepository(db, s.log)
+	groupMemberPg := groupmemberrepo.NewPgRepository(db, s.log)
+	groupRolePg := grouprolerepo.NewPgRepository(db, s.log)
 	minioClient, err := minio.New(minio.Config{
 		Endpoint:      s.cfg.MinioEndpoint,
 		AccessKey:     s.cfg.MinioAccessKey,
@@ -105,15 +117,19 @@ func (s *server) Run(ctx context.Context) error {
 	}
 	groupMinio := grouprepo.NewMinioRepository(minioClient)
 	channelPg := channelrepo.NewPgRepository(db, s.log)
+	invitePg := inviterepo.NewPgRepository(db, s.log)
 	authSessions := authrepo.NewSessionRepository(db)
 	authRefresh := authrepo.NewRedisRefreshStore(rdb)
 	secret := []byte(s.cfg.AuthJWTSecret)
-	userSvc := userservice.NewService(userPg, authSessions, secret, s.log)
-	channelSvc := channelservice.NewService(channelPg, groupPg, authSessions, secret, s.log)
-	groupSvc := groupservice.NewService(groupPg, channelSvc, userPg, groupMinio, authSessions, secret, s.log)
-	invitePg := inviterepo.NewPgRepository(db, s.log)
+
+	// Services
+	userSvc := userservice.NewService(userPg, groupPg, groupMemberPg, authSessions, secret, s.log)
+	channelSvc := channelservice.NewService(channelPg, groupPg, groupMemberPg, groupRolePg, authSessions, secret, s.log)
+	groupSvc := groupservice.NewService(groupPg, groupMemberPg, groupRolePg, channelSvc, userPg, groupMinio, authSessions, secret, s.log)
+	groupMemberSvc := groupmemberservice.NewService(groupMemberPg, groupPg, groupRolePg, authSessions, secret, s.log)
+	groupRoleSvc := grouproleservice.NewService(groupRolePg, groupPg, groupMemberPg, authSessions, secret, s.log)
 	inviteSvc := inviteservice.NewService(
-		groupPg, channelPg, invitePg, userPg, authSessions, notifyClient, secret,
+		groupPg, groupMemberPg, groupRolePg, channelPg, invitePg, userPg, authSessions, notifyClient, secret,
 		s.cfg.WebOrigin, s.cfg.MinioPublicBaseURL, s.log,
 	)
 	authSvc, err := authservice.NewService(userPg, authSessions, authRefresh, secret, s.log, googleoauth.Config{
@@ -133,7 +149,13 @@ func (s *server) Run(ctx context.Context) error {
 	}
 
 	grpcSrv := newGRPCServer(s.log)
-	userv1.RegisterAuthServiceServer(grpcSrv, authgrpc.NewServer(authSvc, userSvc, groupSvc, inviteSvc, channelSvc))
+	userv1.RegisterAuthServiceServer(grpcSrv, authgrpc.NewServer(authSvc))
+	userv1.RegisterUserServiceServer(grpcSrv, usergrpc.NewServer(userSvc))
+	userv1.RegisterGroupServiceServer(grpcSrv, groupgrpc.NewServer(groupSvc))
+	userv1.RegisterGroupMemberServiceServer(grpcSrv, groupmembergrpc.NewServer(groupMemberSvc))
+	userv1.RegisterGroupRoleServiceServer(grpcSrv, grouprolegrpc.NewServer(groupRoleSvc))
+	userv1.RegisterInviteServiceServer(grpcSrv, invitegrpc.NewServer(inviteSvc))
+	userv1.RegisterChannelServiceServer(grpcSrv, channelgrpc.NewServer(channelSvc))
 	userv1.RegisterGeneralServiceServer(grpcSrv, generalgrpc.NewServer("ms-user"))
 
 	// Listen

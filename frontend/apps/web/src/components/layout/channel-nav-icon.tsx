@@ -26,14 +26,14 @@ import { cn } from "@/lib/utils";
 import { ChannelListIcon } from "@/features/channel/components/channel-list-icon";
 
 export const channelSidebarGlyphClass = channelListGlyphIconClass;
-const channelHeaderGlyphClass = "h-4 w-4";
+const channelHeaderGlyphClass = "size-4";
 
 function glyphClass(variant: SidebarListIconVariant) {
 	return variant === "header" ? channelHeaderGlyphClass : channelSidebarGlyphClass;
 }
 
 function wicloudGlyph(variant: SidebarListIconVariant) {
-	const size = variant === "header" ? "h-4 w-4" : "h-[11px] w-[11px]";
+	const size = variant === "header" ? "size-4" : "size-[11px]";
 	return <Cloud className={`${size} fill-[#F38020] text-[#F38020]`} strokeWidth={2} />;
 }
 

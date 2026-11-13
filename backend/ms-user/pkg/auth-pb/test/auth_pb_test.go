@@ -82,4 +82,26 @@ func TestMappersNilAndValues(t *testing.T) {
 	if meta.UserAgent != "Mozilla" || meta.ClientIP != "127.0.0.1" {
 		t.Fatalf("%+v", meta)
 	}
+
+	now := time.Now().UTC()
+	role := models.GroupRole{
+		ID:          "uuid-1",
+		PublicID:    "role-pub-1",
+		Name:        "Admin",
+		Slug:        "admin",
+		Color:       "#ff0000",
+		Position:    2,
+		Permissions: []string{"administrator"},
+		MemberCount: 5,
+		CreatedAt:   now,
+		UpdatedAt:   now,
+	}
+	rolePb := authPb.GroupRolePb(role)
+	if rolePb.Id != "role-pub-1" || rolePb.Name != "Admin" || rolePb.MemberCount != 5 {
+		t.Fatalf("rolePb: %+v", rolePb)
+	}
+	rolesPb := authPb.GroupRolesPb([]models.GroupRole{role})
+	if len(rolesPb) != 1 || rolesPb[0].Id != "role-pub-1" {
+		t.Fatalf("rolesPb: %+v", rolesPb)
+	}
 }

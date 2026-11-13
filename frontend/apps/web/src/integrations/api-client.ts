@@ -1,6 +1,6 @@
 import { createApiClient } from "@wichat/api-client";
 import { createSessionTokenStorage } from "@wichat/api-client/token-storage";
-import { env } from "@/env";
+import { env } from "@/lib/env";
 
 const storage = createSessionTokenStorage();
 

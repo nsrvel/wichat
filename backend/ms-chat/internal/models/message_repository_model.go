@@ -36,12 +36,12 @@ func (r MessageRow) ToModel() Message {
 // MessageListRow is a list query projection with author display name.
 type MessageListRow struct {
 	bun.BaseModel     `bun:"table:messages,alias:m"`
-	ID                string    `bun:"m.id,pk"`
-	PublicID          string    `bun:"m.public_id"`
-	ChannelID         string    `bun:"m.channel_id"`
-	AuthorID          string    `bun:"m.author_id"`
-	Body              string    `bun:"m.body"`
-	CreatedAt         time.Time `bun:"m.created_at"`
+	ID                string    `bun:"id,pk,type:uuid"`
+	PublicID          string    `bun:"public_id"`
+	ChannelID         string    `bun:"channel_id,type:uuid"`
+	AuthorID          string    `bun:"author_id,type:uuid"`
+	Body              string    `bun:"body"`
+	CreatedAt         time.Time `bun:"created_at"`
 	AuthorDisplayName string    `bun:"author_display_name"`
 }
 

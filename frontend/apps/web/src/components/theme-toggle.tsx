@@ -21,7 +21,7 @@ export function ThemeIconToggle() {
 	const { resolvedTheme, setTheme } = useTheme();
 
 	if (!mounted) {
-		return <span className="inline-block h-9 w-9 shrink-0" aria-hidden suppressHydrationWarning />;
+		return <span className="inline-block size-9 shrink-0" aria-hidden suppressHydrationWarning />;
 	}
 
 	const isDark = resolvedTheme === "dark";

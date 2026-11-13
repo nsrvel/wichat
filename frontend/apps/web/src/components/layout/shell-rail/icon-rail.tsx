@@ -47,7 +47,7 @@ export function IconRail({ open }: IconRailProps) {
 				</IconRailWorkspaceRow>
 				<IconRailActionRow>
 					<IconRailTooltipTile variant="muted" label="Add workspace">
-						<Plus aria-hidden className="h-[18px] w-[18px]" strokeWidth={2} />
+						<Plus aria-hidden className="size-[18px]" strokeWidth={2} />
 					</IconRailTooltipTile>
 				</IconRailActionRow>
 			</div>

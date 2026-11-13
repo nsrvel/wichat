@@ -1,6 +1,6 @@
 import { RealtimeMessageCreatedSchema, type Message } from "@wichat/contracts";
-import { getAccessToken } from "@/integrations/api-client";
-import { env } from "@/env";
+import { ensureAccessToken, getAccessToken } from "@/integrations/api-client";
+import { env } from "@/lib/env";
 
 export type ChatChannelRealtimeOptions = {
 	groupId: string;
@@ -9,8 +9,9 @@ export type ChatChannelRealtimeOptions = {
 };
 
 function realtimeWebSocketURL(accessToken: string): string {
-	const base = env.NEXT_PUBLIC_API_URL.replace(/^http/, "ws");
-	const url = new URL(`${base}/realtime`);
+	const base = env.NEXT_PUBLIC_API_URL.replace(/\/+$/, "").replace(/^http/, "ws");
+	const pathname = base.endsWith("/api/v1") ? `${base}/realtime` : `${base}/api/v1/realtime`;
+	const url = new URL(pathname);
 	url.searchParams.set("access_token", accessToken);
 	return url.toString();
 }
@@ -20,19 +21,34 @@ export function subscribeChatChannel(options: ChatChannelRealtimeOptions): () =>
 	let ws: WebSocket | null = null;
 	let closed = false;
 	let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
+	let reconnectAttempts = 0;
 
-	const connect = () => {
+	const connect = async () => {
 		if (closed) {
 			return;
 		}
-		const token = getAccessToken();
+		let token = getAccessToken();
 		if (!token) {
-			reconnectTimer = setTimeout(connect, 2000);
+			token = await ensureAccessToken();
+		}
+		if (!token) {
+			const delay = Math.min(1000 * 2 ** reconnectAttempts, 10000);
+			reconnectAttempts++;
+			reconnectTimer = setTimeout(connect, delay);
 			return;
 		}
 
-		ws = new WebSocket(realtimeWebSocketURL(token));
+		try {
+			ws = new WebSocket(realtimeWebSocketURL(token));
+		} catch {
+			const delay = Math.min(1000 * 2 ** reconnectAttempts, 10000);
+			reconnectAttempts++;
+			reconnectTimer = setTimeout(connect, delay);
+			return;
+		}
+
 		ws.addEventListener("open", () => {
+			reconnectAttempts = 0;
 			ws?.send(
 				JSON.stringify({
 					type: "subscribe",
@@ -53,12 +69,14 @@ export function subscribeChatChannel(options: ChatChannelRealtimeOptions): () =>
 		});
 		ws.addEventListener("close", () => {
 			if (!closed) {
-				reconnectTimer = setTimeout(connect, 2000);
+				const delay = Math.min(1000 * 2 ** reconnectAttempts, 10000);
+				reconnectAttempts++;
+				reconnectTimer = setTimeout(connect, delay);
 			}
 		});
 	};
 
-	connect();
+	void connect();
 
 	return () => {
 		closed = true;

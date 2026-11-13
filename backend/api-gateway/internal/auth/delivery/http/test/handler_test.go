@@ -13,9 +13,6 @@ import (
 	"github.com/wichat/wichat/backend/wi-shared/microservices"
 	msUser "github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-user"
 	"github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-user/grpc/auth"
-	"github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-user/grpc/channel"
-	"github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-user/grpc/group"
-	"github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-user/grpc/user"
 	userv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/user/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -102,28 +99,16 @@ func TestVerifyLoginSetsRefreshCookie(t *testing.T) {
 }
 
 type msUserFakes struct {
-	Auth    auth.Client
-	User    user.Client
-	Group   group.Client
-	Channel channel.Client
+	Auth auth.Client
 }
 
 func testClients(f msUserFakes) *microservices.Clients {
 	if f.Auth == nil {
 		f.Auth = fakeAuth{}
 	}
-	if f.User == nil {
-		f.User = fakeUser{}
-	}
-	if f.Group == nil {
-		f.Group = fakeGroup{}
-	}
-	if f.Channel == nil {
-		f.Channel = fakeChannel{}
-	}
 
 	return &microservices.Clients{User: msUser.Service{GRPC: msUser.GRPC{
-		Auth: f.Auth, User: f.User, Group: f.Group, Channel: f.Channel,
+		Auth: f.Auth,
 	}}}
 }
 
@@ -198,117 +183,6 @@ func (f fakeAuth) GoogleFinish(ctx context.Context, in *userv1.GoogleFinishReque
 	}
 
 	return f.googleFinish(ctx, in)
-}
-
-type fakeUser struct {
-	setupStatus func(context.Context, *userv1.SetupStatusRequest) (*userv1.SetupStatusResponse, error)
-}
-
-func (f fakeUser) SetupStatus(ctx context.Context, in *userv1.SetupStatusRequest) (*userv1.SetupStatusResponse, error) {
-	if f.setupStatus != nil {
-		return f.setupStatus(ctx, in)
-	}
-	return nil, status.Error(codes.Unimplemented, "error.internal")
-}
-
-func (fakeUser) CompleteInstanceSetup(context.Context, *userv1.CompleteInstanceSetupRequest) (*userv1.CompleteInstanceSetupResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "error.internal")
-}
-
-type fakeGroup struct {
-	createGroup func(context.Context, *userv1.CreateGroupRequest) (*userv1.CreateGroupResponse, error)
-	joinGroup   func(context.Context, *userv1.JoinGroupRequest) (*userv1.JoinGroupResponse, error)
-	leaveGroup  func(context.Context, *userv1.LeaveGroupRequest) (*userv1.LeaveGroupResponse, error)
-	deleteGroup func(context.Context, *userv1.DeleteGroupRequest) (*userv1.DeleteGroupResponse, error)
-}
-
-func (fakeGroup) ListMyGroups(context.Context, *userv1.ListMyGroupsRequest) (*userv1.ListMyGroupsResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "error.internal")
-}
-
-func (fakeGroup) ListJoinableGroups(context.Context, *userv1.ListJoinableGroupsRequest) (*userv1.ListJoinableGroupsResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "error.internal")
-}
-
-func (f fakeGroup) CreateGroup(ctx context.Context, in *userv1.CreateGroupRequest) (*userv1.CreateGroupResponse, error) {
-	if f.createGroup != nil {
-		return f.createGroup(ctx, in)
-	}
-	return nil, status.Error(codes.Unimplemented, "error.internal")
-}
-
-func (f fakeGroup) JoinGroup(ctx context.Context, in *userv1.JoinGroupRequest) (*userv1.JoinGroupResponse, error) {
-	if f.joinGroup != nil {
-		return f.joinGroup(ctx, in)
-	}
-	return nil, status.Error(codes.Unimplemented, "error.internal")
-}
-
-func (f fakeGroup) LeaveGroup(ctx context.Context, in *userv1.LeaveGroupRequest) (*userv1.LeaveGroupResponse, error) {
-	if f.leaveGroup != nil {
-		return f.leaveGroup(ctx, in)
-	}
-	return nil, status.Error(codes.Unimplemented, "error.internal")
-}
-
-func (f fakeGroup) DeleteGroup(ctx context.Context, in *userv1.DeleteGroupRequest) (*userv1.DeleteGroupResponse, error) {
-	if f.deleteGroup != nil {
-		return f.deleteGroup(ctx, in)
-	}
-	return nil, status.Error(codes.Unimplemented, "error.internal")
-}
-
-func (fakeGroup) UploadGroupIcon(context.Context, *userv1.UploadGroupIconRequest) (*userv1.UploadGroupIconResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "error.internal")
-}
-
-func (f fakeGroup) UpdateGroupProfile(_ context.Context, in *userv1.UpdateGroupProfileRequest) (*userv1.UpdateGroupProfileResponse, error) {
-	return &userv1.UpdateGroupProfileResponse{Group: &userv1.GroupSummary{
-		Id: in.GetGroupId(), Name: in.GetName(), Description: in.GetDescription(),
-		IsPrivate: in.GetIsPrivate(), BannerColor: in.GetBannerColor(),
-	}}, nil
-}
-
-func (fakeGroup) UploadGroupBanner(context.Context, *userv1.UploadGroupBannerRequest) (*userv1.UploadGroupBannerResponse, error) {
-	return &userv1.UploadGroupBannerResponse{Group: &userv1.GroupSummary{BannerUrl: "https://cdn/b.png"}}, nil
-}
-
-func (fakeGroup) ReorderMyGroups(context.Context, *userv1.ReorderMyGroupsRequest) (*userv1.ReorderMyGroupsResponse, error) {
-	return &userv1.ReorderMyGroupsResponse{Ok: true}, nil
-}
-
-func (fakeGroup) ListGroupMembers(context.Context, *userv1.ListGroupMembersRequest) (*userv1.ListGroupMembersResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "error.internal")
-}
-
-func (fakeGroup) SearchUsers(context.Context, *userv1.SearchUsersRequest) (*userv1.SearchUsersResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "error.internal")
-}
-
-func (fakeGroup) GetGroupInviteLink(context.Context, *userv1.GetGroupInviteLinkRequest) (*userv1.GetGroupInviteLinkResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "error.internal")
-}
-
-func (fakeGroup) SendGroupInvites(context.Context, *userv1.SendGroupInvitesRequest) (*userv1.SendGroupInvitesResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "error.internal")
-}
-
-func (fakeGroup) PreviewGroupInvite(context.Context, *userv1.PreviewGroupInviteRequest) (*userv1.PreviewGroupInviteResponse, error) {
-	return &userv1.PreviewGroupInviteResponse{Valid: true, GroupName: "Test Group"}, nil
-}
-
-func (fakeGroup) RedeemGroupInvite(context.Context, *userv1.RedeemGroupInviteRequest) (*userv1.RedeemGroupInviteResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "error.internal")
-}
-
-type fakeChannel struct{}
-
-func (fakeChannel) ListGroupChannels(context.Context, *userv1.ListGroupChannelsRequest) (*userv1.ListGroupChannelsResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "error.internal")
-}
-
-func (fakeChannel) AssertGroupChannelAccess(context.Context, *userv1.AssertGroupChannelAccessRequest) (*userv1.AssertGroupChannelAccessResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
 
 func TestGoogleCallbackRedirectsWithRefreshCookie(t *testing.T) {
@@ -393,122 +267,6 @@ func TestGoogleCallbackAliasPath(t *testing.T) {
 
 	if rec.Code != http.StatusFound || rec.Header().Get("Location") != "http://localhost:8080/" {
 		t.Fatalf("redirect: %d %s", rec.Code, rec.Header().Get("Location"))
-	}
-}
-
-func TestSetupStatusReturnsInstancePolicy(t *testing.T) {
-	handler := authdelivery.NewHandler(testClients(msUserFakes{User: fakeUser{
-		setupStatus: func(context.Context, *userv1.SetupStatusRequest) (*userv1.SetupStatusResponse, error) {
-			return &userv1.SetupStatusResponse{
-				RegistrationMode: "invite_only",
-				UsernameEnabled:  false,
-			}, nil
-		},
-	}}), testLog(), false, "http://localhost:8080")
-
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/setup-status", nil)
-	rec := httptest.NewRecorder()
-	handler.SetupStatus(rec, req)
-
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status %d body %s", rec.Code, rec.Body.String())
-	}
-	var body struct {
-		Data struct {
-			RegistrationMode string `json:"registration_mode"`
-			UsernameEnabled  bool   `json:"username_enabled"`
-			NeedsAccount     *bool  `json:"needs_account"`
-		} `json:"data"`
-	}
-	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
-		t.Fatal(err)
-	}
-	if body.Data.RegistrationMode != "invite_only" || body.Data.UsernameEnabled {
-		t.Fatalf("policy: %+v", body.Data)
-	}
-	if body.Data.NeedsAccount != nil {
-		t.Fatalf("deprecated field leaked: %+v", body.Data)
-	}
-}
-
-func TestCreateGroupRequiresBearer(t *testing.T) {
-	handler := authdelivery.NewHandler(testClients(msUserFakes{}), testLog(), false, "http://localhost:8080")
-
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/groups", strings.NewReader(`{"name":"Acme"}`))
-	rec := httptest.NewRecorder()
-	handler.CreateGroup(rec, req)
-
-	if rec.Code != http.StatusUnauthorized {
-		t.Fatalf("status %d body %s", rec.Code, rec.Body.String())
-	}
-}
-
-const testGroupPublicID = "507f1f77bcf86cd799439011"
-
-func TestCreateGroupRejectsEmptyName(t *testing.T) {
-	handler := authdelivery.NewHandler(testClients(msUserFakes{}), testLog(), false, "http://localhost:8080")
-
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/groups", strings.NewReader(`{"name":"   "}`))
-	req.Header.Set("Authorization", "Bearer access-token")
-	rec := httptest.NewRecorder()
-	handler.CreateGroup(rec, req)
-
-	if rec.Code != http.StatusBadRequest {
-		t.Fatalf("status %d body %s", rec.Code, rec.Body.String())
-	}
-}
-
-func TestCreateGroupWithBearer(t *testing.T) {
-	var token string
-	handler := authdelivery.NewHandler(testClients(msUserFakes{Group: fakeGroup{
-		createGroup: func(_ context.Context, in *userv1.CreateGroupRequest) (*userv1.CreateGroupResponse, error) {
-			token = in.GetAccessToken()
-			return &userv1.CreateGroupResponse{
-				Group: &userv1.GroupSummary{Id: testGroupPublicID, Name: in.GetName()},
-			}, nil
-		},
-	}}), testLog(), false, "http://localhost:8080")
-
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/groups", strings.NewReader(`{"name":"Acme"}`))
-	req.Header.Set("Authorization", "Bearer access-token")
-	rec := httptest.NewRecorder()
-	handler.CreateGroup(rec, req)
-
-	if rec.Code != http.StatusCreated || token != "access-token" {
-		t.Fatalf("status %d token %q body %s", rec.Code, token, rec.Body.String())
-	}
-	var body struct {
-		Data struct {
-			ID   string `json:"id"`
-			Name string `json:"name"`
-		} `json:"data"`
-	}
-	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
-		t.Fatal(err)
-	}
-	if body.Data.ID != testGroupPublicID || body.Data.Name != "Acme" {
-		t.Fatalf("group: %+v", body.Data)
-	}
-}
-
-func TestJoinGroupWithBearer(t *testing.T) {
-	var gotToken, gotID string
-	handler := authdelivery.NewHandler(testClients(msUserFakes{Group: fakeGroup{
-		joinGroup: func(_ context.Context, in *userv1.JoinGroupRequest) (*userv1.JoinGroupResponse, error) {
-			gotToken = in.GetAccessToken()
-			gotID = in.GetGroupId()
-			return &userv1.JoinGroupResponse{Ok: true}, nil
-		},
-	}}), testLog(), false, "http://localhost:8080")
-
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/groups/"+testGroupPublicID+"/join", nil)
-	req.SetPathValue("id", testGroupPublicID)
-	req.Header.Set("Authorization", "Bearer access-token")
-	rec := httptest.NewRecorder()
-	handler.JoinGroup(rec, req)
-
-	if rec.Code != http.StatusOK || gotToken != "access-token" || gotID != testGroupPublicID {
-		t.Fatalf("status %d token %q id %q body %s", rec.Code, gotToken, gotID, rec.Body.String())
 	}
 }
 

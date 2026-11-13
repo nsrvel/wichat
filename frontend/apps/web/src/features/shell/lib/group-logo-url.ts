@@ -1,4 +1,4 @@
-import { env } from "@/env";
+import { env } from "@/lib/env";
 
 function objectPublicBase(): string {
 	return env.NEXT_PUBLIC_OBJECT_PUBLIC_BASE_URL?.replace(/\/$/, "") ?? "";

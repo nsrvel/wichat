@@ -8,6 +8,8 @@ import (
 
 	authrepo "github.com/wichat/wichat/backend/ms-user/internal/auth/repository"
 	channelservice "github.com/wichat/wichat/backend/ms-user/internal/channel/service"
+	groupmemberrepo "github.com/wichat/wichat/backend/ms-user/internal/group-member/repository"
+	grouprolerepo "github.com/wichat/wichat/backend/ms-user/internal/group-role/repository"
 	grouprepo "github.com/wichat/wichat/backend/ms-user/internal/group/repository"
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
 	userrepo "github.com/wichat/wichat/backend/ms-user/internal/user/repository"
@@ -20,14 +22,12 @@ import (
 	"github.com/wichat/wichat/backend/wi-shared/infra/minio"
 )
 
-// Service is the group membership use-case API.
+// Service is the group lifecycle and profile use-case API.
 type Service interface {
 	ListMyGroups(ctx context.Context, accessToken string) ([]models.PublicGroup, error)
 	ListJoinableGroups(ctx context.Context, accessToken string) ([]models.PublicGroup, error)
 	CreateGroup(ctx context.Context, accessToken, name string) (*models.PublicGroup, error)
-	JoinGroup(ctx context.Context, accessToken, groupID string) error
 	ReorderMyGroups(ctx context.Context, accessToken string, groupPublicIDs []string) error
-	LeaveGroup(ctx context.Context, accessToken, groupID string) error
 	DeleteGroup(ctx context.Context, accessToken, groupID string) error
 	UploadGroupIcon(ctx context.Context, accessToken, groupPublicID, contentType string, body io.Reader, size int64) (*models.PublicGroup, error)
 	UpdateGroupProfile(
@@ -46,6 +46,8 @@ type Service interface {
 
 type service struct {
 	groups   grouprepo.PgRepository
+	members  groupmemberrepo.PgRepository
+	roles    grouprolerepo.PgRepository
 	channels channelservice.Service
 	users    userrepo.PgRepository
 	objects  grouprepo.MinioRepository
@@ -58,6 +60,8 @@ type service struct {
 // NewService builds group use cases.
 func NewService(
 	groups grouprepo.PgRepository,
+	members groupmemberrepo.PgRepository,
+	roles grouprolerepo.PgRepository,
 	channels channelservice.Service,
 	users userrepo.PgRepository,
 	objects grouprepo.MinioRepository,
@@ -70,6 +74,8 @@ func NewService(
 
 	return service{
 		groups:   groups,
+		members:  members,
+		roles:    roles,
 		channels: channels,
 		users:    users,
 		objects:  objects,
@@ -93,6 +99,12 @@ func (s service) ListMyGroups(ctx context.Context, accessToken string) ([]models
 
 	out := make([]models.PublicGroup, len(groups))
 	for i, g := range groups {
+		if s.roles != nil {
+			perms, err := s.roles.GetEffectivePermissions(ctx, g.ID, userID)
+			if err == nil {
+				g.EffectivePermissions = perms
+			}
+		}
 		out[i] = g.Public()
 	}
 
@@ -189,47 +201,6 @@ func (s service) CreateGroup(ctx context.Context, accessToken, name string) (*mo
 	return &pub, nil
 }
 
-func (s service) JoinGroup(ctx context.Context, accessToken, groupID string) error {
-	userID, err := access.UserIDFromAccessToken(ctx, accessToken, s.secret, s.sessions, s.now())
-	if err != nil {
-		return err
-	}
-
-	publicID, err := validator.GroupPublicID(groupID)
-	if err != nil {
-		return err
-	}
-
-	group, err := s.groups.FindGroupByPublicID(ctx, publicID)
-	if err != nil {
-		if errors.Is(err, constants.ErrNotFound) {
-			return exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "group_id"})
-		}
-
-		return err
-	}
-
-	if _, err := s.groups.FindGroupMember(ctx, group.ID, userID); err != nil {
-		if !errors.Is(err, constants.ErrNotFound) {
-			return err
-		}
-	} else {
-		return nil
-	}
-
-	now := s.now()
-	if err := s.groups.InsertGroupMember(ctx, models.GroupMember{
-		GroupID:   group.ID,
-		UserID:    userID,
-		Role:      constants.GroupRoleMember,
-		CreatedAt: now,
-	}); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (s service) ReorderMyGroups(ctx context.Context, accessToken string, groupPublicIDs []string) error {
 	userID, err := access.UserIDFromAccessToken(ctx, accessToken, s.secret, s.sessions, s.now())
 	if err != nil {
@@ -281,49 +252,6 @@ func (s service) ReorderMyGroups(ctx context.Context, accessToken string, groupP
 	return nil
 }
 
-func (s service) LeaveGroup(ctx context.Context, accessToken, groupID string) error {
-	userID, err := access.UserIDFromAccessToken(ctx, accessToken, s.secret, s.sessions, s.now())
-	if err != nil {
-		return err
-	}
-
-	publicID, err := validator.GroupPublicID(groupID)
-	if err != nil {
-		return err
-	}
-
-	group, err := s.groups.FindGroupByPublicID(ctx, publicID)
-	if err != nil {
-		if errors.Is(err, constants.ErrNotFound) {
-			return exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "group_id"})
-		}
-
-		return err
-	}
-
-	member, err := s.groups.FindGroupMember(ctx, group.ID, userID)
-	if err != nil {
-		if errors.Is(err, constants.ErrNotFound) {
-			return exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "group_id"})
-		}
-
-		return err
-	}
-	if member.Role == constants.GroupRoleOwner {
-		return exception.PermissionDenied(exception.MsgForbidden, nil)
-	}
-
-	if err := s.groups.DeleteGroupMember(ctx, group.ID, userID); err != nil {
-		if errors.Is(err, constants.ErrNotFound) {
-			return exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "group_id"})
-		}
-
-		return err
-	}
-
-	return nil
-}
-
 func (s service) DeleteGroup(ctx context.Context, accessToken, groupID string) error {
 	userID, err := access.UserIDFromAccessToken(ctx, accessToken, s.secret, s.sessions, s.now())
 	if err != nil {
@@ -344,7 +272,7 @@ func (s service) DeleteGroup(ctx context.Context, accessToken, groupID string) e
 		return err
 	}
 
-	member, err := s.groups.FindGroupMember(ctx, group.ID, userID)
+	member, err := s.members.FindGroupMember(ctx, group.ID, userID)
 	if err != nil {
 		if errors.Is(err, constants.ErrNotFound) {
 			return exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "group_id"})
@@ -398,7 +326,7 @@ func (s service) UploadGroupIcon(
 		return nil, err
 	}
 
-	member, err := s.groups.FindGroupMember(ctx, group.ID, userID)
+	member, err := s.members.FindGroupMember(ctx, group.ID, userID)
 	if err != nil {
 		if errors.Is(err, constants.ErrNotFound) {
 			return nil, exception.PermissionDenied(exception.MsgForbidden, nil)
@@ -406,7 +334,11 @@ func (s service) UploadGroupIcon(
 
 		return nil, err
 	}
-	if member.Role != constants.GroupRoleOwner {
+	perms, err := s.roles.GetEffectivePermissions(ctx, group.ID, userID)
+	if err != nil {
+		return nil, err
+	}
+	if !access.HasPermission(member.Role == constants.GroupRoleOwner, perms, constants.PermManageGroup) {
 		return nil, exception.PermissionDenied(exception.MsgForbidden, nil)
 	}
 
@@ -480,7 +412,7 @@ func (s service) UpdateGroupProfile(
 		return nil, err
 	}
 
-	member, err := s.groups.FindGroupMember(ctx, group.ID, userID)
+	member, err := s.members.FindGroupMember(ctx, group.ID, userID)
 	if err != nil {
 		if errors.Is(err, constants.ErrNotFound) {
 			return nil, exception.PermissionDenied(exception.MsgForbidden, nil)
@@ -488,7 +420,11 @@ func (s service) UpdateGroupProfile(
 
 		return nil, err
 	}
-	if member.Role != constants.GroupRoleOwner {
+	perms, err := s.roles.GetEffectivePermissions(ctx, group.ID, userID)
+	if err != nil {
+		return nil, err
+	}
+	if !access.HasPermission(member.Role == constants.GroupRoleOwner, perms, constants.PermManageGroup) {
 		return nil, exception.PermissionDenied(exception.MsgForbidden, nil)
 	}
 
@@ -568,7 +504,7 @@ func (s service) UploadGroupBanner(
 		return nil, err
 	}
 
-	member, err := s.groups.FindGroupMember(ctx, group.ID, userID)
+	member, err := s.members.FindGroupMember(ctx, group.ID, userID)
 	if err != nil {
 		if errors.Is(err, constants.ErrNotFound) {
 			return nil, exception.PermissionDenied(exception.MsgForbidden, nil)
@@ -576,7 +512,11 @@ func (s service) UploadGroupBanner(
 
 		return nil, err
 	}
-	if member.Role != constants.GroupRoleOwner {
+	perms, err := s.roles.GetEffectivePermissions(ctx, group.ID, userID)
+	if err != nil {
+		return nil, err
+	}
+	if !access.HasPermission(member.Role == constants.GroupRoleOwner, perms, constants.PermManageGroup) {
 		return nil, exception.PermissionDenied(exception.MsgForbidden, nil)
 	}
 

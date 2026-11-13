@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	groupmembermock "github.com/wichat/wichat/backend/ms-user/internal/group-member/repository/mock"
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
 	usermock "github.com/wichat/wichat/backend/ms-user/internal/user/repository/mock"
 	userservice "github.com/wichat/wichat/backend/ms-user/internal/user/service"
@@ -85,7 +86,8 @@ func TestCompleteInstanceSetupCreatesFirstGroup(t *testing.T) {
 	if group.Name != "WiChat" {
 		t.Fatalf("group name: %q", group.Name)
 	}
-	member, err := groups.FindGroupMember(ctx, group.ID, owner.User.ID)
+	members := groupmembermock.NewPgRepositoryMock(st)
+	member, err := members.FindGroupMember(ctx, group.ID, owner.User.ID)
 	if err != nil || member.Role != constants.GroupRoleOwner {
 		t.Fatalf("membership: %+v err %v", member, err)
 	}
@@ -123,4 +125,45 @@ func completeInstanceSetup(t *testing.T, svc userservice.Service, token string) 
 		RegistrationMode: constants.RegistrationInviteOnly,
 		UsernameEnabled:  true,
 	})
+}
+
+func TestSearchUsersInGroup(t *testing.T) {
+	st := usermock.NewState()
+	authSvc, notify, _, userSvc, groupSvc, _ := testSupport.NewAuthService(t, st, nil)
+	ctx := context.Background()
+
+	owner := testSupport.RegisterSession(t, authSvc, notify, registerInput("owner-search@example.com"))
+	created, err := groupSvc.CreateGroup(ctx, owner.AccessToken, "Lookup")
+	if err != nil {
+		t.Fatal(err)
+	}
+	target := testSupport.RegisterSession(t, authSvc, notify, registerInput("findme@example.com"))
+
+	hits, err := userSvc.SearchUsers(ctx, owner.AccessToken, "find", 10, created.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, h := range hits {
+		if h.UserID == target.User.ID {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("hits: %+v", hits)
+	}
+}
+
+func TestSearchUsersEmptyQuery(t *testing.T) {
+	st := usermock.NewState()
+	authSvc, notify, _, userSvc, groupSvc, _ := testSupport.NewAuthService(t, st, nil)
+	ctx := context.Background()
+
+	owner := testSupport.RegisterSession(t, authSvc, notify, registerInput("search-empty@example.com"))
+	created, _ := groupSvc.CreateGroup(ctx, owner.AccessToken, "Search")
+
+	hits, err := userSvc.SearchUsers(ctx, owner.AccessToken, "  ", 10, created.ID)
+	if err != nil || len(hits) != 0 {
+		t.Fatalf("%+v %v", hits, err)
+	}
 }

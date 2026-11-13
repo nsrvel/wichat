@@ -19,7 +19,7 @@ export function GroupSettingsMemberRoleBadge({ role }: { role: string }) {
 				)}
 			>
 				<Crown
-					className="h-3.5 w-3.5 shrink-0 text-amber-500 dark:text-amber-400"
+					className="size-3.5 shrink-0 text-amber-500 dark:text-amber-400"
 					strokeWidth={2.2}
 					aria-hidden
 				/>

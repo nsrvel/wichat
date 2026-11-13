@@ -54,7 +54,7 @@ export function QuickViewRoutePage({ groupId, quickView, onOpenSidebar }: QuickV
 			</div>
 			<div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 py-8">
 				<WorkspaceComingSoonState
-					icon={<Icon className="h-6 w-6" strokeWidth={1.75} aria-hidden />}
+					icon={<Icon className="size-6" strokeWidth={1.75} aria-hidden />}
 					descriptionKey={meta.descriptionKey}
 				/>
 			</div>

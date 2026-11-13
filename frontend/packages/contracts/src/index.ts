@@ -269,6 +269,8 @@ export const GroupMemberSchema = z.object({
 	is_online: z.boolean().optional(),
 });
 
+export type GroupMember = z.infer<typeof GroupMemberSchema>;
+
 export const GroupMembersPageSchema = z.object({
 	members: z.array(GroupMemberSchema),
 	next_cursor: z.string().optional().default(""),

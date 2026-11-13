@@ -1,0 +1,123 @@
+syntax = "proto3";
+
+package user.v1;
+
+option go_package = "github.com/wichat/wichat/backend/wi-shared/models/gen/user/v1;userv1";
+
+// GroupService manages workspace groups, profiles, banners, and icons.
+service GroupService {
+  // ListMyGroups returns groups the caller belongs to.
+  rpc ListMyGroups(ListMyGroupsRequest) returns (ListMyGroupsResponse);
+  // ListJoinableGroups returns instance groups the caller is not in.
+  rpc ListJoinableGroups(ListJoinableGroupsRequest) returns (ListJoinableGroupsResponse);
+  // CreateGroup creates a group; caller becomes owner.
+  rpc CreateGroup(CreateGroupRequest) returns (CreateGroupResponse);
+  // ReorderMyGroups persists the caller's workspace rail order.
+  rpc ReorderMyGroups(ReorderMyGroupsRequest) returns (ReorderMyGroupsResponse);
+  // DeleteGroup removes a group; owner only.
+  rpc DeleteGroup(DeleteGroupRequest) returns (DeleteGroupResponse);
+  // UploadGroupIcon stores a group logo and updates group_settings.logo_url.
+  rpc UploadGroupIcon(UploadGroupIconRequest) returns (UploadGroupIconResponse);
+  // UpdateGroupProfile replaces owner-editable group profile scalars.
+  rpc UpdateGroupProfile(UpdateGroupProfileRequest) returns (UpdateGroupProfileResponse);
+  // UploadGroupBanner stores a banner image and updates group_settings.banner_url.
+  rpc UploadGroupBanner(UploadGroupBannerRequest) returns (UploadGroupBannerResponse);
+}
+
+// GroupSummary is a public group row.
+// id is the 24-char lowercase hex public_id (not the internal UUID).
+message GroupSummary {
+  string id = 1;
+  string name = 2;
+  string logo_url = 3;
+  // default_channel_id is the public id of the #general channel (24-char hex).
+  string default_channel_id = 4;
+  // role is the caller's membership role (ListMyGroups / CreateGroup); empty for joinable list.
+  string role = 5;
+  string description = 6;
+  bool is_private = 7;
+  string banner_color = 8;
+  string banner_url = 9;
+  repeated string effective_permissions = 10;
+}
+
+message ListMyGroupsRequest {
+  string access_token = 1;
+}
+
+message ListMyGroupsResponse {
+  repeated GroupSummary groups = 1;
+}
+
+message ListJoinableGroupsRequest {
+  string access_token = 1;
+}
+
+message ListJoinableGroupsResponse {
+  repeated GroupSummary groups = 1;
+}
+
+message CreateGroupRequest {
+  string access_token = 1;
+  string name = 2;
+}
+
+message CreateGroupResponse {
+  GroupSummary group = 1;
+}
+
+message ReorderMyGroupsRequest {
+  string access_token = 1;
+  repeated string group_ids = 2;
+}
+
+message ReorderMyGroupsResponse {
+  bool ok = 1;
+}
+
+message DeleteGroupRequest {
+  string access_token = 1;
+  string group_id = 2;
+}
+
+message DeleteGroupResponse {
+  bool ok = 1;
+}
+
+message UploadGroupIconRequest {
+  string access_token = 1;
+  string group_id = 2;
+  string content_type = 3;
+  bytes data = 4;
+}
+
+message UploadGroupIconResponse {
+  GroupSummary group = 1;
+}
+
+message UpdateGroupProfileRequest {
+  string access_token = 1;
+  string group_id = 2;
+  string name = 3;
+  string description = 4;
+  bool is_private = 5;
+  string banner_color = 6;
+  bool clear_logo = 7;
+  bool clear_banner_image = 8;
+}
+
+message UpdateGroupProfileResponse {
+  GroupSummary group = 1;
+}
+
+message UploadGroupBannerRequest {
+  string access_token = 1;
+  string group_id = 2;
+  string content_type = 3;
+  bytes data = 4;
+}
+
+message UploadGroupBannerResponse {
+  GroupSummary group = 1;
+}
+

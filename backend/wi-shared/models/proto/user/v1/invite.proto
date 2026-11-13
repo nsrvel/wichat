@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+package user.v1;
+
+option go_package = "github.com/wichat/wichat/backend/wi-shared/models/gen/user/v1;userv1";
+
+// InviteService manages group invite links, email invitations, and invite redemption.
+service InviteService {
+  // GetGroupInviteLink returns or creates a reusable share link token.
+  rpc GetGroupInviteLink(GetGroupInviteLinkRequest) returns (GetGroupInviteLinkResponse);
+  // SendGroupInvites adds members or emails invite links in batch.
+  rpc SendGroupInvites(SendGroupInvitesRequest) returns (SendGroupInvitesResponse);
+  // PreviewGroupInvite returns public metadata for an invite token without auth.
+  rpc PreviewGroupInvite(PreviewGroupInviteRequest) returns (PreviewGroupInviteResponse);
+  // RedeemGroupInvite joins the group for the authenticated user.
+  rpc RedeemGroupInvite(RedeemGroupInviteRequest) returns (RedeemGroupInviteResponse);
+}
+
+message GetGroupInviteLinkRequest {
+  string access_token = 1;
+  string group_id = 2;
+  string channel_id = 3;
+}
+
+message GetGroupInviteLinkResponse {
+  string token = 1;
+  string expires_at = 2;
+}
+
+message SendGroupInvitesRequest {
+  string access_token = 1;
+  string group_id = 2;
+  string channel_id = 3;
+  repeated string user_ids = 4;
+  repeated string emails = 5;
+}
+
+message SendGroupInvitesResponse {
+  int32 added = 1;
+  int32 emailed = 2;
+  int32 skipped = 3;
+}
+
+message PreviewGroupInviteRequest {
+  string token = 1;
+}
+
+message PreviewGroupInviteResponse {
+  bool valid = 1;
+  string group_name = 2;
+  string channel_name = 3;
+  string expires_at = 4;
+  string reason = 5;
+  string group_logo_url = 6;
+  int32 member_count = 7;
+  int32 online_count = 8;
+}
+
+message RedeemGroupInviteRequest {
+  string access_token = 1;
+  string token = 2;
+}
+
+message RedeemGroupInviteResponse {
+  string group_id = 1;
+  string channel_id = 2;
+}
+

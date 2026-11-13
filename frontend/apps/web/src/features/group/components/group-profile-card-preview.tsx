@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { GroupBannerPreviewSurface } from "@/features/group/components/group-banner-preview-surface";
@@ -40,7 +41,7 @@ export function GroupProfileCardPreview({
 	className,
 }: GroupProfileCardPreviewProps) {
 	const { t } = useTranslation();
-	const [logoBroken, setLogoBroken] = useState(false);
+	const [brokenLogoKey, setBrokenLogoKey] = useState<string | null>(null);
 
 	const iconBlobUrl = useMemo(() => (iconFile ? URL.createObjectURL(iconFile) : null), [iconFile]);
 
@@ -51,11 +52,8 @@ export function GroupProfileCardPreview({
 		return () => URL.revokeObjectURL(iconBlobUrl);
 	}, [iconBlobUrl]);
 
-	useEffect(() => {
-		// eslint-disable-next-line react-hooks/set-state-in-effect -- reset broken flag on new logo URL / icon file
-		setLogoBroken(false);
-	}, [logoUrl, iconFile]);
-
+	const currentLogoKey = `${logoUrl}::${iconBlobUrl ?? ""}`;
+	const logoBroken = brokenLogoKey === currentLogoKey;
 	const resolvedLogo = resolveGroupLogoUrl(logoUrl);
 	const iconSrc = iconBlobUrl ?? (resolvedLogo && !logoBroken ? resolvedLogo : "");
 	const showIconImage = Boolean(iconSrc);
@@ -77,12 +75,14 @@ export function GroupProfileCardPreview({
 			<div className={groupProfileCardBodyClass}>
 				<div className={groupProfileCardIconClass}>
 					{showIconImage ? (
-						// eslint-disable-next-line @next/next/no-img-element -- preview
-						<img
+						<Image
 							src={iconSrc}
 							alt=""
+							width={56}
+							height={56}
+							unoptimized
 							className="size-full object-cover"
-							onError={() => setLogoBroken(true)}
+							onError={() => setBrokenLogoKey(currentLogoKey)}
 						/>
 					) : (
 						<span className="flex size-full items-center justify-center bg-[color-mix(in_oklch,var(--primary)_12%,var(--field))] text-xs font-semibold text-foreground/80">

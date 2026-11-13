@@ -151,12 +151,12 @@ export function InviteRecipientField({
 						<span className="min-w-0 truncate leading-none">{chip.label}</span>
 						<button
 							type="button"
-							className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/90 hover:text-foreground"
+							className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/90 hover:text-foreground"
 							aria-label={t("invite.remove_recipient")}
 							disabled={disabled}
 							onClick={() => removeChip(chip)}
 						>
-							<X className="h-3.5 w-3.5" aria-hidden />
+							<X className="size-3.5" aria-hidden />
 						</button>
 					</span>
 				))}
@@ -204,7 +204,7 @@ export function InviteRecipientField({
 								onClick={() => pick(hit)}
 							>
 								<span
-									className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-field text-xs font-semibold ring-1 ring-border/50"
+									className="flex size-8 shrink-0 items-center justify-center rounded-full bg-field text-xs font-semibold ring-1 ring-border/50"
 									aria-hidden
 								>
 									{userInitials(hit.display_name, hit.email)}
@@ -274,7 +274,7 @@ export function InviteRecipientActions({
 			className="h-10 shrink-0 gap-1.5 self-center px-3.5 sm:h-11 sm:min-h-11 sm:rounded-xl sm:px-4 max-h-[880px]:h-9 max-h-[880px]:sm:h-10"
 			onClick={onShare}
 		>
-			<Send className="h-4 w-4 shrink-0" aria-hidden />
+			<Send className="size-4 shrink-0" aria-hidden />
 			{t("invite.send")}
 		</Button>
 	);

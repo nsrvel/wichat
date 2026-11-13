@@ -54,7 +54,7 @@ export function AuthShell({
 	children: ReactNode;
 }) {
 	return (
-		<main className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto bg-background pt-[max(0.75rem,env(safe-area-inset-top))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(1.25rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] text-foreground sm:px-6 sm:pt-6 sm:pb-8 md:px-10 md:pb-10">
+		<main className="overlay-scroll relative flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto bg-background pt-[max(0.75rem,env(safe-area-inset-top))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(1.25rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] text-foreground sm:px-6 sm:pt-6 sm:pb-8 md:px-10 md:pb-10">
 			<header className="relative z-10 flex min-w-0 items-center justify-between gap-3">
 				<div className="flex min-w-0 items-center gap-3" aria-label="WiChat" title="WiChat">
 					<div className="relative size-9 shrink-0 overflow-hidden rounded-xl border border-border bg-card sm:size-10">

@@ -15,7 +15,7 @@ export function WorkspaceHeaderIconButton({
 		<button
 			type="button"
 			className={cn(
-				"flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground",
+				"flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground",
 				className,
 			)}
 			{...props}
@@ -25,4 +25,4 @@ export function WorkspaceHeaderIconButton({
 	);
 }
 
-export const workspaceHeaderIconClass = "h-[17px] w-[17px]";
+export const workspaceHeaderIconClass = "size-[17px]";

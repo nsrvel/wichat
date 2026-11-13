@@ -1,8 +1,8 @@
 "use client";
 
-import type { RowSelectionState } from "@tanstack/react-table";
+import type { OnChangeFn, RowSelectionState } from "@tanstack/react-table";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { GroupSettingsMembersSelectionFooter } from "@/features/group-settings/components/members/group-settings-members-selection-footer";
@@ -50,8 +50,19 @@ export function GroupSettingsMembersSection({
 	const [cursorStack, setCursorStack] = useState<string[]>([""]);
 	const [search, setSearch] = useState("");
 	const [sort, setSort] = useState<MembersSortKey>("name_asc");
-	const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 	const cursor = cursorStack[cursorStack.length - 1] ?? "";
+	const [selectionState, setSelectionState] = useState<{
+		cursor: string;
+		rows: RowSelectionState;
+	}>({ cursor: "", rows: {} });
+	const rowSelection = selectionState.cursor === cursor ? selectionState.rows : {};
+	const setRowSelection: OnChangeFn<RowSelectionState> = (updater) => {
+		setSelectionState((prev) => {
+			const base = prev.cursor === cursor ? prev.rows : {};
+			const next = typeof updater === "function" ? updater(base) : updater;
+			return { cursor, rows: next };
+		});
+	};
 
 	const { data: myGroups = [] } = useQuery(myGroupsQueryOpts());
 
@@ -79,11 +90,6 @@ export function GroupSettingsMembersSection({
 	const emptySearch = search.trim().length > 0 && visibleRows.length === 0 && rows.length > 0;
 	const canBulk = isOwner || targetIsOwner;
 	const selectedCount = Object.keys(rowSelection).filter((id) => rowSelection[id]).length;
-
-	useEffect(() => {
-		// eslint-disable-next-line react-hooks/set-state-in-effect -- clear selection on cursor pagination page turn
-		setRowSelection({});
-	}, [cursor]);
 
 	const onBanSelected = () => {
 		// ponytail: bulk ban RPC when group member moderation ships.

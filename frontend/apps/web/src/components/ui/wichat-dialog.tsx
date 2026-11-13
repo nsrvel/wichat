@@ -16,7 +16,7 @@ export const wichatDialogTitleClass =
 export const wichatDialogSubtitleClass = "text-sm leading-relaxed text-muted-foreground";
 
 const wichatDialogCloseButtonClass =
-	"absolute top-3 right-3 z-20 flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground sm:top-4 sm:right-4";
+	"absolute top-3 right-3 z-20 flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground sm:top-4 sm:right-4";
 
 const shellStepMotionClass =
 	"duration-[var(--shell-rail-motion-duration)] ease-[var(--shell-rail-motion-ease)] motion-reduce:transition-none";
@@ -78,7 +78,7 @@ export function WiChatDialog({
 					aria-label={label}
 					onClick={() => onOpenChange(false)}
 				>
-					<X className="h-5 w-5" strokeWidth={2} aria-hidden />
+					<X className="size-5" strokeWidth={2} aria-hidden />
 				</button>
 				{children}
 			</div>

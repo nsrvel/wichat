@@ -26,6 +26,7 @@ export type SidebarPlainNavRowProps = {
 	disabled?: boolean;
 	onSelect?: () => void;
 	trailingAction?: SidebarPlainNavRowTrailingAction;
+	trailingIcon?: ReactNode;
 };
 
 /** Channel sidebar row without collapse chevron or row “more” menu. */
@@ -36,6 +37,7 @@ export function SidebarPlainNavRow({
 	disabled,
 	onSelect,
 	trailingAction,
+	trailingIcon,
 }: SidebarPlainNavRowProps) {
 	const trailingAlways = trailingAction?.visible === "always";
 
@@ -65,6 +67,14 @@ export function SidebarPlainNavRow({
 				>
 					{label}
 				</span>
+				{trailingIcon ? (
+					<ChannelGlyphSlot
+						framed={false}
+						className="shrink-0 text-muted-foreground opacity-70 group-hover/row:opacity-100"
+					>
+						{trailingIcon}
+					</ChannelGlyphSlot>
+				) : null}
 			</button>
 			{trailingAction ? (
 				<div

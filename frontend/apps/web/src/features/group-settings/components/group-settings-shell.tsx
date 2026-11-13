@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useGroupSettings } from "@/features/group-settings/group-settings-provider";
 import { quickViewPath } from "@/lib/app-routes";
@@ -37,10 +37,17 @@ export function GroupSettingsShell({ target, section, onClose }: GroupSettingsSh
 	const router = useRouter();
 	const { closeGroupSettings } = useGroupSettings();
 	const { runIfAllowed } = useGroupSettingsUnsaved();
-	const [activeSection, setActiveSection] = useState<GroupSettingsSection>(section);
 	const { data: myGroups = [] } = useQuery(myGroupsQueryOpts());
 	const isOwner =
 		target.role === "owner" || myGroups.some((g) => g.id === target.groupId && g.role === "owner");
+
+	const syncKey = `${target.groupId}:${section}`;
+	const baseSection: GroupSettingsSection = section === "members" && !isOwner ? "profile" : section;
+	const [sectionOverride, setSectionOverride] = useState<{
+		key: string;
+		section: GroupSettingsSection;
+	} | null>(null);
+	const activeSection = sectionOverride?.key === syncKey ? sectionOverride.section : baseSection;
 
 	const openMembersWorkspace = () => {
 		runIfAllowed(() => {
@@ -49,22 +56,13 @@ export function GroupSettingsShell({ target, section, onClose }: GroupSettingsSh
 		});
 	};
 
-	useEffect(() => {
-		// eslint-disable-next-line react-hooks/set-state-in-effect -- sync active section from external navigation
-		setActiveSection(section);
-	}, [section, target.groupId]);
+	const triggerMembersWorkspace = useEffectEvent(openMembersWorkspace);
 
 	useEffect(() => {
-		if (section !== "members") {
+		if (section !== "members" || !isOwner) {
 			return;
 		}
-		if (isOwner) {
-			openMembersWorkspace();
-			return;
-		}
-		// eslint-disable-next-line react-hooks/set-state-in-effect -- fallback to profile for non-owner
-		setActiveSection("profile");
-		// eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot navigation when overlay opens on members.
+		triggerMembersWorkspace();
 	}, [section, isOwner, target.groupId]);
 
 	const onSectionChange = (next: GroupSettingsSection) => {
@@ -75,7 +73,7 @@ export function GroupSettingsShell({ target, section, onClose }: GroupSettingsSh
 			openMembersWorkspace();
 			return;
 		}
-		runIfAllowed(() => setActiveSection(next));
+		runIfAllowed(() => setSectionOverride({ key: syncKey, section: next }));
 	};
 
 	return (

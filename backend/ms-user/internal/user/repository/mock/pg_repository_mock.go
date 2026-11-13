@@ -20,15 +20,18 @@ type googleLink struct {
 
 // State is shared in-memory storage for user and auth repository mocks.
 type State struct {
-	mu       sync.Mutex
-	Users    []models.User
-	Sessions []models.Session
-	Links    []googleLink
-	Settings models.InstanceSettings
-	Groups   []models.Group
-	Members  []models.GroupMember
-	Invites  []models.GroupInviteRow
-	Channels []models.Channel
+	mu          sync.Mutex
+	Users       []models.User
+	Sessions    []models.Session
+	Links       []googleLink
+	Settings    models.InstanceSettings
+	Groups      []models.Group
+	Members     []models.GroupMember
+	Invites     []models.GroupInviteRow
+	Channels    []models.Channel
+	Roles       []models.GroupRole
+	MemberRoles []models.GroupMemberRoleRow
+	Bans        []models.GroupBanRow
 }
 
 // NewState returns empty mock storage.

@@ -291,7 +291,7 @@ func TestGoogleCreatesLinksAndRejectsPassword(t *testing.T) {
 	rdb := testSupport.RedisClient(t)
 	refresh := authrepo.NewRedisRefreshStore(rdb)
 	log := logger.New(logger.Options{Service: "auth-test", Env: "test", Level: "error"})
-	userSvc := userservice.NewService(users, sessions, []byte(testSupport.TestJWTSecret), log)
+	userSvc := userservice.NewService(users, nil, nil, sessions, []byte(testSupport.TestJWTSecret), log)
 	svc, err := service.NewService(users, sessions, refresh, []byte(testSupport.TestJWTSecret), log, googleoauth.Config{
 		ClientID:     "client",
 		ClientSecret: "secret",
@@ -636,7 +636,7 @@ func TestGoogleStartWhenConfigured(t *testing.T) {
 	users, _, sessions := testSupport.TestRepos(st)
 	rdb := testSupport.RedisClient(t)
 	log := logger.New(logger.Options{Service: "auth-test", Env: "test", Level: "error"})
-	userSvc := userservice.NewService(users, sessions, []byte(testSupport.TestJWTSecret), log)
+	userSvc := userservice.NewService(users, nil, nil, sessions, []byte(testSupport.TestJWTSecret), log)
 	svc, err := service.NewService(users, sessions, authrepo.NewRedisRefreshStore(rdb), []byte(testSupport.TestJWTSecret), log, googleoauth.Config{
 		ClientID: "client-id", ClientSecret: "secret", RedirectURL: "http://localhost/callback",
 	}, authrepo.NewRedisPasswordResetStore(rdb), authrepo.NewRedisEmailAuthStore(rdb), &testSupport.FakeNotifier{}, userSvc, nil)
@@ -1276,7 +1276,7 @@ func TestGoogleFinishUnavailableUpstream(t *testing.T) {
 
 	rdb := testSupport.RedisClient(t)
 	log := logger.New(logger.Options{Service: "auth-test", Env: "test", Level: "error"})
-	userSvc := userservice.NewService(users, sessions, []byte(testSupport.TestJWTSecret), log)
+	userSvc := userservice.NewService(users, nil, nil, sessions, []byte(testSupport.TestJWTSecret), log)
 	svc, err := service.NewService(users, sessions, authrepo.NewRedisRefreshStore(rdb), []byte(testSupport.TestJWTSecret), log, googleoauth.Config{
 		ClientID: "id", ClientSecret: "sec", RedirectURL: "http://cb",
 		TokenURL: srv.URL + "/token", UserInfoURL: srv.URL + "/info",
@@ -1298,7 +1298,7 @@ func TestGoogleFinishRejectsOversizeCode(t *testing.T) {
 	users, _, sessions := testSupport.TestRepos(st)
 	rdb := testSupport.RedisClient(t)
 	log := logger.New(logger.Options{Service: "auth-test", Env: "test", Level: "error"})
-	userSvc := userservice.NewService(users, sessions, []byte(testSupport.TestJWTSecret), log)
+	userSvc := userservice.NewService(users, nil, nil, sessions, []byte(testSupport.TestJWTSecret), log)
 	svc, err := service.NewService(users, sessions, authrepo.NewRedisRefreshStore(rdb), []byte(testSupport.TestJWTSecret), log, googleoauth.Config{
 		ClientID: "id", ClientSecret: "sec", RedirectURL: "http://cb",
 		TokenURL: "http://127.0.0.1:1/token", UserInfoURL: "http://127.0.0.1:1/info",
@@ -1365,7 +1365,7 @@ func TestRegisterUnavailableWithoutEmailStore(t *testing.T) {
 	users, _, sessions := testSupport.TestRepos(st)
 	rdb := testSupport.RedisClient(t)
 	log := logger.New(logger.Options{Service: "auth-test", Env: "test", Level: "error"})
-	userSvc := userservice.NewService(users, sessions, []byte(testSupport.TestJWTSecret), log)
+	userSvc := userservice.NewService(users, nil, nil, sessions, []byte(testSupport.TestJWTSecret), log)
 
 	svc, err := service.NewService(users, sessions, authrepo.NewRedisRefreshStore(rdb), []byte(testSupport.TestJWTSecret), log, googleoauth.Config{},
 		authrepo.NewRedisPasswordResetStore(rdb), nil, &testSupport.FakeNotifier{}, userSvc, nil)
@@ -1390,7 +1390,7 @@ func TestPasswordResetUnavailableWithoutResetStore(t *testing.T) {
 	rdb := testSupport.RedisClient(t)
 	log := logger.New(logger.Options{Service: "auth-test", Env: "test", Level: "error"})
 	_, _, sessions := testSupport.TestRepos(st)
-	userSvc := userservice.NewService(users, sessions, []byte(testSupport.TestJWTSecret), log)
+	userSvc := userservice.NewService(users, nil, nil, sessions, []byte(testSupport.TestJWTSecret), log)
 	svc, err := service.NewService(users, sessions, authrepo.NewRedisRefreshStore(rdb), []byte(testSupport.TestJWTSecret), log, googleoauth.Config{},
 		nil, authrepo.NewRedisEmailAuthStore(rdb), &testSupport.FakeNotifier{}, userSvc, nil)
 	if err != nil {
@@ -1410,7 +1410,7 @@ func TestNewServiceRejectsShortJWTSecret(t *testing.T) {
 	users, _, sessions := testSupport.TestRepos(st)
 	rdb := testSupport.RedisClient(t)
 	log := logger.New(logger.Options{Service: "t", Env: "test", Level: "error"})
-	userSvc := userservice.NewService(users, sessions, []byte(testSupport.TestJWTSecret), log)
+	userSvc := userservice.NewService(users, nil, nil, sessions, []byte(testSupport.TestJWTSecret), log)
 
 	_, err := service.NewService(users, sessions, authrepo.NewRedisRefreshStore(rdb), []byte("short"), log, googleoauth.Config{},
 		authrepo.NewRedisPasswordResetStore(rdb), authrepo.NewRedisEmailAuthStore(rdb), &testSupport.FakeNotifier{}, userSvc, nil)
@@ -1484,7 +1484,7 @@ func TestGoogleFinishExchangeDenied(t *testing.T) {
 
 	rdb := testSupport.RedisClient(t)
 	log := logger.New(logger.Options{Service: "auth-test", Env: "test", Level: "error"})
-	userSvc := userservice.NewService(users, sessions, []byte(testSupport.TestJWTSecret), log)
+	userSvc := userservice.NewService(users, nil, nil, sessions, []byte(testSupport.TestJWTSecret), log)
 	svc, err := service.NewService(users, sessions, authrepo.NewRedisRefreshStore(rdb), []byte(testSupport.TestJWTSecret), log, googleoauth.Config{
 		ClientID: "id", ClientSecret: "sec", RedirectURL: "http://cb", TokenURL: srv.URL,
 	}, authrepo.NewRedisPasswordResetStore(rdb), authrepo.NewRedisEmailAuthStore(rdb), &testSupport.FakeNotifier{}, userSvc, nil)

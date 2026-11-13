@@ -29,7 +29,7 @@ export function WorkspaceSplitIconControl({
 			<button
 				type="button"
 				className={cn(
-					"flex h-9 w-9 items-center justify-center rounded-l-lg transition-colors",
+					"flex size-9 items-center justify-center rounded-l-lg transition-colors",
 					segmentClass,
 				)}
 				aria-label={mainAriaLabel}
@@ -45,7 +45,7 @@ export function WorkspaceSplitIconControl({
 				)}
 				aria-label={optionsAriaLabel}
 			>
-				<ChevronDown className="h-3.5 w-3.5" strokeWidth={2.2} />
+				<ChevronDown className="size-3.5" strokeWidth={2.2} />
 			</button>
 		</div>
 	);

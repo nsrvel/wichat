@@ -3,12 +3,13 @@ package service_test
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 	"testing"
 	"time"
 
 	channelservice "github.com/wichat/wichat/backend/ms-user/internal/channel/service"
+	groupmembermock "github.com/wichat/wichat/backend/ms-user/internal/group-member/repository/mock"
+	grouprolemock "github.com/wichat/wichat/backend/ms-user/internal/group-role/repository/mock"
 	invitemock "github.com/wichat/wichat/backend/ms-user/internal/invite/repository/mock"
 	inviteservice "github.com/wichat/wichat/backend/ms-user/internal/invite/service"
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
@@ -111,24 +112,6 @@ func TestSendGroupInvitesAddsUser(t *testing.T) {
 	}
 }
 
-func TestListGroupMembersForOwner(t *testing.T) {
-	st := usermock.NewState()
-	authSvc, notify, _, _, groupSvc, _ := testSupport.NewAuthService(t, st, nil)
-	ctx := context.Background()
-
-	owner := testSupport.RegisterSession(t, authSvc, notify, testSupportRegisterInput("owner-list@example.com"))
-	created, err := groupSvc.CreateGroup(ctx, owner.AccessToken, "Roster")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	svc := newInviteService(t, st)
-	page, err := svc.ListGroupMembers(ctx, owner.AccessToken, created.ID, 50, nil)
-	if err != nil || page.Total < 1 || len(page.Members) == 0 {
-		t.Fatalf("page: %+v %v", page, err)
-	}
-}
-
 func TestPreviewInviteExpired(t *testing.T) {
 	st := usermock.NewState()
 	st.Groups = []models.Group{{ID: "g1", Name: "Old"}}
@@ -158,6 +141,8 @@ func TestSendGroupInvitesEmailsUnknownUser(t *testing.T) {
 	users, groups, sessions := testSupport.TestRepos(st)
 	svc := inviteservice.NewService(
 		groups,
+		groupmembermock.NewPgRepositoryMock(st),
+		grouprolemock.NewPgRepositoryMock(st),
 		testSupport.ChannelRepo(st),
 		invitemock.NewPgRepositoryMock(st),
 		users,
@@ -184,34 +169,6 @@ func TestPreviewInviteEmptyToken(t *testing.T) {
 	_, err := svc.PreviewInvite(context.Background(), "  ")
 	if err == nil {
 		t.Fatal("expected error")
-	}
-}
-
-func TestSearchUsersInGroup(t *testing.T) {
-	st := usermock.NewState()
-	authSvc, notify, _, _, groupSvc, _ := testSupport.NewAuthService(t, st, nil)
-	ctx := context.Background()
-
-	owner := testSupport.RegisterSession(t, authSvc, notify, testSupportRegisterInput("owner-search@example.com"))
-	created, err := groupSvc.CreateGroup(ctx, owner.AccessToken, "Lookup")
-	if err != nil {
-		t.Fatal(err)
-	}
-	target := testSupport.RegisterSession(t, authSvc, notify, testSupportRegisterInput("findme@example.com"))
-
-	svc := newInviteService(t, st)
-	hits, err := svc.SearchUsers(ctx, owner.AccessToken, "find", 10, created.ID)
-	if err != nil {
-		t.Fatal(err)
-	}
-	found := false
-	for _, h := range hits {
-		if h.UserID == target.User.ID {
-			found = true
-		}
-	}
-	if !found {
-		t.Fatalf("hits: %+v", hits)
 	}
 }
 
@@ -374,7 +331,7 @@ func TestGetInviteLinkWithChannel(t *testing.T) {
 	}
 
 	_, groups, sessions := testSupport.TestRepos(st)
-	chSvc := channelservice.NewService(testSupport.ChannelRepo(st), groups, sessions, []byte(testSupport.TestJWTSecret),
+	chSvc := channelservice.NewService(testSupport.ChannelRepo(st), groups, groupmembermock.NewPgRepositoryMock(st), grouprolemock.NewPgRepositoryMock(st), sessions, []byte(testSupport.TestJWTSecret),
 		logger.New(logger.Options{Service: "t", Env: "test", Level: "error"}))
 	channels, err := chSvc.ListGroupChannels(ctx, owner.AccessToken, created.ID)
 	if err != nil || len(channels) == 0 {
@@ -435,6 +392,8 @@ func newInviteService(t *testing.T, st *usermock.State) inviteservice.Service {
 	users, groups, sessions := testSupport.TestRepos(st)
 	return inviteservice.NewService(
 		groups,
+		groupmembermock.NewPgRepositoryMock(st),
+		grouprolemock.NewPgRepositoryMock(st),
 		testSupport.ChannelRepo(st),
 		invitemock.NewPgRepositoryMock(st),
 		users,
@@ -450,7 +409,7 @@ func newInviteService(t *testing.T, st *usermock.State) inviteservice.Service {
 func newInviteServiceNoWebBase(t *testing.T, st *usermock.State) inviteservice.Service {
 	t.Helper()
 	users, groups, sessions := testSupport.TestRepos(st)
-	return inviteservice.NewService(groups, testSupport.ChannelRepo(st), invitemock.NewPgRepositoryMock(st), users, sessions,
+	return inviteservice.NewService(groups, groupmembermock.NewPgRepositoryMock(st), grouprolemock.NewPgRepositoryMock(st), testSupport.ChannelRepo(st), invitemock.NewPgRepositoryMock(st), users, sessions,
 		&testSupport.FakeNotifier{}, []byte(testSupport.TestJWTSecret), "",
 		"",
 		logger.New(logger.Options{Service: "invite", Env: "test", Level: "error"}))
@@ -488,7 +447,7 @@ func TestRedeemInviteAlreadyMember(t *testing.T) {
 	owner := testSupport.RegisterSession(t, authSvc, notify, testSupportRegisterInput("redeem-member@example.com"))
 	created, _ := groupSvc.CreateGroup(ctx, owner.AccessToken, "Again")
 	member := testSupport.RegisterSession(t, authSvc, notify, testSupportRegisterInput("already-in@example.com"))
-	_ = groupSvc.JoinGroup(ctx, member.AccessToken, created.ID)
+	_ = testSupport.NewGroupMemberService(t, st).JoinGroup(ctx, member.AccessToken, created.ID)
 
 	svc := newInviteService(t, st)
 	link, err := svc.GetInviteLink(ctx, owner.AccessToken, created.ID, "")
@@ -529,35 +488,6 @@ func TestRedeemInviteNotFound(t *testing.T) {
 	_, err := svc.RedeemInvite(context.Background(), member.AccessToken, "badtoken")
 	if codeOf(t, err) != string(exception.MsgInvalidInput) {
 		t.Fatalf("%v", err)
-	}
-}
-
-func TestListGroupMembersPaginated(t *testing.T) {
-	st := usermock.NewState()
-	authSvc, notify, _, _, groupSvc, _ := testSupport.NewAuthService(t, st, nil)
-	ctx := context.Background()
-
-	owner := testSupport.RegisterSession(t, authSvc, notify, testSupportRegisterInput("owner-page@example.com"))
-	created, err := groupSvc.CreateGroup(ctx, owner.AccessToken, "Paged")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	for i := 0; i < 3; i++ {
-		m := testSupport.RegisterSession(t, authSvc, notify, testSupportRegisterInput(
-			fmt.Sprintf("member-page-%d@example.com", i),
-		))
-		_ = groupSvc.JoinGroup(ctx, m.AccessToken, created.ID)
-	}
-
-	svc := newInviteService(t, st)
-	page, err := svc.ListGroupMembers(ctx, owner.AccessToken, created.ID, 2, nil)
-	if err != nil || page.Total < 4 || len(page.Members) != 2 {
-		t.Fatalf("page1 total=%d len=%d err=%v", page.Total, len(page.Members), err)
-	}
-	page2, err := svc.ListGroupMembers(ctx, owner.AccessToken, created.ID, 10, page.NextCursor)
-	if err != nil || len(page2.Members) < 2 {
-		t.Fatalf("page2 %+v %v", page2, err)
 	}
 }
 
@@ -610,7 +540,7 @@ func TestSendGroupInvitesSkipsExistingMemberEmail(t *testing.T) {
 	owner := testSupport.RegisterSession(t, authSvc, notify, testSupportRegisterInput("owner-skip@example.com"))
 	created, _ := groupSvc.CreateGroup(ctx, owner.AccessToken, "Skips")
 	member := testSupport.RegisterSession(t, authSvc, notify, testSupportRegisterInput("member-skip@example.com"))
-	_ = groupSvc.JoinGroup(ctx, member.AccessToken, created.ID)
+	_ = testSupport.NewGroupMemberService(t, st).JoinGroup(ctx, member.AccessToken, created.ID)
 
 	svc := newInviteService(t, st)
 	res, err := svc.SendGroupInvites(ctx, owner.AccessToken, models.SendGroupInvitesInput{
@@ -739,39 +669,8 @@ func TestRedeemShareLinkAddsMember(t *testing.T) {
 	if err != nil || out.GroupPublicID != created.ID {
 		t.Fatalf("%+v %v", out, err)
 	}
-	if err := groupSvc.JoinGroup(ctx, member.AccessToken, created.ID); err != nil {
+	if err := testSupport.NewGroupMemberService(t, st).JoinGroup(ctx, member.AccessToken, created.ID); err != nil {
 		t.Fatal("idempotent member")
-	}
-}
-
-func TestSearchUsersEmptyQuery(t *testing.T) {
-	st := usermock.NewState()
-	authSvc, notify, _, _, groupSvc, _ := testSupport.NewAuthService(t, st, nil)
-	ctx := context.Background()
-
-	owner := testSupport.RegisterSession(t, authSvc, notify, testSupportRegisterInput("search-empty@example.com"))
-	created, _ := groupSvc.CreateGroup(ctx, owner.AccessToken, "Search")
-
-	svc := newInviteService(t, st)
-	hits, err := svc.SearchUsers(ctx, owner.AccessToken, "  ", 10, created.ID)
-	if err != nil || len(hits) != 0 {
-		t.Fatalf("%+v %v", hits, err)
-	}
-}
-
-func TestListGroupMembersForbidden(t *testing.T) {
-	st := usermock.NewState()
-	authSvc, notify, _, _, groupSvc, _ := testSupport.NewAuthService(t, st, nil)
-	ctx := context.Background()
-
-	owner := testSupport.RegisterSession(t, authSvc, notify, testSupportRegisterInput("list-forbid@example.com"))
-	created, _ := groupSvc.CreateGroup(ctx, owner.AccessToken, "Private")
-	outsider := testSupport.RegisterSession(t, authSvc, notify, testSupportRegisterInput("list-outsider@example.com"))
-
-	svc := newInviteService(t, st)
-	_, err := svc.ListGroupMembers(ctx, outsider.AccessToken, created.ID, 20, nil)
-	if err == nil {
-		t.Fatal("expected forbidden")
 	}
 }
 
@@ -808,7 +707,7 @@ func TestSendGroupInvitesEmailStillCountsWhenNotifyFails(t *testing.T) {
 	created, _ := groupSvc.CreateGroup(ctx, owner.AccessToken, "Mail")
 
 	users, groups, sessions := testSupport.TestRepos(st)
-	svc := inviteservice.NewService(groups, testSupport.ChannelRepo(st), invitemock.NewPgRepositoryMock(st), users, sessions,
+	svc := inviteservice.NewService(groups, groupmembermock.NewPgRepositoryMock(st), grouprolemock.NewPgRepositoryMock(st), testSupport.ChannelRepo(st), invitemock.NewPgRepositoryMock(st), users, sessions,
 		failInviteNotifier{}, []byte(testSupport.TestJWTSecret), "https://app.test", "",
 		logger.New(logger.Options{Service: "invite", Env: "test", Level: "error"}))
 

@@ -19,6 +19,7 @@ import (
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
 	channelrepo "github.com/wichat/wichat/backend/ms-user/internal/channel/repository"
+	groupmemberrepo "github.com/wichat/wichat/backend/ms-user/internal/group-member/repository"
 	grouprepo "github.com/wichat/wichat/backend/ms-user/internal/group/repository"
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
 	userrepo "github.com/wichat/wichat/backend/ms-user/internal/user/repository"
@@ -27,7 +28,7 @@ import (
 )
 
 func TestCreateGroupWithOwnerListAndJoinable(t *testing.T) {
-	users, groups, channels, cleanup := newGroupPgRepositories(t)
+	users, groups, members, channels, cleanup := newGroupPgRepositories(t)
 	defer cleanup()
 	ctx := context.Background()
 	now := time.Now().UTC().Truncate(time.Microsecond)
@@ -129,7 +130,7 @@ func TestCreateGroupWithOwnerListAndJoinable(t *testing.T) {
 		t.Fatalf("ListJoinableGroups: %+v err %v", joinable, err)
 	}
 
-	if err := groups.InsertGroupMember(ctx, models.GroupMember{
+	if err := members.InsertGroupMember(ctx, models.GroupMember{
 		GroupID: groupID, UserID: memberID, Role: constants.GroupRoleMember, CreatedAt: now,
 	}); err != nil {
 		t.Fatalf("InsertGroupMember: %v", err)
@@ -147,7 +148,7 @@ func TestCreateGroupWithOwnerListAndJoinable(t *testing.T) {
 }
 
 func TestUpdateGroupProfilePg(t *testing.T) {
-	users, groups, _, cleanup := newGroupPgRepositories(t)
+	users, groups, _, _, cleanup := newGroupPgRepositories(t)
 	defer cleanup()
 	ctx := context.Background()
 	now := time.Now().UTC().Truncate(time.Microsecond)
@@ -187,7 +188,7 @@ func TestUpdateGroupProfilePg(t *testing.T) {
 	}
 }
 
-func newGroupPgRepositories(t *testing.T) (userrepo.PgRepository, grouprepo.PgRepository, channelrepo.PgRepository, func()) {
+func newGroupPgRepositories(t *testing.T) (userrepo.PgRepository, grouprepo.PgRepository, groupmemberrepo.PgRepository, channelrepo.PgRepository, func()) {
 	t.Helper()
 	ctx := context.Background()
 
@@ -231,7 +232,7 @@ func newGroupPgRepositories(t *testing.T) (userrepo.PgRepository, grouprepo.PgRe
 
 	log := logger.New(logger.Options{Service: "group-repo-test", Env: "test", Level: "error"})
 
-	return userrepo.NewPgRepository(db), grouprepo.NewPgRepository(db, log), channelrepo.NewPgRepository(db, log), cleanup
+	return userrepo.NewPgRepository(db), grouprepo.NewPgRepository(db, log), groupmemberrepo.NewPgRepository(db, log), channelrepo.NewPgRepository(db, log), cleanup
 }
 
 func runMigrations(dsn string) error {

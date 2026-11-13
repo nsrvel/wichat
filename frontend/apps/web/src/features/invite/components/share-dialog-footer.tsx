@@ -49,7 +49,7 @@ export function ShareDialogFooter({
 					)}
 					aria-label={t("invite.access_policy_label", { mode: labelFor(mode) })}
 				>
-					<Lock className="h-4 w-4 shrink-0" aria-hidden />
+					<Lock className="size-4 shrink-0" aria-hidden />
 					<span className="truncate">{labelFor(mode)}</span>
 				</div>
 
@@ -60,7 +60,7 @@ export function ShareDialogFooter({
 						disabled={copyDisabled}
 						onClick={onCopyLink}
 					>
-						<Link2 className="h-4 w-4 shrink-0" aria-hidden />
+						<Link2 className="size-4 shrink-0" aria-hidden />
 						<span className="truncate">
 							{linkCopied ? t("invite.copy_link_done") : t("invite.copy_link")}
 						</span>

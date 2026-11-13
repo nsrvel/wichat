@@ -23,7 +23,7 @@ export function ShellSearchInput({
 		<div className={cn("relative w-full", className)}>
 			<Search
 				className={cn(
-					"pointer-events-none absolute top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#a1a1aa]",
+					"pointer-events-none absolute top-1/2 size-3.5 -translate-y-1/2 text-[#a1a1aa]",
 					SHELL_SEARCH_ICON_INSET,
 				)}
 				strokeWidth={2}

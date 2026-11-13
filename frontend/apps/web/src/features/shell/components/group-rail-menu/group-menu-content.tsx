@@ -93,7 +93,7 @@ export function GroupMenuContent({
 			<kit.Separator className={menuSeparatorClass} />
 
 			<kit.Item className={menuItemClass} onClick={() => void copyGroupId(closeMenu)}>
-				<Fingerprint className="h-3.5 w-3.5 shrink-0 opacity-45" aria-hidden />
+				<Fingerprint className="size-3.5 shrink-0 opacity-45" aria-hidden />
 				{t("shell.group_rail_menu.copy_group_id")}
 			</kit.Item>
 		</>

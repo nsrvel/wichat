@@ -3,6 +3,7 @@ package mock
 import (
 	"context"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/wichat/wichat/backend/ms-user/internal/group/repository"
@@ -84,19 +85,6 @@ func (m pgRepositoryMock) FindGroupByPublicID(_ context.Context, publicID string
 	return models.Group{}, constants.ErrNotFound
 }
 
-func (m pgRepositoryMock) FindGroupMember(_ context.Context, groupID, userID string) (models.GroupMember, error) {
-	m.st.Lock()
-	defer m.st.Unlock()
-
-	for _, mem := range m.st.Members {
-		if mem.GroupID == groupID && mem.UserID == userID {
-			return mem, nil
-		}
-	}
-
-	return models.GroupMember{}, constants.ErrNotFound
-}
-
 func (m pgRepositoryMock) CreateGroupWithOwner(_ context.Context, group models.Group, owner models.GroupMember) error {
 	m.st.Lock()
 	defer m.st.Unlock()
@@ -104,36 +92,43 @@ func (m pgRepositoryMock) CreateGroupWithOwner(_ context.Context, group models.G
 	m.st.Groups = append(m.st.Groups, group)
 	m.st.Members = append(m.st.Members, owner)
 
-	return nil
-}
-
-func (m pgRepositoryMock) InsertGroupMember(_ context.Context, member models.GroupMember) error {
-	m.st.Lock()
-	defer m.st.Unlock()
-
-	for _, mem := range m.st.Members {
-		if mem.GroupID == member.GroupID && mem.UserID == member.UserID {
-			return constants.ErrConflict
-		}
+	everyone := models.GroupRole{
+		ID:          group.ID + "-everyone",
+		PublicID:    strings.Repeat("e", 24),
+		GroupID:     group.ID,
+		Slug:        constants.RoleSlugEveryone,
+		Name:        "@everyone",
+		Color:       "#99aab5",
+		IsDefault:   true,
+		IsSystem:    true,
+		Position:    0,
+		Permissions: constants.DefaultEveryonePermissions,
+		CreatedAt:   group.CreatedAt,
+		UpdatedAt:   group.UpdatedAt,
 	}
-	m.st.Members = append(m.st.Members, member)
+	member := models.GroupRole{
+		ID:          group.ID + "-member",
+		PublicID:    strings.Repeat("m", 24),
+		GroupID:     group.ID,
+		Slug:        constants.RoleSlugMember,
+		Name:        "Member",
+		Color:       "#5865f2",
+		IsDefault:   false,
+		IsSystem:    true,
+		Position:    1,
+		Permissions: []string{},
+		CreatedAt:   group.CreatedAt,
+		UpdatedAt:   group.UpdatedAt,
+	}
+	m.st.Roles = append(m.st.Roles, everyone, member)
+	m.st.MemberRoles = append(m.st.MemberRoles, models.GroupMemberRoleRow{
+		GroupID:   group.ID,
+		UserID:    owner.UserID,
+		RoleID:    member.ID,
+		CreatedAt: group.CreatedAt,
+	})
 
 	return nil
-}
-
-func (m pgRepositoryMock) DeleteGroupMember(_ context.Context, groupID, userID string) error {
-	m.st.Lock()
-	defer m.st.Unlock()
-
-	for i, mem := range m.st.Members {
-		if mem.GroupID == groupID && mem.UserID == userID {
-			m.st.Members = append(m.st.Members[:i], m.st.Members[i+1:]...)
-
-			return nil
-		}
-	}
-
-	return constants.ErrNotFound
 }
 
 func (m pgRepositoryMock) DeleteGroup(_ context.Context, groupID string) error {
@@ -235,46 +230,6 @@ func (m pgRepositoryMock) SetRailPositions(_ context.Context, userID string, ord
 	}
 
 	return nil
-}
-
-func (m pgRepositoryMock) CountGroupMembers(_ context.Context, groupID string) (int, error) {
-	m.st.Lock()
-	defer m.st.Unlock()
-	n := 0
-	for _, mem := range m.st.Members {
-		if mem.GroupID == groupID {
-			n++
-		}
-	}
-	return n, nil
-}
-
-func (m pgRepositoryMock) ListGroupMembersPage(
-	_ context.Context,
-	groupID string,
-	limit int,
-	_ *models.GroupMemberCursor,
-) ([]models.GroupMemberProfile, *models.GroupMemberCursor, error) {
-	m.st.Lock()
-	defer m.st.Unlock()
-	if limit <= 0 {
-		limit = 20
-	}
-	var out []models.GroupMemberProfile
-	for _, mem := range m.st.Members {
-		if mem.GroupID != groupID {
-			continue
-		}
-		out = append(out, models.GroupMemberProfile{
-			UserID:   mem.UserID,
-			Role:     mem.Role,
-			JoinedAt: mem.CreatedAt,
-		})
-		if len(out) >= limit {
-			break
-		}
-	}
-	return out, nil, nil
 }
 
 func groupsForUser(st *usermock.State, userID string) []models.Group {

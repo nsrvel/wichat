@@ -77,7 +77,7 @@ export function ChatComposer({
 	return (
 		<div
 			className={cn(
-				"mx-auto w-full max-w-[56rem] shrink-0 px-4 pb-4 pt-1 sm:px-5 lg:max-w-[60rem] lg:px-6 lg:pb-5",
+				"mx-auto w-full max-w-4xl shrink-0 px-4 pb-4 pt-1 sm:px-5 lg:max-w-5xl lg:px-6 lg:pb-5",
 				className,
 			)}
 		>
@@ -103,7 +103,7 @@ export function ChatComposer({
 					}}
 					onKeyDown={handleKeyDown}
 					placeholder={resolvedPlaceholder}
-					className="max-h-40 min-h-6 min-w-0 flex-1 resize-none bg-transparent py-1 text-[15px] leading-6 text-foreground placeholder:text-muted-foreground focus:outline-none disabled:opacity-50"
+					className="thin-scroll max-h-40 min-h-6 min-w-0 flex-1 resize-none overflow-y-auto bg-transparent py-1 text-[15px] leading-6 text-foreground placeholder:text-muted-foreground focus:outline-none disabled:opacity-50"
 				/>
 				<div className="flex shrink-0 items-center">
 					{COMPOSER_ACTIONS.map(({ icon: Icon, labelKey }) => (
@@ -111,10 +111,10 @@ export function ChatComposer({
 							key={labelKey}
 							type="button"
 							disabled={disabled}
-							className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground disabled:opacity-50"
+							className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground disabled:opacity-50"
 							aria-label={t(labelKey)}
 						>
-							<Icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
+							<Icon className="size-[18px]" strokeWidth={1.75} />
 						</button>
 					))}
 					<span className="mx-1.5 h-6 w-px shrink-0 bg-chat-bubble-border" aria-hidden />
@@ -122,11 +122,11 @@ export function ChatComposer({
 						type="button"
 						disabled={!canSend}
 						onClick={submit}
-						className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground disabled:opacity-40"
+						className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground disabled:opacity-40"
 						aria-label={t("chat.send")}
 						title={submitDisabled ? t("chat.send_soon") : undefined}
 					>
-						<Send className="h-[18px] w-[18px]" strokeWidth={1.75} />
+						<Send className="size-[18px]" strokeWidth={1.75} />
 					</button>
 				</div>
 			</div>

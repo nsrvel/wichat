@@ -62,7 +62,7 @@ export function MermaidDiagram({ chart, className }: MermaidDiagramProps) {
 		<div
 			ref={containerRef}
 			className={cn(
-				"min-h-[12rem] overflow-auto rounded-lg border border-border bg-card p-4 [&_svg]:mx-auto [&_svg]:max-w-full",
+				"thin-scroll min-h-[12rem] overflow-auto rounded-lg border border-border bg-card p-4 [&_svg]:mx-auto [&_svg]:max-w-full",
 				className,
 			)}
 		/>

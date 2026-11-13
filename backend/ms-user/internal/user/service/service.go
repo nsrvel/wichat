@@ -6,6 +6,8 @@ import (
 	"time"
 
 	authrepo "github.com/wichat/wichat/backend/ms-user/internal/auth/repository"
+	groupmemberrepo "github.com/wichat/wichat/backend/ms-user/internal/group-member/repository"
+	grouprepo "github.com/wichat/wichat/backend/ms-user/internal/group/repository"
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
 	userrepo "github.com/wichat/wichat/backend/ms-user/internal/user/repository"
 	"github.com/wichat/wichat/backend/ms-user/pkg/access"
@@ -21,10 +23,13 @@ type Service interface {
 	SetupStatus(ctx context.Context) (*models.SetupStatus, error)
 	CompleteInstanceSetup(ctx context.Context, accessToken string, in models.CompleteInstanceSetupInput) error
 	UsernameEnabledForNewUsers(ctx context.Context) (bool, error)
+	SearchUsers(ctx context.Context, accessToken, query string, limit int, groupPublicID string) ([]models.UserSearchHit, error)
 }
 
 type service struct {
 	users    userrepo.PgRepository
+	groups   grouprepo.PgRepository
+	members  groupmemberrepo.PgRepository
 	sessions authrepo.SessionRepository
 	secret   []byte
 	log      logger.Logger
@@ -32,12 +37,21 @@ type service struct {
 }
 
 // NewService builds user/workspace use cases.
-func NewService(users userrepo.PgRepository, sessions authrepo.SessionRepository, secret []byte, log logger.Logger) Service {
+func NewService(
+	users userrepo.PgRepository,
+	groups grouprepo.PgRepository,
+	members groupmemberrepo.PgRepository,
+	sessions authrepo.SessionRepository,
+	secret []byte,
+	log logger.Logger,
+) Service {
 	copied := make([]byte, len(secret))
 	copy(copied, secret)
 
 	return service{
 		users:    users,
+		groups:   groups,
+		members:  members,
 		sessions: sessions,
 		secret:   copied,
 		log:      log,
@@ -109,4 +123,39 @@ func (s service) UsernameEnabledForNewUsers(ctx context.Context) (bool, error) {
 	}
 
 	return settings.UsernameEnabled, nil
+}
+
+func (s service) SearchUsers(
+	ctx context.Context,
+	accessToken, query string,
+	limit int,
+	groupPublicID string,
+) ([]models.UserSearchHit, error) {
+	now := s.now()
+	userID, err := access.UserIDFromAccessToken(ctx, accessToken, s.secret, s.sessions, now)
+	if err != nil {
+		return nil, err
+	}
+
+	publicID, err := validator.GroupPublicID(groupPublicID)
+	if err != nil {
+		return nil, err
+	}
+
+	group, err := s.groups.FindGroupByPublicID(ctx, publicID)
+	if err != nil {
+		if errors.Is(err, constants.ErrNotFound) {
+			return nil, exception.NotFound(exception.MsgInvalidInput, map[string]any{"field": "group_id"})
+		}
+		return nil, err
+	}
+
+	if _, err := s.members.FindGroupMember(ctx, group.ID, userID); err != nil {
+		if errors.Is(err, constants.ErrNotFound) {
+			return nil, exception.PermissionDenied(exception.MsgForbidden, nil)
+		}
+		return nil, err
+	}
+
+	return s.users.SearchUsers(ctx, query, limit, group.ID)
 }

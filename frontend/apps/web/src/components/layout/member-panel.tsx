@@ -94,7 +94,7 @@ function Member({
 				alt=""
 				width={40}
 				height={40}
-				className={`h-10 w-10 rounded-full object-cover ${dim ? "grayscale" : ""}`}
+				className={`size-10 rounded-full object-cover ${dim ? "grayscale" : ""}`}
 			/>
 			<div className="min-w-0">
 				<div className="truncate text-sm font-semibold text-[#18181b]">{name}</div>
@@ -128,45 +128,45 @@ export function MemberPanel({ onClose }: { onClose?: () => void }) {
 					<button
 						type="button"
 						onClick={onClose}
-						className="flex h-11 w-11 items-center justify-center rounded-lg text-[#52525b] hover:bg-[#efefef] lg:hidden"
+						className="flex size-11 items-center justify-center rounded-lg text-[#52525b] hover:bg-[#efefef] lg:hidden"
 						aria-label="Close info"
 					>
-						<X className="h-5 w-5" strokeWidth={1.8} />
+						<X className="size-5" strokeWidth={1.8} />
 					</button>
 				) : null}
 			</div>
 			<div className="thin-scroll flex-1 overflow-y-auto px-4 pb-6">
 				<h3 className="mt-3 mb-0.5 text-[15px] font-bold text-[#18181b]">Main info</h3>
-				<InfoRow icon={<User className="h-4 w-4" strokeWidth={1.7} />} label="Creator">
+				<InfoRow icon={<User className="size-4" strokeWidth={1.7} />} label="Creator">
 					<Image
 						src="/avatars/demo/andrew.jpg"
 						alt=""
 						width={24}
 						height={24}
-						className="h-6 w-6 rounded-full object-cover"
+						className="size-6 rounded-full object-cover"
 					/>
 					<span className="text-sm font-medium text-[#18181b]">Andrew M.</span>
 				</InfoRow>
-				<InfoRow icon={<Calendar className="h-4 w-4" strokeWidth={1.7} />} label="Date of creation">
+				<InfoRow icon={<Calendar className="size-4" strokeWidth={1.7} />} label="Date of creation">
 					<span className="text-sm text-[#3f3f46]">28 May</span>
 				</InfoRow>
-				<InfoRow icon={<Sparkles className="h-4 w-4" strokeWidth={1.7} />} label="Status">
+				<InfoRow icon={<Sparkles className="size-4" strokeWidth={1.7} />} label="Status">
 					<span className="flex items-center gap-1.5 rounded-md bg-[#E3EBCF] px-2 py-[3px] text-xs font-medium text-[#5B7038]">
-						<span className="h-1.5 w-1.5 rounded-full bg-[#6E8B3D]" />
+						<span className="size-1.5 rounded-full bg-[#6E8B3D]" />
 						Active
 					</span>
 				</InfoRow>
-				<InfoRow icon={<Tag className="h-4 w-4" strokeWidth={1.7} />} label="Tags">
+				<InfoRow icon={<Tag className="size-4" strokeWidth={1.7} />} label="Tags">
 					<span className="text-sm text-[#3f3f46]">13</span>
-					<ChevronRight className="h-4 w-4 text-[#a1a1aa]" strokeWidth={2} />
+					<ChevronRight className="size-4 text-[#a1a1aa]" strokeWidth={2} />
 				</InfoRow>
 				<InfoRow
-					icon={<CheckCircle2 className="h-4 w-4" strokeWidth={1.7} />}
+					icon={<CheckCircle2 className="size-4" strokeWidth={1.7} />}
 					label="Tasks"
 					divider={false}
 				>
 					<span className="text-sm text-[#3f3f46]">4</span>
-					<ChevronRight className="h-4 w-4 text-[#a1a1aa]" strokeWidth={2} />
+					<ChevronRight className="size-4 text-[#a1a1aa]" strokeWidth={2} />
 				</InfoRow>
 				<h3 className="mt-5 mb-1.5 text-[15px] font-bold text-[#18181b]">Linked threads</h3>
 				<div className="flex flex-col gap-1">
@@ -174,8 +174,8 @@ export function MemberPanel({ onClose }: { onClose?: () => void }) {
 						type="button"
 						className="flex h-11 items-center gap-2.5 rounded-lg px-1 hover:bg-[#f0f0f1] lg:h-[34px]"
 					>
-						<span className="flex h-[22px] w-[22px] items-center justify-center rounded-[7px] border border-[#ECECEC] bg-white">
-							<Hash className="h-3 w-3 text-[#8e8e93]" strokeWidth={2.2} />
+						<span className="flex size-[22px] items-center justify-center rounded-[7px] border border-[#ECECEC] bg-white">
+							<Hash className="size-3 text-[#8e8e93]" strokeWidth={2.2} />
 						</span>
 						<span className="text-sm font-medium text-[#3f3f46]">Front-end</span>
 						<span className="ml-auto flex h-[22px] min-w-[22px] items-center justify-center rounded-md bg-[#EBEBED] px-1.5 text-xs font-medium text-[#52525b]">
@@ -186,8 +186,8 @@ export function MemberPanel({ onClose }: { onClose?: () => void }) {
 						type="button"
 						className="flex h-11 items-center gap-2.5 rounded-lg px-1 hover:bg-[#f0f0f1] lg:h-[34px]"
 					>
-						<span className="flex h-[22px] w-[22px] items-center justify-center rounded-[7px] border border-[#ECECEC] bg-white">
-							<Hash className="h-3 w-3 text-[#8e8e93]" strokeWidth={2.2} />
+						<span className="flex size-[22px] items-center justify-center rounded-[7px] border border-[#ECECEC] bg-white">
+							<Hash className="size-3 text-[#8e8e93]" strokeWidth={2.2} />
 						</span>
 						<span className="text-sm font-medium text-[#3f3f46]">UI-kit design standards</span>
 					</button>
@@ -209,21 +209,21 @@ export function MemberPanel({ onClose }: { onClose?: () => void }) {
 					<div className="ml-auto flex items-center gap-0.5 text-[#52525b]">
 						<button
 							type="button"
-							className="flex h-11 w-11 items-center justify-center rounded-lg hover:bg-[#f0f0f1] lg:h-7 lg:w-7"
+							className="flex size-11 items-center justify-center rounded-lg hover:bg-[#f0f0f1] lg:size-7"
 						>
-							<Plus className="h-[18px] w-[18px]" strokeWidth={1.8} />
+							<Plus className="size-[18px]" strokeWidth={1.8} />
 						</button>
 						<button
 							type="button"
-							className="flex h-11 w-11 items-center justify-center rounded-lg hover:bg-[#f0f0f1] lg:h-7 lg:w-7"
+							className="flex size-11 items-center justify-center rounded-lg hover:bg-[#f0f0f1] lg:size-7"
 						>
-							<Link2 className="h-4 w-4" strokeWidth={1.8} />
+							<Link2 className="size-4" strokeWidth={1.8} />
 						</button>
 						<button
 							type="button"
-							className="flex h-11 w-11 items-center justify-center rounded-lg hover:bg-[#f0f0f1] lg:h-7 lg:w-7"
+							className="flex size-11 items-center justify-center rounded-lg hover:bg-[#f0f0f1] lg:size-7"
 						>
-							<ListFilter className="h-4 w-4" strokeWidth={1.8} />
+							<ListFilter className="size-4" strokeWidth={1.8} />
 						</button>
 					</div>
 				</div>

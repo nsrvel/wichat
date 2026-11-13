@@ -61,9 +61,16 @@ export function GroupSettingsRolesTable({
 				header: () => t("group_settings.roles.col_role"),
 				accessorFn: (row) => row.name,
 				cell: ({ row }) => (
-					<span className="block truncate font-medium text-foreground">
-						{row.original.isSystem ? t(`invite.role_${row.original.name}`) : row.original.name}
-					</span>
+					<div className="flex items-center gap-2">
+						<span
+							className="size-2.5 shrink-0 rounded-full ring-1 ring-black/10 dark:ring-white/15"
+							style={{ backgroundColor: row.original.color }}
+							aria-hidden
+						/>
+						<span className="block truncate font-medium text-foreground">
+							{row.original.isSystem ? t(`invite.role_${row.original.name}`) : row.original.name}
+						</span>
+					</div>
 				),
 			},
 			{
@@ -98,7 +105,7 @@ export function GroupSettingsRolesTable({
 									event.stopPropagation();
 								}}
 							>
-								<EllipsisVertical className="h-4 w-4" strokeWidth={2} aria-hidden />
+								<EllipsisVertical className="size-4" strokeWidth={2} aria-hidden />
 							</button>
 						</div>
 					);

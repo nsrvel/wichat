@@ -323,8 +323,8 @@ export function CustomSelect({
 				<span className="truncate">{triggerText}</span>
 				<ChevronDown
 					className={cn(
-						"h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform duration-200",
-						!compactTrigger && "ml-1 h-4 w-4",
+						"size-3.5 shrink-0 text-muted-foreground transition-transform duration-200",
+						!compactTrigger && "ml-1 size-4",
 						isOpen && "rotate-180",
 					)}
 				/>

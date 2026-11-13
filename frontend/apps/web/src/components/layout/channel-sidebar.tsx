@@ -82,7 +82,7 @@ export function ChannelSidebar({
 		>
 			{layout === "full" ? (
 				<div className="flex h-14 shrink-0 items-center border-b border-black lg:h-[46px]">
-					<div className="flex h-full w-full items-center pl-4 pr-1.5">
+					<div className="flex size-full items-center pl-4 pr-1.5">
 						<WorkspaceSidebarHeader title={groupName} className="min-w-0 flex-1" />
 					</div>
 				</div>

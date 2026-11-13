@@ -9,8 +9,9 @@ import (
 	responsegrpc "github.com/wichat/wichat/backend/wi-shared/response/grpc"
 )
 
-// Server is channel metadata gRPC delivery (still registered on AuthService until proto splits).
+// Server implements userv1.ChannelServiceServer.
 type Server struct {
+	userv1.UnimplementedChannelServiceServer
 	svc channelservice.Service
 }
 
@@ -41,5 +42,6 @@ func (s *Server) AssertGroupChannelAccess(ctx context.Context, req *userv1.Asser
 	return &userv1.AssertGroupChannelAccessResponse{
 		ChannelUuid: access.ChannelID,
 		UserUuid:    access.UserID,
+		Permissions: access.Permissions,
 	}, nil
 }

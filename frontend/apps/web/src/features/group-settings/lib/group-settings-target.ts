@@ -1,4 +1,5 @@
-export type GroupSettingsSection = "profile" | "members" | "roles";
+export type GroupSettingsSection =
+	"profile" | "onboarding" | "members" | "roles" | "audit_logs" | "bans";
 
 export type GroupSettingsTarget = {
 	groupId: string;

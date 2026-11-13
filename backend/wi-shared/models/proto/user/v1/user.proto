@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package user.v1;
+
+option go_package = "github.com/wichat/wichat/backend/wi-shared/models/gen/user/v1;userv1";
+
+// UserService handles account profile, user search, and instance-level setup.
+service UserService {
+  // SetupStatus reports instance policy flags for the auth UI.
+  rpc SetupStatus(SetupStatusRequest) returns (SetupStatusResponse);
+  // CompleteInstanceSetup is deprecated; use CreateGroup and future admin settings APIs.
+  rpc CompleteInstanceSetup(CompleteInstanceSetupRequest) returns (CompleteInstanceSetupResponse);
+  // SearchUsers finds instance accounts for invite autocomplete.
+  rpc SearchUsers(SearchUsersRequest) returns (SearchUsersResponse);
+}
+
+// User is the public account view.
+message User {
+  string id = 1;
+  string email = 2;
+  string display_name = 3;
+  string username = 4;
+  reserved 5;
+  reserved "is_guest";
+}
+
+// SetupStatusRequest is empty.
+message SetupStatusRequest {}
+
+// SetupStatusResponse reports instance policy for the auth UI.
+message SetupStatusResponse {
+  reserved 1, 2, 4, 6;
+  reserved "needs_account", "needs_instance_setup", "group_name", "guest_enabled";
+  string registration_mode = 3;
+  bool username_enabled = 5;
+}
+
+// CompleteInstanceSetupRequest is the owner setup wizard payload.
+message CompleteInstanceSetupRequest {
+  string access_token = 1;
+  string name = 2;
+  string logo_url = 3;
+  bool username_enabled = 4;
+  string registration_mode = 5;
+  reserved 6;
+  reserved "guest_enabled";
+}
+
+// CompleteInstanceSetupResponse acknowledges saved settings.
+message CompleteInstanceSetupResponse {
+  bool ok = 1;
+}
+
+message UserSearchHit {
+  string user_id = 1;
+  string display_name = 2;
+  string email = 3;
+  string username = 4;
+}
+
+message SearchUsersRequest {
+  string access_token = 1;
+  string query = 2;
+  int32 limit = 3;
+  string group_id = 4;
+}
+
+message SearchUsersResponse {
+  repeated UserSearchHit users = 1;
+}
+

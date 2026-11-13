@@ -20,7 +20,7 @@ import {
 } from "@wichat/contracts";
 import { z } from "zod";
 import { ApiError } from "@wichat/api-client/api-error";
-import { env } from "@/env";
+import { env } from "@/lib/env";
 import { api, ensureAccessToken, setAccessToken } from "@/integrations/api-client";
 
 export function googleStartUrl(returnTo?: string) {

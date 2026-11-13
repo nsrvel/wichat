@@ -58,7 +58,7 @@ export function GroupOnboardingPage() {
 	return (
 		<div className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-background text-foreground">
 			<OnboardingHeader onSignOut={signOut} />
-			<div className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-4 py-8 sm:px-6 sm:py-12">
+			<div className="overlay-scroll flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-4 py-8 sm:px-6 sm:py-12">
 				<GroupOnboardingFlow presentation="page" />
 			</div>
 		</div>

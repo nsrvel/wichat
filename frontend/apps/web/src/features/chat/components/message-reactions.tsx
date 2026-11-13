@@ -36,7 +36,7 @@ export function MessageReactions({ reactions, className, showAdd = true }: Messa
 					className="flex h-6 w-8 items-center justify-center rounded-full border border-chat-surface-border bg-chat-surface text-muted-foreground transition-colors hover:bg-sidebar-accent"
 					aria-label="Add reaction"
 				>
-					<SmilePlus className="h-3.5 w-3.5" strokeWidth={1.8} />
+					<SmilePlus className="size-3.5" strokeWidth={1.8} />
 				</button>
 			) : null}
 		</div>

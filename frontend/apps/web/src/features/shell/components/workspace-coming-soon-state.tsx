@@ -12,7 +12,7 @@ export function WorkspaceComingSoonState({ icon, descriptionKey }: WorkspaceComi
 	const { t } = useTranslation();
 	return (
 		<div className="flex flex-col items-center justify-center gap-3 text-center">
-			<div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-chat-bubble-border bg-chat-bubble text-muted-foreground">
+			<div className="flex size-12 items-center justify-center rounded-2xl border border-chat-bubble-border bg-chat-bubble text-muted-foreground">
 				{icon}
 			</div>
 			<div className="max-w-sm space-y-1">

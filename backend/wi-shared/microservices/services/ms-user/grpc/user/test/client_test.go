@@ -18,7 +18,7 @@ import (
 )
 
 type setupStatusServer struct {
-	userv1.UnimplementedAuthServiceServer
+	userv1.UnimplementedUserServiceServer
 	calls atomic.Int32
 }
 
@@ -34,7 +34,7 @@ func TestSetupStatusRetriesIdempotent(t *testing.T) {
 	const bufSize = 1024 * 1024
 	lis := bufconn.Listen(bufSize)
 	srv := grpc.NewServer()
-	userv1.RegisterAuthServiceServer(srv, &setupStatusServer{})
+	userv1.RegisterUserServiceServer(srv, &setupStatusServer{})
 	go func() { _ = srv.Serve(lis) }()
 	t.Cleanup(func() { srv.Stop() })
 
@@ -56,7 +56,7 @@ func TestSetupStatusRetriesIdempotent(t *testing.T) {
 		RetryBackoffMs:          1,
 		BreakerFailureThreshold: 0,
 	}
-	grpcClient := user.New(userv1.NewAuthServiceClient(conn), settings, nil)
+	grpcClient := user.New(userv1.NewUserServiceClient(conn), settings, nil)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()

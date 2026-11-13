@@ -116,9 +116,7 @@ export function WorkspaceSidebarFilter({
 					className={cn((moreOpen || activeInMore) && "bg-muted text-foreground")}
 					onClick={() => setMoreOpen((open) => !open)}
 				>
-					<ChevronDown
-						className={cn("h-3.5 w-3.5 transition-transform", moreOpen && "rotate-180")}
-					/>
+					<ChevronDown className={cn("size-3.5 transition-transform", moreOpen && "rotate-180")} />
 				</SidebarGhostIconButton>
 				{moreOpen && MORE_FILTERS.length > 0 ? (
 					<div

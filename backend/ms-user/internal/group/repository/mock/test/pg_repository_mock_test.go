@@ -39,13 +39,6 @@ func TestGroupMockUpdatesAndMembersPage(t *testing.T) {
 	if err := repo.SetRailPositions(ctx, "u1", []string{"g1"}); err != nil {
 		t.Fatal(err)
 	}
-	if n, err := repo.CountGroupMembers(ctx, "g1"); err != nil || n != 1 {
-		t.Fatalf("count %d %v", n, err)
-	}
-	members, _, err := repo.ListGroupMembersPage(ctx, "g1", 10, nil)
-	if err != nil || len(members) != 1 {
-		t.Fatalf("members %+v %v", members, err)
-	}
 }
 
 func TestGroupMockJoinableAndCRUD(t *testing.T) {
@@ -66,12 +59,6 @@ func TestGroupMockJoinableAndCRUD(t *testing.T) {
 	if err != nil || len(joinable) != 1 {
 		t.Fatalf("%+v %v", joinable, err)
 	}
-	if err := repo.InsertGroupMember(ctx, models.GroupMember{GroupID: "g2", UserID: "u2", Role: constants.GroupRoleMember, CreatedAt: now}); err != nil {
-		t.Fatal(err)
-	}
-	if err := repo.DeleteGroupMember(ctx, "g2", "u2"); err != nil {
-		t.Fatal(err)
-	}
 	if err := repo.DeleteGroup(ctx, "g2"); err != nil {
 		t.Fatal(err)
 	}
@@ -90,9 +77,6 @@ func TestGroupMockNotFoundPaths(t *testing.T) {
 	}
 	if _, err := repo.FindGroupByPublicID(ctx, "bbbbbbbbbbbbbbbbbbbbbbbb"); err == nil {
 		t.Fatal("find by public id")
-	}
-	if _, err := repo.FindGroupMember(ctx, "g1", "u1"); err == nil {
-		t.Fatal("find member")
 	}
 	if _, err := repo.GetFirstGroup(ctx); err == nil {
 		t.Fatal("first group empty")

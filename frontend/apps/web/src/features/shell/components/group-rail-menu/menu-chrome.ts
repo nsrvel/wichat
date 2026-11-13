@@ -11,7 +11,7 @@ export const menuPopupClass = cn(
 export const menuItemClass = cn(
 	"flex w-full cursor-default select-none items-center gap-2 rounded-md px-2.5 py-2.5 text-left outline-none",
 	"whitespace-normal break-words text-card-foreground",
-	"data-[highlighted]:bg-sidebar-accent data-[highlighted]:text-sidebar-accent-foreground",
+	"data-highlighted:bg-sidebar-accent data-highlighted:text-sidebar-accent-foreground",
 );
 
 export const menuGroupLabelClass =
@@ -23,10 +23,10 @@ export const menuHintClass = "text-[11px] font-normal leading-snug text-muted-fo
 
 export const submenuTriggerClass = cn(menuItemClass, "justify-between gap-2.5 py-2.5 pr-1.5");
 
-export const menuChevronClass = "h-3.5 w-3.5 shrink-0 text-muted-foreground/80";
+export const menuChevronClass = "size-3.5 shrink-0 text-muted-foreground/80";
 
 /** Chevron on compact dropdown triggers (group header, invite member role, …). */
-export const menuDropdownTriggerChevronClass = "h-3.5 w-3.5 shrink-0 text-muted-foreground";
+export const menuDropdownTriggerChevronClass = "size-3.5 shrink-0 text-muted-foreground";
 
 /** Matches `WorkspaceGroupHeaderMenu` title dropdown trigger. */
 export const menuDropdownTriggerClass = cn(
@@ -45,22 +45,22 @@ export const menuCheckboxItemClass = cn(
 );
 
 export const menuCheckboxBoxClass = cn(
-	"flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border border-border bg-muted/30",
-	"group-data-[checked]/checkbox:border-primary group-data-[checked]/checkbox:bg-primary group-data-[checked]/checkbox:text-primary-foreground",
+	"flex size-4 shrink-0 items-center justify-center rounded-[3px] border border-border bg-muted/30",
+	"group-data-checked/checkbox:border-primary group-data-checked/checkbox:bg-primary group-data-checked/checkbox:text-primary-foreground",
 );
 
 export const menuRadioItemClass = cn(menuCheckboxItemClass, "group/radio");
 
 export const menuRadioCircleClass = cn(
 	"relative box-border size-4 shrink-0 rounded-full border border-border bg-muted/30",
-	"group-data-[checked]/radio:border-primary",
+	"group-data-checked/radio:border-primary",
 	"after:pointer-events-none after:absolute after:left-1/2 after:top-1/2 after:size-2 after:-translate-x-1/2 after:-translate-y-1/2",
 	"after:rounded-full after:bg-primary after:opacity-0 after:content-['']",
-	"group-data-[checked]/radio:after:opacity-100",
+	"group-data-checked/radio:after:opacity-100",
 );
 
 export const menuDestructiveItemClass = cn(
 	menuItemClass,
 	"text-destructive",
-	"data-[highlighted]:bg-destructive/10 data-[highlighted]:text-destructive",
+	"data-highlighted:bg-destructive/10 data-highlighted:text-destructive",
 );

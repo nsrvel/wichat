@@ -1,9 +1,10 @@
 import Image from "next/image";
-import type { ReactNode } from "react";
+import { memo, type ReactNode } from "react";
+import { userInitials } from "@/features/invite/lib/user-initials";
 import { cn } from "@/lib/utils";
 
 type MessageRowProps = {
-	authorAvatarUrl: string;
+	authorAvatarUrl?: string;
 	authorDisplayName: string;
 	timeLabel?: string;
 	mine?: boolean;
@@ -11,7 +12,7 @@ type MessageRowProps = {
 	reactions?: ReactNode;
 };
 
-export function MessageRow({
+export const MessageRow = memo(function MessageRow({
 	authorAvatarUrl,
 	authorDisplayName,
 	timeLabel,
@@ -28,7 +29,7 @@ export function MessageRow({
 
 	if (mine) {
 		return (
-			<div className="flex justify-end">
+			<article className="flex justify-end [content-visibility:auto] [contain-intrinsic-size:auto_64px]">
 				<div className="min-w-0 max-w-[min(88%,34rem)]">
 					{timeLabel ? (
 						<div className="mb-1 flex justify-end px-0.5">
@@ -40,20 +41,31 @@ export function MessageRow({
 						<div className="mt-1.5 flex flex-wrap justify-end gap-1.5 px-0.5">{reactions}</div>
 					) : null}
 				</div>
-			</div>
+			</article>
 		);
 	}
 
+	const hasAvatar = Boolean(authorAvatarUrl && authorAvatarUrl.trim().length > 0);
+
 	return (
-		<div className="flex gap-2.5">
-			<Image
-				src={authorAvatarUrl}
-				alt={authorDisplayName}
-				width={32}
-				height={32}
-				className="mt-0.5 h-8 w-8 shrink-0 rounded-full object-cover ring-1 ring-chat-surface-border"
-			/>
-			<div className="min-w-0 max-w-full flex-1">
+		<article className="flex gap-2.5 [content-visibility:auto] [contain-intrinsic-size:auto_68px]">
+			{hasAvatar ? (
+				<Image
+					src={authorAvatarUrl!}
+					alt={authorDisplayName}
+					width={32}
+					height={32}
+					className="mt-0.5 size-8 shrink-0 rounded-full object-cover ring-1 ring-chat-surface-border"
+				/>
+			) : (
+				<div
+					className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-background text-xs font-semibold text-foreground ring-1 ring-chat-surface-border"
+					aria-hidden
+				>
+					{userInitials(authorDisplayName)}
+				</div>
+			)}
+			<div className="min-w-0 max-w-[min(88%,34rem)]">
 				<div className="mb-1 flex items-baseline gap-2 px-0.5">
 					<span className="text-[13px] font-semibold text-foreground">{authorDisplayName}</span>
 					{timeLabel ? (
@@ -65,6 +77,6 @@ export function MessageRow({
 					<div className="mt-1.5 flex flex-wrap items-center gap-1.5 px-0.5">{reactions}</div>
 				) : null}
 			</div>
-		</div>
+		</article>
 	);
-}
+});

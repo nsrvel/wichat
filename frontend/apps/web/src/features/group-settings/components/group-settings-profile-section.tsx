@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -79,6 +79,20 @@ type GroupSettingsProfileSectionProps = {
 };
 
 export function GroupSettingsProfileSection({ target }: GroupSettingsProfileSectionProps) {
+	const targetSyncKey = [
+		target.groupId,
+		target.groupName,
+		target.description ?? "",
+		String(target.isPrivate ?? false),
+		target.bannerColor ?? "",
+		target.bannerUrl ?? "",
+		target.logoUrl ?? "",
+	].join("\u0000");
+
+	return <GroupSettingsProfileForm key={targetSyncKey} target={target} />;
+}
+
+function GroupSettingsProfileForm({ target }: GroupSettingsProfileSectionProps) {
 	const { t } = useTranslation();
 	const { patchGroupSettingsTarget } = useGroupSettings();
 	const saveProfile = useSaveGroupProfileMutation();
@@ -101,32 +115,6 @@ export function GroupSettingsProfileSection({ target }: GroupSettingsProfileSect
 		},
 		mode: "onChange",
 	});
-
-	useEffect(() => {
-		form.reset({
-			name: target.groupName,
-			description: target.description ?? "",
-			is_private: target.isPrivate ?? false,
-		});
-		// eslint-disable-next-line react-hooks/set-state-in-effect -- sync form & local asset states on target switch
-		setIconFile(null);
-		setExistingLogoCleared(false);
-		setBannerSelection(
-			target.bannerUrl?.trim()
-				? GROUP_BANNER_IMAGE_ID
-				: normalizeGroupBannerColor(target.bannerColor),
-		);
-		setBannerFile(null);
-		setExistingBannerCleared(false);
-	}, [
-		form,
-		target.bannerColor,
-		target.bannerUrl,
-		target.description,
-		target.groupId,
-		target.groupName,
-		target.isPrivate,
-	]);
 
 	const watchedName = useWatch({ control: form.control, name: "name" });
 	const savedBannerSelection: GroupBannerColorId = target.bannerUrl?.trim()

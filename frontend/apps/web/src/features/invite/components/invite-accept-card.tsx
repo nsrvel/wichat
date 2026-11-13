@@ -1,6 +1,7 @@
 "use client";
 
 import type { InvitePreview } from "@wichat/contracts";
+import Image from "next/image";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -33,10 +34,12 @@ export function InviteAcceptCard({
 		<div className={cn("flex w-full flex-col items-center text-center", className)}>
 			<div className="mb-5 flex size-[5.5rem] shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-border bg-card shadow-sm sm:mb-6 sm:size-24">
 				{showLogo ? (
-					// eslint-disable-next-line @next/next/no-img-element -- public MinIO URL; avoids next/image host mismatches on invite
-					<img
+					<Image
 						src={logoSrc}
 						alt=""
+						width={96}
+						height={96}
+						unoptimized
 						decoding="async"
 						className="size-full object-cover"
 						onError={() => setLogoBroken(true)}

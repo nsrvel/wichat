@@ -54,11 +54,11 @@ wi-shared/exception/
 
 Do not create proxy packages or files that re-export another package’s API (`var ErrFoo = constants.ErrFoo`, `type T = othertype.T` across packages, barrel `errors.go` shims). Import the defining package. Details: `wichat-go-layers.mdc` § “No re-exports”.
 
-## ms-user repository split (do not regress)
+## 1:1 Domain & repository split (do not regress)
 
-- `internal/user/repository` — **only** `pg_repository.go` (+ mock/test).
-- `internal/group/repository` — **only** `pg_repository.go`, `minio_repository.go` (+ mock/test).
-- `internal/auth/repository` — `pg_repository.go` (sessions), `redis_*.go` (+ mock/test); no extra production siblings.
+- **4-layer 1:1 rule:** Every domain `<domain>` stays 1:1 across `wi-shared/models/proto/<svc>/v1/<domain_snake>.proto` ↔ `wi-shared/microservices/services/<ms>/grpc/<domain>/` ↔ `<ms>/internal/<domain>/` ↔ `api-gateway/internal/<domain>/delivery/http/`. Never dump another domain's RPCs or HTTP routes into `auth` or `group`.
+- `ms-user` domains: `auth`, `user`, `group`, `group-member`, `group-role`, `invite`, `channel`, plus ops-only `general`.
+- `internal/<domain>/repository` — only `pg_repository.go`, `minio_repository.go`, `es_repository.go`, `redis_*.go` (+ `mock/` / `test/`).
 - Shared sentinels: `pkg/constants`; PG row/unique mapping: `pkg/db` (`pgErr`). Group other helpers under flat `pkg/<role>/` (see `ms-user/pkg/README.md`).
 - Auth `service.NewService` takes **two** `PgRepository` deps (`userrepo`, `authrepo`), not one combined repo.
 - **Mocks:** only Postgres under `internal/<domain>/repository/mock/` (`pg_repository_mock.go`). Redis tests use **miniredis** + production store constructors — no `repository/mock` for Redis (`wichat-go-layers.mdc`).

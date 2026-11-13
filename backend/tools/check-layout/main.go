@@ -41,6 +41,7 @@ func main() {
 		walkMisplacedTests(modPath)
 		walkTestOneToOne(modPath)
 	}
+	checkOneToOneDomains(backendRoot)
 
 	if len(errs) > 0 {
 		for _, e := range errs {
@@ -319,4 +320,48 @@ func walkMisplacedTests(modPath string) {
 
 func fail(format string, args ...any) {
 	errs = append(errs, "check-layout: "+fmt.Sprintf(format, args...))
+}
+
+func checkOneToOneDomains(root string) {
+	msInternal := filepath.Join(root, "ms-user", "internal")
+	grpcClientsDir := filepath.Join(root, "wi-shared", "microservices", "services", "ms-user", "grpc")
+	protoDir := filepath.Join(root, "wi-shared", "models", "proto", "user", "v1")
+
+	entries, err := os.ReadDir(msInternal)
+	if err != nil {
+		return
+	}
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		domain := e.Name()
+		grpcServer := filepath.Join(msInternal, domain, "delivery", "grpc", "server.go")
+		if _, err := os.Stat(grpcServer); err != nil {
+			continue
+		}
+		clientFile := filepath.Join(grpcClientsDir, domain, "client.go")
+		if _, err := os.Stat(clientFile); err != nil {
+			fail("ms-user/internal/%s has gRPC server.go, missing wi-shared client %s", domain, clientFile)
+		}
+		protoFile := filepath.Join(protoDir, strings.ReplaceAll(domain, "-", "_")+".proto")
+		if _, err := os.Stat(protoFile); err != nil {
+			fail("ms-user/internal/%s has gRPC server.go, missing proto %s", domain, protoFile)
+		}
+	}
+
+	clientEntries, err := os.ReadDir(grpcClientsDir)
+	if err != nil {
+		return
+	}
+	for _, e := range clientEntries {
+		if !e.IsDir() {
+			continue
+		}
+		domain := e.Name()
+		grpcServer := filepath.Join(msInternal, domain, "delivery", "grpc", "server.go")
+		if _, err := os.Stat(grpcServer); err != nil {
+			fail("wi-shared ms-user/grpc/%s exists, missing ms-user/internal/%s/delivery/grpc/server.go", domain, domain)
+		}
+	}
 }

@@ -90,12 +90,12 @@ export function GroupSettingsMembersPagination({
 					type="button"
 					variant="ghost"
 					size="icon"
-					className="h-8 w-8 text-muted-foreground"
+					className="size-8 text-muted-foreground"
 					disabled={!hasPrev || loading}
 					aria-label={t("invite.members_prev")}
 					onClick={onPrev}
 				>
-					<ChevronLeft className="h-4 w-4" aria-hidden />
+					<ChevronLeft className="size-4" aria-hidden />
 				</Button>
 
 				<div
@@ -141,12 +141,12 @@ export function GroupSettingsMembersPagination({
 					type="button"
 					variant="ghost"
 					size="icon"
-					className="h-8 w-8 text-muted-foreground"
+					className="size-8 text-muted-foreground"
 					disabled={!hasNext || loading}
 					aria-label={t("invite.members_next")}
 					onClick={onNext}
 				>
-					<ChevronRight className="h-4 w-4" aria-hidden />
+					<ChevronRight className="size-4" aria-hidden />
 				</Button>
 			</div>
 		</nav>

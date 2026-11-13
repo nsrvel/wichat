@@ -84,17 +84,35 @@ Payload/DTO structs: `internal/models/<domain>_model.go` per service (e.g. `ms-u
 
 `internal/config` and `internal/server` wiring may keep operational constants (shutdown timeouts) when not domain-facing.
 
-### ms-user: split `auth` vs `user` repositories
+### 1:1 Vertical Domain Modularity (Proto → `wi-shared` → `ms-*` → `api-gateway`)
 
-One `PgRepository` per **domain + store**, not one god-file for the whole microservice. Same `*bun.DB` may back multiple repos — wire both in `internal/server/server_run.go`.
+Every business domain `<domain>` (kebab-case, e.g. `auth`, `user`, `group`, `group-member`, `group-role`, `invite`, `channel`) MUST stay **1:1** across all four backend layers — never lump multiple domains into one bloated proto, service, gRPC server, or HTTP handler:
+
+| Layer | Canonical path | Owns |
+|-------|----------------|------|
+| **Proto** | `wi-shared/models/proto/<svc>/v1/<domain_snake>.proto` | `<Domain>Service` RPCs only |
+| **`wi-shared` client** | `wi-shared/microservices/services/<ms>/grpc/<domain>/client.go` | Typed outbound client, wired onto `<ms>.GRPC.<Domain>` |
+| **Microservice** | `<ms>/internal/<domain>/{repository,service,delivery/grpc}` | Domain repo, use cases, and gRPC server |
+| **API Gateway** | `api-gateway/internal/<domain>/delivery/http/{handler.go,routes.go}` | Public REST routes calling `ms.<Svc>.GRPC.<Domain>` |
+
+- When a domain accumulates distinct sub-concerns (e.g. `group` lifecycle vs `group-member` vs `group-role`), **split into separate domain modules across all 4 layers** instead of growing a god-service or mega-handler.
+- Cross-domain orchestration in `ms-*` injects the other domain's **repository** interface (not another domain's `service.Service`), keeping dependencies acyclic.
+
+### ms-user: domain repositories (do not regress)
+
+One `PgRepository` per **domain + store**, not one god-file for the whole microservice. Same `*bun.DB` may back multiple repos — wire them in `internal/server/server_run.go`.
 
 | Package | `PgRepository` owns |
 |---------|---------------------|
-| `internal/user/repository/` | Users, identities (Google link), instance settings |
-| `internal/group/repository/` | Groups, membership; `minio_repository.go` over `wi-shared/infra/minio` |
+| `internal/user/repository/` | Users, identities (Google link), instance settings, user search |
+| `internal/group/repository/` | Groups lifecycle & profile; `minio_repository.go` over `wi-shared/infra/minio` |
+| `internal/group-member/repository/` | Group membership, member listing, bans |
+| `internal/group-role/repository/` | RBAC roles, role permissions, member-role assignments |
+| `internal/invite/repository/` | Group invites (share links & direct invites) |
+| `internal/channel/repository/` | Group channels & access checks |
 | `internal/auth/repository/` | Sessions, refresh tokens; Redis stores (`EmailAuthStore`, `PasswordResetStore`) in separate files |
 
-Auth **service** today orchestrates both: inject `userrepo.PgRepository` and `authrepo.PgRepository` as separate deps (`s.users`, `s.sessions`). Do not merge back into a single mega-interface unless the domain boundary changes.
+Auth **service** orchestrates `userrepo.PgRepository` and `authrepo.PgRepository` as separate deps (`s.users`, `s.sessions`). Do not merge domain repos back into a single mega-interface.
 
 See [ms-user/internal/auth/README.md](../../backend/ms-user/internal/auth/README.md) and [ms-user/internal/user/README.md](../../backend/ms-user/internal/user/README.md).
 
@@ -192,7 +210,7 @@ internal/<domain>/service/
 - **No** `helpers_test.go`, `groups_test.go`, `auth_edges_test.go`, … — **1:1** with production files (`foo.go` → `test/foo_test.go` only); shared test wiring → `ms-*/pkg/test-support` (`testSupport`; import only from `*_test`).
 - DTOs → `internal/models/`; sentinels and shared limits → `ms-*/pkg/constants`; reusable pure logic → `ms-*/pkg/` (or `wi-shared/` when cross-service).
 
-**ms-user (reference):** `auth/service` (credentials, sessions, OAuth, password reset); `user/service` (instance setup, guest user creation); `group/service` (membership). gRPC `AuthService` delivery may inject all three; proto unchanged.
+**ms-user (reference):** Each domain owns its own `service` and `delivery/grpc/server.go` 1:1 with its proto (`auth`, `user`, `group`, `group-member`, `group-role`, `invite`, `channel`, plus ops-only `general`). Never route another domain's RPCs through `AuthService` or `GroupService`.
 
 ```go
 package service

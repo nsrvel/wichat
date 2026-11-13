@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 /** List row icon column — glyph ~54% of tile (12px → 24px, 14px → 26px at lg). */
-export const sidebarListIconSlotSizeClass = "h-6 w-6 shrink-0 lg:h-[26px] lg:w-[26px]";
+export const sidebarListIconSlotSizeClass = "size-6 shrink-0 lg:h-[26px] lg:w-[26px]";
 
 /** Photo / initials DMs — circular frame (not used for text-channel # glyphs). */
 export const sidebarListIconBoxClass = cn(
@@ -12,7 +12,7 @@ export const sidebarListIconBoxClass = cn(
 );
 
 /** Header — same chrome as sidebar channel tiles, scaled to 32px. */
-export const conversationHeaderIconSlotSizeClass = "h-8 w-8 shrink-0 lg:h-8 lg:w-8";
+export const conversationHeaderIconSlotSizeClass = "size-8 shrink-0 lg:size-8";
 
 export const conversationHeaderIconBoxClass = cn(
 	"flex items-center justify-center overflow-hidden rounded-full border border-sidebar-border bg-sidebar-control text-muted-foreground shadow-none",
@@ -45,11 +45,11 @@ export const sidebarNavGlyphSlotClass = cn(
 );
 
 /** Sidebar row glyphs (quick views + channel `#` inside the tile). */
-export const sidebarNavGlyphIconClass = "h-3 w-3 lg:h-3.5 lg:w-3.5";
+export const sidebarNavGlyphIconClass = "size-3 lg:size-3.5";
 
 export const channelListGlyphIconClass = sidebarNavGlyphIconClass;
 
-export const channelHeaderGlyphIconClass = "h-4 w-4";
+export const channelHeaderGlyphIconClass = "size-4";
 
 export type SidebarListIconVariant = "list" | "header";
 
@@ -121,7 +121,7 @@ export function SidebarListAvatar({
 				alt={alt}
 				width={px}
 				height={px}
-				className="h-full w-full object-cover"
+				className="size-full object-cover"
 				unoptimized={staticAsset}
 				loading={staticAsset ? "eager" : "lazy"}
 			/>

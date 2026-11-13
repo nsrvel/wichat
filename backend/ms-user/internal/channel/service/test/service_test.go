@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	channelservice "github.com/wichat/wichat/backend/ms-user/internal/channel/service"
+	groupmembermock "github.com/wichat/wichat/backend/ms-user/internal/group-member/repository/mock"
+	grouprolemock "github.com/wichat/wichat/backend/ms-user/internal/group-role/repository/mock"
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
 	usermock "github.com/wichat/wichat/backend/ms-user/internal/user/repository/mock"
 	testSupport "github.com/wichat/wichat/backend/ms-user/pkg/test-support"
@@ -28,6 +30,8 @@ func TestListGroupChannelsRejectsInvalidGroupPublicID(t *testing.T) {
 	svc := channelservice.NewService(
 		testSupport.ChannelRepo(st),
 		groups,
+		groupmembermock.NewPgRepositoryMock(st),
+		grouprolemock.NewPgRepositoryMock(st),
 		sessions,
 		[]byte(testSupport.TestJWTSecret),
 		logger.New(logger.Options{Service: "channel-test", Env: "test", Level: "error"}),
@@ -60,6 +64,8 @@ func TestListGroupChannelsForMember(t *testing.T) {
 	svc := channelservice.NewService(
 		testSupport.ChannelRepo(st),
 		groups,
+		groupmembermock.NewPgRepositoryMock(st),
+		grouprolemock.NewPgRepositoryMock(st),
 		sessions,
 		[]byte(testSupport.TestJWTSecret),
 		logger.New(logger.Options{Service: "channel-test", Env: "test", Level: "error"}),
@@ -97,8 +103,15 @@ func TestAssertGroupChannelAccess(t *testing.T) {
 	}
 
 	_, groups, sessions := testSupport.TestRepos(st)
-	svc := channelservice.NewService(testSupport.ChannelRepo(st), groups, sessions, []byte(testSupport.TestJWTSecret),
-		logger.New(logger.Options{Service: "channel-test", Env: "test", Level: "error"}))
+	svc := channelservice.NewService(
+		testSupport.ChannelRepo(st),
+		groups,
+		groupmembermock.NewPgRepositoryMock(st),
+		grouprolemock.NewPgRepositoryMock(st),
+		sessions,
+		[]byte(testSupport.TestJWTSecret),
+		logger.New(logger.Options{Service: "channel-test", Env: "test", Level: "error"}),
+	)
 
 	channels, err := svc.ListGroupChannels(ctx, owner.AccessToken, created.ID)
 	if err != nil || len(channels) == 0 {
@@ -134,8 +147,15 @@ func TestAssertGroupChannelAccessRejectsNonMember(t *testing.T) {
 	})
 
 	_, groups, sessions := testSupport.TestRepos(st)
-	svc := channelservice.NewService(testSupport.ChannelRepo(st), groups, sessions, []byte(testSupport.TestJWTSecret),
-		logger.New(logger.Options{Service: "channel-test", Env: "test", Level: "error"}))
+	svc := channelservice.NewService(
+		testSupport.ChannelRepo(st),
+		groups,
+		groupmembermock.NewPgRepositoryMock(st),
+		grouprolemock.NewPgRepositoryMock(st),
+		sessions,
+		[]byte(testSupport.TestJWTSecret),
+		logger.New(logger.Options{Service: "channel-test", Env: "test", Level: "error"}),
+	)
 	channels, _ := svc.ListGroupChannels(ctx, owner.AccessToken, created.ID)
 
 	_, err := svc.AssertGroupChannelAccess(ctx, outsider.AccessToken, created.ID, channels[0].ID)
@@ -157,8 +177,15 @@ func TestAssertGroupChannelAccessUnknownGroup(t *testing.T) {
 		Email: "nogroup@example.com", Password: "correct-horse-battery", DisplayName: "A", BirthDate: "2000-01-15",
 	})
 	_, groups, sessions := testSupport.TestRepos(st)
-	svc := channelservice.NewService(testSupport.ChannelRepo(st), groups, sessions, []byte(testSupport.TestJWTSecret),
-		logger.New(logger.Options{Service: "channel-test", Env: "test", Level: "error"}))
+	svc := channelservice.NewService(
+		testSupport.ChannelRepo(st),
+		groups,
+		groupmembermock.NewPgRepositoryMock(st),
+		grouprolemock.NewPgRepositoryMock(st),
+		sessions,
+		[]byte(testSupport.TestJWTSecret),
+		logger.New(logger.Options{Service: "channel-test", Env: "test", Level: "error"}),
+	)
 
 	_, err := svc.AssertGroupChannelAccess(ctx, owner.AccessToken, "cccccccccccccccccccccccc", "dddddddddddddddddddddddd")
 	if err == nil {

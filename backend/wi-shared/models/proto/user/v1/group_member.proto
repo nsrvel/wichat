@@ -1,0 +1,89 @@
+syntax = "proto3";
+
+package user.v1;
+
+option go_package = "github.com/wichat/wichat/backend/wi-shared/models/gen/user/v1;userv1";
+
+// GroupMemberService manages group membership, member lists, kicking, and banning.
+service GroupMemberService {
+  // JoinGroup adds the caller as a member.
+  rpc JoinGroup(JoinGroupRequest) returns (JoinGroupResponse);
+  // LeaveGroup removes the caller's membership in a group (not owners).
+  rpc LeaveGroup(LeaveGroupRequest) returns (LeaveGroupResponse);
+  // ListGroupMembers pages members with access for the share/settings UI.
+  rpc ListGroupMembers(ListGroupMembersRequest) returns (ListGroupMembersResponse);
+  // KickGroupMember removes a member from a group.
+  rpc KickGroupMember(KickGroupMemberRequest) returns (KickGroupMemberResponse);
+  // BanGroupMembers bans members from a group and records reason.
+  rpc BanGroupMembers(BanGroupMembersRequest) returns (BanGroupMembersResponse);
+}
+
+message JoinGroupRequest {
+  string access_token = 1;
+  string group_id = 2;
+}
+
+message JoinGroupResponse {
+  bool ok = 1;
+}
+
+message LeaveGroupRequest {
+  string access_token = 1;
+  string group_id = 2;
+}
+
+message LeaveGroupResponse {
+  bool ok = 1;
+}
+
+message GroupMemberRoleSummary {
+  string id = 1;
+  string slug = 2;
+  string name = 3;
+  string color = 4;
+}
+
+message GroupMemberEntry {
+  string user_id = 1;
+  string display_name = 2;
+  string email = 3;
+  string role = 4;
+  string joined_at = 5;
+  repeated GroupMemberRoleSummary roles = 6;
+}
+
+message ListGroupMembersRequest {
+  string access_token = 1;
+  string group_id = 2;
+  int32 limit = 3;
+  string cursor = 4;
+}
+
+message ListGroupMembersResponse {
+  repeated GroupMemberEntry members = 1;
+  string next_cursor = 2;
+  int32 total = 3;
+}
+
+message KickGroupMemberRequest {
+  string access_token = 1;
+  string group_id = 2;
+  string user_id = 3;
+}
+
+message KickGroupMemberResponse {
+  bool success = 1;
+}
+
+message BanGroupMembersRequest {
+  string access_token = 1;
+  string group_id = 2;
+  repeated string user_ids = 3;
+  string reason = 4;
+  int32 delete_message_seconds = 5;
+}
+
+message BanGroupMembersResponse {
+  int32 banned_count = 1;
+}
+

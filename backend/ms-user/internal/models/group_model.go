@@ -14,6 +14,7 @@ type Group struct {
 	BannerURL              string
 	DefaultChannelPublicID string
 	CallerRole             string
+	EffectivePermissions   []string
 	CreatedAt              time.Time
 	UpdatedAt              time.Time
 }
@@ -31,29 +32,31 @@ type GroupProfilePatch struct {
 
 // PublicGroup is the group view returned to clients.
 type PublicGroup struct {
-	ID               string
-	Name             string
-	LogoURL          string
-	Description      string
-	IsPrivate        bool
-	BannerColor      string
-	BannerURL        string
-	DefaultChannelID string
-	Role             string
+	ID                   string
+	Name                 string
+	LogoURL              string
+	Description          string
+	IsPrivate            bool
+	BannerColor          string
+	BannerURL            string
+	DefaultChannelID     string
+	Role                 string
+	EffectivePermissions []string
 }
 
 // Public returns client-safe group fields.
 func (g Group) Public() PublicGroup {
 	return PublicGroup{
-		ID:               g.PublicID,
-		Name:             g.Name,
-		LogoURL:          g.LogoURL,
-		Description:      g.Description,
-		IsPrivate:        g.IsPrivate,
-		BannerColor:      g.BannerColor,
-		BannerURL:        g.BannerURL,
-		DefaultChannelID: g.DefaultChannelPublicID,
-		Role:             g.CallerRole,
+		ID:                   g.PublicID,
+		Name:                 g.Name,
+		LogoURL:              g.LogoURL,
+		Description:          g.Description,
+		IsPrivate:            g.IsPrivate,
+		BannerColor:          g.BannerColor,
+		BannerURL:            g.BannerURL,
+		DefaultChannelID:     g.DefaultChannelPublicID,
+		Role:                 g.CallerRole,
+		EffectivePermissions: g.EffectivePermissions,
 	}
 }
 

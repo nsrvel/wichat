@@ -21,75 +21,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// User is the public account view.
-type User struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Email         string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
-	DisplayName   string                 `protobuf:"bytes,3,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
-	Username      string                 `protobuf:"bytes,4,opt,name=username,proto3" json:"username,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *User) Reset() {
-	*x = User{}
-	mi := &file_user_v1_auth_proto_msgTypes[0]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *User) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*User) ProtoMessage() {}
-
-func (x *User) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[0]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use User.ProtoReflect.Descriptor instead.
-func (*User) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{0}
-}
-
-func (x *User) GetId() string {
-	if x != nil {
-		return x.Id
-	}
-	return ""
-}
-
-func (x *User) GetEmail() string {
-	if x != nil {
-		return x.Email
-	}
-	return ""
-}
-
-func (x *User) GetDisplayName() string {
-	if x != nil {
-		return x.DisplayName
-	}
-	return ""
-}
-
-func (x *User) GetUsername() string {
-	if x != nil {
-		return x.Username
-	}
-	return ""
-}
-
 // Session is the credential pair returned to the gateway.
 // The gateway keeps refresh_token in an httpOnly cookie and omits it from JSON.
 type Session struct {
@@ -104,7 +35,7 @@ type Session struct {
 
 func (x *Session) Reset() {
 	*x = Session{}
-	mi := &file_user_v1_auth_proto_msgTypes[1]
+	mi := &file_user_v1_auth_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -116,7 +47,7 @@ func (x *Session) String() string {
 func (*Session) ProtoMessage() {}
 
 func (x *Session) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[1]
+	mi := &file_user_v1_auth_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -129,7 +60,7 @@ func (x *Session) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Session.ProtoReflect.Descriptor instead.
 func (*Session) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{1}
+	return file_user_v1_auth_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *Session) GetAccessToken() string {
@@ -160,218 +91,6 @@ func (x *Session) GetUser() *User {
 	return nil
 }
 
-// SetupStatusRequest is empty.
-type SetupStatusRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SetupStatusRequest) Reset() {
-	*x = SetupStatusRequest{}
-	mi := &file_user_v1_auth_proto_msgTypes[2]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SetupStatusRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SetupStatusRequest) ProtoMessage() {}
-
-func (x *SetupStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[2]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SetupStatusRequest.ProtoReflect.Descriptor instead.
-func (*SetupStatusRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{2}
-}
-
-// SetupStatusResponse reports instance policy for the auth UI.
-type SetupStatusResponse struct {
-	state            protoimpl.MessageState `protogen:"open.v1"`
-	RegistrationMode string                 `protobuf:"bytes,3,opt,name=registration_mode,json=registrationMode,proto3" json:"registration_mode,omitempty"`
-	UsernameEnabled  bool                   `protobuf:"varint,5,opt,name=username_enabled,json=usernameEnabled,proto3" json:"username_enabled,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *SetupStatusResponse) Reset() {
-	*x = SetupStatusResponse{}
-	mi := &file_user_v1_auth_proto_msgTypes[3]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SetupStatusResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SetupStatusResponse) ProtoMessage() {}
-
-func (x *SetupStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[3]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SetupStatusResponse.ProtoReflect.Descriptor instead.
-func (*SetupStatusResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{3}
-}
-
-func (x *SetupStatusResponse) GetRegistrationMode() string {
-	if x != nil {
-		return x.RegistrationMode
-	}
-	return ""
-}
-
-func (x *SetupStatusResponse) GetUsernameEnabled() bool {
-	if x != nil {
-		return x.UsernameEnabled
-	}
-	return false
-}
-
-// CompleteInstanceSetupRequest is the owner setup wizard payload.
-type CompleteInstanceSetupRequest struct {
-	state            protoimpl.MessageState `protogen:"open.v1"`
-	AccessToken      string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
-	Name             string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	LogoUrl          string                 `protobuf:"bytes,3,opt,name=logo_url,json=logoUrl,proto3" json:"logo_url,omitempty"`
-	UsernameEnabled  bool                   `protobuf:"varint,4,opt,name=username_enabled,json=usernameEnabled,proto3" json:"username_enabled,omitempty"`
-	RegistrationMode string                 `protobuf:"bytes,5,opt,name=registration_mode,json=registrationMode,proto3" json:"registration_mode,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *CompleteInstanceSetupRequest) Reset() {
-	*x = CompleteInstanceSetupRequest{}
-	mi := &file_user_v1_auth_proto_msgTypes[4]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CompleteInstanceSetupRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CompleteInstanceSetupRequest) ProtoMessage() {}
-
-func (x *CompleteInstanceSetupRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[4]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use CompleteInstanceSetupRequest.ProtoReflect.Descriptor instead.
-func (*CompleteInstanceSetupRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *CompleteInstanceSetupRequest) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *CompleteInstanceSetupRequest) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *CompleteInstanceSetupRequest) GetLogoUrl() string {
-	if x != nil {
-		return x.LogoUrl
-	}
-	return ""
-}
-
-func (x *CompleteInstanceSetupRequest) GetUsernameEnabled() bool {
-	if x != nil {
-		return x.UsernameEnabled
-	}
-	return false
-}
-
-func (x *CompleteInstanceSetupRequest) GetRegistrationMode() string {
-	if x != nil {
-		return x.RegistrationMode
-	}
-	return ""
-}
-
-// CompleteInstanceSetupResponse acknowledges saved settings.
-type CompleteInstanceSetupResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *CompleteInstanceSetupResponse) Reset() {
-	*x = CompleteInstanceSetupResponse{}
-	mi := &file_user_v1_auth_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CompleteInstanceSetupResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CompleteInstanceSetupResponse) ProtoMessage() {}
-
-func (x *CompleteInstanceSetupResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use CompleteInstanceSetupResponse.ProtoReflect.Descriptor instead.
-func (*CompleteInstanceSetupResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{5}
-}
-
-func (x *CompleteInstanceSetupResponse) GetOk() bool {
-	if x != nil {
-		return x.Ok
-	}
-	return false
-}
-
 // SetupRequest is the legacy first-account form (alias of Register).
 type SetupRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -386,7 +105,7 @@ type SetupRequest struct {
 
 func (x *SetupRequest) Reset() {
 	*x = SetupRequest{}
-	mi := &file_user_v1_auth_proto_msgTypes[6]
+	mi := &file_user_v1_auth_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -398,7 +117,7 @@ func (x *SetupRequest) String() string {
 func (*SetupRequest) ProtoMessage() {}
 
 func (x *SetupRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[6]
+	mi := &file_user_v1_auth_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -411,7 +130,7 @@ func (x *SetupRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetupRequest.ProtoReflect.Descriptor instead.
 func (*SetupRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{6}
+	return file_user_v1_auth_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *SetupRequest) GetEmail() string {
@@ -459,7 +178,7 @@ type SetupResponse struct {
 
 func (x *SetupResponse) Reset() {
 	*x = SetupResponse{}
-	mi := &file_user_v1_auth_proto_msgTypes[7]
+	mi := &file_user_v1_auth_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -471,7 +190,7 @@ func (x *SetupResponse) String() string {
 func (*SetupResponse) ProtoMessage() {}
 
 func (x *SetupResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[7]
+	mi := &file_user_v1_auth_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -484,7 +203,7 @@ func (x *SetupResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetupResponse.ProtoReflect.Descriptor instead.
 func (*SetupResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{7}
+	return file_user_v1_auth_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *SetupResponse) GetSession() *Session {
@@ -507,7 +226,7 @@ type AuthChallenge struct {
 
 func (x *AuthChallenge) Reset() {
 	*x = AuthChallenge{}
-	mi := &file_user_v1_auth_proto_msgTypes[8]
+	mi := &file_user_v1_auth_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -519,7 +238,7 @@ func (x *AuthChallenge) String() string {
 func (*AuthChallenge) ProtoMessage() {}
 
 func (x *AuthChallenge) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[8]
+	mi := &file_user_v1_auth_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -532,7 +251,7 @@ func (x *AuthChallenge) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AuthChallenge.ProtoReflect.Descriptor instead.
 func (*AuthChallenge) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{8}
+	return file_user_v1_auth_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *AuthChallenge) GetChallengeId() string {
@@ -579,7 +298,7 @@ type RegisterRequest struct {
 
 func (x *RegisterRequest) Reset() {
 	*x = RegisterRequest{}
-	mi := &file_user_v1_auth_proto_msgTypes[9]
+	mi := &file_user_v1_auth_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -591,7 +310,7 @@ func (x *RegisterRequest) String() string {
 func (*RegisterRequest) ProtoMessage() {}
 
 func (x *RegisterRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[9]
+	mi := &file_user_v1_auth_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -604,7 +323,7 @@ func (x *RegisterRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegisterRequest.ProtoReflect.Descriptor instead.
 func (*RegisterRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{9}
+	return file_user_v1_auth_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *RegisterRequest) GetEmail() string {
@@ -667,7 +386,7 @@ type RegisterResponse struct {
 
 func (x *RegisterResponse) Reset() {
 	*x = RegisterResponse{}
-	mi := &file_user_v1_auth_proto_msgTypes[10]
+	mi := &file_user_v1_auth_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -679,7 +398,7 @@ func (x *RegisterResponse) String() string {
 func (*RegisterResponse) ProtoMessage() {}
 
 func (x *RegisterResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[10]
+	mi := &file_user_v1_auth_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -692,7 +411,7 @@ func (x *RegisterResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegisterResponse.ProtoReflect.Descriptor instead.
 func (*RegisterResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{10}
+	return file_user_v1_auth_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *RegisterResponse) GetSession() *Session {
@@ -723,7 +442,7 @@ type LoginRequest struct {
 
 func (x *LoginRequest) Reset() {
 	*x = LoginRequest{}
-	mi := &file_user_v1_auth_proto_msgTypes[11]
+	mi := &file_user_v1_auth_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -735,7 +454,7 @@ func (x *LoginRequest) String() string {
 func (*LoginRequest) ProtoMessage() {}
 
 func (x *LoginRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[11]
+	mi := &file_user_v1_auth_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -748,7 +467,7 @@ func (x *LoginRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LoginRequest.ProtoReflect.Descriptor instead.
 func (*LoginRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{11}
+	return file_user_v1_auth_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *LoginRequest) GetLogin() string {
@@ -797,7 +516,7 @@ type LoginResponse struct {
 
 func (x *LoginResponse) Reset() {
 	*x = LoginResponse{}
-	mi := &file_user_v1_auth_proto_msgTypes[12]
+	mi := &file_user_v1_auth_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -809,7 +528,7 @@ func (x *LoginResponse) String() string {
 func (*LoginResponse) ProtoMessage() {}
 
 func (x *LoginResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[12]
+	mi := &file_user_v1_auth_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -822,7 +541,7 @@ func (x *LoginResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LoginResponse.ProtoReflect.Descriptor instead.
 func (*LoginResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{12}
+	return file_user_v1_auth_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *LoginResponse) GetSession() *Session {
@@ -849,7 +568,7 @@ type VerifyRegisterRequest struct {
 
 func (x *VerifyRegisterRequest) Reset() {
 	*x = VerifyRegisterRequest{}
-	mi := &file_user_v1_auth_proto_msgTypes[13]
+	mi := &file_user_v1_auth_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -861,7 +580,7 @@ func (x *VerifyRegisterRequest) String() string {
 func (*VerifyRegisterRequest) ProtoMessage() {}
 
 func (x *VerifyRegisterRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[13]
+	mi := &file_user_v1_auth_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -874,7 +593,7 @@ func (x *VerifyRegisterRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VerifyRegisterRequest.ProtoReflect.Descriptor instead.
 func (*VerifyRegisterRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{13}
+	return file_user_v1_auth_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *VerifyRegisterRequest) GetChallengeId() string {
@@ -900,7 +619,7 @@ type VerifyRegisterResponse struct {
 
 func (x *VerifyRegisterResponse) Reset() {
 	*x = VerifyRegisterResponse{}
-	mi := &file_user_v1_auth_proto_msgTypes[14]
+	mi := &file_user_v1_auth_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -912,7 +631,7 @@ func (x *VerifyRegisterResponse) String() string {
 func (*VerifyRegisterResponse) ProtoMessage() {}
 
 func (x *VerifyRegisterResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[14]
+	mi := &file_user_v1_auth_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -925,7 +644,7 @@ func (x *VerifyRegisterResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VerifyRegisterResponse.ProtoReflect.Descriptor instead.
 func (*VerifyRegisterResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{14}
+	return file_user_v1_auth_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *VerifyRegisterResponse) GetSession() *Session {
@@ -945,7 +664,7 @@ type VerifyLoginRequest struct {
 
 func (x *VerifyLoginRequest) Reset() {
 	*x = VerifyLoginRequest{}
-	mi := &file_user_v1_auth_proto_msgTypes[15]
+	mi := &file_user_v1_auth_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -957,7 +676,7 @@ func (x *VerifyLoginRequest) String() string {
 func (*VerifyLoginRequest) ProtoMessage() {}
 
 func (x *VerifyLoginRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[15]
+	mi := &file_user_v1_auth_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -970,7 +689,7 @@ func (x *VerifyLoginRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VerifyLoginRequest.ProtoReflect.Descriptor instead.
 func (*VerifyLoginRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{15}
+	return file_user_v1_auth_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *VerifyLoginRequest) GetChallengeId() string {
@@ -996,7 +715,7 @@ type VerifyLoginResponse struct {
 
 func (x *VerifyLoginResponse) Reset() {
 	*x = VerifyLoginResponse{}
-	mi := &file_user_v1_auth_proto_msgTypes[16]
+	mi := &file_user_v1_auth_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1008,7 +727,7 @@ func (x *VerifyLoginResponse) String() string {
 func (*VerifyLoginResponse) ProtoMessage() {}
 
 func (x *VerifyLoginResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[16]
+	mi := &file_user_v1_auth_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1021,7 +740,7 @@ func (x *VerifyLoginResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VerifyLoginResponse.ProtoReflect.Descriptor instead.
 func (*VerifyLoginResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{16}
+	return file_user_v1_auth_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *VerifyLoginResponse) GetSession() *Session {
@@ -1040,7 +759,7 @@ type ResendRegisterCodeRequest struct {
 
 func (x *ResendRegisterCodeRequest) Reset() {
 	*x = ResendRegisterCodeRequest{}
-	mi := &file_user_v1_auth_proto_msgTypes[17]
+	mi := &file_user_v1_auth_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1052,7 +771,7 @@ func (x *ResendRegisterCodeRequest) String() string {
 func (*ResendRegisterCodeRequest) ProtoMessage() {}
 
 func (x *ResendRegisterCodeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[17]
+	mi := &file_user_v1_auth_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1065,7 +784,7 @@ func (x *ResendRegisterCodeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResendRegisterCodeRequest.ProtoReflect.Descriptor instead.
 func (*ResendRegisterCodeRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{17}
+	return file_user_v1_auth_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *ResendRegisterCodeRequest) GetChallengeId() string {
@@ -1084,7 +803,7 @@ type ResendRegisterCodeResponse struct {
 
 func (x *ResendRegisterCodeResponse) Reset() {
 	*x = ResendRegisterCodeResponse{}
-	mi := &file_user_v1_auth_proto_msgTypes[18]
+	mi := &file_user_v1_auth_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1096,7 +815,7 @@ func (x *ResendRegisterCodeResponse) String() string {
 func (*ResendRegisterCodeResponse) ProtoMessage() {}
 
 func (x *ResendRegisterCodeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[18]
+	mi := &file_user_v1_auth_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1109,7 +828,7 @@ func (x *ResendRegisterCodeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResendRegisterCodeResponse.ProtoReflect.Descriptor instead.
 func (*ResendRegisterCodeResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{18}
+	return file_user_v1_auth_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *ResendRegisterCodeResponse) GetResendCooldownSeconds() int32 {
@@ -1128,7 +847,7 @@ type ResendLoginCodeRequest struct {
 
 func (x *ResendLoginCodeRequest) Reset() {
 	*x = ResendLoginCodeRequest{}
-	mi := &file_user_v1_auth_proto_msgTypes[19]
+	mi := &file_user_v1_auth_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1140,7 +859,7 @@ func (x *ResendLoginCodeRequest) String() string {
 func (*ResendLoginCodeRequest) ProtoMessage() {}
 
 func (x *ResendLoginCodeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[19]
+	mi := &file_user_v1_auth_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1153,7 +872,7 @@ func (x *ResendLoginCodeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResendLoginCodeRequest.ProtoReflect.Descriptor instead.
 func (*ResendLoginCodeRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{19}
+	return file_user_v1_auth_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *ResendLoginCodeRequest) GetChallengeId() string {
@@ -1172,7 +891,7 @@ type ResendLoginCodeResponse struct {
 
 func (x *ResendLoginCodeResponse) Reset() {
 	*x = ResendLoginCodeResponse{}
-	mi := &file_user_v1_auth_proto_msgTypes[20]
+	mi := &file_user_v1_auth_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1184,7 +903,7 @@ func (x *ResendLoginCodeResponse) String() string {
 func (*ResendLoginCodeResponse) ProtoMessage() {}
 
 func (x *ResendLoginCodeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[20]
+	mi := &file_user_v1_auth_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1197,7 +916,7 @@ func (x *ResendLoginCodeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResendLoginCodeResponse.ProtoReflect.Descriptor instead.
 func (*ResendLoginCodeResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{20}
+	return file_user_v1_auth_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *ResendLoginCodeResponse) GetResendCooldownSeconds() int32 {
@@ -1219,7 +938,7 @@ type RefreshRequest struct {
 
 func (x *RefreshRequest) Reset() {
 	*x = RefreshRequest{}
-	mi := &file_user_v1_auth_proto_msgTypes[21]
+	mi := &file_user_v1_auth_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1231,7 +950,7 @@ func (x *RefreshRequest) String() string {
 func (*RefreshRequest) ProtoMessage() {}
 
 func (x *RefreshRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[21]
+	mi := &file_user_v1_auth_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1244,7 +963,7 @@ func (x *RefreshRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RefreshRequest.ProtoReflect.Descriptor instead.
 func (*RefreshRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{21}
+	return file_user_v1_auth_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *RefreshRequest) GetRefreshToken() string {
@@ -1278,7 +997,7 @@ type RefreshResponse struct {
 
 func (x *RefreshResponse) Reset() {
 	*x = RefreshResponse{}
-	mi := &file_user_v1_auth_proto_msgTypes[22]
+	mi := &file_user_v1_auth_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1290,7 +1009,7 @@ func (x *RefreshResponse) String() string {
 func (*RefreshResponse) ProtoMessage() {}
 
 func (x *RefreshResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[22]
+	mi := &file_user_v1_auth_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1303,7 +1022,7 @@ func (x *RefreshResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RefreshResponse.ProtoReflect.Descriptor instead.
 func (*RefreshResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{22}
+	return file_user_v1_auth_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *RefreshResponse) GetSession() *Session {
@@ -1323,7 +1042,7 @@ type LogoutRequest struct {
 
 func (x *LogoutRequest) Reset() {
 	*x = LogoutRequest{}
-	mi := &file_user_v1_auth_proto_msgTypes[23]
+	mi := &file_user_v1_auth_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1335,7 +1054,7 @@ func (x *LogoutRequest) String() string {
 func (*LogoutRequest) ProtoMessage() {}
 
 func (x *LogoutRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[23]
+	mi := &file_user_v1_auth_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1348,7 +1067,7 @@ func (x *LogoutRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LogoutRequest.ProtoReflect.Descriptor instead.
 func (*LogoutRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{23}
+	return file_user_v1_auth_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *LogoutRequest) GetRefreshToken() string {
@@ -1368,7 +1087,7 @@ type LogoutResponse struct {
 
 func (x *LogoutResponse) Reset() {
 	*x = LogoutResponse{}
-	mi := &file_user_v1_auth_proto_msgTypes[24]
+	mi := &file_user_v1_auth_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1380,7 +1099,7 @@ func (x *LogoutResponse) String() string {
 func (*LogoutResponse) ProtoMessage() {}
 
 func (x *LogoutResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[24]
+	mi := &file_user_v1_auth_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1393,7 +1112,7 @@ func (x *LogoutResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LogoutResponse.ProtoReflect.Descriptor instead.
 func (*LogoutResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{24}
+	return file_user_v1_auth_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *LogoutResponse) GetOk() bool {
@@ -1413,7 +1132,7 @@ type MeRequest struct {
 
 func (x *MeRequest) Reset() {
 	*x = MeRequest{}
-	mi := &file_user_v1_auth_proto_msgTypes[25]
+	mi := &file_user_v1_auth_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1425,7 +1144,7 @@ func (x *MeRequest) String() string {
 func (*MeRequest) ProtoMessage() {}
 
 func (x *MeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[25]
+	mi := &file_user_v1_auth_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1438,7 +1157,7 @@ func (x *MeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MeRequest.ProtoReflect.Descriptor instead.
 func (*MeRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{25}
+	return file_user_v1_auth_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *MeRequest) GetAccessToken() string {
@@ -1458,7 +1177,7 @@ type MeResponse struct {
 
 func (x *MeResponse) Reset() {
 	*x = MeResponse{}
-	mi := &file_user_v1_auth_proto_msgTypes[26]
+	mi := &file_user_v1_auth_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1470,7 +1189,7 @@ func (x *MeResponse) String() string {
 func (*MeResponse) ProtoMessage() {}
 
 func (x *MeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[26]
+	mi := &file_user_v1_auth_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1483,7 +1202,7 @@ func (x *MeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MeResponse.ProtoReflect.Descriptor instead.
 func (*MeResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{26}
+	return file_user_v1_auth_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *MeResponse) GetUser() *User {
@@ -1502,7 +1221,7 @@ type GoogleStartRequest struct {
 
 func (x *GoogleStartRequest) Reset() {
 	*x = GoogleStartRequest{}
-	mi := &file_user_v1_auth_proto_msgTypes[27]
+	mi := &file_user_v1_auth_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1514,7 +1233,7 @@ func (x *GoogleStartRequest) String() string {
 func (*GoogleStartRequest) ProtoMessage() {}
 
 func (x *GoogleStartRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[27]
+	mi := &file_user_v1_auth_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1527,7 +1246,7 @@ func (x *GoogleStartRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GoogleStartRequest.ProtoReflect.Descriptor instead.
 func (*GoogleStartRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{27}
+	return file_user_v1_auth_proto_rawDescGZIP(), []int{22}
 }
 
 // GoogleStartResponse is the browser redirect and the PKCE transaction.
@@ -1542,7 +1261,7 @@ type GoogleStartResponse struct {
 
 func (x *GoogleStartResponse) Reset() {
 	*x = GoogleStartResponse{}
-	mi := &file_user_v1_auth_proto_msgTypes[28]
+	mi := &file_user_v1_auth_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1554,7 +1273,7 @@ func (x *GoogleStartResponse) String() string {
 func (*GoogleStartResponse) ProtoMessage() {}
 
 func (x *GoogleStartResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[28]
+	mi := &file_user_v1_auth_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1567,7 +1286,7 @@ func (x *GoogleStartResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GoogleStartResponse.ProtoReflect.Descriptor instead.
 func (*GoogleStartResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{28}
+	return file_user_v1_auth_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *GoogleStartResponse) GetAuthorizationUrl() string {
@@ -1604,7 +1323,7 @@ type GoogleFinishRequest struct {
 
 func (x *GoogleFinishRequest) Reset() {
 	*x = GoogleFinishRequest{}
-	mi := &file_user_v1_auth_proto_msgTypes[29]
+	mi := &file_user_v1_auth_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1616,7 +1335,7 @@ func (x *GoogleFinishRequest) String() string {
 func (*GoogleFinishRequest) ProtoMessage() {}
 
 func (x *GoogleFinishRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[29]
+	mi := &file_user_v1_auth_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1629,7 +1348,7 @@ func (x *GoogleFinishRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GoogleFinishRequest.ProtoReflect.Descriptor instead.
 func (*GoogleFinishRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{29}
+	return file_user_v1_auth_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *GoogleFinishRequest) GetCode() string {
@@ -1670,7 +1389,7 @@ type GoogleFinishResponse struct {
 
 func (x *GoogleFinishResponse) Reset() {
 	*x = GoogleFinishResponse{}
-	mi := &file_user_v1_auth_proto_msgTypes[30]
+	mi := &file_user_v1_auth_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1682,7 +1401,7 @@ func (x *GoogleFinishResponse) String() string {
 func (*GoogleFinishResponse) ProtoMessage() {}
 
 func (x *GoogleFinishResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[30]
+	mi := &file_user_v1_auth_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1695,7 +1414,7 @@ func (x *GoogleFinishResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GoogleFinishResponse.ProtoReflect.Descriptor instead.
 func (*GoogleFinishResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{30}
+	return file_user_v1_auth_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *GoogleFinishResponse) GetSession() *Session {
@@ -1715,7 +1434,7 @@ type RequestPasswordResetRequest struct {
 
 func (x *RequestPasswordResetRequest) Reset() {
 	*x = RequestPasswordResetRequest{}
-	mi := &file_user_v1_auth_proto_msgTypes[31]
+	mi := &file_user_v1_auth_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1727,7 +1446,7 @@ func (x *RequestPasswordResetRequest) String() string {
 func (*RequestPasswordResetRequest) ProtoMessage() {}
 
 func (x *RequestPasswordResetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[31]
+	mi := &file_user_v1_auth_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1740,7 +1459,7 @@ func (x *RequestPasswordResetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RequestPasswordResetRequest.ProtoReflect.Descriptor instead.
 func (*RequestPasswordResetRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{31}
+	return file_user_v1_auth_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *RequestPasswordResetRequest) GetEmail() string {
@@ -1767,7 +1486,7 @@ type RequestPasswordResetResponse struct {
 
 func (x *RequestPasswordResetResponse) Reset() {
 	*x = RequestPasswordResetResponse{}
-	mi := &file_user_v1_auth_proto_msgTypes[32]
+	mi := &file_user_v1_auth_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1779,7 +1498,7 @@ func (x *RequestPasswordResetResponse) String() string {
 func (*RequestPasswordResetResponse) ProtoMessage() {}
 
 func (x *RequestPasswordResetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[32]
+	mi := &file_user_v1_auth_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1792,7 +1511,7 @@ func (x *RequestPasswordResetResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RequestPasswordResetResponse.ProtoReflect.Descriptor instead.
 func (*RequestPasswordResetResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{32}
+	return file_user_v1_auth_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *RequestPasswordResetResponse) GetOk() bool {
@@ -1819,7 +1538,7 @@ type VerifyPasswordResetRequest struct {
 
 func (x *VerifyPasswordResetRequest) Reset() {
 	*x = VerifyPasswordResetRequest{}
-	mi := &file_user_v1_auth_proto_msgTypes[33]
+	mi := &file_user_v1_auth_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1831,7 +1550,7 @@ func (x *VerifyPasswordResetRequest) String() string {
 func (*VerifyPasswordResetRequest) ProtoMessage() {}
 
 func (x *VerifyPasswordResetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[33]
+	mi := &file_user_v1_auth_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1844,7 +1563,7 @@ func (x *VerifyPasswordResetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VerifyPasswordResetRequest.ProtoReflect.Descriptor instead.
 func (*VerifyPasswordResetRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{33}
+	return file_user_v1_auth_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *VerifyPasswordResetRequest) GetEmail() string {
@@ -1870,7 +1589,7 @@ type VerifyPasswordResetResponse struct {
 
 func (x *VerifyPasswordResetResponse) Reset() {
 	*x = VerifyPasswordResetResponse{}
-	mi := &file_user_v1_auth_proto_msgTypes[34]
+	mi := &file_user_v1_auth_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1882,7 +1601,7 @@ func (x *VerifyPasswordResetResponse) String() string {
 func (*VerifyPasswordResetResponse) ProtoMessage() {}
 
 func (x *VerifyPasswordResetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[34]
+	mi := &file_user_v1_auth_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1895,7 +1614,7 @@ func (x *VerifyPasswordResetResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VerifyPasswordResetResponse.ProtoReflect.Descriptor instead.
 func (*VerifyPasswordResetResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{34}
+	return file_user_v1_auth_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *VerifyPasswordResetResponse) GetResetToken() string {
@@ -1915,7 +1634,7 @@ type CompletePasswordResetRequest struct {
 
 func (x *CompletePasswordResetRequest) Reset() {
 	*x = CompletePasswordResetRequest{}
-	mi := &file_user_v1_auth_proto_msgTypes[35]
+	mi := &file_user_v1_auth_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1927,7 +1646,7 @@ func (x *CompletePasswordResetRequest) String() string {
 func (*CompletePasswordResetRequest) ProtoMessage() {}
 
 func (x *CompletePasswordResetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[35]
+	mi := &file_user_v1_auth_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1940,7 +1659,7 @@ func (x *CompletePasswordResetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CompletePasswordResetRequest.ProtoReflect.Descriptor instead.
 func (*CompletePasswordResetRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{35}
+	return file_user_v1_auth_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *CompletePasswordResetRequest) GetResetToken() string {
@@ -1966,7 +1685,7 @@ type CompletePasswordResetResponse struct {
 
 func (x *CompletePasswordResetResponse) Reset() {
 	*x = CompletePasswordResetResponse{}
-	mi := &file_user_v1_auth_proto_msgTypes[36]
+	mi := &file_user_v1_auth_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1978,7 +1697,7 @@ func (x *CompletePasswordResetResponse) String() string {
 func (*CompletePasswordResetResponse) ProtoMessage() {}
 
 func (x *CompletePasswordResetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[36]
+	mi := &file_user_v1_auth_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1991,7 +1710,7 @@ func (x *CompletePasswordResetResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CompletePasswordResetResponse.ProtoReflect.Descriptor instead.
 func (*CompletePasswordResetResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{36}
+	return file_user_v1_auth_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *CompletePasswordResetResponse) GetOk() bool {
@@ -2001,2347 +1720,17 @@ func (x *CompletePasswordResetResponse) GetOk() bool {
 	return false
 }
 
-// GroupSummary is a public group row.
-// id is the 24-char lowercase hex public_id (not the internal UUID).
-type GroupSummary struct {
-	state   protoimpl.MessageState `protogen:"open.v1"`
-	Id      string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Name    string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	LogoUrl string                 `protobuf:"bytes,3,opt,name=logo_url,json=logoUrl,proto3" json:"logo_url,omitempty"`
-	// default_channel_id is the public id of the #general channel (24-char hex).
-	DefaultChannelId string `protobuf:"bytes,4,opt,name=default_channel_id,json=defaultChannelId,proto3" json:"default_channel_id,omitempty"`
-	// role is the caller's membership role (ListMyGroups / CreateGroup); empty for joinable list.
-	Role          string `protobuf:"bytes,5,opt,name=role,proto3" json:"role,omitempty"`
-	Description   string `protobuf:"bytes,6,opt,name=description,proto3" json:"description,omitempty"`
-	IsPrivate     bool   `protobuf:"varint,7,opt,name=is_private,json=isPrivate,proto3" json:"is_private,omitempty"`
-	BannerColor   string `protobuf:"bytes,8,opt,name=banner_color,json=bannerColor,proto3" json:"banner_color,omitempty"`
-	BannerUrl     string `protobuf:"bytes,9,opt,name=banner_url,json=bannerUrl,proto3" json:"banner_url,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GroupSummary) Reset() {
-	*x = GroupSummary{}
-	mi := &file_user_v1_auth_proto_msgTypes[37]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GroupSummary) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GroupSummary) ProtoMessage() {}
-
-func (x *GroupSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[37]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GroupSummary.ProtoReflect.Descriptor instead.
-func (*GroupSummary) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{37}
-}
-
-func (x *GroupSummary) GetId() string {
-	if x != nil {
-		return x.Id
-	}
-	return ""
-}
-
-func (x *GroupSummary) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *GroupSummary) GetLogoUrl() string {
-	if x != nil {
-		return x.LogoUrl
-	}
-	return ""
-}
-
-func (x *GroupSummary) GetDefaultChannelId() string {
-	if x != nil {
-		return x.DefaultChannelId
-	}
-	return ""
-}
-
-func (x *GroupSummary) GetRole() string {
-	if x != nil {
-		return x.Role
-	}
-	return ""
-}
-
-func (x *GroupSummary) GetDescription() string {
-	if x != nil {
-		return x.Description
-	}
-	return ""
-}
-
-func (x *GroupSummary) GetIsPrivate() bool {
-	if x != nil {
-		return x.IsPrivate
-	}
-	return false
-}
-
-func (x *GroupSummary) GetBannerColor() string {
-	if x != nil {
-		return x.BannerColor
-	}
-	return ""
-}
-
-func (x *GroupSummary) GetBannerUrl() string {
-	if x != nil {
-		return x.BannerUrl
-	}
-	return ""
-}
-
-type ListMyGroupsRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ListMyGroupsRequest) Reset() {
-	*x = ListMyGroupsRequest{}
-	mi := &file_user_v1_auth_proto_msgTypes[38]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ListMyGroupsRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ListMyGroupsRequest) ProtoMessage() {}
-
-func (x *ListMyGroupsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[38]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ListMyGroupsRequest.ProtoReflect.Descriptor instead.
-func (*ListMyGroupsRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{38}
-}
-
-func (x *ListMyGroupsRequest) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-type ListMyGroupsResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Groups        []*GroupSummary        `protobuf:"bytes,1,rep,name=groups,proto3" json:"groups,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ListMyGroupsResponse) Reset() {
-	*x = ListMyGroupsResponse{}
-	mi := &file_user_v1_auth_proto_msgTypes[39]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ListMyGroupsResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ListMyGroupsResponse) ProtoMessage() {}
-
-func (x *ListMyGroupsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[39]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ListMyGroupsResponse.ProtoReflect.Descriptor instead.
-func (*ListMyGroupsResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{39}
-}
-
-func (x *ListMyGroupsResponse) GetGroups() []*GroupSummary {
-	if x != nil {
-		return x.Groups
-	}
-	return nil
-}
-
-type ListJoinableGroupsRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ListJoinableGroupsRequest) Reset() {
-	*x = ListJoinableGroupsRequest{}
-	mi := &file_user_v1_auth_proto_msgTypes[40]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ListJoinableGroupsRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ListJoinableGroupsRequest) ProtoMessage() {}
-
-func (x *ListJoinableGroupsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[40]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ListJoinableGroupsRequest.ProtoReflect.Descriptor instead.
-func (*ListJoinableGroupsRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{40}
-}
-
-func (x *ListJoinableGroupsRequest) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-type ListJoinableGroupsResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Groups        []*GroupSummary        `protobuf:"bytes,1,rep,name=groups,proto3" json:"groups,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ListJoinableGroupsResponse) Reset() {
-	*x = ListJoinableGroupsResponse{}
-	mi := &file_user_v1_auth_proto_msgTypes[41]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ListJoinableGroupsResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ListJoinableGroupsResponse) ProtoMessage() {}
-
-func (x *ListJoinableGroupsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[41]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ListJoinableGroupsResponse.ProtoReflect.Descriptor instead.
-func (*ListJoinableGroupsResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{41}
-}
-
-func (x *ListJoinableGroupsResponse) GetGroups() []*GroupSummary {
-	if x != nil {
-		return x.Groups
-	}
-	return nil
-}
-
-type CreateGroupRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
-	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *CreateGroupRequest) Reset() {
-	*x = CreateGroupRequest{}
-	mi := &file_user_v1_auth_proto_msgTypes[42]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CreateGroupRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CreateGroupRequest) ProtoMessage() {}
-
-func (x *CreateGroupRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[42]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use CreateGroupRequest.ProtoReflect.Descriptor instead.
-func (*CreateGroupRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{42}
-}
-
-func (x *CreateGroupRequest) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *CreateGroupRequest) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-type CreateGroupResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Group         *GroupSummary          `protobuf:"bytes,1,opt,name=group,proto3" json:"group,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *CreateGroupResponse) Reset() {
-	*x = CreateGroupResponse{}
-	mi := &file_user_v1_auth_proto_msgTypes[43]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CreateGroupResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CreateGroupResponse) ProtoMessage() {}
-
-func (x *CreateGroupResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[43]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use CreateGroupResponse.ProtoReflect.Descriptor instead.
-func (*CreateGroupResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{43}
-}
-
-func (x *CreateGroupResponse) GetGroup() *GroupSummary {
-	if x != nil {
-		return x.Group
-	}
-	return nil
-}
-
-type JoinGroupRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
-	GroupId       string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *JoinGroupRequest) Reset() {
-	*x = JoinGroupRequest{}
-	mi := &file_user_v1_auth_proto_msgTypes[44]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *JoinGroupRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*JoinGroupRequest) ProtoMessage() {}
-
-func (x *JoinGroupRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[44]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use JoinGroupRequest.ProtoReflect.Descriptor instead.
-func (*JoinGroupRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{44}
-}
-
-func (x *JoinGroupRequest) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *JoinGroupRequest) GetGroupId() string {
-	if x != nil {
-		return x.GroupId
-	}
-	return ""
-}
-
-type JoinGroupResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *JoinGroupResponse) Reset() {
-	*x = JoinGroupResponse{}
-	mi := &file_user_v1_auth_proto_msgTypes[45]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *JoinGroupResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*JoinGroupResponse) ProtoMessage() {}
-
-func (x *JoinGroupResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[45]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use JoinGroupResponse.ProtoReflect.Descriptor instead.
-func (*JoinGroupResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{45}
-}
-
-func (x *JoinGroupResponse) GetOk() bool {
-	if x != nil {
-		return x.Ok
-	}
-	return false
-}
-
-type ReorderMyGroupsRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
-	GroupIds      []string               `protobuf:"bytes,2,rep,name=group_ids,json=groupIds,proto3" json:"group_ids,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ReorderMyGroupsRequest) Reset() {
-	*x = ReorderMyGroupsRequest{}
-	mi := &file_user_v1_auth_proto_msgTypes[46]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ReorderMyGroupsRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ReorderMyGroupsRequest) ProtoMessage() {}
-
-func (x *ReorderMyGroupsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[46]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ReorderMyGroupsRequest.ProtoReflect.Descriptor instead.
-func (*ReorderMyGroupsRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{46}
-}
-
-func (x *ReorderMyGroupsRequest) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *ReorderMyGroupsRequest) GetGroupIds() []string {
-	if x != nil {
-		return x.GroupIds
-	}
-	return nil
-}
-
-type ReorderMyGroupsResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ReorderMyGroupsResponse) Reset() {
-	*x = ReorderMyGroupsResponse{}
-	mi := &file_user_v1_auth_proto_msgTypes[47]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ReorderMyGroupsResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ReorderMyGroupsResponse) ProtoMessage() {}
-
-func (x *ReorderMyGroupsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[47]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ReorderMyGroupsResponse.ProtoReflect.Descriptor instead.
-func (*ReorderMyGroupsResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{47}
-}
-
-func (x *ReorderMyGroupsResponse) GetOk() bool {
-	if x != nil {
-		return x.Ok
-	}
-	return false
-}
-
-type LeaveGroupRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
-	GroupId       string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *LeaveGroupRequest) Reset() {
-	*x = LeaveGroupRequest{}
-	mi := &file_user_v1_auth_proto_msgTypes[48]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *LeaveGroupRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*LeaveGroupRequest) ProtoMessage() {}
-
-func (x *LeaveGroupRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[48]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use LeaveGroupRequest.ProtoReflect.Descriptor instead.
-func (*LeaveGroupRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{48}
-}
-
-func (x *LeaveGroupRequest) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *LeaveGroupRequest) GetGroupId() string {
-	if x != nil {
-		return x.GroupId
-	}
-	return ""
-}
-
-type LeaveGroupResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *LeaveGroupResponse) Reset() {
-	*x = LeaveGroupResponse{}
-	mi := &file_user_v1_auth_proto_msgTypes[49]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *LeaveGroupResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*LeaveGroupResponse) ProtoMessage() {}
-
-func (x *LeaveGroupResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[49]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use LeaveGroupResponse.ProtoReflect.Descriptor instead.
-func (*LeaveGroupResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{49}
-}
-
-func (x *LeaveGroupResponse) GetOk() bool {
-	if x != nil {
-		return x.Ok
-	}
-	return false
-}
-
-type DeleteGroupRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
-	GroupId       string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *DeleteGroupRequest) Reset() {
-	*x = DeleteGroupRequest{}
-	mi := &file_user_v1_auth_proto_msgTypes[50]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *DeleteGroupRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DeleteGroupRequest) ProtoMessage() {}
-
-func (x *DeleteGroupRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[50]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DeleteGroupRequest.ProtoReflect.Descriptor instead.
-func (*DeleteGroupRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{50}
-}
-
-func (x *DeleteGroupRequest) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *DeleteGroupRequest) GetGroupId() string {
-	if x != nil {
-		return x.GroupId
-	}
-	return ""
-}
-
-type DeleteGroupResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *DeleteGroupResponse) Reset() {
-	*x = DeleteGroupResponse{}
-	mi := &file_user_v1_auth_proto_msgTypes[51]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *DeleteGroupResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DeleteGroupResponse) ProtoMessage() {}
-
-func (x *DeleteGroupResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[51]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DeleteGroupResponse.ProtoReflect.Descriptor instead.
-func (*DeleteGroupResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{51}
-}
-
-func (x *DeleteGroupResponse) GetOk() bool {
-	if x != nil {
-		return x.Ok
-	}
-	return false
-}
-
-// ChannelSummary is channel metadata for the sidebar.
-type ChannelSummary struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	Id    string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Name  string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Type  string                 `protobuf:"bytes,3,opt,name=type,proto3" json:"type,omitempty"`
-	// Sidebar bucket: favorites | channels (see ms-user channels.sidebar_section).
-	SidebarSection string `protobuf:"bytes,4,opt,name=sidebar_section,json=sidebarSection,proto3" json:"sidebar_section,omitempty"`
-	// Preset key or uploaded URL; empty uses client default by type.
-	ImageUrl string `protobuf:"bytes,5,opt,name=image_url,json=imageUrl,proto3" json:"image_url,omitempty"`
-	// Group channel visibility; always false when type is dm.
-	IsPrivate     bool `protobuf:"varint,6,opt,name=is_private,json=isPrivate,proto3" json:"is_private,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ChannelSummary) Reset() {
-	*x = ChannelSummary{}
-	mi := &file_user_v1_auth_proto_msgTypes[52]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ChannelSummary) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ChannelSummary) ProtoMessage() {}
-
-func (x *ChannelSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[52]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ChannelSummary.ProtoReflect.Descriptor instead.
-func (*ChannelSummary) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{52}
-}
-
-func (x *ChannelSummary) GetId() string {
-	if x != nil {
-		return x.Id
-	}
-	return ""
-}
-
-func (x *ChannelSummary) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *ChannelSummary) GetType() string {
-	if x != nil {
-		return x.Type
-	}
-	return ""
-}
-
-func (x *ChannelSummary) GetSidebarSection() string {
-	if x != nil {
-		return x.SidebarSection
-	}
-	return ""
-}
-
-func (x *ChannelSummary) GetImageUrl() string {
-	if x != nil {
-		return x.ImageUrl
-	}
-	return ""
-}
-
-func (x *ChannelSummary) GetIsPrivate() bool {
-	if x != nil {
-		return x.IsPrivate
-	}
-	return false
-}
-
-type ListGroupChannelsRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
-	GroupId       string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ListGroupChannelsRequest) Reset() {
-	*x = ListGroupChannelsRequest{}
-	mi := &file_user_v1_auth_proto_msgTypes[53]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ListGroupChannelsRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ListGroupChannelsRequest) ProtoMessage() {}
-
-func (x *ListGroupChannelsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[53]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ListGroupChannelsRequest.ProtoReflect.Descriptor instead.
-func (*ListGroupChannelsRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{53}
-}
-
-func (x *ListGroupChannelsRequest) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *ListGroupChannelsRequest) GetGroupId() string {
-	if x != nil {
-		return x.GroupId
-	}
-	return ""
-}
-
-type ListGroupChannelsResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Channels      []*ChannelSummary      `protobuf:"bytes,1,rep,name=channels,proto3" json:"channels,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ListGroupChannelsResponse) Reset() {
-	*x = ListGroupChannelsResponse{}
-	mi := &file_user_v1_auth_proto_msgTypes[54]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ListGroupChannelsResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ListGroupChannelsResponse) ProtoMessage() {}
-
-func (x *ListGroupChannelsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[54]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ListGroupChannelsResponse.ProtoReflect.Descriptor instead.
-func (*ListGroupChannelsResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{54}
-}
-
-func (x *ListGroupChannelsResponse) GetChannels() []*ChannelSummary {
-	if x != nil {
-		return x.Channels
-	}
-	return nil
-}
-
-type AssertGroupChannelAccessRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
-	GroupId       string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
-	ChannelId     string                 `protobuf:"bytes,3,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *AssertGroupChannelAccessRequest) Reset() {
-	*x = AssertGroupChannelAccessRequest{}
-	mi := &file_user_v1_auth_proto_msgTypes[55]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *AssertGroupChannelAccessRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*AssertGroupChannelAccessRequest) ProtoMessage() {}
-
-func (x *AssertGroupChannelAccessRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[55]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use AssertGroupChannelAccessRequest.ProtoReflect.Descriptor instead.
-func (*AssertGroupChannelAccessRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{55}
-}
-
-func (x *AssertGroupChannelAccessRequest) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *AssertGroupChannelAccessRequest) GetGroupId() string {
-	if x != nil {
-		return x.GroupId
-	}
-	return ""
-}
-
-func (x *AssertGroupChannelAccessRequest) GetChannelId() string {
-	if x != nil {
-		return x.ChannelId
-	}
-	return ""
-}
-
-type AssertGroupChannelAccessResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	ChannelUuid   string                 `protobuf:"bytes,1,opt,name=channel_uuid,json=channelUuid,proto3" json:"channel_uuid,omitempty"`
-	UserUuid      string                 `protobuf:"bytes,2,opt,name=user_uuid,json=userUuid,proto3" json:"user_uuid,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *AssertGroupChannelAccessResponse) Reset() {
-	*x = AssertGroupChannelAccessResponse{}
-	mi := &file_user_v1_auth_proto_msgTypes[56]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *AssertGroupChannelAccessResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*AssertGroupChannelAccessResponse) ProtoMessage() {}
-
-func (x *AssertGroupChannelAccessResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[56]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use AssertGroupChannelAccessResponse.ProtoReflect.Descriptor instead.
-func (*AssertGroupChannelAccessResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{56}
-}
-
-func (x *AssertGroupChannelAccessResponse) GetChannelUuid() string {
-	if x != nil {
-		return x.ChannelUuid
-	}
-	return ""
-}
-
-func (x *AssertGroupChannelAccessResponse) GetUserUuid() string {
-	if x != nil {
-		return x.UserUuid
-	}
-	return ""
-}
-
-type UploadGroupIconRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
-	GroupId       string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
-	ContentType   string                 `protobuf:"bytes,3,opt,name=content_type,json=contentType,proto3" json:"content_type,omitempty"`
-	Data          []byte                 `protobuf:"bytes,4,opt,name=data,proto3" json:"data,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *UploadGroupIconRequest) Reset() {
-	*x = UploadGroupIconRequest{}
-	mi := &file_user_v1_auth_proto_msgTypes[57]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *UploadGroupIconRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*UploadGroupIconRequest) ProtoMessage() {}
-
-func (x *UploadGroupIconRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[57]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use UploadGroupIconRequest.ProtoReflect.Descriptor instead.
-func (*UploadGroupIconRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{57}
-}
-
-func (x *UploadGroupIconRequest) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *UploadGroupIconRequest) GetGroupId() string {
-	if x != nil {
-		return x.GroupId
-	}
-	return ""
-}
-
-func (x *UploadGroupIconRequest) GetContentType() string {
-	if x != nil {
-		return x.ContentType
-	}
-	return ""
-}
-
-func (x *UploadGroupIconRequest) GetData() []byte {
-	if x != nil {
-		return x.Data
-	}
-	return nil
-}
-
-type UploadGroupIconResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Group         *GroupSummary          `protobuf:"bytes,1,opt,name=group,proto3" json:"group,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *UploadGroupIconResponse) Reset() {
-	*x = UploadGroupIconResponse{}
-	mi := &file_user_v1_auth_proto_msgTypes[58]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *UploadGroupIconResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*UploadGroupIconResponse) ProtoMessage() {}
-
-func (x *UploadGroupIconResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[58]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use UploadGroupIconResponse.ProtoReflect.Descriptor instead.
-func (*UploadGroupIconResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{58}
-}
-
-func (x *UploadGroupIconResponse) GetGroup() *GroupSummary {
-	if x != nil {
-		return x.Group
-	}
-	return nil
-}
-
-type UpdateGroupProfileRequest struct {
-	state            protoimpl.MessageState `protogen:"open.v1"`
-	AccessToken      string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
-	GroupId          string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
-	Name             string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
-	Description      string                 `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
-	IsPrivate        bool                   `protobuf:"varint,5,opt,name=is_private,json=isPrivate,proto3" json:"is_private,omitempty"`
-	BannerColor      string                 `protobuf:"bytes,6,opt,name=banner_color,json=bannerColor,proto3" json:"banner_color,omitempty"`
-	ClearLogo        bool                   `protobuf:"varint,7,opt,name=clear_logo,json=clearLogo,proto3" json:"clear_logo,omitempty"`
-	ClearBannerImage bool                   `protobuf:"varint,8,opt,name=clear_banner_image,json=clearBannerImage,proto3" json:"clear_banner_image,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *UpdateGroupProfileRequest) Reset() {
-	*x = UpdateGroupProfileRequest{}
-	mi := &file_user_v1_auth_proto_msgTypes[59]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *UpdateGroupProfileRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*UpdateGroupProfileRequest) ProtoMessage() {}
-
-func (x *UpdateGroupProfileRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[59]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use UpdateGroupProfileRequest.ProtoReflect.Descriptor instead.
-func (*UpdateGroupProfileRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{59}
-}
-
-func (x *UpdateGroupProfileRequest) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *UpdateGroupProfileRequest) GetGroupId() string {
-	if x != nil {
-		return x.GroupId
-	}
-	return ""
-}
-
-func (x *UpdateGroupProfileRequest) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *UpdateGroupProfileRequest) GetDescription() string {
-	if x != nil {
-		return x.Description
-	}
-	return ""
-}
-
-func (x *UpdateGroupProfileRequest) GetIsPrivate() bool {
-	if x != nil {
-		return x.IsPrivate
-	}
-	return false
-}
-
-func (x *UpdateGroupProfileRequest) GetBannerColor() string {
-	if x != nil {
-		return x.BannerColor
-	}
-	return ""
-}
-
-func (x *UpdateGroupProfileRequest) GetClearLogo() bool {
-	if x != nil {
-		return x.ClearLogo
-	}
-	return false
-}
-
-func (x *UpdateGroupProfileRequest) GetClearBannerImage() bool {
-	if x != nil {
-		return x.ClearBannerImage
-	}
-	return false
-}
-
-type UpdateGroupProfileResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Group         *GroupSummary          `protobuf:"bytes,1,opt,name=group,proto3" json:"group,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *UpdateGroupProfileResponse) Reset() {
-	*x = UpdateGroupProfileResponse{}
-	mi := &file_user_v1_auth_proto_msgTypes[60]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *UpdateGroupProfileResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*UpdateGroupProfileResponse) ProtoMessage() {}
-
-func (x *UpdateGroupProfileResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[60]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use UpdateGroupProfileResponse.ProtoReflect.Descriptor instead.
-func (*UpdateGroupProfileResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{60}
-}
-
-func (x *UpdateGroupProfileResponse) GetGroup() *GroupSummary {
-	if x != nil {
-		return x.Group
-	}
-	return nil
-}
-
-type UploadGroupBannerRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
-	GroupId       string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
-	ContentType   string                 `protobuf:"bytes,3,opt,name=content_type,json=contentType,proto3" json:"content_type,omitempty"`
-	Data          []byte                 `protobuf:"bytes,4,opt,name=data,proto3" json:"data,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *UploadGroupBannerRequest) Reset() {
-	*x = UploadGroupBannerRequest{}
-	mi := &file_user_v1_auth_proto_msgTypes[61]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *UploadGroupBannerRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*UploadGroupBannerRequest) ProtoMessage() {}
-
-func (x *UploadGroupBannerRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[61]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use UploadGroupBannerRequest.ProtoReflect.Descriptor instead.
-func (*UploadGroupBannerRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{61}
-}
-
-func (x *UploadGroupBannerRequest) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *UploadGroupBannerRequest) GetGroupId() string {
-	if x != nil {
-		return x.GroupId
-	}
-	return ""
-}
-
-func (x *UploadGroupBannerRequest) GetContentType() string {
-	if x != nil {
-		return x.ContentType
-	}
-	return ""
-}
-
-func (x *UploadGroupBannerRequest) GetData() []byte {
-	if x != nil {
-		return x.Data
-	}
-	return nil
-}
-
-type UploadGroupBannerResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Group         *GroupSummary          `protobuf:"bytes,1,opt,name=group,proto3" json:"group,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *UploadGroupBannerResponse) Reset() {
-	*x = UploadGroupBannerResponse{}
-	mi := &file_user_v1_auth_proto_msgTypes[62]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *UploadGroupBannerResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*UploadGroupBannerResponse) ProtoMessage() {}
-
-func (x *UploadGroupBannerResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[62]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use UploadGroupBannerResponse.ProtoReflect.Descriptor instead.
-func (*UploadGroupBannerResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{62}
-}
-
-func (x *UploadGroupBannerResponse) GetGroup() *GroupSummary {
-	if x != nil {
-		return x.Group
-	}
-	return nil
-}
-
-type GroupMemberEntry struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	DisplayName   string                 `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
-	Email         string                 `protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty"`
-	Role          string                 `protobuf:"bytes,4,opt,name=role,proto3" json:"role,omitempty"`
-	JoinedAt      string                 `protobuf:"bytes,5,opt,name=joined_at,json=joinedAt,proto3" json:"joined_at,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GroupMemberEntry) Reset() {
-	*x = GroupMemberEntry{}
-	mi := &file_user_v1_auth_proto_msgTypes[63]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GroupMemberEntry) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GroupMemberEntry) ProtoMessage() {}
-
-func (x *GroupMemberEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[63]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GroupMemberEntry.ProtoReflect.Descriptor instead.
-func (*GroupMemberEntry) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{63}
-}
-
-func (x *GroupMemberEntry) GetUserId() string {
-	if x != nil {
-		return x.UserId
-	}
-	return ""
-}
-
-func (x *GroupMemberEntry) GetDisplayName() string {
-	if x != nil {
-		return x.DisplayName
-	}
-	return ""
-}
-
-func (x *GroupMemberEntry) GetEmail() string {
-	if x != nil {
-		return x.Email
-	}
-	return ""
-}
-
-func (x *GroupMemberEntry) GetRole() string {
-	if x != nil {
-		return x.Role
-	}
-	return ""
-}
-
-func (x *GroupMemberEntry) GetJoinedAt() string {
-	if x != nil {
-		return x.JoinedAt
-	}
-	return ""
-}
-
-type ListGroupMembersRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
-	GroupId       string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
-	Limit         int32                  `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"`
-	Cursor        string                 `protobuf:"bytes,4,opt,name=cursor,proto3" json:"cursor,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ListGroupMembersRequest) Reset() {
-	*x = ListGroupMembersRequest{}
-	mi := &file_user_v1_auth_proto_msgTypes[64]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ListGroupMembersRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ListGroupMembersRequest) ProtoMessage() {}
-
-func (x *ListGroupMembersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[64]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ListGroupMembersRequest.ProtoReflect.Descriptor instead.
-func (*ListGroupMembersRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{64}
-}
-
-func (x *ListGroupMembersRequest) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *ListGroupMembersRequest) GetGroupId() string {
-	if x != nil {
-		return x.GroupId
-	}
-	return ""
-}
-
-func (x *ListGroupMembersRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
-	}
-	return 0
-}
-
-func (x *ListGroupMembersRequest) GetCursor() string {
-	if x != nil {
-		return x.Cursor
-	}
-	return ""
-}
-
-type ListGroupMembersResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Members       []*GroupMemberEntry    `protobuf:"bytes,1,rep,name=members,proto3" json:"members,omitempty"`
-	NextCursor    string                 `protobuf:"bytes,2,opt,name=next_cursor,json=nextCursor,proto3" json:"next_cursor,omitempty"`
-	Total         int32                  `protobuf:"varint,3,opt,name=total,proto3" json:"total,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ListGroupMembersResponse) Reset() {
-	*x = ListGroupMembersResponse{}
-	mi := &file_user_v1_auth_proto_msgTypes[65]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ListGroupMembersResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ListGroupMembersResponse) ProtoMessage() {}
-
-func (x *ListGroupMembersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[65]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ListGroupMembersResponse.ProtoReflect.Descriptor instead.
-func (*ListGroupMembersResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{65}
-}
-
-func (x *ListGroupMembersResponse) GetMembers() []*GroupMemberEntry {
-	if x != nil {
-		return x.Members
-	}
-	return nil
-}
-
-func (x *ListGroupMembersResponse) GetNextCursor() string {
-	if x != nil {
-		return x.NextCursor
-	}
-	return ""
-}
-
-func (x *ListGroupMembersResponse) GetTotal() int32 {
-	if x != nil {
-		return x.Total
-	}
-	return 0
-}
-
-type UserSearchHit struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	DisplayName   string                 `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
-	Email         string                 `protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty"`
-	Username      string                 `protobuf:"bytes,4,opt,name=username,proto3" json:"username,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *UserSearchHit) Reset() {
-	*x = UserSearchHit{}
-	mi := &file_user_v1_auth_proto_msgTypes[66]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *UserSearchHit) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*UserSearchHit) ProtoMessage() {}
-
-func (x *UserSearchHit) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[66]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use UserSearchHit.ProtoReflect.Descriptor instead.
-func (*UserSearchHit) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{66}
-}
-
-func (x *UserSearchHit) GetUserId() string {
-	if x != nil {
-		return x.UserId
-	}
-	return ""
-}
-
-func (x *UserSearchHit) GetDisplayName() string {
-	if x != nil {
-		return x.DisplayName
-	}
-	return ""
-}
-
-func (x *UserSearchHit) GetEmail() string {
-	if x != nil {
-		return x.Email
-	}
-	return ""
-}
-
-func (x *UserSearchHit) GetUsername() string {
-	if x != nil {
-		return x.Username
-	}
-	return ""
-}
-
-type SearchUsersRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
-	Query         string                 `protobuf:"bytes,2,opt,name=query,proto3" json:"query,omitempty"`
-	Limit         int32                  `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"`
-	GroupId       string                 `protobuf:"bytes,4,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SearchUsersRequest) Reset() {
-	*x = SearchUsersRequest{}
-	mi := &file_user_v1_auth_proto_msgTypes[67]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SearchUsersRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SearchUsersRequest) ProtoMessage() {}
-
-func (x *SearchUsersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[67]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SearchUsersRequest.ProtoReflect.Descriptor instead.
-func (*SearchUsersRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{67}
-}
-
-func (x *SearchUsersRequest) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *SearchUsersRequest) GetQuery() string {
-	if x != nil {
-		return x.Query
-	}
-	return ""
-}
-
-func (x *SearchUsersRequest) GetLimit() int32 {
-	if x != nil {
-		return x.Limit
-	}
-	return 0
-}
-
-func (x *SearchUsersRequest) GetGroupId() string {
-	if x != nil {
-		return x.GroupId
-	}
-	return ""
-}
-
-type SearchUsersResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Users         []*UserSearchHit       `protobuf:"bytes,1,rep,name=users,proto3" json:"users,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SearchUsersResponse) Reset() {
-	*x = SearchUsersResponse{}
-	mi := &file_user_v1_auth_proto_msgTypes[68]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SearchUsersResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SearchUsersResponse) ProtoMessage() {}
-
-func (x *SearchUsersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[68]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SearchUsersResponse.ProtoReflect.Descriptor instead.
-func (*SearchUsersResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{68}
-}
-
-func (x *SearchUsersResponse) GetUsers() []*UserSearchHit {
-	if x != nil {
-		return x.Users
-	}
-	return nil
-}
-
-type GetGroupInviteLinkRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
-	GroupId       string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
-	ChannelId     string                 `protobuf:"bytes,3,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetGroupInviteLinkRequest) Reset() {
-	*x = GetGroupInviteLinkRequest{}
-	mi := &file_user_v1_auth_proto_msgTypes[69]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetGroupInviteLinkRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetGroupInviteLinkRequest) ProtoMessage() {}
-
-func (x *GetGroupInviteLinkRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[69]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetGroupInviteLinkRequest.ProtoReflect.Descriptor instead.
-func (*GetGroupInviteLinkRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{69}
-}
-
-func (x *GetGroupInviteLinkRequest) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *GetGroupInviteLinkRequest) GetGroupId() string {
-	if x != nil {
-		return x.GroupId
-	}
-	return ""
-}
-
-func (x *GetGroupInviteLinkRequest) GetChannelId() string {
-	if x != nil {
-		return x.ChannelId
-	}
-	return ""
-}
-
-type GetGroupInviteLinkResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
-	ExpiresAt     string                 `protobuf:"bytes,2,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetGroupInviteLinkResponse) Reset() {
-	*x = GetGroupInviteLinkResponse{}
-	mi := &file_user_v1_auth_proto_msgTypes[70]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetGroupInviteLinkResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetGroupInviteLinkResponse) ProtoMessage() {}
-
-func (x *GetGroupInviteLinkResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[70]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetGroupInviteLinkResponse.ProtoReflect.Descriptor instead.
-func (*GetGroupInviteLinkResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{70}
-}
-
-func (x *GetGroupInviteLinkResponse) GetToken() string {
-	if x != nil {
-		return x.Token
-	}
-	return ""
-}
-
-func (x *GetGroupInviteLinkResponse) GetExpiresAt() string {
-	if x != nil {
-		return x.ExpiresAt
-	}
-	return ""
-}
-
-type SendGroupInvitesRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
-	GroupId       string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
-	ChannelId     string                 `protobuf:"bytes,3,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
-	UserIds       []string               `protobuf:"bytes,4,rep,name=user_ids,json=userIds,proto3" json:"user_ids,omitempty"`
-	Emails        []string               `protobuf:"bytes,5,rep,name=emails,proto3" json:"emails,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SendGroupInvitesRequest) Reset() {
-	*x = SendGroupInvitesRequest{}
-	mi := &file_user_v1_auth_proto_msgTypes[71]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SendGroupInvitesRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SendGroupInvitesRequest) ProtoMessage() {}
-
-func (x *SendGroupInvitesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[71]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SendGroupInvitesRequest.ProtoReflect.Descriptor instead.
-func (*SendGroupInvitesRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{71}
-}
-
-func (x *SendGroupInvitesRequest) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *SendGroupInvitesRequest) GetGroupId() string {
-	if x != nil {
-		return x.GroupId
-	}
-	return ""
-}
-
-func (x *SendGroupInvitesRequest) GetChannelId() string {
-	if x != nil {
-		return x.ChannelId
-	}
-	return ""
-}
-
-func (x *SendGroupInvitesRequest) GetUserIds() []string {
-	if x != nil {
-		return x.UserIds
-	}
-	return nil
-}
-
-func (x *SendGroupInvitesRequest) GetEmails() []string {
-	if x != nil {
-		return x.Emails
-	}
-	return nil
-}
-
-type SendGroupInvitesResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Added         int32                  `protobuf:"varint,1,opt,name=added,proto3" json:"added,omitempty"`
-	Emailed       int32                  `protobuf:"varint,2,opt,name=emailed,proto3" json:"emailed,omitempty"`
-	Skipped       int32                  `protobuf:"varint,3,opt,name=skipped,proto3" json:"skipped,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SendGroupInvitesResponse) Reset() {
-	*x = SendGroupInvitesResponse{}
-	mi := &file_user_v1_auth_proto_msgTypes[72]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SendGroupInvitesResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SendGroupInvitesResponse) ProtoMessage() {}
-
-func (x *SendGroupInvitesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[72]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SendGroupInvitesResponse.ProtoReflect.Descriptor instead.
-func (*SendGroupInvitesResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{72}
-}
-
-func (x *SendGroupInvitesResponse) GetAdded() int32 {
-	if x != nil {
-		return x.Added
-	}
-	return 0
-}
-
-func (x *SendGroupInvitesResponse) GetEmailed() int32 {
-	if x != nil {
-		return x.Emailed
-	}
-	return 0
-}
-
-func (x *SendGroupInvitesResponse) GetSkipped() int32 {
-	if x != nil {
-		return x.Skipped
-	}
-	return 0
-}
-
-type PreviewGroupInviteRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *PreviewGroupInviteRequest) Reset() {
-	*x = PreviewGroupInviteRequest{}
-	mi := &file_user_v1_auth_proto_msgTypes[73]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *PreviewGroupInviteRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PreviewGroupInviteRequest) ProtoMessage() {}
-
-func (x *PreviewGroupInviteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[73]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use PreviewGroupInviteRequest.ProtoReflect.Descriptor instead.
-func (*PreviewGroupInviteRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{73}
-}
-
-func (x *PreviewGroupInviteRequest) GetToken() string {
-	if x != nil {
-		return x.Token
-	}
-	return ""
-}
-
-type PreviewGroupInviteResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Valid         bool                   `protobuf:"varint,1,opt,name=valid,proto3" json:"valid,omitempty"`
-	GroupName     string                 `protobuf:"bytes,2,opt,name=group_name,json=groupName,proto3" json:"group_name,omitempty"`
-	ChannelName   string                 `protobuf:"bytes,3,opt,name=channel_name,json=channelName,proto3" json:"channel_name,omitempty"`
-	ExpiresAt     string                 `protobuf:"bytes,4,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
-	Reason        string                 `protobuf:"bytes,5,opt,name=reason,proto3" json:"reason,omitempty"`
-	GroupLogoUrl  string                 `protobuf:"bytes,6,opt,name=group_logo_url,json=groupLogoUrl,proto3" json:"group_logo_url,omitempty"`
-	MemberCount   int32                  `protobuf:"varint,7,opt,name=member_count,json=memberCount,proto3" json:"member_count,omitempty"`
-	OnlineCount   int32                  `protobuf:"varint,8,opt,name=online_count,json=onlineCount,proto3" json:"online_count,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *PreviewGroupInviteResponse) Reset() {
-	*x = PreviewGroupInviteResponse{}
-	mi := &file_user_v1_auth_proto_msgTypes[74]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *PreviewGroupInviteResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PreviewGroupInviteResponse) ProtoMessage() {}
-
-func (x *PreviewGroupInviteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[74]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use PreviewGroupInviteResponse.ProtoReflect.Descriptor instead.
-func (*PreviewGroupInviteResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{74}
-}
-
-func (x *PreviewGroupInviteResponse) GetValid() bool {
-	if x != nil {
-		return x.Valid
-	}
-	return false
-}
-
-func (x *PreviewGroupInviteResponse) GetGroupName() string {
-	if x != nil {
-		return x.GroupName
-	}
-	return ""
-}
-
-func (x *PreviewGroupInviteResponse) GetChannelName() string {
-	if x != nil {
-		return x.ChannelName
-	}
-	return ""
-}
-
-func (x *PreviewGroupInviteResponse) GetExpiresAt() string {
-	if x != nil {
-		return x.ExpiresAt
-	}
-	return ""
-}
-
-func (x *PreviewGroupInviteResponse) GetReason() string {
-	if x != nil {
-		return x.Reason
-	}
-	return ""
-}
-
-func (x *PreviewGroupInviteResponse) GetGroupLogoUrl() string {
-	if x != nil {
-		return x.GroupLogoUrl
-	}
-	return ""
-}
-
-func (x *PreviewGroupInviteResponse) GetMemberCount() int32 {
-	if x != nil {
-		return x.MemberCount
-	}
-	return 0
-}
-
-func (x *PreviewGroupInviteResponse) GetOnlineCount() int32 {
-	if x != nil {
-		return x.OnlineCount
-	}
-	return 0
-}
-
-type RedeemGroupInviteRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
-	Token         string                 `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *RedeemGroupInviteRequest) Reset() {
-	*x = RedeemGroupInviteRequest{}
-	mi := &file_user_v1_auth_proto_msgTypes[75]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *RedeemGroupInviteRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*RedeemGroupInviteRequest) ProtoMessage() {}
-
-func (x *RedeemGroupInviteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[75]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use RedeemGroupInviteRequest.ProtoReflect.Descriptor instead.
-func (*RedeemGroupInviteRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{75}
-}
-
-func (x *RedeemGroupInviteRequest) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *RedeemGroupInviteRequest) GetToken() string {
-	if x != nil {
-		return x.Token
-	}
-	return ""
-}
-
-type RedeemGroupInviteResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	GroupId       string                 `protobuf:"bytes,1,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
-	ChannelId     string                 `protobuf:"bytes,2,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *RedeemGroupInviteResponse) Reset() {
-	*x = RedeemGroupInviteResponse{}
-	mi := &file_user_v1_auth_proto_msgTypes[76]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *RedeemGroupInviteResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*RedeemGroupInviteResponse) ProtoMessage() {}
-
-func (x *RedeemGroupInviteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_auth_proto_msgTypes[76]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use RedeemGroupInviteResponse.ProtoReflect.Descriptor instead.
-func (*RedeemGroupInviteResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_auth_proto_rawDescGZIP(), []int{76}
-}
-
-func (x *RedeemGroupInviteResponse) GetGroupId() string {
-	if x != nil {
-		return x.GroupId
-	}
-	return ""
-}
-
-func (x *RedeemGroupInviteResponse) GetChannelId() string {
-	if x != nil {
-		return x.ChannelId
-	}
-	return ""
-}
-
 var File_user_v1_auth_proto protoreflect.FileDescriptor
 
 const file_user_v1_auth_proto_rawDesc = "" +
 	"\n" +
-	"\x12user/v1/auth.proto\x12\auser.v1\"{\n" +
-	"\x04User\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
-	"\x05email\x18\x02 \x01(\tR\x05email\x12!\n" +
-	"\fdisplay_name\x18\x03 \x01(\tR\vdisplayName\x12\x1a\n" +
-	"\busername\x18\x04 \x01(\tR\busernameJ\x04\b\x05\x10\x06R\bis_guest\"\x93\x01\n" +
+	"\x12user/v1/auth.proto\x12\auser.v1\x1a\x12user/v1/user.proto\"\x93\x01\n" +
 	"\aSession\x12!\n" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x1d\n" +
 	"\n" +
 	"expires_in\x18\x02 \x01(\x05R\texpiresIn\x12#\n" +
 	"\rrefresh_token\x18\x03 \x01(\tR\frefreshToken\x12!\n" +
-	"\x04user\x18\x04 \x01(\v2\r.user.v1.UserR\x04user\"\x14\n" +
-	"\x12SetupStatusRequest\"\xc5\x01\n" +
-	"\x13SetupStatusResponse\x12+\n" +
-	"\x11registration_mode\x18\x03 \x01(\tR\x10registrationMode\x12)\n" +
-	"\x10username_enabled\x18\x05 \x01(\bR\x0fusernameEnabledJ\x04\b\x01\x10\x02J\x04\b\x02\x10\x03J\x04\b\x04\x10\x05J\x04\b\x06\x10\aR\rneeds_accountR\x14needs_instance_setupR\n" +
-	"group_nameR\rguest_enabled\"\xdd\x01\n" +
-	"\x1cCompleteInstanceSetupRequest\x12!\n" +
-	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\x12\x19\n" +
-	"\blogo_url\x18\x03 \x01(\tR\alogoUrl\x12)\n" +
-	"\x10username_enabled\x18\x04 \x01(\bR\x0fusernameEnabled\x12+\n" +
-	"\x11registration_mode\x18\x05 \x01(\tR\x10registrationModeJ\x04\b\x06\x10\aR\rguest_enabled\"/\n" +
-	"\x1dCompleteInstanceSetupResponse\x12\x0e\n" +
-	"\x02ok\x18\x01 \x01(\bR\x02ok\"\x9f\x01\n" +
+	"\x04user\x18\x04 \x01(\v2\r.user.v1.UserR\x04user\"\x9f\x01\n" +
 	"\fSetupRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1a\n" +
 	"\bpassword\x18\x02 \x01(\tR\bpassword\x12!\n" +
@@ -4444,170 +1833,8 @@ const file_user_v1_auth_proto_rawDesc = "" +
 	"resetToken\x12\x1a\n" +
 	"\bpassword\x18\x02 \x01(\tR\bpassword\"/\n" +
 	"\x1dCompletePasswordResetResponse\x12\x0e\n" +
-	"\x02ok\x18\x01 \x01(\bR\x02ok\"\x92\x02\n" +
-	"\fGroupSummary\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\x12\x19\n" +
-	"\blogo_url\x18\x03 \x01(\tR\alogoUrl\x12,\n" +
-	"\x12default_channel_id\x18\x04 \x01(\tR\x10defaultChannelId\x12\x12\n" +
-	"\x04role\x18\x05 \x01(\tR\x04role\x12 \n" +
-	"\vdescription\x18\x06 \x01(\tR\vdescription\x12\x1d\n" +
-	"\n" +
-	"is_private\x18\a \x01(\bR\tisPrivate\x12!\n" +
-	"\fbanner_color\x18\b \x01(\tR\vbannerColor\x12\x1d\n" +
-	"\n" +
-	"banner_url\x18\t \x01(\tR\tbannerUrl\"8\n" +
-	"\x13ListMyGroupsRequest\x12!\n" +
-	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\"E\n" +
-	"\x14ListMyGroupsResponse\x12-\n" +
-	"\x06groups\x18\x01 \x03(\v2\x15.user.v1.GroupSummaryR\x06groups\">\n" +
-	"\x19ListJoinableGroupsRequest\x12!\n" +
-	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\"K\n" +
-	"\x1aListJoinableGroupsResponse\x12-\n" +
-	"\x06groups\x18\x01 \x03(\v2\x15.user.v1.GroupSummaryR\x06groups\"K\n" +
-	"\x12CreateGroupRequest\x12!\n" +
-	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\"B\n" +
-	"\x13CreateGroupResponse\x12+\n" +
-	"\x05group\x18\x01 \x01(\v2\x15.user.v1.GroupSummaryR\x05group\"P\n" +
-	"\x10JoinGroupRequest\x12!\n" +
-	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
-	"\bgroup_id\x18\x02 \x01(\tR\agroupId\"#\n" +
-	"\x11JoinGroupResponse\x12\x0e\n" +
-	"\x02ok\x18\x01 \x01(\bR\x02ok\"X\n" +
-	"\x16ReorderMyGroupsRequest\x12!\n" +
-	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x1b\n" +
-	"\tgroup_ids\x18\x02 \x03(\tR\bgroupIds\")\n" +
-	"\x17ReorderMyGroupsResponse\x12\x0e\n" +
-	"\x02ok\x18\x01 \x01(\bR\x02ok\"Q\n" +
-	"\x11LeaveGroupRequest\x12!\n" +
-	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
-	"\bgroup_id\x18\x02 \x01(\tR\agroupId\"$\n" +
-	"\x12LeaveGroupResponse\x12\x0e\n" +
-	"\x02ok\x18\x01 \x01(\bR\x02ok\"R\n" +
-	"\x12DeleteGroupRequest\x12!\n" +
-	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
-	"\bgroup_id\x18\x02 \x01(\tR\agroupId\"%\n" +
-	"\x13DeleteGroupResponse\x12\x0e\n" +
-	"\x02ok\x18\x01 \x01(\bR\x02ok\"\xad\x01\n" +
-	"\x0eChannelSummary\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
-	"\x04type\x18\x03 \x01(\tR\x04type\x12'\n" +
-	"\x0fsidebar_section\x18\x04 \x01(\tR\x0esidebarSection\x12\x1b\n" +
-	"\timage_url\x18\x05 \x01(\tR\bimageUrl\x12\x1d\n" +
-	"\n" +
-	"is_private\x18\x06 \x01(\bR\tisPrivate\"X\n" +
-	"\x18ListGroupChannelsRequest\x12!\n" +
-	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
-	"\bgroup_id\x18\x02 \x01(\tR\agroupId\"P\n" +
-	"\x19ListGroupChannelsResponse\x123\n" +
-	"\bchannels\x18\x01 \x03(\v2\x17.user.v1.ChannelSummaryR\bchannels\"~\n" +
-	"\x1fAssertGroupChannelAccessRequest\x12!\n" +
-	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
-	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x1d\n" +
-	"\n" +
-	"channel_id\x18\x03 \x01(\tR\tchannelId\"b\n" +
-	" AssertGroupChannelAccessResponse\x12!\n" +
-	"\fchannel_uuid\x18\x01 \x01(\tR\vchannelUuid\x12\x1b\n" +
-	"\tuser_uuid\x18\x02 \x01(\tR\buserUuid\"\x8d\x01\n" +
-	"\x16UploadGroupIconRequest\x12!\n" +
-	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
-	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12!\n" +
-	"\fcontent_type\x18\x03 \x01(\tR\vcontentType\x12\x12\n" +
-	"\x04data\x18\x04 \x01(\fR\x04data\"F\n" +
-	"\x17UploadGroupIconResponse\x12+\n" +
-	"\x05group\x18\x01 \x01(\v2\x15.user.v1.GroupSummaryR\x05group\"\x9e\x02\n" +
-	"\x19UpdateGroupProfileRequest\x12!\n" +
-	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
-	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x12\n" +
-	"\x04name\x18\x03 \x01(\tR\x04name\x12 \n" +
-	"\vdescription\x18\x04 \x01(\tR\vdescription\x12\x1d\n" +
-	"\n" +
-	"is_private\x18\x05 \x01(\bR\tisPrivate\x12!\n" +
-	"\fbanner_color\x18\x06 \x01(\tR\vbannerColor\x12\x1d\n" +
-	"\n" +
-	"clear_logo\x18\a \x01(\bR\tclearLogo\x12,\n" +
-	"\x12clear_banner_image\x18\b \x01(\bR\x10clearBannerImage\"I\n" +
-	"\x1aUpdateGroupProfileResponse\x12+\n" +
-	"\x05group\x18\x01 \x01(\v2\x15.user.v1.GroupSummaryR\x05group\"\x8f\x01\n" +
-	"\x18UploadGroupBannerRequest\x12!\n" +
-	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
-	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12!\n" +
-	"\fcontent_type\x18\x03 \x01(\tR\vcontentType\x12\x12\n" +
-	"\x04data\x18\x04 \x01(\fR\x04data\"H\n" +
-	"\x19UploadGroupBannerResponse\x12+\n" +
-	"\x05group\x18\x01 \x01(\v2\x15.user.v1.GroupSummaryR\x05group\"\x95\x01\n" +
-	"\x10GroupMemberEntry\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\x12!\n" +
-	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12\x14\n" +
-	"\x05email\x18\x03 \x01(\tR\x05email\x12\x12\n" +
-	"\x04role\x18\x04 \x01(\tR\x04role\x12\x1b\n" +
-	"\tjoined_at\x18\x05 \x01(\tR\bjoinedAt\"\x85\x01\n" +
-	"\x17ListGroupMembersRequest\x12!\n" +
-	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
-	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x14\n" +
-	"\x05limit\x18\x03 \x01(\x05R\x05limit\x12\x16\n" +
-	"\x06cursor\x18\x04 \x01(\tR\x06cursor\"\x86\x01\n" +
-	"\x18ListGroupMembersResponse\x123\n" +
-	"\amembers\x18\x01 \x03(\v2\x19.user.v1.GroupMemberEntryR\amembers\x12\x1f\n" +
-	"\vnext_cursor\x18\x02 \x01(\tR\n" +
-	"nextCursor\x12\x14\n" +
-	"\x05total\x18\x03 \x01(\x05R\x05total\"}\n" +
-	"\rUserSearchHit\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\x12!\n" +
-	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12\x14\n" +
-	"\x05email\x18\x03 \x01(\tR\x05email\x12\x1a\n" +
-	"\busername\x18\x04 \x01(\tR\busername\"~\n" +
-	"\x12SearchUsersRequest\x12!\n" +
-	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x14\n" +
-	"\x05query\x18\x02 \x01(\tR\x05query\x12\x14\n" +
-	"\x05limit\x18\x03 \x01(\x05R\x05limit\x12\x19\n" +
-	"\bgroup_id\x18\x04 \x01(\tR\agroupId\"C\n" +
-	"\x13SearchUsersResponse\x12,\n" +
-	"\x05users\x18\x01 \x03(\v2\x16.user.v1.UserSearchHitR\x05users\"x\n" +
-	"\x19GetGroupInviteLinkRequest\x12!\n" +
-	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
-	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x1d\n" +
-	"\n" +
-	"channel_id\x18\x03 \x01(\tR\tchannelId\"Q\n" +
-	"\x1aGetGroupInviteLinkResponse\x12\x14\n" +
-	"\x05token\x18\x01 \x01(\tR\x05token\x12\x1d\n" +
-	"\n" +
-	"expires_at\x18\x02 \x01(\tR\texpiresAt\"\xa9\x01\n" +
-	"\x17SendGroupInvitesRequest\x12!\n" +
-	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
-	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x1d\n" +
-	"\n" +
-	"channel_id\x18\x03 \x01(\tR\tchannelId\x12\x19\n" +
-	"\buser_ids\x18\x04 \x03(\tR\auserIds\x12\x16\n" +
-	"\x06emails\x18\x05 \x03(\tR\x06emails\"d\n" +
-	"\x18SendGroupInvitesResponse\x12\x14\n" +
-	"\x05added\x18\x01 \x01(\x05R\x05added\x12\x18\n" +
-	"\aemailed\x18\x02 \x01(\x05R\aemailed\x12\x18\n" +
-	"\askipped\x18\x03 \x01(\x05R\askipped\"1\n" +
-	"\x19PreviewGroupInviteRequest\x12\x14\n" +
-	"\x05token\x18\x01 \x01(\tR\x05token\"\x97\x02\n" +
-	"\x1aPreviewGroupInviteResponse\x12\x14\n" +
-	"\x05valid\x18\x01 \x01(\bR\x05valid\x12\x1d\n" +
-	"\n" +
-	"group_name\x18\x02 \x01(\tR\tgroupName\x12!\n" +
-	"\fchannel_name\x18\x03 \x01(\tR\vchannelName\x12\x1d\n" +
-	"\n" +
-	"expires_at\x18\x04 \x01(\tR\texpiresAt\x12\x16\n" +
-	"\x06reason\x18\x05 \x01(\tR\x06reason\x12$\n" +
-	"\x0egroup_logo_url\x18\x06 \x01(\tR\fgroupLogoUrl\x12!\n" +
-	"\fmember_count\x18\a \x01(\x05R\vmemberCount\x12!\n" +
-	"\fonline_count\x18\b \x01(\x05R\vonlineCount\"S\n" +
-	"\x18RedeemGroupInviteRequest\x12!\n" +
-	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x14\n" +
-	"\x05token\x18\x02 \x01(\tR\x05token\"U\n" +
-	"\x19RedeemGroupInviteResponse\x12\x19\n" +
-	"\bgroup_id\x18\x01 \x01(\tR\agroupId\x12\x1d\n" +
-	"\n" +
-	"channel_id\x18\x02 \x01(\tR\tchannelId2\xc5\x16\n" +
-	"\vAuthService\x12H\n" +
-	"\vSetupStatus\x12\x1b.user.v1.SetupStatusRequest\x1a\x1c.user.v1.SetupStatusResponse\x126\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok2\xfe\b\n" +
+	"\vAuthService\x126\n" +
 	"\x05Setup\x12\x15.user.v1.SetupRequest\x1a\x16.user.v1.SetupResponse\x12?\n" +
 	"\bRegister\x12\x18.user.v1.RegisterRequest\x1a\x19.user.v1.RegisterResponse\x126\n" +
 	"\x05Login\x12\x15.user.v1.LoginRequest\x1a\x16.user.v1.LoginResponse\x12Q\n" +
@@ -4617,32 +1844,12 @@ const file_user_v1_auth_proto_rawDesc = "" +
 	"\x0fResendLoginCode\x12\x1f.user.v1.ResendLoginCodeRequest\x1a .user.v1.ResendLoginCodeResponse\x12<\n" +
 	"\aRefresh\x12\x17.user.v1.RefreshRequest\x1a\x18.user.v1.RefreshResponse\x129\n" +
 	"\x06Logout\x12\x16.user.v1.LogoutRequest\x1a\x17.user.v1.LogoutResponse\x12-\n" +
-	"\x02Me\x12\x12.user.v1.MeRequest\x1a\x13.user.v1.MeResponse\x12f\n" +
-	"\x15CompleteInstanceSetup\x12%.user.v1.CompleteInstanceSetupRequest\x1a&.user.v1.CompleteInstanceSetupResponse\x12H\n" +
+	"\x02Me\x12\x12.user.v1.MeRequest\x1a\x13.user.v1.MeResponse\x12H\n" +
 	"\vGoogleStart\x12\x1b.user.v1.GoogleStartRequest\x1a\x1c.user.v1.GoogleStartResponse\x12K\n" +
 	"\fGoogleFinish\x12\x1c.user.v1.GoogleFinishRequest\x1a\x1d.user.v1.GoogleFinishResponse\x12c\n" +
 	"\x14RequestPasswordReset\x12$.user.v1.RequestPasswordResetRequest\x1a%.user.v1.RequestPasswordResetResponse\x12`\n" +
 	"\x13VerifyPasswordReset\x12#.user.v1.VerifyPasswordResetRequest\x1a$.user.v1.VerifyPasswordResetResponse\x12f\n" +
-	"\x15CompletePasswordReset\x12%.user.v1.CompletePasswordResetRequest\x1a&.user.v1.CompletePasswordResetResponse\x12K\n" +
-	"\fListMyGroups\x12\x1c.user.v1.ListMyGroupsRequest\x1a\x1d.user.v1.ListMyGroupsResponse\x12]\n" +
-	"\x12ListJoinableGroups\x12\".user.v1.ListJoinableGroupsRequest\x1a#.user.v1.ListJoinableGroupsResponse\x12H\n" +
-	"\vCreateGroup\x12\x1b.user.v1.CreateGroupRequest\x1a\x1c.user.v1.CreateGroupResponse\x12B\n" +
-	"\tJoinGroup\x12\x19.user.v1.JoinGroupRequest\x1a\x1a.user.v1.JoinGroupResponse\x12T\n" +
-	"\x0fReorderMyGroups\x12\x1f.user.v1.ReorderMyGroupsRequest\x1a .user.v1.ReorderMyGroupsResponse\x12E\n" +
-	"\n" +
-	"LeaveGroup\x12\x1a.user.v1.LeaveGroupRequest\x1a\x1b.user.v1.LeaveGroupResponse\x12H\n" +
-	"\vDeleteGroup\x12\x1b.user.v1.DeleteGroupRequest\x1a\x1c.user.v1.DeleteGroupResponse\x12Z\n" +
-	"\x11ListGroupChannels\x12!.user.v1.ListGroupChannelsRequest\x1a\".user.v1.ListGroupChannelsResponse\x12o\n" +
-	"\x18AssertGroupChannelAccess\x12(.user.v1.AssertGroupChannelAccessRequest\x1a).user.v1.AssertGroupChannelAccessResponse\x12T\n" +
-	"\x0fUploadGroupIcon\x12\x1f.user.v1.UploadGroupIconRequest\x1a .user.v1.UploadGroupIconResponse\x12]\n" +
-	"\x12UpdateGroupProfile\x12\".user.v1.UpdateGroupProfileRequest\x1a#.user.v1.UpdateGroupProfileResponse\x12Z\n" +
-	"\x11UploadGroupBanner\x12!.user.v1.UploadGroupBannerRequest\x1a\".user.v1.UploadGroupBannerResponse\x12W\n" +
-	"\x10ListGroupMembers\x12 .user.v1.ListGroupMembersRequest\x1a!.user.v1.ListGroupMembersResponse\x12H\n" +
-	"\vSearchUsers\x12\x1b.user.v1.SearchUsersRequest\x1a\x1c.user.v1.SearchUsersResponse\x12]\n" +
-	"\x12GetGroupInviteLink\x12\".user.v1.GetGroupInviteLinkRequest\x1a#.user.v1.GetGroupInviteLinkResponse\x12W\n" +
-	"\x10SendGroupInvites\x12 .user.v1.SendGroupInvitesRequest\x1a!.user.v1.SendGroupInvitesResponse\x12Z\n" +
-	"\x11RedeemGroupInvite\x12!.user.v1.RedeemGroupInviteRequest\x1a\".user.v1.RedeemGroupInviteResponse\x12]\n" +
-	"\x12PreviewGroupInvite\x12\".user.v1.PreviewGroupInviteRequest\x1a#.user.v1.PreviewGroupInviteResponseB\x9b\x01\n" +
+	"\x15CompletePasswordReset\x12%.user.v1.CompletePasswordResetRequest\x1a&.user.v1.CompletePasswordResetResponseB\x9b\x01\n" +
 	"\vcom.user.v1B\tAuthProtoP\x01ZDgithub.com/wichat/wichat/backend/wi-shared/models/gen/user/v1;userv1\xa2\x02\x03UXX\xaa\x02\aUser.V1\xca\x02\aUser\\V1\xe2\x02\x13User\\V1\\GPBMetadata\xea\x02\bUser::V1b\x06proto3"
 
 var (
@@ -4657,182 +1864,89 @@ func file_user_v1_auth_proto_rawDescGZIP() []byte {
 	return file_user_v1_auth_proto_rawDescData
 }
 
-var file_user_v1_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 77)
+var file_user_v1_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 32)
 var file_user_v1_auth_proto_goTypes = []any{
-	(*User)(nil),                             // 0: user.v1.User
-	(*Session)(nil),                          // 1: user.v1.Session
-	(*SetupStatusRequest)(nil),               // 2: user.v1.SetupStatusRequest
-	(*SetupStatusResponse)(nil),              // 3: user.v1.SetupStatusResponse
-	(*CompleteInstanceSetupRequest)(nil),     // 4: user.v1.CompleteInstanceSetupRequest
-	(*CompleteInstanceSetupResponse)(nil),    // 5: user.v1.CompleteInstanceSetupResponse
-	(*SetupRequest)(nil),                     // 6: user.v1.SetupRequest
-	(*SetupResponse)(nil),                    // 7: user.v1.SetupResponse
-	(*AuthChallenge)(nil),                    // 8: user.v1.AuthChallenge
-	(*RegisterRequest)(nil),                  // 9: user.v1.RegisterRequest
-	(*RegisterResponse)(nil),                 // 10: user.v1.RegisterResponse
-	(*LoginRequest)(nil),                     // 11: user.v1.LoginRequest
-	(*LoginResponse)(nil),                    // 12: user.v1.LoginResponse
-	(*VerifyRegisterRequest)(nil),            // 13: user.v1.VerifyRegisterRequest
-	(*VerifyRegisterResponse)(nil),           // 14: user.v1.VerifyRegisterResponse
-	(*VerifyLoginRequest)(nil),               // 15: user.v1.VerifyLoginRequest
-	(*VerifyLoginResponse)(nil),              // 16: user.v1.VerifyLoginResponse
-	(*ResendRegisterCodeRequest)(nil),        // 17: user.v1.ResendRegisterCodeRequest
-	(*ResendRegisterCodeResponse)(nil),       // 18: user.v1.ResendRegisterCodeResponse
-	(*ResendLoginCodeRequest)(nil),           // 19: user.v1.ResendLoginCodeRequest
-	(*ResendLoginCodeResponse)(nil),          // 20: user.v1.ResendLoginCodeResponse
-	(*RefreshRequest)(nil),                   // 21: user.v1.RefreshRequest
-	(*RefreshResponse)(nil),                  // 22: user.v1.RefreshResponse
-	(*LogoutRequest)(nil),                    // 23: user.v1.LogoutRequest
-	(*LogoutResponse)(nil),                   // 24: user.v1.LogoutResponse
-	(*MeRequest)(nil),                        // 25: user.v1.MeRequest
-	(*MeResponse)(nil),                       // 26: user.v1.MeResponse
-	(*GoogleStartRequest)(nil),               // 27: user.v1.GoogleStartRequest
-	(*GoogleStartResponse)(nil),              // 28: user.v1.GoogleStartResponse
-	(*GoogleFinishRequest)(nil),              // 29: user.v1.GoogleFinishRequest
-	(*GoogleFinishResponse)(nil),             // 30: user.v1.GoogleFinishResponse
-	(*RequestPasswordResetRequest)(nil),      // 31: user.v1.RequestPasswordResetRequest
-	(*RequestPasswordResetResponse)(nil),     // 32: user.v1.RequestPasswordResetResponse
-	(*VerifyPasswordResetRequest)(nil),       // 33: user.v1.VerifyPasswordResetRequest
-	(*VerifyPasswordResetResponse)(nil),      // 34: user.v1.VerifyPasswordResetResponse
-	(*CompletePasswordResetRequest)(nil),     // 35: user.v1.CompletePasswordResetRequest
-	(*CompletePasswordResetResponse)(nil),    // 36: user.v1.CompletePasswordResetResponse
-	(*GroupSummary)(nil),                     // 37: user.v1.GroupSummary
-	(*ListMyGroupsRequest)(nil),              // 38: user.v1.ListMyGroupsRequest
-	(*ListMyGroupsResponse)(nil),             // 39: user.v1.ListMyGroupsResponse
-	(*ListJoinableGroupsRequest)(nil),        // 40: user.v1.ListJoinableGroupsRequest
-	(*ListJoinableGroupsResponse)(nil),       // 41: user.v1.ListJoinableGroupsResponse
-	(*CreateGroupRequest)(nil),               // 42: user.v1.CreateGroupRequest
-	(*CreateGroupResponse)(nil),              // 43: user.v1.CreateGroupResponse
-	(*JoinGroupRequest)(nil),                 // 44: user.v1.JoinGroupRequest
-	(*JoinGroupResponse)(nil),                // 45: user.v1.JoinGroupResponse
-	(*ReorderMyGroupsRequest)(nil),           // 46: user.v1.ReorderMyGroupsRequest
-	(*ReorderMyGroupsResponse)(nil),          // 47: user.v1.ReorderMyGroupsResponse
-	(*LeaveGroupRequest)(nil),                // 48: user.v1.LeaveGroupRequest
-	(*LeaveGroupResponse)(nil),               // 49: user.v1.LeaveGroupResponse
-	(*DeleteGroupRequest)(nil),               // 50: user.v1.DeleteGroupRequest
-	(*DeleteGroupResponse)(nil),              // 51: user.v1.DeleteGroupResponse
-	(*ChannelSummary)(nil),                   // 52: user.v1.ChannelSummary
-	(*ListGroupChannelsRequest)(nil),         // 53: user.v1.ListGroupChannelsRequest
-	(*ListGroupChannelsResponse)(nil),        // 54: user.v1.ListGroupChannelsResponse
-	(*AssertGroupChannelAccessRequest)(nil),  // 55: user.v1.AssertGroupChannelAccessRequest
-	(*AssertGroupChannelAccessResponse)(nil), // 56: user.v1.AssertGroupChannelAccessResponse
-	(*UploadGroupIconRequest)(nil),           // 57: user.v1.UploadGroupIconRequest
-	(*UploadGroupIconResponse)(nil),          // 58: user.v1.UploadGroupIconResponse
-	(*UpdateGroupProfileRequest)(nil),        // 59: user.v1.UpdateGroupProfileRequest
-	(*UpdateGroupProfileResponse)(nil),       // 60: user.v1.UpdateGroupProfileResponse
-	(*UploadGroupBannerRequest)(nil),         // 61: user.v1.UploadGroupBannerRequest
-	(*UploadGroupBannerResponse)(nil),        // 62: user.v1.UploadGroupBannerResponse
-	(*GroupMemberEntry)(nil),                 // 63: user.v1.GroupMemberEntry
-	(*ListGroupMembersRequest)(nil),          // 64: user.v1.ListGroupMembersRequest
-	(*ListGroupMembersResponse)(nil),         // 65: user.v1.ListGroupMembersResponse
-	(*UserSearchHit)(nil),                    // 66: user.v1.UserSearchHit
-	(*SearchUsersRequest)(nil),               // 67: user.v1.SearchUsersRequest
-	(*SearchUsersResponse)(nil),              // 68: user.v1.SearchUsersResponse
-	(*GetGroupInviteLinkRequest)(nil),        // 69: user.v1.GetGroupInviteLinkRequest
-	(*GetGroupInviteLinkResponse)(nil),       // 70: user.v1.GetGroupInviteLinkResponse
-	(*SendGroupInvitesRequest)(nil),          // 71: user.v1.SendGroupInvitesRequest
-	(*SendGroupInvitesResponse)(nil),         // 72: user.v1.SendGroupInvitesResponse
-	(*PreviewGroupInviteRequest)(nil),        // 73: user.v1.PreviewGroupInviteRequest
-	(*PreviewGroupInviteResponse)(nil),       // 74: user.v1.PreviewGroupInviteResponse
-	(*RedeemGroupInviteRequest)(nil),         // 75: user.v1.RedeemGroupInviteRequest
-	(*RedeemGroupInviteResponse)(nil),        // 76: user.v1.RedeemGroupInviteResponse
+	(*Session)(nil),                       // 0: user.v1.Session
+	(*SetupRequest)(nil),                  // 1: user.v1.SetupRequest
+	(*SetupResponse)(nil),                 // 2: user.v1.SetupResponse
+	(*AuthChallenge)(nil),                 // 3: user.v1.AuthChallenge
+	(*RegisterRequest)(nil),               // 4: user.v1.RegisterRequest
+	(*RegisterResponse)(nil),              // 5: user.v1.RegisterResponse
+	(*LoginRequest)(nil),                  // 6: user.v1.LoginRequest
+	(*LoginResponse)(nil),                 // 7: user.v1.LoginResponse
+	(*VerifyRegisterRequest)(nil),         // 8: user.v1.VerifyRegisterRequest
+	(*VerifyRegisterResponse)(nil),        // 9: user.v1.VerifyRegisterResponse
+	(*VerifyLoginRequest)(nil),            // 10: user.v1.VerifyLoginRequest
+	(*VerifyLoginResponse)(nil),           // 11: user.v1.VerifyLoginResponse
+	(*ResendRegisterCodeRequest)(nil),     // 12: user.v1.ResendRegisterCodeRequest
+	(*ResendRegisterCodeResponse)(nil),    // 13: user.v1.ResendRegisterCodeResponse
+	(*ResendLoginCodeRequest)(nil),        // 14: user.v1.ResendLoginCodeRequest
+	(*ResendLoginCodeResponse)(nil),       // 15: user.v1.ResendLoginCodeResponse
+	(*RefreshRequest)(nil),                // 16: user.v1.RefreshRequest
+	(*RefreshResponse)(nil),               // 17: user.v1.RefreshResponse
+	(*LogoutRequest)(nil),                 // 18: user.v1.LogoutRequest
+	(*LogoutResponse)(nil),                // 19: user.v1.LogoutResponse
+	(*MeRequest)(nil),                     // 20: user.v1.MeRequest
+	(*MeResponse)(nil),                    // 21: user.v1.MeResponse
+	(*GoogleStartRequest)(nil),            // 22: user.v1.GoogleStartRequest
+	(*GoogleStartResponse)(nil),           // 23: user.v1.GoogleStartResponse
+	(*GoogleFinishRequest)(nil),           // 24: user.v1.GoogleFinishRequest
+	(*GoogleFinishResponse)(nil),          // 25: user.v1.GoogleFinishResponse
+	(*RequestPasswordResetRequest)(nil),   // 26: user.v1.RequestPasswordResetRequest
+	(*RequestPasswordResetResponse)(nil),  // 27: user.v1.RequestPasswordResetResponse
+	(*VerifyPasswordResetRequest)(nil),    // 28: user.v1.VerifyPasswordResetRequest
+	(*VerifyPasswordResetResponse)(nil),   // 29: user.v1.VerifyPasswordResetResponse
+	(*CompletePasswordResetRequest)(nil),  // 30: user.v1.CompletePasswordResetRequest
+	(*CompletePasswordResetResponse)(nil), // 31: user.v1.CompletePasswordResetResponse
+	(*User)(nil),                          // 32: user.v1.User
 }
 var file_user_v1_auth_proto_depIdxs = []int32{
-	0,  // 0: user.v1.Session.user:type_name -> user.v1.User
-	1,  // 1: user.v1.SetupResponse.session:type_name -> user.v1.Session
-	1,  // 2: user.v1.RegisterResponse.session:type_name -> user.v1.Session
-	8,  // 3: user.v1.RegisterResponse.challenge:type_name -> user.v1.AuthChallenge
-	1,  // 4: user.v1.LoginResponse.session:type_name -> user.v1.Session
-	8,  // 5: user.v1.LoginResponse.challenge:type_name -> user.v1.AuthChallenge
-	1,  // 6: user.v1.VerifyRegisterResponse.session:type_name -> user.v1.Session
-	1,  // 7: user.v1.VerifyLoginResponse.session:type_name -> user.v1.Session
-	1,  // 8: user.v1.RefreshResponse.session:type_name -> user.v1.Session
-	0,  // 9: user.v1.MeResponse.user:type_name -> user.v1.User
-	1,  // 10: user.v1.GoogleFinishResponse.session:type_name -> user.v1.Session
-	37, // 11: user.v1.ListMyGroupsResponse.groups:type_name -> user.v1.GroupSummary
-	37, // 12: user.v1.ListJoinableGroupsResponse.groups:type_name -> user.v1.GroupSummary
-	37, // 13: user.v1.CreateGroupResponse.group:type_name -> user.v1.GroupSummary
-	52, // 14: user.v1.ListGroupChannelsResponse.channels:type_name -> user.v1.ChannelSummary
-	37, // 15: user.v1.UploadGroupIconResponse.group:type_name -> user.v1.GroupSummary
-	37, // 16: user.v1.UpdateGroupProfileResponse.group:type_name -> user.v1.GroupSummary
-	37, // 17: user.v1.UploadGroupBannerResponse.group:type_name -> user.v1.GroupSummary
-	63, // 18: user.v1.ListGroupMembersResponse.members:type_name -> user.v1.GroupMemberEntry
-	66, // 19: user.v1.SearchUsersResponse.users:type_name -> user.v1.UserSearchHit
-	2,  // 20: user.v1.AuthService.SetupStatus:input_type -> user.v1.SetupStatusRequest
-	6,  // 21: user.v1.AuthService.Setup:input_type -> user.v1.SetupRequest
-	9,  // 22: user.v1.AuthService.Register:input_type -> user.v1.RegisterRequest
-	11, // 23: user.v1.AuthService.Login:input_type -> user.v1.LoginRequest
-	13, // 24: user.v1.AuthService.VerifyRegister:input_type -> user.v1.VerifyRegisterRequest
-	15, // 25: user.v1.AuthService.VerifyLogin:input_type -> user.v1.VerifyLoginRequest
-	17, // 26: user.v1.AuthService.ResendRegisterCode:input_type -> user.v1.ResendRegisterCodeRequest
-	19, // 27: user.v1.AuthService.ResendLoginCode:input_type -> user.v1.ResendLoginCodeRequest
-	21, // 28: user.v1.AuthService.Refresh:input_type -> user.v1.RefreshRequest
-	23, // 29: user.v1.AuthService.Logout:input_type -> user.v1.LogoutRequest
-	25, // 30: user.v1.AuthService.Me:input_type -> user.v1.MeRequest
-	4,  // 31: user.v1.AuthService.CompleteInstanceSetup:input_type -> user.v1.CompleteInstanceSetupRequest
-	27, // 32: user.v1.AuthService.GoogleStart:input_type -> user.v1.GoogleStartRequest
-	29, // 33: user.v1.AuthService.GoogleFinish:input_type -> user.v1.GoogleFinishRequest
-	31, // 34: user.v1.AuthService.RequestPasswordReset:input_type -> user.v1.RequestPasswordResetRequest
-	33, // 35: user.v1.AuthService.VerifyPasswordReset:input_type -> user.v1.VerifyPasswordResetRequest
-	35, // 36: user.v1.AuthService.CompletePasswordReset:input_type -> user.v1.CompletePasswordResetRequest
-	38, // 37: user.v1.AuthService.ListMyGroups:input_type -> user.v1.ListMyGroupsRequest
-	40, // 38: user.v1.AuthService.ListJoinableGroups:input_type -> user.v1.ListJoinableGroupsRequest
-	42, // 39: user.v1.AuthService.CreateGroup:input_type -> user.v1.CreateGroupRequest
-	44, // 40: user.v1.AuthService.JoinGroup:input_type -> user.v1.JoinGroupRequest
-	46, // 41: user.v1.AuthService.ReorderMyGroups:input_type -> user.v1.ReorderMyGroupsRequest
-	48, // 42: user.v1.AuthService.LeaveGroup:input_type -> user.v1.LeaveGroupRequest
-	50, // 43: user.v1.AuthService.DeleteGroup:input_type -> user.v1.DeleteGroupRequest
-	53, // 44: user.v1.AuthService.ListGroupChannels:input_type -> user.v1.ListGroupChannelsRequest
-	55, // 45: user.v1.AuthService.AssertGroupChannelAccess:input_type -> user.v1.AssertGroupChannelAccessRequest
-	57, // 46: user.v1.AuthService.UploadGroupIcon:input_type -> user.v1.UploadGroupIconRequest
-	59, // 47: user.v1.AuthService.UpdateGroupProfile:input_type -> user.v1.UpdateGroupProfileRequest
-	61, // 48: user.v1.AuthService.UploadGroupBanner:input_type -> user.v1.UploadGroupBannerRequest
-	64, // 49: user.v1.AuthService.ListGroupMembers:input_type -> user.v1.ListGroupMembersRequest
-	67, // 50: user.v1.AuthService.SearchUsers:input_type -> user.v1.SearchUsersRequest
-	69, // 51: user.v1.AuthService.GetGroupInviteLink:input_type -> user.v1.GetGroupInviteLinkRequest
-	71, // 52: user.v1.AuthService.SendGroupInvites:input_type -> user.v1.SendGroupInvitesRequest
-	75, // 53: user.v1.AuthService.RedeemGroupInvite:input_type -> user.v1.RedeemGroupInviteRequest
-	73, // 54: user.v1.AuthService.PreviewGroupInvite:input_type -> user.v1.PreviewGroupInviteRequest
-	3,  // 55: user.v1.AuthService.SetupStatus:output_type -> user.v1.SetupStatusResponse
-	7,  // 56: user.v1.AuthService.Setup:output_type -> user.v1.SetupResponse
-	10, // 57: user.v1.AuthService.Register:output_type -> user.v1.RegisterResponse
-	12, // 58: user.v1.AuthService.Login:output_type -> user.v1.LoginResponse
-	14, // 59: user.v1.AuthService.VerifyRegister:output_type -> user.v1.VerifyRegisterResponse
-	16, // 60: user.v1.AuthService.VerifyLogin:output_type -> user.v1.VerifyLoginResponse
-	18, // 61: user.v1.AuthService.ResendRegisterCode:output_type -> user.v1.ResendRegisterCodeResponse
-	20, // 62: user.v1.AuthService.ResendLoginCode:output_type -> user.v1.ResendLoginCodeResponse
-	22, // 63: user.v1.AuthService.Refresh:output_type -> user.v1.RefreshResponse
-	24, // 64: user.v1.AuthService.Logout:output_type -> user.v1.LogoutResponse
-	26, // 65: user.v1.AuthService.Me:output_type -> user.v1.MeResponse
-	5,  // 66: user.v1.AuthService.CompleteInstanceSetup:output_type -> user.v1.CompleteInstanceSetupResponse
-	28, // 67: user.v1.AuthService.GoogleStart:output_type -> user.v1.GoogleStartResponse
-	30, // 68: user.v1.AuthService.GoogleFinish:output_type -> user.v1.GoogleFinishResponse
-	32, // 69: user.v1.AuthService.RequestPasswordReset:output_type -> user.v1.RequestPasswordResetResponse
-	34, // 70: user.v1.AuthService.VerifyPasswordReset:output_type -> user.v1.VerifyPasswordResetResponse
-	36, // 71: user.v1.AuthService.CompletePasswordReset:output_type -> user.v1.CompletePasswordResetResponse
-	39, // 72: user.v1.AuthService.ListMyGroups:output_type -> user.v1.ListMyGroupsResponse
-	41, // 73: user.v1.AuthService.ListJoinableGroups:output_type -> user.v1.ListJoinableGroupsResponse
-	43, // 74: user.v1.AuthService.CreateGroup:output_type -> user.v1.CreateGroupResponse
-	45, // 75: user.v1.AuthService.JoinGroup:output_type -> user.v1.JoinGroupResponse
-	47, // 76: user.v1.AuthService.ReorderMyGroups:output_type -> user.v1.ReorderMyGroupsResponse
-	49, // 77: user.v1.AuthService.LeaveGroup:output_type -> user.v1.LeaveGroupResponse
-	51, // 78: user.v1.AuthService.DeleteGroup:output_type -> user.v1.DeleteGroupResponse
-	54, // 79: user.v1.AuthService.ListGroupChannels:output_type -> user.v1.ListGroupChannelsResponse
-	56, // 80: user.v1.AuthService.AssertGroupChannelAccess:output_type -> user.v1.AssertGroupChannelAccessResponse
-	58, // 81: user.v1.AuthService.UploadGroupIcon:output_type -> user.v1.UploadGroupIconResponse
-	60, // 82: user.v1.AuthService.UpdateGroupProfile:output_type -> user.v1.UpdateGroupProfileResponse
-	62, // 83: user.v1.AuthService.UploadGroupBanner:output_type -> user.v1.UploadGroupBannerResponse
-	65, // 84: user.v1.AuthService.ListGroupMembers:output_type -> user.v1.ListGroupMembersResponse
-	68, // 85: user.v1.AuthService.SearchUsers:output_type -> user.v1.SearchUsersResponse
-	70, // 86: user.v1.AuthService.GetGroupInviteLink:output_type -> user.v1.GetGroupInviteLinkResponse
-	72, // 87: user.v1.AuthService.SendGroupInvites:output_type -> user.v1.SendGroupInvitesResponse
-	76, // 88: user.v1.AuthService.RedeemGroupInvite:output_type -> user.v1.RedeemGroupInviteResponse
-	74, // 89: user.v1.AuthService.PreviewGroupInvite:output_type -> user.v1.PreviewGroupInviteResponse
-	55, // [55:90] is the sub-list for method output_type
-	20, // [20:55] is the sub-list for method input_type
-	20, // [20:20] is the sub-list for extension type_name
-	20, // [20:20] is the sub-list for extension extendee
-	0,  // [0:20] is the sub-list for field type_name
+	32, // 0: user.v1.Session.user:type_name -> user.v1.User
+	0,  // 1: user.v1.SetupResponse.session:type_name -> user.v1.Session
+	0,  // 2: user.v1.RegisterResponse.session:type_name -> user.v1.Session
+	3,  // 3: user.v1.RegisterResponse.challenge:type_name -> user.v1.AuthChallenge
+	0,  // 4: user.v1.LoginResponse.session:type_name -> user.v1.Session
+	3,  // 5: user.v1.LoginResponse.challenge:type_name -> user.v1.AuthChallenge
+	0,  // 6: user.v1.VerifyRegisterResponse.session:type_name -> user.v1.Session
+	0,  // 7: user.v1.VerifyLoginResponse.session:type_name -> user.v1.Session
+	0,  // 8: user.v1.RefreshResponse.session:type_name -> user.v1.Session
+	32, // 9: user.v1.MeResponse.user:type_name -> user.v1.User
+	0,  // 10: user.v1.GoogleFinishResponse.session:type_name -> user.v1.Session
+	1,  // 11: user.v1.AuthService.Setup:input_type -> user.v1.SetupRequest
+	4,  // 12: user.v1.AuthService.Register:input_type -> user.v1.RegisterRequest
+	6,  // 13: user.v1.AuthService.Login:input_type -> user.v1.LoginRequest
+	8,  // 14: user.v1.AuthService.VerifyRegister:input_type -> user.v1.VerifyRegisterRequest
+	10, // 15: user.v1.AuthService.VerifyLogin:input_type -> user.v1.VerifyLoginRequest
+	12, // 16: user.v1.AuthService.ResendRegisterCode:input_type -> user.v1.ResendRegisterCodeRequest
+	14, // 17: user.v1.AuthService.ResendLoginCode:input_type -> user.v1.ResendLoginCodeRequest
+	16, // 18: user.v1.AuthService.Refresh:input_type -> user.v1.RefreshRequest
+	18, // 19: user.v1.AuthService.Logout:input_type -> user.v1.LogoutRequest
+	20, // 20: user.v1.AuthService.Me:input_type -> user.v1.MeRequest
+	22, // 21: user.v1.AuthService.GoogleStart:input_type -> user.v1.GoogleStartRequest
+	24, // 22: user.v1.AuthService.GoogleFinish:input_type -> user.v1.GoogleFinishRequest
+	26, // 23: user.v1.AuthService.RequestPasswordReset:input_type -> user.v1.RequestPasswordResetRequest
+	28, // 24: user.v1.AuthService.VerifyPasswordReset:input_type -> user.v1.VerifyPasswordResetRequest
+	30, // 25: user.v1.AuthService.CompletePasswordReset:input_type -> user.v1.CompletePasswordResetRequest
+	2,  // 26: user.v1.AuthService.Setup:output_type -> user.v1.SetupResponse
+	5,  // 27: user.v1.AuthService.Register:output_type -> user.v1.RegisterResponse
+	7,  // 28: user.v1.AuthService.Login:output_type -> user.v1.LoginResponse
+	9,  // 29: user.v1.AuthService.VerifyRegister:output_type -> user.v1.VerifyRegisterResponse
+	11, // 30: user.v1.AuthService.VerifyLogin:output_type -> user.v1.VerifyLoginResponse
+	13, // 31: user.v1.AuthService.ResendRegisterCode:output_type -> user.v1.ResendRegisterCodeResponse
+	15, // 32: user.v1.AuthService.ResendLoginCode:output_type -> user.v1.ResendLoginCodeResponse
+	17, // 33: user.v1.AuthService.Refresh:output_type -> user.v1.RefreshResponse
+	19, // 34: user.v1.AuthService.Logout:output_type -> user.v1.LogoutResponse
+	21, // 35: user.v1.AuthService.Me:output_type -> user.v1.MeResponse
+	23, // 36: user.v1.AuthService.GoogleStart:output_type -> user.v1.GoogleStartResponse
+	25, // 37: user.v1.AuthService.GoogleFinish:output_type -> user.v1.GoogleFinishResponse
+	27, // 38: user.v1.AuthService.RequestPasswordReset:output_type -> user.v1.RequestPasswordResetResponse
+	29, // 39: user.v1.AuthService.VerifyPasswordReset:output_type -> user.v1.VerifyPasswordResetResponse
+	31, // 40: user.v1.AuthService.CompletePasswordReset:output_type -> user.v1.CompletePasswordResetResponse
+	26, // [26:41] is the sub-list for method output_type
+	11, // [11:26] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_user_v1_auth_proto_init() }
@@ -4840,13 +1954,14 @@ func file_user_v1_auth_proto_init() {
 	if File_user_v1_auth_proto != nil {
 		return
 	}
+	file_user_v1_user_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_user_v1_auth_proto_rawDesc), len(file_user_v1_auth_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   77,
+			NumMessages:   32,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

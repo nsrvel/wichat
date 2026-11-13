@@ -1,0 +1,80 @@
+syntax = "proto3";
+
+package user.v1;
+
+option go_package = "github.com/wichat/wichat/backend/wi-shared/models/gen/user/v1;userv1";
+
+// GroupRoleService manages group roles, permissions, and role member assignments.
+service GroupRoleService {
+  // ListGroupRoles returns all roles in a group with permissions and member counts.
+  rpc ListGroupRoles(ListGroupRolesRequest) returns (ListGroupRolesResponse);
+  // UpdateGroupRole updates role metadata and permissions.
+  rpc UpdateGroupRole(UpdateGroupRoleRequest) returns (UpdateGroupRoleResponse);
+  // AddGroupRoleMembers assigns members to a role.
+  rpc AddGroupRoleMembers(AddGroupRoleMembersRequest) returns (AddGroupRoleMembersResponse);
+  // RemoveGroupRoleMember revokes a role from a member.
+  rpc RemoveGroupRoleMember(RemoveGroupRoleMemberRequest) returns (RemoveGroupRoleMemberResponse);
+}
+
+message GroupRole {
+  string id = 1;
+  string slug = 2;
+  string name = 3;
+  string color = 4;
+  bool hoist = 5;
+  bool mentionable = 6;
+  bool is_default = 7;
+  bool is_system = 8;
+  int32 position = 9;
+  repeated string permissions = 10;
+  int32 member_count = 11;
+  string created_at = 12;
+  string updated_at = 13;
+}
+
+message ListGroupRolesRequest {
+  string access_token = 1;
+  string group_id = 2;
+}
+
+message ListGroupRolesResponse {
+  repeated GroupRole roles = 1;
+}
+
+message UpdateGroupRoleRequest {
+  string access_token = 1;
+  string group_id = 2;
+  string role_id = 3;
+  string name = 4;
+  string color = 5;
+  bool hoist = 6;
+  bool mentionable = 7;
+  repeated string permissions = 8;
+}
+
+message UpdateGroupRoleResponse {
+  GroupRole role = 1;
+}
+
+message AddGroupRoleMembersRequest {
+  string access_token = 1;
+  string group_id = 2;
+  string role_id = 3;
+  repeated string user_ids = 4;
+}
+
+message AddGroupRoleMembersResponse {
+  GroupRole role = 1;
+}
+
+message RemoveGroupRoleMemberRequest {
+  string access_token = 1;
+  string group_id = 2;
+  string role_id = 3;
+  string user_id = 4;
+}
+
+message RemoveGroupRoleMemberResponse {
+  GroupRole role = 1;
+}
+

@@ -49,7 +49,7 @@ export function SidebarCategoryRow({
 					)}
 				>
 					<ChevronDown
-						className={cn("h-3.5 w-3.5 -rotate-90 transition-transform", open && "rotate-0")}
+						className={cn("size-3.5 -rotate-90 transition-transform", open && "rotate-0")}
 						strokeWidth={2.2}
 					/>
 				</span>

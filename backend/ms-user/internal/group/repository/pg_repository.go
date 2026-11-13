@@ -9,27 +9,23 @@ import (
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
 	"github.com/wichat/wichat/backend/ms-user/pkg/constants"
 	pgErr "github.com/wichat/wichat/backend/ms-user/pkg/db"
+	"github.com/wichat/wichat/backend/ms-user/pkg/token"
 	"github.com/wichat/wichat/backend/wi-shared/infra/logger"
 )
 
-// PgRepository is the Postgres store for groups and membership.
+// PgRepository is the Postgres store for groups and workspace settings.
 type PgRepository interface {
 	GetFirstGroup(ctx context.Context) (models.Group, error)
 	ListGroupsForUser(ctx context.Context, userID string) ([]models.Group, error)
 	ListJoinableGroups(ctx context.Context, userID string) ([]models.Group, error)
 	FindGroupByID(ctx context.Context, id string) (models.Group, error)
 	FindGroupByPublicID(ctx context.Context, publicID string) (models.Group, error)
-	FindGroupMember(ctx context.Context, groupID, userID string) (models.GroupMember, error)
 	CreateGroupWithOwner(ctx context.Context, group models.Group, owner models.GroupMember) error
-	InsertGroupMember(ctx context.Context, member models.GroupMember) error
-	DeleteGroupMember(ctx context.Context, groupID, userID string) error
 	DeleteGroup(ctx context.Context, groupID string) error
 	UpdateGroupDisplayName(ctx context.Context, groupID, name string, now time.Time) error
 	UpdateGroupLogoURL(ctx context.Context, groupID, logoURL string, now time.Time) error
 	UpdateGroupProfile(ctx context.Context, groupID string, patch models.GroupProfilePatch, now time.Time) error
 	SetRailPositions(ctx context.Context, userID string, orderedGroupIDs []string) error
-	CountGroupMembers(ctx context.Context, groupID string) (int, error)
-	ListGroupMembersPage(ctx context.Context, groupID string, limit int, cursor *models.GroupMemberCursor) ([]models.GroupMemberProfile, *models.GroupMemberCursor, error)
 }
 
 type pgRepository struct {
@@ -37,7 +33,7 @@ type pgRepository struct {
 	log logger.Logger
 }
 
-// NewPgRepository stores groups and membership in Postgres.
+// NewPgRepository stores groups in Postgres.
 func NewPgRepository(db *bun.DB, log logger.Logger) PgRepository {
 	return pgRepository{db: db, log: log}
 }
@@ -101,24 +97,6 @@ func (r pgRepository) FindGroupByPublicID(ctx context.Context, publicID string) 
 	return groupFromRows(joined.Group, joined.Settings, joined.DefaultChannelPublicID, ""), nil
 }
 
-// FindGroupMember loads membership for a user in a group.
-func (r pgRepository) FindGroupMember(ctx context.Context, groupID, userID string) (models.GroupMember, error) {
-	var row models.GroupMemberRow
-	err := r.db.NewSelect().Model(&row).
-		Where("group_id = ? AND user_id = ?", groupID, userID).
-		Scan(ctx)
-	if err != nil {
-		err = pgErr.MapNotFound(err)
-		r.logIfInfraErr("FindGroupMember", err)
-
-		return models.GroupMember{}, err
-	}
-
-	return models.GroupMember{
-		GroupID: row.GroupID, UserID: row.UserID, Role: row.Role, CreatedAt: row.CreatedAt,
-	}, nil
-}
-
 // CreateGroupWithOwner inserts a group and owner membership in one transaction.
 func (r pgRepository) CreateGroupWithOwner(ctx context.Context, group models.Group, owner models.GroupMember) error {
 	err := r.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
@@ -127,39 +105,6 @@ func (r pgRepository) CreateGroupWithOwner(ctx context.Context, group models.Gro
 	r.logIfInfraErr("CreateGroupWithOwner", err)
 
 	return err
-}
-
-// InsertGroupMember adds a user to a group.
-func (r pgRepository) InsertGroupMember(ctx context.Context, member models.GroupMember) error {
-	row := models.GroupMemberRowFrom(member)
-	_, err := r.db.NewInsert().Model(&row).Exec(ctx)
-	err = pgErr.MapUnique(err)
-	r.logIfInfraErr("InsertGroupMember", err)
-
-	return err
-}
-
-// DeleteGroupMember removes a user's membership in a group.
-func (r pgRepository) DeleteGroupMember(ctx context.Context, groupID, userID string) error {
-	res, err := r.db.NewDelete().Model((*models.GroupMemberRow)(nil)).
-		Where("group_id = ? AND user_id = ?", groupID, userID).
-		Exec(ctx)
-	if err != nil {
-		r.logIfInfraErr("DeleteGroupMember", err)
-
-		return err
-	}
-	n, err := res.RowsAffected()
-	if err != nil {
-		r.logIfInfraErr("DeleteGroupMember", err)
-
-		return err
-	}
-	if n == 0 {
-		return constants.ErrNotFound
-	}
-
-	return nil
 }
 
 // DeleteGroup removes a group; membership and channels cascade in Postgres.
@@ -274,87 +219,6 @@ func (r pgRepository) listGroupsRaw(ctx context.Context, query, userID, op strin
 	return out, nil
 }
 
-// CountGroupMembers returns how many users belong to a group.
-func (r pgRepository) CountGroupMembers(ctx context.Context, groupID string) (int, error) {
-	n, err := r.db.NewSelect().Model((*models.GroupMemberRow)(nil)).
-		Where("group_id = ?", groupID).
-		Count(ctx)
-	if err != nil {
-		r.logIfInfraErr("CountGroupMembers", err)
-	}
-	return int(n), err
-}
-
-type groupMemberJoinedRow struct {
-	UserID      string    `bun:"user_id"`
-	DisplayName string    `bun:"display_name"`
-	Email       *string   `bun:"email"`
-	Role        string    `bun:"role"`
-	CreatedAt   time.Time `bun:"created_at"`
-}
-
-// ListGroupMembersPage returns members ordered by join time then user id.
-func (r pgRepository) ListGroupMembersPage(
-	ctx context.Context,
-	groupID string,
-	limit int,
-	cursor *models.GroupMemberCursor,
-) ([]models.GroupMemberProfile, *models.GroupMemberCursor, error) {
-	if limit <= 0 {
-		limit = constants.DefaultMemberListLimit
-	}
-	if limit > constants.MaxMemberListLimit {
-		limit = constants.MaxMemberListLimit
-	}
-
-	q := r.db.NewSelect().
-		TableExpr("group_members AS m").
-		ColumnExpr("m.user_id, m.role, m.created_at").
-		ColumnExpr("u.display_name, u.email").
-		Join("JOIN users AS u ON u.id = m.user_id").
-		Where("m.group_id = ?", groupID).
-		OrderExpr("m.created_at ASC, m.user_id ASC").
-		Limit(int64(limit + 1))
-
-	if cursor != nil {
-		q = q.Where(
-			"(m.created_at, m.user_id) > (?, ?)",
-			cursor.CreatedAt,
-			cursor.UserID,
-		)
-	}
-
-	var rows []groupMemberJoinedRow
-	if err := q.Scan(ctx, &rows); err != nil {
-		r.logIfInfraErr("ListGroupMembersPage", err)
-		return nil, nil, err
-	}
-
-	var next *models.GroupMemberCursor
-	if len(rows) > limit {
-		last := rows[limit-1]
-		next = &models.GroupMemberCursor{CreatedAt: last.CreatedAt, UserID: last.UserID}
-		rows = rows[:limit]
-	}
-
-	out := make([]models.GroupMemberProfile, len(rows))
-	for i, row := range rows {
-		email := ""
-		if row.Email != nil {
-			email = *row.Email
-		}
-		out[i] = models.GroupMemberProfile{
-			UserID:      row.UserID,
-			DisplayName: row.DisplayName,
-			Email:       email,
-			Role:        row.Role,
-			JoinedAt:    row.CreatedAt,
-		}
-	}
-
-	return out, next, nil
-}
-
 // SetRailPositions sets per-user rail order (0..n-1) for the caller's memberships.
 func (r pgRepository) SetRailPositions(ctx context.Context, userID string, orderedGroupIDs []string) error {
 	err := r.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
@@ -385,7 +249,7 @@ func (r pgRepository) logIfInfraErr(op string, err error) {
 	r.log.Error("group repository", "op", op, "err", err)
 }
 
-// InsertGroupWithOwnerTx inserts groups, group_settings, and owner membership inside an existing transaction.
+// InsertGroupWithOwnerTx inserts groups, group_settings, owner membership, and default roles inside an existing transaction.
 func InsertGroupWithOwnerTx(ctx context.Context, tx bun.Tx, group models.Group, owner models.GroupMember) error {
 	gRow := models.GroupRow{
 		ID: group.ID, PublicID: group.PublicID, CreatedAt: group.CreatedAt, UpdatedAt: group.UpdatedAt,
@@ -403,6 +267,72 @@ func InsertGroupWithOwnerTx(ctx context.Context, tx bun.Tx, group models.Group, 
 	}
 	mRow := models.GroupMemberRowFrom(owner)
 	if _, err := tx.NewInsert().Model(&mRow).Exec(ctx); err != nil {
+		return err
+	}
+
+	everyonePubID, err := token.NewPublicID()
+	if err != nil {
+		return err
+	}
+	everyoneID, err := token.NewID()
+	if err != nil {
+		return err
+	}
+	everyoneRole := models.GroupRoleRow{
+		ID:          everyoneID,
+		PublicID:    everyonePubID,
+		GroupID:     group.ID,
+		Slug:        constants.RoleSlugEveryone,
+		Name:        "@everyone",
+		Color:       "#99aab5",
+		Hoist:       false,
+		Mentionable: false,
+		IsDefault:   true,
+		IsSystem:    true,
+		Position:    0,
+		Permissions: constants.DefaultEveryonePermissions,
+		CreatedAt:   group.CreatedAt,
+		UpdatedAt:   group.UpdatedAt,
+	}
+	if _, err := tx.NewInsert().Model(&everyoneRole).Exec(ctx); err != nil {
+		return err
+	}
+
+	memberPubID, err := token.NewPublicID()
+	if err != nil {
+		return err
+	}
+	memberID, err := token.NewID()
+	if err != nil {
+		return err
+	}
+	memberRole := models.GroupRoleRow{
+		ID:          memberID,
+		PublicID:    memberPubID,
+		GroupID:     group.ID,
+		Slug:        constants.RoleSlugMember,
+		Name:        "Member",
+		Color:       "#5865f2",
+		Hoist:       false,
+		Mentionable: false,
+		IsDefault:   false,
+		IsSystem:    true,
+		Position:    1,
+		Permissions: []string{},
+		CreatedAt:   group.CreatedAt,
+		UpdatedAt:   group.UpdatedAt,
+	}
+	if _, err := tx.NewInsert().Model(&memberRole).Exec(ctx); err != nil {
+		return err
+	}
+
+	ownerMemberRole := models.GroupMemberRoleRow{
+		GroupID:   group.ID,
+		UserID:    owner.UserID,
+		RoleID:    memberRole.ID,
+		CreatedAt: group.CreatedAt,
+	}
+	if _, err := tx.NewInsert().Model(&ownerMemberRole).On("CONFLICT DO NOTHING").Exec(ctx); err != nil {
 		return err
 	}
 

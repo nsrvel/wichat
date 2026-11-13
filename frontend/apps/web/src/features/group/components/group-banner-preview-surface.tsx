@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { Upload } from "lucide-react";
+import Image from "next/image";
 import { useTranslation } from "react-i18next";
 import {
 	groupBannerPreviewStripClass,
@@ -49,8 +50,14 @@ export function GroupBannerPreviewSurface({
 					/>
 				)
 			) : showBannerImage && bannerImageSrc ? (
-				// eslint-disable-next-line @next/next/no-img-element -- preview blob/CDN
-				<img src={bannerImageSrc} alt="" className="absolute inset-0 h-full w-full object-cover" />
+				<Image
+					src={bannerImageSrc}
+					alt=""
+					fill
+					unoptimized
+					sizes="100vw"
+					className="object-cover"
+				/>
 			) : (
 				<button
 					type="button"

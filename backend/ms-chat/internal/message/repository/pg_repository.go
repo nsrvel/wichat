@@ -35,14 +35,17 @@ func (r pgRepository) ListByChannel(ctx context.Context, channelID string, limit
 	if limit <= 0 {
 		limit = constants.DefaultMessageListLimit
 	}
+	if limit > constants.MaxMessageListLimit {
+		limit = constants.MaxMessageListLimit
+	}
 
 	var rows []models.MessageListRow
 	q := r.db.NewSelect().Model(&rows).
 		ColumnExpr("m.id, m.public_id, m.channel_id, m.author_id, m.body, m.created_at").
 		ColumnExpr("u.display_name AS author_display_name").
-		Join("JOIN users u ON u.id = m.author_id").
+		Join("JOIN users AS u ON u.id = m.author_id").
 		Where("m.channel_id = ?", channelID).
-		OrderExpr("m.created_at ASC").
+		OrderExpr("m.created_at DESC, m.id DESC").
 		Limit(int64(limit))
 	if before != nil {
 		q = q.Where("m.created_at < ?", *before)
@@ -57,7 +60,7 @@ func (r pgRepository) ListByChannel(ctx context.Context, channelID string, limit
 
 	out := make([]models.MessageWithAuthor, len(rows))
 	for i, row := range rows {
-		out[i] = row.ToMessageWithAuthor()
+		out[len(rows)-1-i] = row.ToMessageWithAuthor()
 	}
 
 	return out, nil

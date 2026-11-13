@@ -152,9 +152,11 @@
 	--shell-rail-content-duration: 200ms;
 	--shell-rail-content-delay-open: 70ms;
 	/* Scrollbars — track is always transparent; thumb follows theme */
-	--scrollbar-size: 6px;
+	--scrollbar-size: 8px;
+	--scrollbar-thumb-min-size: 32px;
 	--scrollbar-thumb: color-mix(in oklch, var(--muted-foreground) 42%, transparent);
 	--scrollbar-thumb-hover: color-mix(in oklch, var(--muted-foreground) 62%, transparent);
+	--scrollbar-thumb-active: color-mix(in oklch, var(--muted-foreground) 80%, transparent);
 	--scrollbar-thumb-subtle: color-mix(in oklch, var(--muted-foreground) 26%, transparent);
 }
 
@@ -222,6 +224,7 @@
 	--focus-ring: oklch(1 0 0 / 15%);
 	--scrollbar-thumb: color-mix(in oklch, var(--muted-foreground) 50%, transparent);
 	--scrollbar-thumb-hover: color-mix(in oklch, var(--muted-foreground) 72%, transparent);
+	--scrollbar-thumb-active: color-mix(in oklch, var(--muted-foreground) 90%, transparent);
 	--scrollbar-thumb-subtle: color-mix(in oklch, var(--muted-foreground) 32%, transparent);
 }
 
@@ -250,23 +253,27 @@
 }
 
 /* Shared scrollbars (shell, chat, settings) — opt-in via class, never on `*` */
-.thin-scroll,
-.overlay-scroll {
-	scrollbar-width: thin;
+/* Standard modern fallback (Firefox & standard browsers without ::-webkit-scrollbar) */
+@supports not selector(::-webkit-scrollbar) {
+	.thin-scroll,
+	.overlay-scroll {
+		scrollbar-width: thin;
+	}
+
+	.thin-scroll {
+		scrollbar-color: var(--scrollbar-thumb) transparent;
+	}
+
+	.overlay-scroll {
+		scrollbar-color: var(--scrollbar-thumb-subtle) transparent;
+	}
+
+	.overlay-scroll:hover {
+		scrollbar-color: var(--scrollbar-thumb) transparent;
+	}
 }
 
-.thin-scroll {
-	scrollbar-color: var(--scrollbar-thumb) transparent;
-}
-
-.overlay-scroll {
-	scrollbar-color: var(--scrollbar-thumb-subtle) transparent;
-}
-
-.overlay-scroll:hover {
-	scrollbar-color: var(--scrollbar-thumb) transparent;
-}
-
+/* WebKit / Chromium (Chrome, Edge, Safari, Electron) — Full precision geometry & dynamic min clamping */
 .thin-scroll::-webkit-scrollbar,
 .overlay-scroll::-webkit-scrollbar {
 	width: var(--scrollbar-size);
@@ -284,11 +291,19 @@
 	border: 2px solid transparent;
 	border-radius: 999px;
 	background-clip: padding-box;
+	min-height: var(--scrollbar-thumb-min-size);
+	min-width: var(--scrollbar-thumb-min-size);
 }
 
 .thin-scroll::-webkit-scrollbar-thumb:hover,
 .overlay-scroll::-webkit-scrollbar-thumb:hover {
 	background: var(--scrollbar-thumb-hover);
+	background-clip: padding-box;
+}
+
+.thin-scroll::-webkit-scrollbar-thumb:active,
+.overlay-scroll::-webkit-scrollbar-thumb:active {
+	background: var(--scrollbar-thumb-active);
 	background-clip: padding-box;
 }
 
@@ -298,6 +313,16 @@
 
 .overlay-scroll:hover::-webkit-scrollbar-thumb {
 	background: var(--scrollbar-thumb);
+}
+
+@media (prefers-contrast: more) {
+	.thin-scroll,
+	.overlay-scroll {
+		--scrollbar-thumb: var(--foreground);
+		--scrollbar-thumb-subtle: color-mix(in oklch, var(--foreground) 70%, transparent);
+		--scrollbar-thumb-hover: var(--foreground);
+		--scrollbar-thumb-active: var(--foreground);
+	}
 }
 
 .scrollbar-none {

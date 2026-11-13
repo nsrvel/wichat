@@ -95,18 +95,18 @@ export function ShellGroupRail({
 							label={t("shell.add_group")}
 							onClick={() => openOnboarding("pick")}
 						>
-							<Plus aria-hidden className="h-[18px] w-[18px]" strokeWidth={2} />
+							<Plus aria-hidden className="size-[18px]" strokeWidth={2} />
 						</IconRailTooltipTile>
 					</GroupRailAddGroupContextMenu>
 				</IconRailActionRow>
 				<IconRailActionRow>
 					<IconRailTooltipTile variant="muted" label={t("shell.marketplace")}>
-						<Store aria-hidden className="h-[18px] w-[18px]" strokeWidth={2} />
+						<Store aria-hidden className="size-[18px]" strokeWidth={2} />
 					</IconRailTooltipTile>
 				</IconRailActionRow>
 				<IconRailActionRow>
 					<IconRailTooltipTile variant="muted" label={t("shell.download_apps")}>
-						<Download aria-hidden className="h-[18px] w-[18px]" strokeWidth={2} />
+						<Download aria-hidden className="size-[18px]" strokeWidth={2} />
 					</IconRailTooltipTile>
 				</IconRailActionRow>
 			</div>

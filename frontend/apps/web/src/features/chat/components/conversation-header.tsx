@@ -16,7 +16,7 @@ import { WorkspaceSplitIconControl } from "@/components/layout/workspace-split-i
 import type { ShellNavTarget } from "@/components/layout/shell-navigation";
 import { cn } from "@/lib/utils";
 
-const CONVERSATION_TABS = ["Chat", "Pinned", "Shared", "Notes"] as const;
+const CONVERSATION_TABS = ["Chat", "Pinned", "Shared"] as const;
 type ConversationTab = (typeof CONVERSATION_TABS)[number];
 
 function isSelfDm(active: ShellNavTarget) {
@@ -47,11 +47,11 @@ export function ConversationHeader({
 		>
 			<button
 				type="button"
-				className="lg:hidden -ml-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
+				className="lg:hidden -ml-1 flex size-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
 				onClick={onOpenSidebar}
 				aria-label="Open channels"
 			>
-				<Menu className="h-5 w-5" strokeWidth={1.8} />
+				<Menu className="size-5" strokeWidth={1.8} />
 			</button>
 
 			<div className="flex min-w-0 shrink-0 items-center gap-2.5 sm:max-w-[min(240px,38%)]">
@@ -92,7 +92,7 @@ export function ConversationHeader({
 					})}
 					<ConversationTabActionRow>
 						<WorkspaceHeaderIconButton className="shrink-0" aria-label="Add tab">
-							<Plus className="h-4 w-4" strokeWidth={2} />
+							<Plus className="size-4" strokeWidth={2} />
 						</WorkspaceHeaderIconButton>
 					</ConversationTabActionRow>
 				</ConversationTabNav>

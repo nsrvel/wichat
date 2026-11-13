@@ -1,6 +1,7 @@
 "use client";
 
 import { ImageIcon } from "lucide-react";
+import Image from "next/image";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
@@ -97,8 +98,7 @@ export function GroupBannerImageSwatch({
 				}}
 			>
 				{showPreview ? (
-					// eslint-disable-next-line @next/next/no-img-element -- swatch preview
-					<img src={previewSrc} alt="" className="absolute inset-0 size-full object-cover" />
+					<Image src={previewSrc} alt="" fill unoptimized sizes="48px" className="object-cover" />
 				) : (
 					<span className="absolute inset-0 flex items-center justify-center text-muted-foreground">
 						<ImageIcon className="size-5 opacity-80" strokeWidth={1.75} aria-hidden />

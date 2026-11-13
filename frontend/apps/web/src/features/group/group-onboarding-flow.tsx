@@ -80,7 +80,7 @@ const optionRowClass =
 	"flex w-full min-w-0 items-center gap-3 rounded-xl bg-field px-3 py-2.5 text-left text-sm font-medium text-foreground transition-colors hover:bg-field/80 sm:py-3";
 
 const optionEmojiClass =
-	"flex h-10 w-10 shrink-0 items-center justify-center text-[1.625rem] leading-none";
+	"flex size-10 shrink-0 items-center justify-center text-[1.625rem] leading-none";
 
 function modeStepIndex(mode: Mode): number {
 	if (mode === "pick") {
@@ -171,7 +171,7 @@ export function GroupOnboardingFlow({
 							🏆
 						</span>
 						<span className="min-w-0 flex-1">{t("group.home.create_own")}</span>
-						<ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
+						<ChevronRight className="size-5 shrink-0 text-muted-foreground" aria-hidden />
 					</button>
 
 					<div className="space-y-2">
@@ -190,7 +190,7 @@ export function GroupOnboardingFlow({
 											{template.emoji}
 										</span>
 										<span className="min-w-0 flex-1">{t(template.labelKey)}</span>
-										<ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
+										<ChevronRight className="size-5 shrink-0 text-muted-foreground" aria-hidden />
 									</button>
 								</li>
 							))}

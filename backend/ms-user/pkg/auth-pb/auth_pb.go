@@ -66,15 +66,16 @@ func User(user models.PublicUser) *userv1.User {
 // GroupSummary maps a public group to protobuf.
 func GroupSummary(g models.PublicGroup) *userv1.GroupSummary {
 	return &userv1.GroupSummary{
-		Id:               g.ID,
-		Name:             g.Name,
-		LogoUrl:          g.LogoURL,
-		DefaultChannelId: g.DefaultChannelID,
-		Role:             g.Role,
-		Description:      g.Description,
-		IsPrivate:        g.IsPrivate,
-		BannerColor:      g.BannerColor,
-		BannerUrl:        g.BannerURL,
+		Id:                   g.ID,
+		Name:                 g.Name,
+		LogoUrl:              g.LogoURL,
+		DefaultChannelId:     g.DefaultChannelID,
+		Role:                 g.Role,
+		Description:          g.Description,
+		IsPrivate:            g.IsPrivate,
+		BannerColor:          g.BannerColor,
+		BannerUrl:            g.BannerURL,
+		EffectivePermissions: g.EffectivePermissions,
 	}
 }
 
@@ -114,15 +115,53 @@ func GroupSummaries(groups []models.PublicGroup) []*userv1.GroupSummary {
 func GroupMemberEntries(members []models.GroupMemberProfile) []*userv1.GroupMemberEntry {
 	out := make([]*userv1.GroupMemberEntry, len(members))
 	for i, m := range members {
+		roles := make([]*userv1.GroupMemberRoleSummary, len(m.Roles))
+		for j, r := range m.Roles {
+			roles[j] = &userv1.GroupMemberRoleSummary{
+				Id:    r.ID,
+				Slug:  r.Slug,
+				Name:  r.Name,
+				Color: r.Color,
+			}
+		}
 		out[i] = &userv1.GroupMemberEntry{
 			UserId:      m.UserID,
 			DisplayName: m.DisplayName,
 			Email:       m.Email,
 			Role:        m.Role,
 			JoinedAt:    m.JoinedAt.UTC().Format(time.RFC3339Nano),
+			Roles:       roles,
 		}
 	}
 
+	return out
+}
+
+// GroupRolePb maps a models.GroupRole to protobuf.
+func GroupRolePb(r models.GroupRole) *userv1.GroupRole {
+	return &userv1.GroupRole{
+		Id:          r.PublicID,
+		Slug:        r.Slug,
+		Name:        r.Name,
+		Color:       r.Color,
+		Hoist:       r.Hoist,
+		Mentionable: r.Mentionable,
+		IsDefault:   r.IsDefault,
+		IsSystem:    r.IsSystem,
+		Position:    int32(r.Position), //nolint:gosec // G115
+		Permissions: r.Permissions,
+		MemberCount: int32(r.MemberCount), //nolint:gosec // G115
+		CreatedAt:   r.CreatedAt.UTC().Format(time.RFC3339Nano),
+		UpdatedAt:   r.UpdatedAt.UTC().Format(time.RFC3339Nano),
+	}
+}
+
+// GroupRolesPb maps a slice of roles to protobuf.
+func GroupRolesPb(roles []models.GroupRole) []*userv1.GroupRole {
+	out := make([]*userv1.GroupRole, len(roles))
+	for i, r := range roles {
+		out[i] = GroupRolePb(r)
+	}
 	return out
 }
 
