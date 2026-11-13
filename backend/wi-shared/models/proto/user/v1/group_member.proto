@@ -46,10 +46,13 @@ message GroupMemberRoleSummary {
 message GroupMemberEntry {
   string user_id = 1;
   string display_name = 2;
-  string email = 3;
+  reserved 3;
+  reserved "email";
   string role = 4;
   string joined_at = 5;
   repeated GroupMemberRoleSummary roles = 6;
+  string username = 7;
+  string avatar_url = 8;
 }
 
 message ListGroupMembersRequest {

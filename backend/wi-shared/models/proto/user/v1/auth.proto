@@ -81,6 +81,7 @@ message RegisterRequest {
   string user_agent = 6;
   string client_ip = 7;
   string locale = 8;
+  string username = 9;
 }
 
 // RegisterResponse carries a session or an email OTP challenge.

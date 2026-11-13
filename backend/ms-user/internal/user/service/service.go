@@ -13,6 +13,7 @@ import (
 	"github.com/wichat/wichat/backend/ms-user/pkg/access"
 	"github.com/wichat/wichat/backend/ms-user/pkg/constants"
 	"github.com/wichat/wichat/backend/ms-user/pkg/token"
+	"github.com/wichat/wichat/backend/ms-user/pkg/username"
 	"github.com/wichat/wichat/backend/ms-user/pkg/validator"
 	"github.com/wichat/wichat/backend/wi-shared/exception"
 	"github.com/wichat/wichat/backend/wi-shared/infra/logger"
@@ -22,7 +23,7 @@ import (
 type Service interface {
 	SetupStatus(ctx context.Context) (*models.SetupStatus, error)
 	CompleteInstanceSetup(ctx context.Context, accessToken string, in models.CompleteInstanceSetupInput) error
-	UsernameEnabledForNewUsers(ctx context.Context) (bool, error)
+	CheckUsername(ctx context.Context, raw string) (models.CheckUsernameResult, error)
 	SearchUsers(ctx context.Context, accessToken, query string, limit int, groupPublicID string) ([]models.UserSearchHit, error)
 }
 
@@ -67,7 +68,6 @@ func (s service) SetupStatus(ctx context.Context) (*models.SetupStatus, error) {
 
 	return &models.SetupStatus{
 		RegistrationMode: settings.RegistrationMode,
-		UsernameEnabled:  settings.UsernameEnabled,
 	}, nil
 }
 
@@ -116,13 +116,32 @@ func (s service) CompleteInstanceSetup(ctx context.Context, accessToken string, 
 	return nil
 }
 
-func (s service) UsernameEnabledForNewUsers(ctx context.Context) (bool, error) {
-	settings, err := s.users.GetInstanceSettings(ctx)
+func (s service) CheckUsername(ctx context.Context, raw string) (models.CheckUsernameResult, error) {
+	normalized, reason, err := username.Validate(raw)
 	if err != nil {
-		return false, err
+		return models.CheckUsernameResult{
+			Available:  false,
+			Normalized: normalized,
+			Reason:     reason,
+		}, nil
 	}
 
-	return settings.UsernameEnabled, nil
+	_, err = s.users.FindUserByUsername(ctx, normalized)
+	if errors.Is(err, constants.ErrNotFound) {
+		return models.CheckUsernameResult{
+			Available:  true,
+			Normalized: normalized,
+		}, nil
+	}
+	if err != nil {
+		return models.CheckUsernameResult{}, err
+	}
+
+	return models.CheckUsernameResult{
+		Available:  false,
+		Normalized: normalized,
+		Reason:     username.ReasonTaken,
+	}, nil
 }
 
 func (s service) SearchUsers(

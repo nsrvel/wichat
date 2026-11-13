@@ -13,7 +13,7 @@ func TestGroupMemberEntries(t *testing.T) {
 
 	joined := time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)
 	out := authPb.GroupMemberEntries([]models.GroupMemberProfile{
-		{UserID: "u1", DisplayName: "Ada", Email: "a@x.com", Role: "owner", JoinedAt: joined},
+		{UserID: "u1", DisplayName: "Ada", Username: "ada", AvatarURL: "https://x/a.png", Role: "owner", JoinedAt: joined},
 	})
 	if len(out) != 1 || out[0].UserId != "u1" || out[0].JoinedAt != joined.Format(time.RFC3339Nano) {
 		t.Fatalf("%+v", out)
@@ -63,7 +63,7 @@ func TestMappersNilAndValues(t *testing.T) {
 		t.Fatal("groups")
 	}
 
-	hits := authPb.UserSearchHits([]models.UserSearchHit{{UserID: "u1", Email: "a@x.com"}})
+	hits := authPb.UserSearchHits([]models.UserSearchHit{{UserID: "u1", Username: "ada", AvatarURL: "https://x/a.png"}})
 	if len(hits) != 1 || hits[0].UserId != "u1" {
 		t.Fatal("hits")
 	}

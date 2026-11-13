@@ -4,7 +4,7 @@ export type UserRecipientChip = {
 	kind: "user";
 	id: string;
 	label: string;
-	email: string;
+	username: string;
 };
 
 export type EmailRecipientChip = {

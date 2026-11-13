@@ -12,8 +12,9 @@ type UserRow struct {
 
 	ID              string     `bun:"id,pk,type:uuid"`
 	Email           *string    `bun:"email"`
-	Username        *string    `bun:"username"`
+	Username        string     `bun:"username"`
 	DisplayName     string     `bun:"display_name"`
+	AvatarURL       string     `bun:"avatar_url"`
 	BirthDate       *time.Time `bun:"birth_date,nullzero"`
 	IsGuest         bool       `bun:"is_guest"`
 	IsInstanceOwner bool       `bun:"is_instance_owner"`
@@ -49,7 +50,6 @@ type InstanceSettingsRow struct {
 	bun.BaseModel `bun:"table:instance_settings"`
 
 	ID               int16     `bun:"id,pk"`
-	UsernameEnabled  bool      `bun:"username_enabled"`
 	RegistrationMode string    `bun:"registration_mode"`
 	SetupCompleted   bool      `bun:"setup_completed"`
 	CreatedAt        time.Time `bun:"created_at"`
@@ -58,24 +58,20 @@ type InstanceSettingsRow struct {
 
 func (r InstanceSettingsRow) ToModel() InstanceSettings {
 	return InstanceSettings{
-		UsernameEnabled:  r.UsernameEnabled,
 		RegistrationMode: r.RegistrationMode,
 		SetupCompleted:   r.SetupCompleted,
 	}
 }
 
 func UserRowFrom(u User) UserRow {
-	var email, username *string
+	var email *string
 	if u.Email != "" {
 		email = &u.Email
 	}
-	if u.Username != "" {
-		username = &u.Username
-	}
 
 	return UserRow{
-		ID: u.ID, Email: email, Username: username,
-		DisplayName: u.DisplayName, BirthDate: u.BirthDate, IsGuest: u.IsGuest,
+		ID: u.ID, Email: email, Username: u.Username,
+		DisplayName: u.DisplayName, AvatarURL: u.AvatarURL, BirthDate: u.BirthDate, IsGuest: u.IsGuest,
 		IsInstanceOwner: u.IsInstanceOwner,
 		CreatedAt:       u.CreatedAt, UpdatedAt: u.UpdatedAt,
 	}
@@ -83,7 +79,9 @@ func UserRowFrom(u User) UserRow {
 
 func (r UserRow) ToModel(passwordHash string) User {
 	u := User{
+		Username:        r.Username,
 		DisplayName:     r.DisplayName,
+		AvatarURL:       r.AvatarURL,
 		BirthDate:       r.BirthDate,
 		IsGuest:         r.IsGuest,
 		IsInstanceOwner: r.IsInstanceOwner,
@@ -94,9 +92,6 @@ func (r UserRow) ToModel(passwordHash string) User {
 	}
 	if r.Email != nil {
 		u.Email = *r.Email
-	}
-	if r.Username != nil {
-		u.Username = *r.Username
 	}
 
 	return u

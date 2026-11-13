@@ -22,6 +22,7 @@ import (
 	usermock "github.com/wichat/wichat/backend/ms-user/internal/user/repository/mock"
 	userservice "github.com/wichat/wichat/backend/ms-user/internal/user/service"
 	googleoauth "github.com/wichat/wichat/backend/ms-user/pkg/oauth"
+	"github.com/wichat/wichat/backend/ms-user/pkg/username"
 	"github.com/wichat/wichat/backend/wi-shared/infra/logger"
 	notificationv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/notification/v1"
 )
@@ -99,6 +100,14 @@ func NewAuthService(t *testing.T, st *usermock.State, now func() time.Time) (ser
 func RegisterSession(t *testing.T, svc service.Service, notify *FakeNotifier, in models.RegisterInput) *models.SessionResult {
 	t.Helper()
 	ctx := context.Background()
+
+	if in.Username == "" {
+		handle, err := username.BaseFromEmail(in.Email)
+		if err != nil {
+			t.Fatal(err)
+		}
+		in.Username = handle
+	}
 
 	step, err := svc.Register(ctx, in)
 	if err != nil {

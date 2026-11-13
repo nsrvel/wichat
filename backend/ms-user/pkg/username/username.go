@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"unicode"
 	"unicode/utf8"
 
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
@@ -19,27 +18,88 @@ const (
 	fallbackBase = "user"
 )
 
+// Validation reason codes returned by CheckUsername.
+const (
+	ReasonTooShort      = "too_short"
+	ReasonTooLong       = "too_long"
+	ReasonInvalidFormat = "invalid_format"
+	ReasonReserved      = "reserved"
+	ReasonTaken         = "taken"
+)
+
+var reservedUsernames = map[string]struct{}{
+	"admin":         {},
+	"administrator": {},
+	"api":           {},
+	"auth":          {},
+	"bot":           {},
+	"channel":       {},
+	"everyone":      {},
+	"group":         {},
+	"help":          {},
+	"here":          {},
+	"invite":        {},
+	"login":         {},
+	"mod":           {},
+	"moderator":     {},
+	"null":          {},
+	"owner":         {},
+	"register":      {},
+	"root":          {},
+	"settings":      {},
+	"support":       {},
+	"system":        {},
+	"undefined":     {},
+	"wichat":        {},
+}
+
 // Lookup resolves usernames for uniqueness checks.
 type Lookup interface {
 	FindUserByUsername(ctx context.Context, username string) (models.User, error)
 }
 
-// Normalize validates and lowercases a handle.
-func Normalize(raw string) (string, error) {
-	username := strings.ToLower(strings.TrimSpace(raw))
-	if utf8.RuneCountInString(username) < MinLen || utf8.RuneCountInString(username) > MaxLen {
-		return "", exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "username"})
+// Validate normalizes a raw handle and checks length, ASCII format, separators, and reserved names.
+func Validate(raw string) (normalized, reason string, err error) {
+	u := strings.ToLower(strings.TrimSpace(raw))
+	n := utf8.RuneCountInString(u)
+	if n < MinLen {
+		return u, ReasonTooShort, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "username", "reason": ReasonTooShort})
 	}
-	for _, r := range username {
-		if r == '_' || r == '.' {
-			continue
-		}
-		if !unicode.IsLetter(r) && !unicode.IsDigit(r) {
-			return "", exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "username"})
-		}
+	if n > MaxLen {
+		return u, ReasonTooLong, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "username", "reason": ReasonTooLong})
+	}
+	if !isAlnumASCII(u[0]) || !isAlnumASCII(u[len(u)-1]) {
+		return u, ReasonInvalidFormat, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "username", "reason": ReasonInvalidFormat})
 	}
 
-	return username, nil
+	var prevSep bool
+	for i := 0; i < len(u); i++ {
+		c := u[i]
+		if c == '.' || c == '_' {
+			if prevSep {
+				return u, ReasonInvalidFormat, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "username", "reason": ReasonInvalidFormat})
+			}
+			prevSep = true
+			continue
+		}
+		if !isAlnumASCII(c) {
+			return u, ReasonInvalidFormat, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "username", "reason": ReasonInvalidFormat})
+		}
+		prevSep = false
+	}
+
+	if _, reserved := reservedUsernames[u]; reserved {
+		return u, ReasonReserved, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "username", "reason": ReasonReserved})
+	}
+
+	return u, "", nil
+}
+
+// Normalize validates and lowercases a handle.
+func Normalize(raw string) (string, error) {
+	u, _, err := Validate(raw)
+
+	return u, err
 }
 
 // Allocate picks a unique handle from the email local-part.
@@ -50,10 +110,10 @@ func Allocate(ctx context.Context, lookup Lookup, email string) (string, error) 
 	}
 
 	for attempt := 0; attempt < 1000; attempt++ {
-		candidate := candidate(base, attempt)
-		normalized, err := Normalize(candidate)
+		cand := candidate(base, attempt)
+		normalized, err := Normalize(cand)
 		if err != nil {
-			return "", err
+			continue
 		}
 
 		_, err = lookup.FindUserByUsername(ctx, normalized)
@@ -80,19 +140,19 @@ func BaseFromEmail(email string) (string, error) {
 
 	sanitized := sanitizeLocalPart(local)
 	if sanitized == "" {
-		sanitized = fallbackBase
+		return fallbackBase, nil
 	}
 
 	normalized, err := Normalize(sanitized)
 	if err != nil {
-		if utf8.RuneCountInString(sanitized) < MinLen {
-			return fallbackBase, nil
-		}
-
-		return "", err
+		return fallbackBase, nil
 	}
 
 	return normalized, nil
+}
+
+func isAlnumASCII(c byte) bool {
+	return (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')
 }
 
 func candidate(base string, attempt int) string {
@@ -101,41 +161,42 @@ func candidate(base string, attempt int) string {
 	}
 
 	suffix := fmt.Sprintf("%d", attempt+1)
-	maxBase := MaxLen - utf8.RuneCountInString(suffix)
-	trimmed := truncateRunes(base, maxBase)
+	maxBase := MaxLen - len(suffix)
+	trimmed := strings.TrimRight(truncateBytes(base, maxBase), "._")
+	if trimmed == "" {
+		trimmed = fallbackBase
+	}
 
 	return trimmed + suffix
 }
 
-func truncateRunes(s string, maxRunes int) string {
-	if maxRunes <= 0 {
+func truncateBytes(s string, maxBytes int) string {
+	if maxBytes <= 0 {
 		return ""
 	}
-	if utf8.RuneCountInString(s) <= maxRunes {
+	if len(s) <= maxBytes {
 		return s
 	}
 
-	var n int
-	for i := range s {
-		if n == maxRunes {
-			return s[:i]
-		}
-		n++
-	}
-
-	return s
+	return s[:maxBytes]
 }
 
 func sanitizeLocalPart(local string) string {
 	local = strings.ToLower(strings.TrimSpace(local))
 	var b strings.Builder
-	for _, r := range local {
-		if r == '_' || r == '.' {
-			b.WriteRune(r)
+	var prevSep bool
+	for i := 0; i < len(local); i++ {
+		c := local[i]
+		if c == '_' || c == '.' {
+			if b.Len() > 0 && !prevSep {
+				b.WriteByte(c)
+				prevSep = true
+			}
 			continue
 		}
-		if unicode.IsLetter(r) || unicode.IsDigit(r) {
-			b.WriteRune(r)
+		if isAlnumASCII(c) {
+			b.WriteByte(c)
+			prevSep = false
 		}
 	}
 

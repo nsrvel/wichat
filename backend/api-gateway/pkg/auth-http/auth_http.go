@@ -30,6 +30,7 @@ type SetupBody = RegisterBody
 // RegisterBody is the JSON body for POST /api/v1/auth/register.
 type RegisterBody struct {
 	Email       string `json:"email"`
+	Username    string `json:"username"`
 	Password    string `json:"password"`
 	DisplayName string `json:"display_name"`
 	BirthDate   string `json:"birth_date"`
@@ -71,15 +72,20 @@ type ResendEmailCodeData struct {
 // SetupStatusBody is the JSON data for GET /api/v1/auth/setup-status (instance policy).
 type SetupStatusBody struct {
 	RegistrationMode string `json:"registration_mode"`
-	UsernameEnabled  bool   `json:"username_enabled"`
 }
 
 // InstanceSetupBody is POST /api/v1/auth/instance-setup.
 type InstanceSetupBody struct {
 	Name             string `json:"name"`
 	LogoURL          string `json:"logo_url"`
-	UsernameEnabled  bool   `json:"username_enabled"`
 	RegistrationMode string `json:"registration_mode"`
+}
+
+// CheckUsernameBody is GET /api/v1/users/check-username.
+type CheckUsernameBody struct {
+	Available  bool   `json:"available"`
+	Normalized string `json:"normalized"`
+	Reason     string `json:"reason,omitempty"`
 }
 
 // SessionBody is the public session JSON (refresh token is HttpOnly cookie only).
@@ -95,6 +101,7 @@ type UserBody struct {
 	Email       string `json:"email"`
 	DisplayName string `json:"display_name"`
 	Username    string `json:"username"`
+	AvatarURL   string `json:"avatar_url"`
 }
 
 // OKBody is a minimal success payload.
@@ -159,7 +166,8 @@ type ReorderMyGroupsBody struct {
 type GroupMemberBody struct {
 	UserID      string `json:"user_id"`
 	DisplayName string `json:"display_name"`
-	Email       string `json:"email"`
+	Username    string `json:"username"`
+	AvatarURL   string `json:"avatar_url"`
 	Role        string `json:"role"`
 	JoinedAt    string `json:"joined_at"`
 }
@@ -175,8 +183,8 @@ type GroupMembersPageBody struct {
 type UserSearchHitBody struct {
 	UserID      string `json:"user_id"`
 	DisplayName string `json:"display_name"`
-	Email       string `json:"email"`
 	Username    string `json:"username"`
+	AvatarURL   string `json:"avatar_url"`
 }
 
 // UserSearchBody is GET /api/v1/users/search.
@@ -343,7 +351,8 @@ func GroupMembersFromPB(members []*userv1.GroupMemberEntry) []GroupMemberBody {
 		out[i] = GroupMemberBody{
 			UserID:      m.GetUserId(),
 			DisplayName: m.GetDisplayName(),
-			Email:       m.GetEmail(),
+			Username:    m.GetUsername(),
+			AvatarURL:   m.GetAvatarUrl(),
 			Role:        m.GetRole(),
 			JoinedAt:    m.GetJoinedAt(),
 		}
@@ -362,8 +371,8 @@ func UserSearchFromPB(users []*userv1.UserSearchHit) []UserSearchHitBody {
 		out[i] = UserSearchHitBody{
 			UserID:      u.GetUserId(),
 			DisplayName: u.GetDisplayName(),
-			Email:       u.GetEmail(),
 			Username:    u.GetUsername(),
+			AvatarURL:   u.GetAvatarUrl(),
 		}
 	}
 
@@ -377,6 +386,7 @@ func UserFromPB(user *userv1.User) UserBody {
 		Email:       user.GetEmail(),
 		DisplayName: user.GetDisplayName(),
 		Username:    user.GetUsername(),
+		AvatarURL:   user.GetAvatarUrl(),
 	}
 }
 

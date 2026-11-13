@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 	"time"
+	"unicode"
 	"unicode/utf8"
 
 	"github.com/wichat/wichat/backend/ms-chat/internal/kafka/producers"
@@ -64,7 +65,7 @@ func (s service) ListChannelMessages(ctx context.Context, in *models.ListChannel
 func (s service) CreateChannelMessage(ctx context.Context, in *models.CreateChannelMessageInput) (models.PublicMessage, error) {
 	// Validation
 	body := strings.TrimSpace(in.Body)
-	if body == "" || utf8.RuneCountInString(body) > constants.MaxMessageBodyRunes {
+	if body == "" || utf8.RuneCountInString(body) > constants.MaxMessageBodyRunes || hasDangerousControlChars(body) {
 		return models.PublicMessage{}, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "body"})
 	}
 
@@ -95,6 +96,19 @@ func (s service) CreateChannelMessage(ctx context.Context, in *models.CreateChan
 	}
 
 	return out, nil
+}
+
+func hasDangerousControlChars(s string) bool {
+	for _, r := range s {
+		if r == '\n' || r == '\r' || r == '\t' {
+			continue
+		}
+		if unicode.Is(unicode.Cc, r) {
+			return true
+		}
+	}
+
+	return false
 }
 
 // ResolveChannelAccess validates the bearer token and resolves internal ids via ms-user.

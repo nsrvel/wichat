@@ -292,6 +292,7 @@ type RegisterRequest struct {
 	UserAgent     string                 `protobuf:"bytes,6,opt,name=user_agent,json=userAgent,proto3" json:"user_agent,omitempty"`
 	ClientIp      string                 `protobuf:"bytes,7,opt,name=client_ip,json=clientIp,proto3" json:"client_ip,omitempty"`
 	Locale        string                 `protobuf:"bytes,8,opt,name=locale,proto3" json:"locale,omitempty"`
+	Username      string                 `protobuf:"bytes,9,opt,name=username,proto3" json:"username,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -371,6 +372,13 @@ func (x *RegisterRequest) GetClientIp() string {
 func (x *RegisterRequest) GetLocale() string {
 	if x != nil {
 		return x.Locale
+	}
+	return ""
+}
+
+func (x *RegisterRequest) GetUsername() string {
+	if x != nil {
+		return x.Username
 	}
 	return ""
 }
@@ -1745,7 +1753,7 @@ const file_user_v1_auth_proto_rawDesc = "" +
 	"\n" +
 	"email_hint\x18\x02 \x01(\tR\temailHint\x126\n" +
 	"\x17resend_cooldown_seconds\x18\x03 \x01(\x05R\x15resendCooldownSeconds\x12!\n" +
-	"\fotp_required\x18\x04 \x01(\bR\votpRequired\"\xdf\x01\n" +
+	"\fotp_required\x18\x04 \x01(\bR\votpRequired\"\xfb\x01\n" +
 	"\x0fRegisterRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1a\n" +
 	"\bpassword\x18\x02 \x01(\tR\bpassword\x12!\n" +
@@ -1755,7 +1763,8 @@ const file_user_v1_auth_proto_rawDesc = "" +
 	"\n" +
 	"user_agent\x18\x06 \x01(\tR\tuserAgent\x12\x1b\n" +
 	"\tclient_ip\x18\a \x01(\tR\bclientIp\x12\x16\n" +
-	"\x06locale\x18\b \x01(\tR\x06localeJ\x04\b\x04\x10\x05\"t\n" +
+	"\x06locale\x18\b \x01(\tR\x06locale\x12\x1a\n" +
+	"\busername\x18\t \x01(\tR\busernameJ\x04\b\x04\x10\x05\"t\n" +
 	"\x10RegisterResponse\x12*\n" +
 	"\asession\x18\x01 \x01(\v2\x10.user.v1.SessionR\asession\x124\n" +
 	"\tchallenge\x18\x02 \x01(\v2\x16.user.v1.AuthChallengeR\tchallenge\"\x94\x01\n" +

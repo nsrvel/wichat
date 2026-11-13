@@ -54,7 +54,6 @@ func (s *State) SetInstanceSettings(settings models.InstanceSettings) {
 
 func defaultInstanceSettings() models.InstanceSettings {
 	return models.InstanceSettings{
-		UsernameEnabled:  true,
 		RegistrationMode: constants.RegistrationInviteOnly,
 		SetupCompleted:   false,
 	}
@@ -210,7 +209,6 @@ func (m *pgRepositoryMock) CompleteInstanceSetup(_ context.Context, ownerUserID 
 	}
 
 	m.st.Settings = models.InstanceSettings{
-		UsernameEnabled:  payload.UsernameEnabled,
 		RegistrationMode: payload.RegistrationMode,
 		SetupCompleted:   true,
 	}
@@ -335,14 +333,13 @@ func (m *pgRepositoryMock) SearchUsers(_ context.Context, query string, limit in
 		if _, inGroup := memberIDs[user.ID]; inGroup {
 			continue
 		}
-		if strings.Contains(strings.ToLower(user.Email), query) ||
-			strings.Contains(strings.ToLower(user.Username), query) ||
+		if strings.Contains(strings.ToLower(user.Username), query) ||
 			strings.Contains(strings.ToLower(user.DisplayName), query) {
 			out = append(out, models.UserSearchHit{
 				UserID:      user.ID,
-				Email:       user.Email,
 				Username:    user.Username,
 				DisplayName: user.DisplayName,
+				AvatarURL:   user.AvatarURL,
 			})
 			if len(out) >= limit {
 				break
@@ -375,20 +372,27 @@ func (m *pgRepositoryMock) SaveGoogleUser(_ context.Context, user models.User, _
 
 	for _, link := range m.st.Links {
 		if link.provider == provider && link.subject == subject {
-			for _, existing := range m.st.Users {
-				if existing.ID == link.userID {
-					return existing, nil
+			for i := range m.st.Users {
+				if m.st.Users[i].ID == link.userID {
+					if m.st.Users[i].AvatarURL == "" && user.AvatarURL != "" {
+						m.st.Users[i].AvatarURL = user.AvatarURL
+					}
+
+					return m.st.Users[i], nil
 				}
 			}
 
 			return models.User{}, constants.ErrNotFound
 		}
 	}
-	for _, existing := range m.st.Users {
-		if existing.Email == user.Email {
-			m.st.Links = append(m.st.Links, googleLink{provider: provider, subject: subject, userID: existing.ID})
+	for i := range m.st.Users {
+		if m.st.Users[i].Email == user.Email {
+			if m.st.Users[i].AvatarURL == "" && user.AvatarURL != "" {
+				m.st.Users[i].AvatarURL = user.AvatarURL
+			}
+			m.st.Links = append(m.st.Links, googleLink{provider: provider, subject: subject, userID: m.st.Users[i].ID})
 
-			return existing, nil
+			return m.st.Users[i], nil
 		}
 	}
 

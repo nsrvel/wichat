@@ -32,11 +32,11 @@ func TestGroupMemberPgRepository(t *testing.T) {
 	ownerID := "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
 	memberID := "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
 	_ = users.CreateFirstUser(ctx, models.User{
-		ID: ownerID, Email: "owner-mem@example.com", PasswordHash: "hash", DisplayName: "Owner",
+		ID: ownerID, Email: "owner-mem@example.com", Username: "owner.mem", PasswordHash: "hash", DisplayName: "Owner",
 		CreatedAt: now, UpdatedAt: now,
 	})
 	_ = users.CreateUser(ctx, models.User{
-		ID: memberID, Email: "member-mem@example.com", PasswordHash: "hash", DisplayName: "Member",
+		ID: memberID, Email: "member-mem@example.com", Username: "member.mem", PasswordHash: "hash", DisplayName: "Member",
 		CreatedAt: now, UpdatedAt: now,
 	})
 

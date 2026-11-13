@@ -47,6 +47,7 @@ func (s *server) Setup(ctx context.Context, req *userv1.SetupRequest) (*userv1.S
 func (s *server) Register(ctx context.Context, req *userv1.RegisterRequest) (*userv1.RegisterResponse, error) {
 	in := models.RegisterInput{
 		Email:       req.GetEmail(),
+		Username:    req.GetUsername(),
 		Password:    req.GetPassword(),
 		DisplayName: req.GetDisplayName(),
 		BirthDate:   req.GetBirthDate(),

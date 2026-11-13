@@ -111,7 +111,8 @@ func (r pgRepository) CountGroupMembers(ctx context.Context, groupID string) (in
 type groupMemberJoinedRow struct {
 	UserID      string    `bun:"user_id"`
 	DisplayName string    `bun:"display_name"`
-	Email       *string   `bun:"email"`
+	Username    string    `bun:"username"`
+	AvatarURL   string    `bun:"avatar_url"`
 	Role        string    `bun:"role"`
 	CreatedAt   time.Time `bun:"created_at"`
 }
@@ -133,7 +134,7 @@ func (r pgRepository) ListGroupMembersPage(
 	q := r.db.NewSelect().
 		TableExpr("group_members AS m").
 		ColumnExpr("m.user_id, m.role, m.created_at").
-		ColumnExpr("u.display_name, u.email").
+		ColumnExpr("u.display_name, u.username, u.avatar_url").
 		Join("JOIN users AS u ON u.id = m.user_id").
 		Where("m.group_id = ?", groupID).
 		OrderExpr("m.created_at ASC, m.user_id ASC").
@@ -162,14 +163,11 @@ func (r pgRepository) ListGroupMembersPage(
 
 	out := make([]models.GroupMemberProfile, len(rows))
 	for i, row := range rows {
-		email := ""
-		if row.Email != nil {
-			email = *row.Email
-		}
 		out[i] = models.GroupMemberProfile{
 			UserID:      row.UserID,
 			DisplayName: row.DisplayName,
-			Email:       email,
+			Username:    row.Username,
+			AvatarURL:   row.AvatarURL,
 			Role:        row.Role,
 			JoinedAt:    row.CreatedAt,
 		}

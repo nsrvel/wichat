@@ -1,17 +1,30 @@
 import { z } from "zod";
-import { displayNameSchema } from "./display-name";
+import {
+	displayNameSchema,
+	groupNameSchema,
+	usernameSchema,
+} from "./display-name";
 
 export {
 	displayNameSchema,
+	groupNameSchema,
+	usernameSchema,
 	unicodeRuneCount,
+	MIN_DISPLAY_NAME_RUNES,
 	MAX_DISPLAY_NAME_RUNES,
+	MIN_GROUP_NAME_RUNES,
+	MAX_GROUP_NAME_RUNES,
+	MIN_USERNAME_LEN,
+	MAX_USERNAME_LEN,
+	RESERVED_USERNAMES,
 } from "./display-name";
 
 export const UserSchema = z.object({
 	id: z.string(),
 	email: z.string(),
 	display_name: z.string(),
-	username: z.string().optional().default(""),
+	username: z.string(),
+	avatar_url: z.string().optional().default(""),
 });
 
 export const SessionSchema = z.object({
@@ -48,8 +61,14 @@ export const RegistrationModeSchema = z.enum([
 
 export const InstancePolicySchema = z.object({
 	registration_mode: RegistrationModeSchema,
-	username_enabled: z.boolean(),
 });
+
+export const CheckUsernameResponseSchema = z.object({
+	available: z.boolean(),
+	normalized: z.string(),
+	reason: z.string().optional().default(""),
+});
+export type CheckUsernameResponse = z.infer<typeof CheckUsernameResponseSchema>;
 
 /** @deprecated Use InstancePolicySchema */
 export const SetupStatusSchema = InstancePolicySchema;
@@ -148,11 +167,11 @@ export const ReorderMyGroupsRequestSchema = z.object({
 });
 
 export const CreateGroupRequestSchema = z.object({
-	name: displayNameSchema,
+	name: groupNameSchema,
 });
 
 export const UpdateGroupProfileBodySchema = z.object({
-	name: displayNameSchema,
+	name: groupNameSchema,
 	description: z.string().trim().max(2000),
 	is_private: z.boolean(),
 	banner_color: z.string(),
@@ -175,6 +194,7 @@ const birthDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
 export const RegisterRequestSchema = z.object({
 	email: z.email(),
+	username: usernameSchema,
 	password: z.string().min(12).max(128),
 	display_name: displayNameSchema,
 	birth_date: birthDateSchema,
@@ -262,7 +282,8 @@ export type ForgotPasswordReset = z.infer<typeof ForgotPasswordResetSchema>;
 export const GroupMemberSchema = z.object({
 	user_id: z.string(),
 	display_name: z.string(),
-	email: z.string(),
+	username: z.string(),
+	avatar_url: z.string().optional().default(""),
 	role: groupMembershipRoleSchema,
 	joined_at: z.string(),
 	/** Set when presence is on ListGroupMembers; omit when unknown. */
@@ -280,8 +301,8 @@ export const GroupMembersPageSchema = z.object({
 export const UserSearchHitSchema = z.object({
 	user_id: z.string(),
 	display_name: z.string(),
-	email: z.string(),
 	username: z.string(),
+	avatar_url: z.string().optional().default(""),
 });
 
 export const UserSearchSchema = z.object({

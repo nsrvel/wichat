@@ -136,7 +136,7 @@ func (s service) Setup(ctx context.Context, in models.SetupInput) (*models.Sessi
 
 // Register validates signup and starts the email OTP challenge.
 func (s service) Register(ctx context.Context, in models.RegisterInput) (*models.PasswordAuthResult, error) {
-	email, name, birth, err := validator.RegisterInput(in)
+	email, handle, name, birth, err := validator.RegisterInput(in)
 	if err != nil {
 		return nil, err
 	}
@@ -147,6 +147,11 @@ func (s service) Register(ctx context.Context, in models.RegisterInput) (*models
 
 	if _, err := s.users.FindUserByEmail(ctx, email); err == nil {
 		return nil, exception.Conflict(exception.MsgEmailTaken, nil)
+	} else if !errors.Is(err, constants.ErrNotFound) {
+		return nil, err
+	}
+	if _, err := s.users.FindUserByUsername(ctx, handle); err == nil {
+		return nil, exception.Conflict(exception.MsgUsernameTaken, nil)
 	} else if !errors.Is(err, constants.ErrNotFound) {
 		return nil, err
 	}
@@ -168,6 +173,7 @@ func (s service) Register(ctx context.Context, in models.RegisterInput) (*models
 
 	pending := models.RegisterPending{
 		Email:        email,
+		Username:     handle,
 		PasswordHash: hash,
 		DisplayName:  name,
 		BirthDate:    birthStr,
@@ -209,16 +215,14 @@ func (s service) createUserFromPending(ctx context.Context, pending models.Regis
 	}
 	firstAccount := n == 0
 
-	handle := ""
-	assignUsername, err := s.workspace.UsernameEnabledForNewUsers(ctx)
+	handle, err := username.Normalize(pending.Username)
 	if err != nil {
 		return models.User{}, err
 	}
-	if assignUsername {
-		handle, err = username.Allocate(ctx, s.users, pending.Email)
-		if err != nil {
-			return models.User{}, err
-		}
+	if _, err := s.users.FindUserByUsername(ctx, handle); err == nil {
+		return models.User{}, exception.Conflict(exception.MsgUsernameTaken, nil)
+	} else if !errors.Is(err, constants.ErrNotFound) {
+		return models.User{}, err
 	}
 
 	now := s.now()
@@ -954,11 +958,18 @@ func (s service) GoogleFinish(ctx context.Context, code, verifier string, meta m
 		return nil, exception.Internal(err)
 	}
 
+	handle, err := username.Allocate(ctx, s.users, email)
+	if err != nil {
+		return nil, err
+	}
+
 	user, err := s.users.SaveGoogleUser(ctx, models.User{
 		ID:           userID,
 		Email:        email,
+		Username:     handle,
 		PasswordHash: "",
 		DisplayName:  google.DisplayName(profile.Name, email, constants.MaxDisplayNameRunes),
+		AvatarURL:    profile.AvatarURL,
 		CreatedAt:    now,
 		UpdatedAt:    now,
 	}, identityID, constants.GoogleOAuthProvider, profile.Subject)

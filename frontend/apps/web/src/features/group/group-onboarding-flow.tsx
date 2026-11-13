@@ -30,7 +30,7 @@ import {
 } from "@/features/auth/components/auth-shell";
 import { GroupIconUpload } from "@/features/group/components/group-icon-upload";
 import { translateError } from "@/integrations/i18n/translate-error";
-import { displayNameSchema, type Group } from "@wichat/contracts";
+import { groupNameSchema, type Group } from "@wichat/contracts";
 import { cn } from "@/lib/utils";
 import { normalizeInviteToken } from "@/features/invite/lib/normalize-invite-token";
 import { channelPath } from "@/lib/app-routes";
@@ -43,7 +43,7 @@ const GROUP_ONBOARDING_TITLE_ID = "group-onboarding-title";
 const GROUP_CREATE_FORM_ID = "wichat-group-create-form";
 const authFormFooterButtonClass = "w-auto min-w-[7.5rem] max-w-[55%] shrink-0 px-8";
 
-const createSchema = z.object({ name: displayNameSchema });
+const createSchema = z.object({ name: groupNameSchema });
 
 export type GroupOnboardingMode = "pick" | "create" | "join";
 

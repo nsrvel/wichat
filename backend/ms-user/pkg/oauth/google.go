@@ -48,10 +48,11 @@ func Prepare(c Config) Config {
 
 // Profile is the verified identity returned after code exchange.
 type Profile struct {
-	Subject  string
-	Email    string
-	Name     string
-	Verified bool
+	Subject   string
+	Email     string
+	Name      string
+	AvatarURL string
+	Verified  bool
 }
 
 // Configured reports whether Google sign-in can run.
@@ -150,6 +151,7 @@ func Exchange(ctx context.Context, c Config, code, verifier string) (Profile, er
 		Sub           string `json:"sub"`
 		Email         string `json:"email"`
 		Name          string `json:"name"`
+		Picture       string `json:"picture"`
 		EmailVerified any    `json:"email_verified"`
 	}
 	if err := json.Unmarshal(infoBody, &info); err != nil || info.Sub == "" {
@@ -157,11 +159,25 @@ func Exchange(ctx context.Context, c Config, code, verifier string) (Profile, er
 	}
 
 	return Profile{
-		Subject:  info.Sub,
-		Email:    info.Email,
-		Name:     info.Name,
-		Verified: emailVerified(info.EmailVerified),
+		Subject:   info.Sub,
+		Email:     info.Email,
+		Name:      info.Name,
+		AvatarURL: sanitizeAvatarURL(info.Picture),
+		Verified:  emailVerified(info.EmailVerified),
 	}, nil
+}
+
+func sanitizeAvatarURL(raw string) string {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" || utf8.RuneCountInString(trimmed) > 2048 {
+		return ""
+	}
+	parsed, err := url.Parse(trimmed)
+	if err != nil || !strings.EqualFold(parsed.Scheme, "https") || parsed.Host == "" {
+		return ""
+	}
+
+	return trimmed
 }
 
 // DisplayName picks a stored display name from Google profile or email local-part.

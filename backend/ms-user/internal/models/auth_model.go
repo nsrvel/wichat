@@ -14,6 +14,7 @@ type User struct {
 	Username        string
 	PasswordHash    string
 	DisplayName     string
+	AvatarURL       string
 	BirthDate       *time.Time
 	IsGuest         bool
 	IsInstanceOwner bool
@@ -23,7 +24,6 @@ type User struct {
 
 // InstanceSettings is the singleton instance policy row.
 type InstanceSettings struct {
-	UsernameEnabled  bool
 	RegistrationMode string
 	SetupCompleted   bool
 }
@@ -31,14 +31,12 @@ type InstanceSettings struct {
 // SetupStatus is the public instance policy snapshot for the auth UI.
 type SetupStatus struct {
 	RegistrationMode string
-	UsernameEnabled  bool
 }
 
 // CompleteInstanceSetupInput is the owner setup wizard payload (first group + instance policy).
 type CompleteInstanceSetupInput struct {
 	Name             string
 	LogoURL          string
-	UsernameEnabled  bool
 	RegistrationMode string
 }
 
@@ -48,8 +46,14 @@ type InstanceSetupPayload struct {
 	GroupPublicID    string
 	GroupName        string
 	GroupLogoURL     string
-	UsernameEnabled  bool
 	RegistrationMode string
+}
+
+// CheckUsernameResult is the availability check outcome for registration.
+type CheckUsernameResult struct {
+	Available  bool
+	Normalized string
+	Reason     string
 }
 
 // Public returns the account fields safe to send to clients.
@@ -59,6 +63,7 @@ func (u User) Public() PublicUser {
 		Email:       u.Email,
 		Username:    u.Username,
 		DisplayName: u.DisplayName,
+		AvatarURL:   u.AvatarURL,
 	}
 }
 
@@ -68,6 +73,7 @@ type PublicUser struct {
 	Email       string
 	Username    string
 	DisplayName string
+	AvatarURL   string
 }
 
 // ClientMeta is the device hint stored on a session.
@@ -90,6 +96,7 @@ type SetupInput struct {
 // RegisterInput is the member registration form.
 type RegisterInput struct {
 	Email       string
+	Username    string
 	Password    string
 	DisplayName string
 	BirthDate   string
@@ -155,6 +162,7 @@ type PasswordAuthResult struct {
 // RegisterPending holds signup data in Redis until email OTP is verified.
 type RegisterPending struct {
 	Email        string `json:"email"`
+	Username     string `json:"username"`
 	PasswordHash string `json:"password_hash"`
 	DisplayName  string `json:"display_name"`
 	BirthDate    string `json:"birth_date"`

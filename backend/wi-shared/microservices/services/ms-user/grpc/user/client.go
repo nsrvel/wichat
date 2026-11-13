@@ -14,6 +14,7 @@ type Client interface {
 	SetupStatus(ctx context.Context, in *userv1.SetupStatusRequest) (*userv1.SetupStatusResponse, error)
 	CompleteInstanceSetup(ctx context.Context, in *userv1.CompleteInstanceSetupRequest) (*userv1.CompleteInstanceSetupResponse, error)
 	SearchUsers(ctx context.Context, in *userv1.SearchUsersRequest) (*userv1.SearchUsersResponse, error)
+	CheckUsername(ctx context.Context, in *userv1.CheckUsernameRequest) (*userv1.CheckUsernameResponse, error)
 }
 
 type client struct {
@@ -54,5 +55,11 @@ func (c *client) CompleteInstanceSetup(ctx context.Context, in *userv1.CompleteI
 func (c *client) SearchUsers(ctx context.Context, in *userv1.SearchUsersRequest) (*userv1.SearchUsersResponse, error) {
 	return utils.CallUnaryResult(ctx, c.read, c.log, "user.UserService/SearchUsers", func(callCtx context.Context) (*userv1.SearchUsersResponse, error) {
 		return c.stub.SearchUsers(callCtx, in)
+	})
+}
+
+func (c *client) CheckUsername(ctx context.Context, in *userv1.CheckUsernameRequest) (*userv1.CheckUsernameResponse, error) {
+	return utils.CallUnaryResult(ctx, c.read, c.log, "user.UserService/CheckUsername", func(callCtx context.Context) (*userv1.CheckUsernameResponse, error) {
+		return c.stub.CheckUsername(callCtx, in)
 	})
 }

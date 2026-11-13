@@ -29,7 +29,6 @@ func (s *Server) SetupStatus(ctx context.Context, _ *userv1.SetupStatusRequest) 
 
 	return &userv1.SetupStatusResponse{
 		RegistrationMode: out.RegistrationMode,
-		UsernameEnabled:  out.UsernameEnabled,
 	}, nil
 }
 
@@ -37,7 +36,6 @@ func (s *Server) CompleteInstanceSetup(ctx context.Context, req *userv1.Complete
 	in := models.CompleteInstanceSetupInput{
 		Name:             req.GetName(),
 		LogoURL:          req.GetLogoUrl(),
-		UsernameEnabled:  req.GetUsernameEnabled(),
 		RegistrationMode: req.GetRegistrationMode(),
 	}
 
@@ -46,6 +44,19 @@ func (s *Server) CompleteInstanceSetup(ctx context.Context, req *userv1.Complete
 	}
 
 	return &userv1.CompleteInstanceSetupResponse{Ok: true}, nil
+}
+
+func (s *Server) CheckUsername(ctx context.Context, req *userv1.CheckUsernameRequest) (*userv1.CheckUsernameResponse, error) {
+	out, err := s.svc.CheckUsername(ctx, req.GetUsername())
+	if err != nil {
+		return nil, responsegrpc.ToStatus(err)
+	}
+
+	return &userv1.CheckUsernameResponse{
+		Available:  out.Available,
+		Normalized: out.Normalized,
+		Reason:     out.Reason,
+	}, nil
 }
 
 func (s *Server) SearchUsers(ctx context.Context, req *userv1.SearchUsersRequest) (*userv1.SearchUsersResponse, error) {

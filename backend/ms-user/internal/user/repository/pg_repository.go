@@ -69,7 +69,6 @@ func (r pgRepository) CompleteInstanceSetup(ctx context.Context, ownerUserID str
 		}
 
 		res, err := tx.NewUpdate().Model(&models.InstanceSettingsRow{}).
-			Set("username_enabled = ?", payload.UsernameEnabled).
 			Set("registration_mode = ?", payload.RegistrationMode).
 			Set("setup_completed = ?", true).
 			Set("updated_at = ?", now).
@@ -159,7 +158,7 @@ func (r pgRepository) FindUserByID(ctx context.Context, id string) (models.User,
 	return r.findUserBy(ctx, "id = ?", id)
 }
 
-// SearchUsers finds instance accounts by display name, username, or email prefix.
+// SearchUsers finds instance accounts by display name or username prefix.
 func (r pgRepository) SearchUsers(ctx context.Context, query string, limit int, excludeGroupID string) ([]models.UserSearchHit, error) {
 	q := strings.TrimSpace(query)
 	if q == "" {
@@ -175,11 +174,11 @@ func (r pgRepository) SearchUsers(ctx context.Context, query string, limit int, 
 	pattern := "%" + strings.ReplaceAll(strings.ToLower(q), "%", "") + "%"
 	sel := r.db.NewSelect().
 		TableExpr("users AS u").
-		ColumnExpr("u.id, u.display_name, u.email, u.username").
+		ColumnExpr("u.id, u.display_name, u.username, u.avatar_url").
 		Where("u.is_guest = false").
 		Where(
-			"lower(u.display_name) LIKE ? OR lower(coalesce(u.email, '')) LIKE ? OR lower(coalesce(u.username, '')) LIKE ?",
-			pattern, pattern, pattern,
+			"lower(u.display_name) LIKE ? OR lower(u.username) LIKE ?",
+			pattern, pattern,
 		).
 		OrderExpr("u.display_name ASC").
 		Limit(int64(limit))
@@ -192,10 +191,10 @@ func (r pgRepository) SearchUsers(ctx context.Context, query string, limit int, 
 	}
 
 	var rows []struct {
-		ID          string  `bun:"id"`
-		DisplayName string  `bun:"display_name"`
-		Email       *string `bun:"email"`
-		Username    *string `bun:"username"`
+		ID          string `bun:"id"`
+		DisplayName string `bun:"display_name"`
+		Username    string `bun:"username"`
+		AvatarURL   string `bun:"avatar_url"`
 	}
 	if err := sel.Scan(ctx, &rows); err != nil {
 		return nil, err
@@ -203,19 +202,11 @@ func (r pgRepository) SearchUsers(ctx context.Context, query string, limit int, 
 
 	out := make([]models.UserSearchHit, len(rows))
 	for i, row := range rows {
-		email := ""
-		if row.Email != nil {
-			email = *row.Email
-		}
-		username := ""
-		if row.Username != nil {
-			username = *row.Username
-		}
 		out[i] = models.UserSearchHit{
 			UserID:      row.ID,
 			DisplayName: row.DisplayName,
-			Email:       email,
-			Username:    username,
+			Username:    row.Username,
+			AvatarURL:   row.AvatarURL,
 		}
 	}
 
@@ -267,6 +258,16 @@ func (r pgRepository) SaveGoogleUser(ctx context.Context, user models.User, iden
 
 		linked, err := findUserByIdentity(ctx, tx, provider, subject)
 		if err == nil {
+			if linked.AvatarURL == "" && user.AvatarURL != "" {
+				if _, uerr := tx.NewUpdate().Model((*models.UserRow)(nil)).
+					Set("avatar_url = ?", user.AvatarURL).
+					Set("updated_at = ?", user.UpdatedAt).
+					Where("id = ?", linked.ID).
+					Exec(ctx); uerr != nil {
+					return uerr
+				}
+				linked.AvatarURL = user.AvatarURL
+			}
 			out = linked
 
 			return nil
@@ -279,6 +280,16 @@ func (r pgRepository) SaveGoogleUser(ctx context.Context, user models.User, iden
 		if err == nil {
 			if err := insertLoginConnection(ctx, tx, identityID, existing.ID, provider, subject, user.CreatedAt); err != nil {
 				return err
+			}
+			if existing.AvatarURL == "" && user.AvatarURL != "" {
+				if _, uerr := tx.NewUpdate().Model((*models.UserRow)(nil)).
+					Set("avatar_url = ?", user.AvatarURL).
+					Set("updated_at = ?", user.UpdatedAt).
+					Where("id = ?", existing.ID).
+					Exec(ctx); uerr != nil {
+					return uerr
+				}
+				existing.AvatarURL = user.AvatarURL
 			}
 			out = existing
 

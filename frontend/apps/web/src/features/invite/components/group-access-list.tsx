@@ -2,6 +2,7 @@
 
 import { GroupMemberSchema } from "@wichat/contracts";
 import { ChevronLeft, ChevronRight, Crown } from "lucide-react";
+import Image from "next/image";
 import { useMemo } from "react";
 import type { z } from "zod";
 import { useTranslation } from "react-i18next";
@@ -28,23 +29,36 @@ type GroupAccessListProps = {
 
 function MemberAvatar({
 	displayName,
-	email,
+	username,
+	avatarUrl,
 	isOnline,
 	onlineLabel,
 }: {
 	displayName: string;
-	email: string;
+	username: string;
+	avatarUrl?: string;
 	isOnline?: boolean;
 	onlineLabel: string;
 }) {
 	return (
 		<div className="relative shrink-0">
-			<div
-				className="flex size-9 items-center justify-center rounded-full bg-background text-xs font-semibold text-foreground ring-1 ring-border/60"
-				aria-hidden
-			>
-				{userInitials(displayName, email)}
-			</div>
+			{avatarUrl ? (
+				<Image
+					src={avatarUrl}
+					alt=""
+					width={36}
+					height={36}
+					unoptimized
+					className="size-9 rounded-full object-cover ring-1 ring-border/60"
+				/>
+			) : (
+				<div
+					className="flex size-9 items-center justify-center rounded-full bg-background text-xs font-semibold text-foreground ring-1 ring-border/60"
+					aria-hidden
+				>
+					{userInitials(displayName, username)}
+				</div>
+			)}
 			{isOnline ? (
 				<span
 					className="absolute right-0 bottom-0 size-2.5 rounded-full border-2 border-[color-mix(in_oklab,var(--card)_88%,var(--background))] bg-presence-online"
@@ -107,8 +121,8 @@ export function GroupAccessList({
 			? [...members]
 			: members.filter((member) => {
 					const name = member.display_name.trim().toLowerCase();
-					const email = (member.email ?? "").trim().toLowerCase();
-					return name.includes(filter) || email.includes(filter);
+					const username = (member.username ?? "").trim().toLowerCase();
+					return name.includes(filter) || username.includes(filter);
 				});
 		rows.sort(compareMembersOwnerFirst);
 		return rows;
@@ -173,7 +187,8 @@ export function GroupAccessList({
 						>
 							<MemberAvatar
 								displayName={member.display_name}
-								email={member.email}
+								username={member.username}
+								avatarUrl={member.avatar_url}
 								isOnline={member.is_online === true}
 								onlineLabel={t("invite.member_online")}
 							/>
@@ -181,6 +196,9 @@ export function GroupAccessList({
 								<p className="truncate text-sm font-medium text-foreground">
 									{member.display_name.trim() || t("invite.member_name_fallback")}
 								</p>
+								{member.username ? (
+									<p className="truncate text-xs text-muted-foreground">@{member.username}</p>
+								) : null}
 							</div>
 							{member.role === "owner" ? <MemberOwnerBadge /> : null}
 						</li>

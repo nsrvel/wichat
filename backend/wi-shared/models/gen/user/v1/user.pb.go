@@ -28,6 +28,7 @@ type User struct {
 	Email         string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
 	DisplayName   string                 `protobuf:"bytes,3,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
 	Username      string                 `protobuf:"bytes,4,opt,name=username,proto3" json:"username,omitempty"`
+	AvatarUrl     string                 `protobuf:"bytes,6,opt,name=avatar_url,json=avatarUrl,proto3" json:"avatar_url,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -90,6 +91,13 @@ func (x *User) GetUsername() string {
 	return ""
 }
 
+func (x *User) GetAvatarUrl() string {
+	if x != nil {
+		return x.AvatarUrl
+	}
+	return ""
+}
+
 // SetupStatusRequest is empty.
 type SetupStatusRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -131,7 +139,6 @@ func (*SetupStatusRequest) Descriptor() ([]byte, []int) {
 type SetupStatusResponse struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	RegistrationMode string                 `protobuf:"bytes,3,opt,name=registration_mode,json=registrationMode,proto3" json:"registration_mode,omitempty"`
-	UsernameEnabled  bool                   `protobuf:"varint,5,opt,name=username_enabled,json=usernameEnabled,proto3" json:"username_enabled,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -173,20 +180,12 @@ func (x *SetupStatusResponse) GetRegistrationMode() string {
 	return ""
 }
 
-func (x *SetupStatusResponse) GetUsernameEnabled() bool {
-	if x != nil {
-		return x.UsernameEnabled
-	}
-	return false
-}
-
 // CompleteInstanceSetupRequest is the owner setup wizard payload.
 type CompleteInstanceSetupRequest struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	AccessToken      string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
 	Name             string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	LogoUrl          string                 `protobuf:"bytes,3,opt,name=logo_url,json=logoUrl,proto3" json:"logo_url,omitempty"`
-	UsernameEnabled  bool                   `protobuf:"varint,4,opt,name=username_enabled,json=usernameEnabled,proto3" json:"username_enabled,omitempty"`
 	RegistrationMode string                 `protobuf:"bytes,5,opt,name=registration_mode,json=registrationMode,proto3" json:"registration_mode,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -241,13 +240,6 @@ func (x *CompleteInstanceSetupRequest) GetLogoUrl() string {
 		return x.LogoUrl
 	}
 	return ""
-}
-
-func (x *CompleteInstanceSetupRequest) GetUsernameEnabled() bool {
-	if x != nil {
-		return x.UsernameEnabled
-	}
-	return false
 }
 
 func (x *CompleteInstanceSetupRequest) GetRegistrationMode() string {
@@ -306,8 +298,8 @@ type UserSearchHit struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	DisplayName   string                 `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
-	Email         string                 `protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty"`
 	Username      string                 `protobuf:"bytes,4,opt,name=username,proto3" json:"username,omitempty"`
+	AvatarUrl     string                 `protobuf:"bytes,5,opt,name=avatar_url,json=avatarUrl,proto3" json:"avatar_url,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -356,16 +348,120 @@ func (x *UserSearchHit) GetDisplayName() string {
 	return ""
 }
 
-func (x *UserSearchHit) GetEmail() string {
+func (x *UserSearchHit) GetUsername() string {
 	if x != nil {
-		return x.Email
+		return x.Username
 	}
 	return ""
 }
 
-func (x *UserSearchHit) GetUsername() string {
+func (x *UserSearchHit) GetAvatarUrl() string {
+	if x != nil {
+		return x.AvatarUrl
+	}
+	return ""
+}
+
+type CheckUsernameRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Username      string                 `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CheckUsernameRequest) Reset() {
+	*x = CheckUsernameRequest{}
+	mi := &file_user_v1_user_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CheckUsernameRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CheckUsernameRequest) ProtoMessage() {}
+
+func (x *CheckUsernameRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CheckUsernameRequest.ProtoReflect.Descriptor instead.
+func (*CheckUsernameRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *CheckUsernameRequest) GetUsername() string {
 	if x != nil {
 		return x.Username
+	}
+	return ""
+}
+
+type CheckUsernameResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Available     bool                   `protobuf:"varint,1,opt,name=available,proto3" json:"available,omitempty"`
+	Normalized    string                 `protobuf:"bytes,2,opt,name=normalized,proto3" json:"normalized,omitempty"`
+	Reason        string                 `protobuf:"bytes,3,opt,name=reason,proto3" json:"reason,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CheckUsernameResponse) Reset() {
+	*x = CheckUsernameResponse{}
+	mi := &file_user_v1_user_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CheckUsernameResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CheckUsernameResponse) ProtoMessage() {}
+
+func (x *CheckUsernameResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CheckUsernameResponse.ProtoReflect.Descriptor instead.
+func (*CheckUsernameResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *CheckUsernameResponse) GetAvailable() bool {
+	if x != nil {
+		return x.Available
+	}
+	return false
+}
+
+func (x *CheckUsernameResponse) GetNormalized() string {
+	if x != nil {
+		return x.Normalized
+	}
+	return ""
+}
+
+func (x *CheckUsernameResponse) GetReason() string {
+	if x != nil {
+		return x.Reason
 	}
 	return ""
 }
@@ -382,7 +478,7 @@ type SearchUsersRequest struct {
 
 func (x *SearchUsersRequest) Reset() {
 	*x = SearchUsersRequest{}
-	mi := &file_user_v1_user_proto_msgTypes[6]
+	mi := &file_user_v1_user_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -394,7 +490,7 @@ func (x *SearchUsersRequest) String() string {
 func (*SearchUsersRequest) ProtoMessage() {}
 
 func (x *SearchUsersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_user_proto_msgTypes[6]
+	mi := &file_user_v1_user_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -407,7 +503,7 @@ func (x *SearchUsersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchUsersRequest.ProtoReflect.Descriptor instead.
 func (*SearchUsersRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_user_proto_rawDescGZIP(), []int{6}
+	return file_user_v1_user_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *SearchUsersRequest) GetAccessToken() string {
@@ -447,7 +543,7 @@ type SearchUsersResponse struct {
 
 func (x *SearchUsersResponse) Reset() {
 	*x = SearchUsersResponse{}
-	mi := &file_user_v1_user_proto_msgTypes[7]
+	mi := &file_user_v1_user_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -459,7 +555,7 @@ func (x *SearchUsersResponse) String() string {
 func (*SearchUsersResponse) ProtoMessage() {}
 
 func (x *SearchUsersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_user_proto_msgTypes[7]
+	mi := &file_user_v1_user_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -472,7 +568,7 @@ func (x *SearchUsersResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchUsersResponse.ProtoReflect.Descriptor instead.
 func (*SearchUsersResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_user_proto_rawDescGZIP(), []int{7}
+	return file_user_v1_user_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *SearchUsersResponse) GetUsers() []*UserSearchHit {
@@ -486,41 +582,51 @@ var File_user_v1_user_proto protoreflect.FileDescriptor
 
 const file_user_v1_user_proto_rawDesc = "" +
 	"\n" +
-	"\x12user/v1/user.proto\x12\auser.v1\"{\n" +
+	"\x12user/v1/user.proto\x12\auser.v1\"\x9a\x01\n" +
 	"\x04User\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05email\x18\x02 \x01(\tR\x05email\x12!\n" +
 	"\fdisplay_name\x18\x03 \x01(\tR\vdisplayName\x12\x1a\n" +
-	"\busername\x18\x04 \x01(\tR\busernameJ\x04\b\x05\x10\x06R\bis_guest\"\x14\n" +
-	"\x12SetupStatusRequest\"\xc5\x01\n" +
+	"\busername\x18\x04 \x01(\tR\busername\x12\x1d\n" +
+	"\n" +
+	"avatar_url\x18\x06 \x01(\tR\tavatarUrlJ\x04\b\x05\x10\x06R\bis_guest\"\x14\n" +
+	"\x12SetupStatusRequest\"\xb2\x01\n" +
 	"\x13SetupStatusResponse\x12+\n" +
-	"\x11registration_mode\x18\x03 \x01(\tR\x10registrationMode\x12)\n" +
-	"\x10username_enabled\x18\x05 \x01(\bR\x0fusernameEnabledJ\x04\b\x01\x10\x02J\x04\b\x02\x10\x03J\x04\b\x04\x10\x05J\x04\b\x06\x10\aR\rneeds_accountR\x14needs_instance_setupR\n" +
-	"group_nameR\rguest_enabled\"\xdd\x01\n" +
+	"\x11registration_mode\x18\x03 \x01(\tR\x10registrationModeJ\x04\b\x01\x10\x02J\x04\b\x02\x10\x03J\x04\b\x04\x10\x05J\x04\b\x05\x10\x06J\x04\b\x06\x10\aR\rneeds_accountR\x14needs_instance_setupR\n" +
+	"group_nameR\x10username_enabledR\rguest_enabled\"\xca\x01\n" +
 	"\x1cCompleteInstanceSetupRequest\x12!\n" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x19\n" +
-	"\blogo_url\x18\x03 \x01(\tR\alogoUrl\x12)\n" +
-	"\x10username_enabled\x18\x04 \x01(\bR\x0fusernameEnabled\x12+\n" +
-	"\x11registration_mode\x18\x05 \x01(\tR\x10registrationModeJ\x04\b\x06\x10\aR\rguest_enabled\"/\n" +
+	"\blogo_url\x18\x03 \x01(\tR\alogoUrl\x12+\n" +
+	"\x11registration_mode\x18\x05 \x01(\tR\x10registrationModeJ\x04\b\x04\x10\x05J\x04\b\x06\x10\aR\x10username_enabledR\rguest_enabled\"/\n" +
 	"\x1dCompleteInstanceSetupResponse\x12\x0e\n" +
-	"\x02ok\x18\x01 \x01(\bR\x02ok\"}\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok\"\x93\x01\n" +
 	"\rUserSearchHit\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12!\n" +
-	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12\x14\n" +
-	"\x05email\x18\x03 \x01(\tR\x05email\x12\x1a\n" +
-	"\busername\x18\x04 \x01(\tR\busername\"~\n" +
+	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12\x1a\n" +
+	"\busername\x18\x04 \x01(\tR\busername\x12\x1d\n" +
+	"\n" +
+	"avatar_url\x18\x05 \x01(\tR\tavatarUrlJ\x04\b\x03\x10\x04R\x05email\"2\n" +
+	"\x14CheckUsernameRequest\x12\x1a\n" +
+	"\busername\x18\x01 \x01(\tR\busername\"m\n" +
+	"\x15CheckUsernameResponse\x12\x1c\n" +
+	"\tavailable\x18\x01 \x01(\bR\tavailable\x12\x1e\n" +
+	"\n" +
+	"normalized\x18\x02 \x01(\tR\n" +
+	"normalized\x12\x16\n" +
+	"\x06reason\x18\x03 \x01(\tR\x06reason\"~\n" +
 	"\x12SearchUsersRequest\x12!\n" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x14\n" +
 	"\x05query\x18\x02 \x01(\tR\x05query\x12\x14\n" +
 	"\x05limit\x18\x03 \x01(\x05R\x05limit\x12\x19\n" +
 	"\bgroup_id\x18\x04 \x01(\tR\agroupId\"C\n" +
 	"\x13SearchUsersResponse\x12,\n" +
-	"\x05users\x18\x01 \x03(\v2\x16.user.v1.UserSearchHitR\x05users2\x89\x02\n" +
+	"\x05users\x18\x01 \x03(\v2\x16.user.v1.UserSearchHitR\x05users2\xd9\x02\n" +
 	"\vUserService\x12H\n" +
 	"\vSetupStatus\x12\x1b.user.v1.SetupStatusRequest\x1a\x1c.user.v1.SetupStatusResponse\x12f\n" +
 	"\x15CompleteInstanceSetup\x12%.user.v1.CompleteInstanceSetupRequest\x1a&.user.v1.CompleteInstanceSetupResponse\x12H\n" +
-	"\vSearchUsers\x12\x1b.user.v1.SearchUsersRequest\x1a\x1c.user.v1.SearchUsersResponseB\x9b\x01\n" +
+	"\vSearchUsers\x12\x1b.user.v1.SearchUsersRequest\x1a\x1c.user.v1.SearchUsersResponse\x12N\n" +
+	"\rCheckUsername\x12\x1d.user.v1.CheckUsernameRequest\x1a\x1e.user.v1.CheckUsernameResponseB\x9b\x01\n" +
 	"\vcom.user.v1B\tUserProtoP\x01ZDgithub.com/wichat/wichat/backend/wi-shared/models/gen/user/v1;userv1\xa2\x02\x03UXX\xaa\x02\aUser.V1\xca\x02\aUser\\V1\xe2\x02\x13User\\V1\\GPBMetadata\xea\x02\bUser::V1b\x06proto3"
 
 var (
@@ -535,7 +641,7 @@ func file_user_v1_user_proto_rawDescGZIP() []byte {
 	return file_user_v1_user_proto_rawDescData
 }
 
-var file_user_v1_user_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_user_v1_user_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_user_v1_user_proto_goTypes = []any{
 	(*User)(nil),                          // 0: user.v1.User
 	(*SetupStatusRequest)(nil),            // 1: user.v1.SetupStatusRequest
@@ -543,19 +649,23 @@ var file_user_v1_user_proto_goTypes = []any{
 	(*CompleteInstanceSetupRequest)(nil),  // 3: user.v1.CompleteInstanceSetupRequest
 	(*CompleteInstanceSetupResponse)(nil), // 4: user.v1.CompleteInstanceSetupResponse
 	(*UserSearchHit)(nil),                 // 5: user.v1.UserSearchHit
-	(*SearchUsersRequest)(nil),            // 6: user.v1.SearchUsersRequest
-	(*SearchUsersResponse)(nil),           // 7: user.v1.SearchUsersResponse
+	(*CheckUsernameRequest)(nil),          // 6: user.v1.CheckUsernameRequest
+	(*CheckUsernameResponse)(nil),         // 7: user.v1.CheckUsernameResponse
+	(*SearchUsersRequest)(nil),            // 8: user.v1.SearchUsersRequest
+	(*SearchUsersResponse)(nil),           // 9: user.v1.SearchUsersResponse
 }
 var file_user_v1_user_proto_depIdxs = []int32{
 	5, // 0: user.v1.SearchUsersResponse.users:type_name -> user.v1.UserSearchHit
 	1, // 1: user.v1.UserService.SetupStatus:input_type -> user.v1.SetupStatusRequest
 	3, // 2: user.v1.UserService.CompleteInstanceSetup:input_type -> user.v1.CompleteInstanceSetupRequest
-	6, // 3: user.v1.UserService.SearchUsers:input_type -> user.v1.SearchUsersRequest
-	2, // 4: user.v1.UserService.SetupStatus:output_type -> user.v1.SetupStatusResponse
-	4, // 5: user.v1.UserService.CompleteInstanceSetup:output_type -> user.v1.CompleteInstanceSetupResponse
-	7, // 6: user.v1.UserService.SearchUsers:output_type -> user.v1.SearchUsersResponse
-	4, // [4:7] is the sub-list for method output_type
-	1, // [1:4] is the sub-list for method input_type
+	8, // 3: user.v1.UserService.SearchUsers:input_type -> user.v1.SearchUsersRequest
+	6, // 4: user.v1.UserService.CheckUsername:input_type -> user.v1.CheckUsernameRequest
+	2, // 5: user.v1.UserService.SetupStatus:output_type -> user.v1.SetupStatusResponse
+	4, // 6: user.v1.UserService.CompleteInstanceSetup:output_type -> user.v1.CompleteInstanceSetupResponse
+	9, // 7: user.v1.UserService.SearchUsers:output_type -> user.v1.SearchUsersResponse
+	7, // 8: user.v1.UserService.CheckUsername:output_type -> user.v1.CheckUsernameResponse
+	5, // [5:9] is the sub-list for method output_type
+	1, // [1:5] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
 	1, // [1:1] is the sub-list for extension extendee
 	0, // [0:1] is the sub-list for field type_name
@@ -572,7 +682,7 @@ func file_user_v1_user_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_user_v1_user_proto_rawDesc), len(file_user_v1_user_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -106,6 +106,21 @@ func (s service) UpdateGroupRole(ctx context.Context, accessToken, groupPublicID
 		return nil, exception.PermissionDenied(exception.MsgForbidden, nil)
 	}
 
+	if patch.Name != nil {
+		name, err := validator.RoleName(*patch.Name)
+		if err != nil {
+			return nil, err
+		}
+		patch.Name = &name
+	}
+	if patch.Color != nil {
+		color, err := validator.RoleColor(*patch.Color)
+		if err != nil {
+			return nil, err
+		}
+		patch.Color = &color
+	}
+
 	role, err := s.roles.UpdateRole(ctx, group.ID, rolePublicID, patch, s.now())
 	if err != nil {
 		return nil, err

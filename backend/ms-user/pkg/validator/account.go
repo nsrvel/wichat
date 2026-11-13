@@ -9,6 +9,18 @@ import (
 	"github.com/wichat/wichat/backend/wi-shared/exception"
 )
 
+// DisplayName trims and validates a user display name.
+func DisplayName(raw string) (string, error) {
+	name := strings.TrimSpace(raw)
+	n := utf8.RuneCountInString(name)
+	if n < constants.MinDisplayNameRunes || n > constants.MaxDisplayNameRunes ||
+		hasControlOrInvisible(name, false) || hasSpoofingChars(name) {
+		return "", exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "display_name"})
+	}
+
+	return name, nil
+}
+
 // NewAccount validates email, password, and display name for registration.
 func NewAccount(email, pass, displayName string) (normalizedEmail, name string, err error) {
 	normalized, err := NormalizeEmail(email)
@@ -19,9 +31,9 @@ func NewAccount(email, pass, displayName string) (normalizedEmail, name string, 
 		return "", "", err
 	}
 
-	name = strings.TrimSpace(displayName)
-	if name == "" || utf8.RuneCountInString(name) > constants.MaxDisplayNameRunes {
-		return "", "", exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "display_name"})
+	name, err = DisplayName(displayName)
+	if err != nil {
+		return "", "", err
 	}
 
 	return normalized, name, nil

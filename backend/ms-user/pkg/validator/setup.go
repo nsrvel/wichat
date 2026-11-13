@@ -38,7 +38,6 @@ func InstanceSetup(in models.CompleteInstanceSetupInput) (models.InstanceSetupPa
 	return models.InstanceSetupPayload{
 		GroupName:        name,
 		GroupLogoURL:     logoURL,
-		UsernameEnabled:  in.UsernameEnabled,
 		RegistrationMode: mode,
 	}, nil
 }

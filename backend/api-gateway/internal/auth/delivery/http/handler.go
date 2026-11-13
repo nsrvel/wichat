@@ -66,6 +66,7 @@ func (h handler) Register(w http.ResponseWriter, r *http.Request) {
 	// Service
 	out, err := h.ms.User.GRPC.Auth.Register(r.Context(), &userv1.RegisterRequest{
 		Email:       body.Email,
+		Username:    body.Username,
 		Password:    body.Password,
 		DisplayName: body.DisplayName,
 		BirthDate:   body.BirthDate,

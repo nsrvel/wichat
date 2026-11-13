@@ -12,6 +12,8 @@ service UserService {
   rpc CompleteInstanceSetup(CompleteInstanceSetupRequest) returns (CompleteInstanceSetupResponse);
   // SearchUsers finds instance accounts for invite autocomplete.
   rpc SearchUsers(SearchUsersRequest) returns (SearchUsersResponse);
+  // CheckUsername checks whether a username is valid, not reserved, and available.
+  rpc CheckUsername(CheckUsernameRequest) returns (CheckUsernameResponse);
 }
 
 // User is the public account view.
@@ -22,6 +24,7 @@ message User {
   string username = 4;
   reserved 5;
   reserved "is_guest";
+  string avatar_url = 6;
 }
 
 // SetupStatusRequest is empty.
@@ -29,10 +32,9 @@ message SetupStatusRequest {}
 
 // SetupStatusResponse reports instance policy for the auth UI.
 message SetupStatusResponse {
-  reserved 1, 2, 4, 6;
-  reserved "needs_account", "needs_instance_setup", "group_name", "guest_enabled";
+  reserved 1, 2, 4, 5, 6;
+  reserved "needs_account", "needs_instance_setup", "group_name", "username_enabled", "guest_enabled";
   string registration_mode = 3;
-  bool username_enabled = 5;
 }
 
 // CompleteInstanceSetupRequest is the owner setup wizard payload.
@@ -40,10 +42,9 @@ message CompleteInstanceSetupRequest {
   string access_token = 1;
   string name = 2;
   string logo_url = 3;
-  bool username_enabled = 4;
   string registration_mode = 5;
-  reserved 6;
-  reserved "guest_enabled";
+  reserved 4, 6;
+  reserved "username_enabled", "guest_enabled";
 }
 
 // CompleteInstanceSetupResponse acknowledges saved settings.
@@ -54,8 +55,20 @@ message CompleteInstanceSetupResponse {
 message UserSearchHit {
   string user_id = 1;
   string display_name = 2;
-  string email = 3;
+  reserved 3;
+  reserved "email";
   string username = 4;
+  string avatar_url = 5;
+}
+
+message CheckUsernameRequest {
+  string username = 1;
+}
+
+message CheckUsernameResponse {
+  bool available = 1;
+  string normalized = 2;
+  string reason = 3;
 }
 
 message SearchUsersRequest {

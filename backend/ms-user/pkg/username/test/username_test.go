@@ -30,12 +30,39 @@ func TestBaseFromEmail(t *testing.T) {
 func TestNormalizeRejectsInvalid(t *testing.T) {
 	t.Parallel()
 
-	_, err := username.Normalize("ab")
-	if err == nil {
-		t.Fatal("too short")
+	cases := []struct {
+		raw    string
+		reason string
+	}{
+		{"ab", username.ReasonTooShort},
+		{strings.Repeat("a", 31), username.ReasonTooLong},
+		{"ada!", username.ReasonInvalidFormat},
+		{".ada", username.ReasonInvalidFormat},
+		{"ada.", username.ReasonInvalidFormat},
+		{"_ada", username.ReasonInvalidFormat},
+		{"ada_", username.ReasonInvalidFormat},
+		{"ada..lovelace", username.ReasonInvalidFormat},
+		{"ada__lovelace", username.ReasonInvalidFormat},
+		{"ada._lovelace", username.ReasonInvalidFormat},
+		{"ada_.lovelace", username.ReasonInvalidFormat},
+		{"admin", username.ReasonReserved},
+		{"WiChat", username.ReasonReserved},
+		{"üser", username.ReasonInvalidFormat},
 	}
-	if _, err := username.Normalize("ada!"); err == nil {
-		t.Fatal("bad char")
+
+	for _, tc := range cases {
+		_, reason, err := username.Validate(tc.raw)
+		if err == nil {
+			t.Fatalf("expected error for %q", tc.raw)
+		}
+		if reason != tc.reason {
+			t.Fatalf("%q: got reason %q want %q", tc.raw, reason, tc.reason)
+		}
+	}
+
+	got, reason, err := username.Validate("  Ada.Lovelace_1  ")
+	if err != nil || reason != "" || got != "ada.lovelace_1" {
+		t.Fatalf("valid: got %q reason %q err %v", got, reason, err)
 	}
 }
 

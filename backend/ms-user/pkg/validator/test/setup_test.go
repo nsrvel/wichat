@@ -32,7 +32,6 @@ func TestInstanceSetupHappyPath(t *testing.T) {
 	payload, err := validator.InstanceSetup(models.CompleteInstanceSetupInput{
 		Name:             "WiChat",
 		LogoURL:          "https://cdn.example/logo.png",
-		UsernameEnabled:  true,
 		RegistrationMode: constants.RegistrationOpen,
 	})
 	if err != nil || payload.GroupName != "WiChat" {

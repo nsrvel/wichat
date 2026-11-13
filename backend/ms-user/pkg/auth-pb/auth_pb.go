@@ -60,6 +60,7 @@ func User(user models.PublicUser) *userv1.User {
 		Email:       user.Email,
 		DisplayName: user.DisplayName,
 		Username:    user.Username,
+		AvatarUrl:   user.AvatarURL,
 	}
 }
 
@@ -127,7 +128,8 @@ func GroupMemberEntries(members []models.GroupMemberProfile) []*userv1.GroupMemb
 		out[i] = &userv1.GroupMemberEntry{
 			UserId:      m.UserID,
 			DisplayName: m.DisplayName,
-			Email:       m.Email,
+			Username:    m.Username,
+			AvatarUrl:   m.AvatarURL,
 			Role:        m.Role,
 			JoinedAt:    m.JoinedAt.UTC().Format(time.RFC3339Nano),
 			Roles:       roles,
@@ -172,8 +174,8 @@ func UserSearchHits(users []models.UserSearchHit) []*userv1.UserSearchHit {
 		out[i] = &userv1.UserSearchHit{
 			UserId:      u.UserID,
 			DisplayName: u.DisplayName,
-			Email:       u.Email,
 			Username:    u.Username,
+			AvatarUrl:   u.AvatarURL,
 		}
 	}
 

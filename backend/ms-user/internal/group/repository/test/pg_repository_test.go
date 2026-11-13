@@ -36,11 +36,11 @@ func TestCreateGroupWithOwnerListAndJoinable(t *testing.T) {
 	ownerID := "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
 	memberID := "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
 	owner := models.User{
-		ID: ownerID, Email: "owner@example.com", PasswordHash: "hash", DisplayName: "Owner",
+		ID: ownerID, Email: "owner@example.com", Username: "group.owner", PasswordHash: "hash", DisplayName: "Owner",
 		CreatedAt: now, UpdatedAt: now,
 	}
 	member := models.User{
-		ID: memberID, Email: "member@example.com", PasswordHash: "hash", DisplayName: "Member",
+		ID: memberID, Email: "member@example.com", Username: "group.member", PasswordHash: "hash", DisplayName: "Member",
 		CreatedAt: now, UpdatedAt: now,
 	}
 	if err := users.CreateFirstUser(ctx, owner); err != nil {

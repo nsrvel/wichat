@@ -1,5 +1,6 @@
 import {
 	AuthChallengeSchema,
+	CheckUsernameResponseSchema,
 	ForgotPasswordRequestResponseSchema,
 	ForgotPasswordVerifyResponseSchema,
 	InstancePolicySchema,
@@ -34,6 +35,11 @@ export function googleStartUrl(returnTo?: string) {
 
 export async function getInstancePolicy() {
 	return api.get("/auth/setup-status", InstancePolicySchema);
+}
+
+export async function checkUsername(username: string) {
+	const params = new URLSearchParams({ username });
+	return api.get(`/users/check-username?${params.toString()}`, CheckUsernameResponseSchema);
 }
 
 const authStepDataSchema = z.union([SessionSchema, AuthChallengeSchema]);

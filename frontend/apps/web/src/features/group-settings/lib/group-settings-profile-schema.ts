@@ -1,8 +1,8 @@
-import { displayNameSchema } from "@wichat/contracts";
+import { groupNameSchema } from "@wichat/contracts";
 import { z } from "zod";
 
 export const groupSettingsProfileSchema = z.object({
-	name: displayNameSchema,
+	name: groupNameSchema,
 	description: z.string().trim().max(2000),
 	is_private: z.boolean(),
 });

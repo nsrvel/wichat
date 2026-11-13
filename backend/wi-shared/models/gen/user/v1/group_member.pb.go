@@ -285,10 +285,11 @@ type GroupMemberEntry struct {
 	state         protoimpl.MessageState    `protogen:"open.v1"`
 	UserId        string                    `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	DisplayName   string                    `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
-	Email         string                    `protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty"`
 	Role          string                    `protobuf:"bytes,4,opt,name=role,proto3" json:"role,omitempty"`
 	JoinedAt      string                    `protobuf:"bytes,5,opt,name=joined_at,json=joinedAt,proto3" json:"joined_at,omitempty"`
 	Roles         []*GroupMemberRoleSummary `protobuf:"bytes,6,rep,name=roles,proto3" json:"roles,omitempty"`
+	Username      string                    `protobuf:"bytes,7,opt,name=username,proto3" json:"username,omitempty"`
+	AvatarUrl     string                    `protobuf:"bytes,8,opt,name=avatar_url,json=avatarUrl,proto3" json:"avatar_url,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -337,13 +338,6 @@ func (x *GroupMemberEntry) GetDisplayName() string {
 	return ""
 }
 
-func (x *GroupMemberEntry) GetEmail() string {
-	if x != nil {
-		return x.Email
-	}
-	return ""
-}
-
 func (x *GroupMemberEntry) GetRole() string {
 	if x != nil {
 		return x.Role
@@ -363,6 +357,20 @@ func (x *GroupMemberEntry) GetRoles() []*GroupMemberRoleSummary {
 		return x.Roles
 	}
 	return nil
+}
+
+func (x *GroupMemberEntry) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
+func (x *GroupMemberEntry) GetAvatarUrl() string {
+	if x != nil {
+		return x.AvatarUrl
+	}
+	return ""
 }
 
 type ListGroupMembersRequest struct {
@@ -736,14 +744,16 @@ const file_user_v1_group_member_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04slug\x18\x02 \x01(\tR\x04slug\x12\x12\n" +
 	"\x04name\x18\x03 \x01(\tR\x04name\x12\x14\n" +
-	"\x05color\x18\x04 \x01(\tR\x05color\"\xcc\x01\n" +
+	"\x05color\x18\x04 \x01(\tR\x05color\"\xfe\x01\n" +
 	"\x10GroupMemberEntry\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12!\n" +
-	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12\x14\n" +
-	"\x05email\x18\x03 \x01(\tR\x05email\x12\x12\n" +
+	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12\x12\n" +
 	"\x04role\x18\x04 \x01(\tR\x04role\x12\x1b\n" +
 	"\tjoined_at\x18\x05 \x01(\tR\bjoinedAt\x125\n" +
-	"\x05roles\x18\x06 \x03(\v2\x1f.user.v1.GroupMemberRoleSummaryR\x05roles\"\x85\x01\n" +
+	"\x05roles\x18\x06 \x03(\v2\x1f.user.v1.GroupMemberRoleSummaryR\x05roles\x12\x1a\n" +
+	"\busername\x18\a \x01(\tR\busername\x12\x1d\n" +
+	"\n" +
+	"avatar_url\x18\b \x01(\tR\tavatarUrlJ\x04\b\x03\x10\x04R\x05email\"\x85\x01\n" +
 	"\x17ListGroupMembersRequest\x12!\n" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
 	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x14\n" +

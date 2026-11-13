@@ -11,7 +11,8 @@ import (
 // GroupName trims and validates a group display name.
 func GroupName(name string) (string, error) {
 	trimmed := strings.TrimSpace(name)
-	if trimmed == "" || utf8.RuneCountInString(trimmed) > constants.MaxGroupNameRunes {
+	n := utf8.RuneCountInString(trimmed)
+	if n < constants.MinGroupNameRunes || n > constants.MaxGroupNameRunes || hasControlOrInvisible(trimmed, false) {
 		return "", exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "name"})
 	}
 
@@ -21,7 +22,7 @@ func GroupName(name string) (string, error) {
 // GroupDescription trims and validates group profile description.
 func GroupDescription(raw string) (string, error) {
 	trimmed := strings.TrimSpace(raw)
-	if utf8.RuneCountInString(trimmed) > constants.MaxGroupDescriptionRunes {
+	if utf8.RuneCountInString(trimmed) > constants.MaxGroupDescriptionRunes || hasControlOrInvisible(trimmed, true) {
 		return "", exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "description"})
 	}
 

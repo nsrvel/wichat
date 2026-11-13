@@ -10,14 +10,17 @@ import (
 	userservice "github.com/wichat/wichat/backend/ms-user/internal/user/service"
 	"github.com/wichat/wichat/backend/ms-user/pkg/constants"
 	testSupport "github.com/wichat/wichat/backend/ms-user/pkg/test-support"
+	"github.com/wichat/wichat/backend/ms-user/pkg/username"
 	"github.com/wichat/wichat/backend/wi-shared/exception"
 )
 
 const testPassword = "correct-horse-battery"
 
 func registerInput(email string) models.RegisterInput {
+	handle, _ := username.BaseFromEmail(email)
 	return models.RegisterInput{
 		Email:       email,
+		Username:    handle,
 		Password:    testPassword,
 		DisplayName: "Ada",
 		BirthDate:   "2000-01-15",
@@ -44,8 +47,37 @@ func TestSetupStatusDefaultsBeforeWizard(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if status.RegistrationMode != constants.RegistrationInviteOnly || !status.UsernameEnabled {
+	if status.RegistrationMode != constants.RegistrationInviteOnly {
 		t.Fatalf("%+v", status)
+	}
+}
+
+func TestCheckUsernameAvailability(t *testing.T) {
+	st := usermock.NewState()
+	authSvc, notify, _, userSvc, _, _ := testSupport.NewAuthService(t, st, nil)
+	ctx := context.Background()
+
+	res, err := userSvc.CheckUsername(ctx, "  Ada.Lovelace ")
+	if err != nil || !res.Available || res.Normalized != "ada.lovelace" || res.Reason != "" {
+		t.Fatalf("available: %+v %v", res, err)
+	}
+
+	resBad, err := userSvc.CheckUsername(ctx, "admin")
+	if err != nil || resBad.Available || resBad.Reason != username.ReasonReserved {
+		t.Fatalf("reserved: %+v %v", resBad, err)
+	}
+
+	_ = testSupport.RegisterSession(t, authSvc, notify, models.RegisterInput{
+		Email:       "ada-check@example.com",
+		Username:    "ada.lovelace",
+		Password:    testPassword,
+		DisplayName: "Ada",
+		BirthDate:   "2000-01-15",
+	})
+
+	resTaken, err := userSvc.CheckUsername(ctx, "ada.lovelace")
+	if err != nil || resTaken.Available || resTaken.Reason != username.ReasonTaken {
+		t.Fatalf("taken: %+v %v", resTaken, err)
 	}
 }
 
@@ -123,7 +155,6 @@ func completeInstanceSetup(t *testing.T, svc userservice.Service, token string) 
 	return svc.CompleteInstanceSetup(context.Background(), token, models.CompleteInstanceSetupInput{
 		Name:             "WiChat",
 		RegistrationMode: constants.RegistrationInviteOnly,
-		UsernameEnabled:  true,
 	})
 }
 

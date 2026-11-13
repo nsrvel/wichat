@@ -6,7 +6,8 @@ import "time"
 type GroupMemberProfile struct {
 	UserID      string
 	DisplayName string
-	Email       string
+	Username    string
+	AvatarURL   string
 	Role        string
 	JoinedAt    time.Time
 	Roles       []GroupRoleSummary
@@ -29,8 +30,8 @@ type GroupMemberPage struct {
 type UserSearchHit struct {
 	UserID      string
 	DisplayName string
-	Email       string
 	Username    string
+	AvatarURL   string
 }
 
 // SendGroupInvitesInput is the batch share payload.

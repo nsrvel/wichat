@@ -136,7 +136,8 @@ func (m pgRepositoryMock) ListGroupMembersPage(
 		out[i] = models.GroupMemberProfile{
 			UserID:      mem.UserID,
 			DisplayName: displayName,
-			Email:       u.Email,
+			Username:    u.Username,
+			AvatarURL:   u.AvatarURL,
 			Role:        mem.Role,
 			JoinedAt:    mem.CreatedAt,
 		}

@@ -18,3 +18,18 @@ func TestChannelPublicID(t *testing.T) {
 		t.Fatalf("got %q %v", got, err)
 	}
 }
+
+func TestChannelName(t *testing.T) {
+	t.Parallel()
+
+	if _, err := validator.ChannelName("  "); err == nil {
+		t.Fatal("expected empty channel name error")
+	}
+	if _, err := validator.ChannelName("gen\neral"); err == nil {
+		t.Fatal("expected newline error")
+	}
+	got, err := validator.ChannelName("  general  ")
+	if err != nil || got != "general" {
+		t.Fatalf("got %q %v", got, err)
+	}
+}

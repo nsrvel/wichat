@@ -7,15 +7,22 @@ const (
 	MinPasswordLen      = 12
 	MaxPasswordLen      = 128
 	MinJWTSecretLen     = 32
-	MaxDisplayNameRunes = 80
+	MinDisplayNameRunes = 2
+	MaxDisplayNameRunes = 50
+	MaxAvatarURLRunes   = 2048
 	MaxUserAgentLen     = 512
 	MinAgeYears         = 13
 )
 
-// Group and instance setup limits.
+// Group, role, channel, and instance setup limits.
 const (
+	MinGroupNameRunes        = 2
 	MaxGroupNameRunes        = 80
 	MaxGroupDescriptionRunes = 2000
+	MinRoleNameRunes         = 1
+	MaxRoleNameRunes         = 50
+	MinChannelNameRunes      = 1
+	MaxChannelNameRunes      = 60
 	MaxLogoURLRunes          = 2048
 	MaxGroupIconBytes        = 5 * 1024 * 1024
 	MaxGroupBannerBytes      = 8 * 1024 * 1024

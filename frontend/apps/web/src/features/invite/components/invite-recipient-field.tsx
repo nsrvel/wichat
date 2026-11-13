@@ -1,6 +1,7 @@
 "use client";
 
 import { Send, X } from "lucide-react";
+import Image from "next/image";
 import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -92,8 +93,8 @@ export function InviteRecipientField({
 		const chip: UserRecipientChip = {
 			kind: "user",
 			id: hit.user_id,
-			label: hit.display_name || hit.email,
-			email: hit.email,
+			label: hit.display_name || `@${hit.username}`,
+			username: hit.username,
 		};
 		if (chips.some((c) => c.kind === "user" && c.id === chip.id)) {
 			onQueryChange("");
@@ -203,14 +204,32 @@ export function InviteRecipientField({
 								className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors hover:bg-muted/80"
 								onClick={() => pick(hit)}
 							>
-								<span
-									className="flex size-8 shrink-0 items-center justify-center rounded-full bg-field text-xs font-semibold ring-1 ring-border/50"
-									aria-hidden
-								>
-									{userInitials(hit.display_name, hit.email)}
-								</span>
-								<span className="min-w-0 truncate font-medium text-foreground">
-									{hit.display_name.trim() || hit.email}
+								{hit.avatar_url ? (
+									<Image
+										src={hit.avatar_url}
+										alt=""
+										width={32}
+										height={32}
+										unoptimized
+										className="size-8 shrink-0 rounded-full object-cover ring-1 ring-border/50"
+									/>
+								) : (
+									<span
+										className="flex size-8 shrink-0 items-center justify-center rounded-full bg-field text-xs font-semibold ring-1 ring-border/50"
+										aria-hidden
+									>
+										{userInitials(hit.display_name, hit.username)}
+									</span>
+								)}
+								<span className="min-w-0 flex-1 truncate">
+									<span className="block truncate font-medium text-foreground">
+										{hit.display_name.trim() || `@${hit.username}`}
+									</span>
+									{hit.username ? (
+										<span className="block truncate text-xs text-muted-foreground">
+											@{hit.username}
+										</span>
+									) : null}
 								</span>
 							</button>
 						</li>

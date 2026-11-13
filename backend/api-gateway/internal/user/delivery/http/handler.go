@@ -18,6 +18,7 @@ import (
 type Handler interface {
 	SetupStatus(w http.ResponseWriter, r *http.Request)
 	InstanceSetup(w http.ResponseWriter, r *http.Request)
+	CheckUsername(w http.ResponseWriter, r *http.Request)
 	SearchUsers(w http.ResponseWriter, r *http.Request)
 }
 
@@ -42,7 +43,6 @@ func (h handler) SetupStatus(w http.ResponseWriter, r *http.Request) {
 	// Response
 	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(authHttp.SetupStatusBody{
 		RegistrationMode: out.GetRegistrationMode(),
-		UsernameEnabled:  out.GetUsernameEnabled(),
 	}))
 }
 
@@ -65,7 +65,6 @@ func (h handler) InstanceSetup(w http.ResponseWriter, r *http.Request) {
 		AccessToken:      token,
 		Name:             body.Name,
 		RegistrationMode: body.RegistrationMode,
-		UsernameEnabled:  body.UsernameEnabled,
 	})
 	if err != nil {
 		authHttp.WriteOutbound(w, r, h.log, err)
@@ -74,6 +73,23 @@ func (h handler) InstanceSetup(w http.ResponseWriter, r *http.Request) {
 
 	// Response
 	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(authHttp.OKBody{OK: true}))
+}
+
+func (h handler) CheckUsername(w http.ResponseWriter, r *http.Request) {
+	raw := strings.TrimSpace(r.URL.Query().Get("username"))
+	out, err := h.ms.User.GRPC.User.CheckUsername(r.Context(), &userv1.CheckUsernameRequest{
+		Username: raw,
+	})
+	if err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(authHttp.CheckUsernameBody{
+		Available:  out.GetAvailable(),
+		Normalized: out.GetNormalized(),
+		Reason:     out.GetReason(),
+	}))
 }
 
 func (h handler) SearchUsers(w http.ResponseWriter, r *http.Request) {

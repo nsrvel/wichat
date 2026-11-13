@@ -48,3 +48,21 @@ func TestNewAccountRejectsLongDisplayName(t *testing.T) {
 		t.Fatal("expected long display name error")
 	}
 }
+
+func TestDisplayNameRules(t *testing.T) {
+	t.Parallel()
+
+	if _, err := validator.DisplayName("A"); err == nil {
+		t.Fatal("expected min length error")
+	}
+	if _, err := validator.DisplayName("Ada @admin"); err == nil {
+		t.Fatal("expected @ spoofing error")
+	}
+	if _, err := validator.DisplayName("Ada\u200B"); err == nil {
+		t.Fatal("expected invisible char error")
+	}
+	got, err := validator.DisplayName("  Ada Lovelace  ")
+	if err != nil || got != "Ada Lovelace" {
+		t.Fatalf("got %q %v", got, err)
+	}
+}

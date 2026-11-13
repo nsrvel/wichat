@@ -18,15 +18,20 @@ func TestUserGRPCServer(t *testing.T) {
 	ctx := context.Background()
 
 	statusRes, err := srv.SetupStatus(ctx, &userv1.SetupStatusRequest{})
-	if err != nil || !statusRes.GetUsernameEnabled() {
+	if err != nil || statusRes.GetRegistrationMode() == "" {
 		t.Fatalf("SetupStatus: %v, res: %+v", err, statusRes)
 	}
 
+	checkRes, err := srv.CheckUsername(ctx, &userv1.CheckUsernameRequest{Username: "fresh.user"})
+	if err != nil || !checkRes.GetAvailable() || checkRes.GetNormalized() != "fresh.user" {
+		t.Fatalf("CheckUsername: %v, res: %+v", err, checkRes)
+	}
+
 	owner := testSupport.RegisterSession(t, authSvc, notify, models.RegisterInput{
-		Email: "user-grpc@example.com", Password: "correct-horse-battery", DisplayName: "Owner", BirthDate: "2000-01-01",
+		Email: "user-grpc@example.com", Username: "user.grpc", Password: "correct-horse-battery", DisplayName: "Owner", BirthDate: "2000-01-01",
 	})
 	_ = testSupport.RegisterSession(t, authSvc, notify, models.RegisterInput{
-		Email: "findme@example.com", Password: "correct-horse-battery", DisplayName: "FindMe", BirthDate: "2000-01-01",
+		Email: "findme@example.com", Username: "findme", Password: "correct-horse-battery", DisplayName: "FindMe", BirthDate: "2000-01-01",
 	})
 
 	group, err := groupSvc.CreateGroup(ctx, owner.AccessToken, "User Search Group")

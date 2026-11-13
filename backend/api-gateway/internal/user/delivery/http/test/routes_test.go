@@ -12,6 +12,7 @@ type userRouteStub struct{}
 
 func (userRouteStub) SetupStatus(http.ResponseWriter, *http.Request)   {}
 func (userRouteStub) InstanceSetup(http.ResponseWriter, *http.Request) {}
+func (userRouteStub) CheckUsername(http.ResponseWriter, *http.Request) {}
 func (userRouteStub) SearchUsers(http.ResponseWriter, *http.Request)   {}
 
 func TestRegisterMountsSetupStatus(t *testing.T) {

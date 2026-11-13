@@ -46,3 +46,16 @@ func TestCreateChannelMessageRejectsEmptyBody(t *testing.T) {
 		t.Fatalf("expected invalid input, got %v", err)
 	}
 }
+
+func TestCreateChannelMessageRejectsControlChars(t *testing.T) {
+	st := mock.NewState()
+	svc := service.NewService(mock.NewPgRepositoryMock(st), fakeChannel{}, noopPublisher{}, nil)
+	_, err := svc.CreateChannelMessage(context.Background(), &models.CreateChannelMessageInput{
+		ResolvedChannelID: "channel-uuid",
+		CallerUserID:      "user-uuid",
+		Body:              "hello\x00world",
+	})
+	if err == nil {
+		t.Fatal("expected error for null byte")
+	}
+}

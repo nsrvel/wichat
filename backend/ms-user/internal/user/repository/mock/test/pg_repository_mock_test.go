@@ -53,9 +53,9 @@ func TestUserMockCRUD(t *testing.T) {
 		t.Fatalf("link %+v %v", again, err)
 	}
 
-	st.SetInstanceSettings(models.InstanceSettings{UsernameEnabled: true})
+	st.SetInstanceSettings(models.InstanceSettings{RegistrationMode: constants.RegistrationOpen})
 	got, err := repo.GetInstanceSettings(ctx)
-	if err != nil || !got.UsernameEnabled {
+	if err != nil || got.RegistrationMode != constants.RegistrationOpen {
 		t.Fatalf("%+v %v", got, err)
 	}
 
@@ -86,7 +86,7 @@ func TestCompleteInstanceSetupOnce(t *testing.T) {
 	_ = repo.CreateFirstUser(ctx, models.User{ID: "owner", Email: "o@x.com", DisplayName: "O", CreatedAt: now, UpdatedAt: now})
 	if err := repo.CompleteInstanceSetup(ctx, "owner", models.InstanceSetupPayload{
 		GroupID: "g1", GroupPublicID: "bbbbbbbbbbbbbbbbbbbbbbbb", GroupName: "WiChat",
-		RegistrationMode: constants.RegistrationOpen, UsernameEnabled: true,
+		RegistrationMode: constants.RegistrationOpen,
 	}, now); err != nil {
 		t.Fatal(err)
 	}

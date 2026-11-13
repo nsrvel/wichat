@@ -174,7 +174,7 @@ func TestAssertGroupChannelAccessUnknownGroup(t *testing.T) {
 	ctx := context.Background()
 
 	owner := testSupport.RegisterSession(t, authSvc, notify, models.RegisterInput{
-		Email: "nogroup@example.com", Password: "correct-horse-battery", DisplayName: "A", BirthDate: "2000-01-15",
+		Email: "nogroup@example.com", Password: "correct-horse-battery", DisplayName: "Ada", BirthDate: "2000-01-15",
 	})
 	_, groups, sessions := testSupport.TestRepos(st)
 	svc := channelservice.NewService(

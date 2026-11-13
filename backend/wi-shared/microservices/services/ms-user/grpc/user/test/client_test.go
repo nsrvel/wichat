@@ -27,7 +27,11 @@ func (s *setupStatusServer) SetupStatus(context.Context, *userv1.SetupStatusRequ
 		return nil, status.Error(codes.Unavailable, "try again")
 	}
 
-	return &userv1.SetupStatusResponse{UsernameEnabled: true}, nil
+	return &userv1.SetupStatusResponse{RegistrationMode: "invite_only"}, nil
+}
+
+func (s *setupStatusServer) CheckUsername(_ context.Context, in *userv1.CheckUsernameRequest) (*userv1.CheckUsernameResponse, error) {
+	return &userv1.CheckUsernameResponse{Available: true, Normalized: in.GetUsername()}, nil
 }
 
 func TestSetupStatusRetriesIdempotent(t *testing.T) {
@@ -65,7 +69,12 @@ func TestSetupStatusRetriesIdempotent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !out.GetUsernameEnabled() {
+	if out.GetRegistrationMode() != "invite_only" {
 		t.Fatalf("unexpected response: %+v", out)
+	}
+
+	chk, err := grpcClient.CheckUsername(ctx, &userv1.CheckUsernameRequest{Username: "alice"})
+	if err != nil || !chk.GetAvailable() || chk.GetNormalized() != "alice" {
+		t.Fatalf("unexpected check username: %+v %v", chk, err)
 	}
 }

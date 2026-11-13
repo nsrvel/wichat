@@ -196,8 +196,8 @@ export function ShareDialog({ open, onOpenChange, target }: ShareDialogProps) {
 								const chip = {
 									kind: "user" as const,
 									id: hit.user_id,
-									label: hit.display_name || hit.email,
-									email: hit.email,
+									label: hit.display_name || `@${hit.username}`,
+									username: hit.username,
 								};
 								if (!chips.some((c) => c.kind === "user" && c.id === chip.id)) {
 									setChips([...chips, chip]);

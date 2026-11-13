@@ -16,6 +16,7 @@ import (
 	"github.com/wichat/wichat/backend/ms-user/pkg/constants"
 	googleoauth "github.com/wichat/wichat/backend/ms-user/pkg/oauth"
 	testSupport "github.com/wichat/wichat/backend/ms-user/pkg/test-support"
+	"github.com/wichat/wichat/backend/ms-user/pkg/username"
 	"github.com/wichat/wichat/backend/wi-shared/exception"
 	"github.com/wichat/wichat/backend/wi-shared/infra/logger"
 )
@@ -23,8 +24,16 @@ import (
 const testPassword = "correct-horse-battery"
 
 func registerInput(email string) models.RegisterInput {
+	handle, _ := username.BaseFromEmail(email)
+	if handle == "" || handle == "user" {
+		handle = "user." + strings.ReplaceAll(strings.Split(email, "@")[0], "+", "")
+		if len(handle) < 3 {
+			handle = "user.test"
+		}
+	}
 	return models.RegisterInput{
 		Email:       email,
+		Username:    handle,
 		Password:    testPassword,
 		DisplayName: "Ada",
 		BirthDate:   "2000-01-15",
@@ -44,6 +53,7 @@ func TestRegisterUnicodeDisplayName(t *testing.T) {
 	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
 	out := testSupport.RegisterSession(t, svc, notify, models.RegisterInput{
 		Email:       "unicode@example.com",
+		Username:    "unicode.user",
 		Password:    testPassword,
 		DisplayName: "山田 太郎 🎮",
 		BirthDate:   "2000-01-15",
@@ -82,11 +92,13 @@ func TestRegisterFirstUserIsOwner(t *testing.T) {
 	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
 	ctx := context.Background()
 
-	first := testSupport.RegisterSession(t, svc, notify, registerInput("admin@example.com"))
-	if first.AccessToken == "" || first.RefreshToken == "" || first.User.Email != "admin@example.com" {
+	first := testSupport.RegisterSession(t, svc, notify, models.RegisterInput{
+		Email: "ada-owner@example.com", Username: "ada.owner", Password: testPassword, DisplayName: "Ada", BirthDate: "2000-01-15",
+	})
+	if first.AccessToken == "" || first.RefreshToken == "" || first.User.Email != "ada-owner@example.com" {
 		t.Fatalf("session: %+v", first)
 	}
-	if first.User.Username != "admin" {
+	if first.User.Username != "ada.owner" {
 		t.Fatalf("username: %q", first.User.Username)
 	}
 
@@ -103,23 +115,26 @@ func TestRegisterUsernameCollision(t *testing.T) {
 	svc, notify, _, userSvc, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
 	ctx := context.Background()
 
-	owner := testSupport.RegisterSession(t, svc, notify, registerInput("admin@example.com"))
+	owner := testSupport.RegisterSession(t, svc, notify, registerInput("owner-col@example.com"))
 	if err := userSvc.CompleteInstanceSetup(ctx, owner.AccessToken, models.CompleteInstanceSetupInput{
 		Name:             "WiChat",
 		RegistrationMode: constants.RegistrationOpen,
-		UsernameEnabled:  true,
 	}); err != nil {
 		t.Fatal(err)
 	}
 
-	first := testSupport.RegisterSession(t, svc, notify, registerInput("john@a.com"))
-	if first.User.Username != "john" {
+	first := testSupport.RegisterSession(t, svc, notify, models.RegisterInput{
+		Email: "john@a.com", Username: "john.doe", Password: testPassword, DisplayName: "John", BirthDate: "2000-01-15",
+	})
+	if first.User.Username != "john.doe" {
 		t.Fatalf("first username: %q", first.User.Username)
 	}
 
-	second := testSupport.RegisterSession(t, svc, notify, registerInput("john@b.com"))
-	if second.User.Username != "john2" {
-		t.Fatalf("second username: %q", second.User.Username)
+	_, err := svc.Register(ctx, models.RegisterInput{
+		Email: "john@b.com", Username: "John.Doe", Password: testPassword, DisplayName: "John B", BirthDate: "2000-01-15",
+	})
+	if codeOf(t, err) != string(exception.MsgUsernameTaken) {
+		t.Fatalf("expected username taken, got %v", err)
 	}
 }
 
@@ -732,24 +747,24 @@ func TestMeRejectsRevokedSession(t *testing.T) {
 
 // auth_deep_test.go
 
-func TestSecondUserWithoutUsernameAssignment(t *testing.T) {
+func TestRegisterRequiresValidUsername(t *testing.T) {
 	st := usermock.NewState()
-	svc, notify, users, userSvc, _, _ := testSupport.NewAuthService(t, st, nil)
+	svc, notify, _, userSvc, _, _ := testSupport.NewAuthService(t, st, nil)
 	ctx := context.Background()
 
-	owner := testSupport.RegisterSession(t, svc, notify, registerInput("first-no-un@example.com"))
+	owner := testSupport.RegisterSession(t, svc, notify, registerInput("first-req-un@example.com"))
 	if err := userSvc.CompleteInstanceSetup(ctx, owner.AccessToken, models.CompleteInstanceSetupInput{
 		Name:             "WiChat",
 		RegistrationMode: constants.RegistrationOpen,
-		UsernameEnabled:  false,
 	}); err != nil {
 		t.Fatal(err)
 	}
 
-	second := testSupport.RegisterSession(t, svc, notify, registerInput("second-no-un@example.com"))
-	u, err := users.FindUserByID(ctx, second.User.ID)
-	if err != nil || u.Username != "" {
-		t.Fatalf("username=%q err=%v", u.Username, err)
+	_, err := svc.Register(ctx, models.RegisterInput{
+		Email: "second-req-un@example.com", Username: "admin", Password: testPassword, DisplayName: "Second", BirthDate: "2000-01-15",
+	})
+	if codeOf(t, err) != string(exception.MsgInvalidInput) {
+		t.Fatalf("expected invalid input for reserved username, got %v", err)
 	}
 }
 
@@ -824,7 +839,7 @@ func TestRegisterRejectsDuplicateEmail(t *testing.T) {
 func TestRegisterRejectsUnderage(t *testing.T) {
 	svc, _, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
 	_, err := svc.Register(context.Background(), models.RegisterInput{
-		Email: "kid@example.com", Password: testPassword, DisplayName: "Kid", BirthDate: "2020-01-01",
+		Email: "kid@example.com", Username: "kid.user", Password: testPassword, DisplayName: "Kid", BirthDate: "2020-01-01",
 	})
 	if codeOf(t, err) != string(exception.MsgAgeRestricted) {
 		t.Fatalf("age: %v", err)
@@ -930,7 +945,7 @@ func TestLoginByUsername(t *testing.T) {
 
 	owner := testSupport.RegisterSession(t, svc, notify, registerInput("login-user@example.com"))
 	if err := userSvc.CompleteInstanceSetup(ctx, owner.AccessToken, models.CompleteInstanceSetupInput{
-		Name: "WiChat", RegistrationMode: "open", UsernameEnabled: true,
+		Name: "WiChat", RegistrationMode: "open",
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -1099,7 +1114,7 @@ func TestCreateUserFromPendingUsernameConflict(t *testing.T) {
 
 	owner := testSupport.RegisterSession(t, svc, notify, registerInput("uname-owner@example.com"))
 	if err := userSvc.CompleteInstanceSetup(ctx, owner.AccessToken, models.CompleteInstanceSetupInput{
-		Name: "WiChat", RegistrationMode: "open", UsernameEnabled: true,
+		Name: "WiChat", RegistrationMode: "open",
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -1234,7 +1249,7 @@ func TestRegisterEmailHintShortLocal(t *testing.T) {
 	ctx := context.Background()
 
 	step, err := svc.Register(ctx, models.RegisterInput{
-		Email: "a@example.com", Password: testPassword, DisplayName: "A", BirthDate: "2000-01-15",
+		Email: "a@example.com", Username: "al.short", Password: testPassword, DisplayName: "Al", BirthDate: "2000-01-15",
 	})
 	if err != nil || step.Challenge == nil {
 		t.Fatalf("%+v %v", step, err)
@@ -1340,7 +1355,7 @@ func TestVerifyRegisterPreservesClientMetaInSession(t *testing.T) {
 	ctx := context.Background()
 
 	step, err := svc.Register(ctx, models.RegisterInput{
-		Email: "meta-reg@example.com", Password: testPassword, DisplayName: "Meta",
+		Email: "meta-reg@example.com", Username: "meta.reg", Password: testPassword, DisplayName: "Meta",
 		BirthDate: "2000-01-15",
 		ClientMeta: models.ClientMeta{
 			UserAgent: "WiChatTest/2.0", ClientIP: "203.0.113.9", Platform: "web", DeviceLabel: "Linux",

@@ -54,9 +54,10 @@ export function matchesMemberSearch(row: GroupSettingsMemberRow, query: string):
 	if (!q) {
 		return true;
 	}
-	const { display_name, email } = row.member;
+	const { display_name, username } = row.member;
 	return (
-		display_name.trim().toLowerCase().includes(q) || (email ?? "").trim().toLowerCase().includes(q)
+		display_name.trim().toLowerCase().includes(q) ||
+		(username ?? "").trim().toLowerCase().includes(q)
 	);
 }
 
