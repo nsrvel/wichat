@@ -163,8 +163,23 @@ export function createApiClient({
 			);
 		},
 
-		async delete<T>(path: string, schema: Schema<T>): Promise<T> {
-			return send(path, schema, { method: "DELETE" }, true);
+		async delete<T>(
+			path: string,
+			schema: Schema<T>,
+			body?: unknown,
+		): Promise<T> {
+			return send(
+				path,
+				schema,
+				body === undefined
+					? { method: "DELETE" }
+					: {
+							method: "DELETE",
+							headers: { "Content-Type": "application/json" },
+							body: JSON.stringify(body),
+						},
+				true,
+			);
 		},
 
 		async postForm<T>(

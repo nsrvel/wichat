@@ -5,16 +5,15 @@ import {
 	Check,
 	ChevronRight,
 	Pencil,
-	Plus,
 	Users,
 	Volume2,
-	X,
 } from "lucide-react";
 import { useState, type ReactElement } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { UserAvatar, UserProfileIndicator } from "@/components/ui/user-avatar";
+import { UserStatusNotePill } from "@/components/user/user-status-note-pill";
 import { cn } from "@/lib/utils";
 import {
 	formatStatusNoteLabel,
@@ -68,6 +67,9 @@ export function UserProfilePopover({
 
 	const avatarUrl = user?.avatar_url?.trim() || "";
 	const username = user?.username?.trim() || "";
+	const pronouns = user?.pronouns?.trim() || "";
+	const bio = user?.bio?.trim() || "";
+	const bannerColor = user?.banner_color?.trim() || "";
 	const activeStatus = USER_STATUS_BY_ID[status];
 	const statusNoteLabel = formatStatusNoteLabel(statusNote);
 
@@ -98,7 +100,10 @@ export function UserProfilePopover({
 				className="w-[320px] overflow-visible rounded-2xl border-border bg-card p-0 text-card-foreground shadow-elevated"
 			>
 				{/* WiChat profile banner: ~half above avatar, ~half behind top half of avatar */}
-				<div className="h-[92px] overflow-hidden rounded-t-2xl bg-popover" />
+				<div
+					className="h-[92px] overflow-hidden rounded-t-2xl bg-popover"
+					style={bannerColor ? { backgroundColor: bannerColor } : undefined}
+				/>
 
 				<div className="px-5 pb-5">
 					{/* Large avatar (center aligns with banner bottom) + status note */}
@@ -111,32 +116,11 @@ export function UserProfilePopover({
 							ringClassName="ring-[6px] ring-card"
 						/>
 
-						<div className="min-w-0 flex-1">
-							<div className="inline-flex w-fit max-w-full items-center gap-1.5 rounded-2xl bg-muted px-3.5 py-2.5 text-xs text-muted-foreground shadow-[0_6px_16px_rgba(0,0,0,0.28)] transition-colors hover:bg-muted/85 hover:text-foreground">
-								<button
-									type="button"
-									onClick={handleEditNoteClick}
-									className="flex min-w-0 items-center gap-1.5 text-left"
-								>
-									{!statusNoteLabel ? (
-										<Plus className="size-3.5 shrink-0 opacity-80" aria-hidden />
-									) : null}
-									<span className="line-clamp-2 break-words leading-snug">
-										{statusNoteLabel || t("shell.user_dock.status_note_placeholder")}
-									</span>
-								</button>
-								{statusNoteLabel ? (
-									<button
-										type="button"
-										onClick={onClearStatusNote}
-										aria-label={t("shell.user_dock.status_note_clear")}
-										className="shrink-0 rounded-full p-0.5 text-muted-foreground/80 transition-colors hover:bg-foreground/10 hover:text-foreground"
-									>
-										<X className="size-3.5" aria-hidden />
-									</button>
-								) : null}
-							</div>
-						</div>
+						<UserStatusNotePill
+							label={statusNoteLabel}
+							onEdit={handleEditNoteClick}
+							onClear={onClearStatusNote}
+						/>
 					</div>
 
 					{/* Identity */}
@@ -144,9 +128,16 @@ export function UserProfilePopover({
 						<p className="truncate text-[17px] font-bold leading-tight tracking-tight text-foreground">
 							{displayName}
 						</p>
-						{username ? (
+						{username || pronouns ? (
 							<p className="mt-0.5 truncate text-[13px] font-medium text-muted-foreground">
-								@{username}
+								{username ? `@${username}` : ""}
+								{username && pronouns ? " • " : ""}
+								{pronouns}
+							</p>
+						) : null}
+						{bio ? (
+							<p className="mt-2.5 whitespace-pre-wrap break-words text-xs leading-relaxed text-muted-foreground">
+								{bio}
 							</p>
 						) : null}
 					</div>

@@ -254,7 +254,6 @@ export function RegisterForm() {
 					control={form.control}
 					name="password"
 					label={t("login.password")}
-					placeholder={t("register.password_placeholder")}
 					autoComplete="new-password"
 					required
 					showLabel={t("login.show_password")}

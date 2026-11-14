@@ -1,5 +1,6 @@
 import {
 	AuthChallengeSchema,
+	BeginLoginWebAuthnResponseSchema,
 	CheckUsernameResponseSchema,
 	ForgotPasswordRequestResponseSchema,
 	ForgotPasswordVerifyResponseSchema,
@@ -9,6 +10,8 @@ import {
 	ResendEmailCodeResponseSchema,
 	SessionSchema,
 	UserSchema,
+	VerifyLoginMfaRequestSchema,
+	type BeginLoginWebAuthnResponse,
 	type ForgotPasswordRequest,
 	type ForgotPasswordReset,
 	type ForgotPasswordVerify,
@@ -18,6 +21,7 @@ import {
 	type ResendEmailCode,
 	type User,
 	type VerifyEmailCode,
+	type VerifyLoginMfaRequest,
 } from "@wichat/contracts";
 import { z } from "zod";
 import { ApiError } from "@wichat/api-client/api-error";
@@ -64,6 +68,23 @@ export async function register(payload: RegisterRequest): Promise<PasswordAuthSt
 
 export async function verifyLogin(payload: VerifyEmailCode) {
 	const session = await api.post("/auth/login/verify", SessionSchema, payload);
+	setAccessToken(session.access_token);
+	return session;
+}
+
+export async function beginLoginWebAuthn(
+	challenge_id: string,
+): Promise<BeginLoginWebAuthnResponse> {
+	return api.post(
+		"/auth/login/mfa/webauthn/begin",
+		BeginLoginWebAuthnResponseSchema,
+		{ challenge_id },
+	);
+}
+
+export async function verifyLoginMfa(payload: VerifyLoginMfaRequest) {
+	const body = VerifyLoginMfaRequestSchema.parse(payload);
+	const session = await api.post("/auth/login/mfa/verify", SessionSchema, body);
 	setAccessToken(session.access_token);
 	return session;
 }

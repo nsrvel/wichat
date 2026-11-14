@@ -99,6 +99,7 @@ export const USER_SETTINGS_NAV_GROUPS: UserSettingsNavGroup[] = [
 			{
 				id: "account",
 				labelKey: "user_settings.nav.account",
+				subtitleKey: "user_settings.account.subtitle",
 				icon: IdCard,
 				keywords: ["account", "username", "email", "password", "security", "mfa", "status", "akun"],
 				subAnchors: [
@@ -138,10 +139,16 @@ export const USER_SETTINGS_NAV_GROUPS: UserSettingsNavGroup[] = [
 						keywords: ["devices", "sessions", "perangkat"],
 					},
 					{
-						id: "standing",
+						id: "disable-account",
 						elementId: "user-settings-account-status",
-						labelKey: "user_settings.account.standing_title",
-						keywords: ["standing", "status"],
+						labelKey: "user_settings.account.disable_title",
+						keywords: ["disable", "nonaktif", "status"],
+					},
+					{
+						id: "delete-account",
+						elementId: "user-settings-account-status",
+						labelKey: "user_settings.account.delete_title",
+						keywords: ["delete", "close", "hapus", "tutup", "status"],
 					},
 				],
 			},
@@ -205,8 +212,9 @@ export const USER_SETTINGS_NAV_GROUPS: UserSettingsNavGroup[] = [
 			{
 				id: "devices",
 				labelKey: "user_settings.nav.devices",
+				subtitleKey: "user_settings.devices.subtitle",
 				icon: MonitorSmartphone,
-				keywords: ["devices", "sessions", "perangkat"],
+				keywords: ["devices", "sessions", "logout", "perangkat", "sesi"],
 			},
 			{
 				id: "developer",
@@ -229,6 +237,5 @@ export const USER_SETTINGS_PLACEHOLDER_ICONS: Partial<Record<UserSettingsSection
 	appearance: Palette,
 	voice: Mic,
 	accessibility: Accessibility,
-	devices: MonitorSmartphone,
 	developer: Code2,
 };

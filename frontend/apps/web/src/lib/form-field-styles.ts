@@ -81,6 +81,9 @@ export const authSubmitClass = [
 /** Same footprint as `authSubmitClass`; pair with `Button` `variant="ghost"`. */
 export const authSubmitGhostClass = [authSubmitShapeClass, "w-full min-w-0"].join(" ");
 
+/** Fit-content footer buttons for two-button `WiChatDialogFooterActions` rows. */
+export const authFormFooterButtonClass = "w-auto min-w-[7.5rem] max-w-[55%] shrink-0 px-8";
+
 export const authLinkClass =
 	"font-semibold text-primary underline-offset-4 transition-colors hover:underline focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none rounded px-0.5 py-0.5";
 

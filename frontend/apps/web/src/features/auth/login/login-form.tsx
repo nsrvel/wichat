@@ -13,6 +13,7 @@ import { TextField } from "@/components/form/text-field";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { AuthEmailOtpStep } from "@/features/auth/components/auth-email-otp-step";
+import { AuthMfaStep } from "@/features/auth/components/auth-mfa-step";
 import { TurnstileWidget } from "@/features/auth/components/turnstile-widget";
 import { authFieldLabelClass, authFormClass, authInputClass, authFieldLinkClass, authSubmitClass } from "@/lib/form-field-styles";
 import { resendRateLimitCooldownSec } from "@/features/auth/lib/resend-cooldown";
@@ -39,6 +40,7 @@ export function LoginForm() {
 	const { data: policy } = useQuery(instancePolicyQueryOpts());
 	const turnstileSiteKey = policy?.turnstile_site_key ?? "";
 	const [challenge, setChallenge] = useState<AuthChallenge | null>(null);
+	const [mfaChallenge, setMfaChallenge] = useState<AuthChallenge | null>(null);
 	const [resendCooldown, setResendCooldown] = useState(0);
 	const [turnstileToken, setTurnstileToken] = useState("");
 	const [turnstileResetKey, setTurnstileResetKey] = useState(0);
@@ -46,6 +48,21 @@ export function LoginForm() {
 		resolver: zodResolver(LoginFormSchema),
 		defaultValues: { login: "", password: "" },
 	});
+
+	if (mfaChallenge) {
+		return (
+			<AuthMfaStep
+				challenge={mfaChallenge}
+				onSuccess={() => {
+					setMfaChallenge(null);
+				}}
+				onBack={() => {
+					login.reset();
+					setMfaChallenge(null);
+				}}
+			/>
+		);
+	}
 
 	if (challenge) {
 		return (
@@ -101,7 +118,9 @@ export function LoginForm() {
 					};
 					login.mutate(payload, {
 						onSuccess: (step) => {
-							if (step.kind === "challenge") {
+							if (step.kind === "mfa_challenge") {
+								setMfaChallenge(step.challenge);
+							} else if (step.kind === "challenge") {
 								setChallenge(step.challenge);
 								setResendCooldown(step.challenge.resend_after_seconds);
 							}
@@ -129,7 +148,6 @@ export function LoginForm() {
 					control={form.control}
 					name="password"
 					label={t("login.password")}
-					placeholder={t("login.password_placeholder")}
 					autoComplete="current-password"
 					required
 					showLabel={t("login.show_password")}

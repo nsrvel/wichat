@@ -18,12 +18,18 @@ import {
 	WiChatDialogFooterActions,
 	WiChatDialogHeader,
 } from "@/components/ui/wichat-dialog";
-import { authFieldLabelClass, authFormClass, authInputClass, authSubmitClass, authSubmitGhostClass } from "@/lib/form-field-styles";
+import {
+	authFieldLabelClass,
+	authFormClass,
+	authFormFooterButtonClass,
+	authInputClass,
+	authSubmitClass,
+	authSubmitGhostClass,
+} from "@/lib/form-field-styles";
 import { cn } from "@/lib/utils";
 
 const CREATE_CATEGORY_FORM_ID = "wichat-create-category-form";
 const CREATE_CATEGORY_TITLE_ID = "wichat-create-category-title";
-const authFormFooterButtonClass = "w-auto min-w-[7.5rem] max-w-[55%] shrink-0 px-8";
 
 const CreateCategorySchema = z.object({
 	name: z

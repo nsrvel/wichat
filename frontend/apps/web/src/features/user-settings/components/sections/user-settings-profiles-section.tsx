@@ -1,5 +1,6 @@
 "use client";
 
+import { CalendarDays } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -10,8 +11,11 @@ import { UserAvatar } from "@/components/ui/user-avatar";
 import { authFieldLabelClass, authInputClass } from "@/lib/form-field-styles";
 import { settingsFormFooterBarClass, settingsSectionDividerLineClass, settingsSectionDividerWrapClass, settingsSectionGapClass } from "@/lib/settings-chrome";
 import { UserAvatarUpload } from "@/components/user/user-avatar-upload";
+import { UserStatusNotePill } from "@/components/user/user-status-note-pill";
+import { translateError } from "@/integrations/i18n/translate-error";
 import { cn } from "@/lib/utils";
 import type { UserPresenceStatus } from "@/lib/user-status";
+import { useSaveMyProfileMutation } from "@/services/user/user.mutation";
 
 const DEFAULT_BANNER_COLOR = "#313338";
 const descriptionInputClass = cn(authInputClass, "min-h-[6.5rem] resize-y py-2.5 sm:min-h-[7rem]");
@@ -22,6 +26,11 @@ type UserSettingsProfilesSectionProps = {
 	avatarUrl: string;
 	initials: string;
 	status: UserPresenceStatus;
+	statusNoteLabel?: string;
+	createdAt?: string;
+	initialPronouns?: string;
+	initialBio?: string;
+	initialBannerColor?: string;
 };
 
 export function UserSettingsProfilesSection({
@@ -30,14 +39,22 @@ export function UserSettingsProfilesSection({
 	avatarUrl,
 	initials,
 	status,
+	statusNoteLabel = "",
+	createdAt = "",
+	initialPronouns = "",
+	initialBio = "",
+	initialBannerColor = "",
 }: UserSettingsProfilesSectionProps) {
-	const { t } = useTranslation();
+	const { t, i18n } = useTranslation();
+	const saveProfile = useSaveMyProfileMutation();
+	const resolvedInitialBanner = initialBannerColor.trim() || DEFAULT_BANNER_COLOR;
+
 	const [avatarFile, setAvatarFile] = useState<File | null>(null);
 	const [avatarCleared, setAvatarCleared] = useState(false);
 	const [nameDraft, setNameDraft] = useState(displayName);
-	const [pronounsDraft, setPronounsDraft] = useState("");
-	const [bannerColor, setBannerColor] = useState(DEFAULT_BANNER_COLOR);
-	const [bioDraft, setBioDraft] = useState("");
+	const [pronounsDraft, setPronounsDraft] = useState(initialPronouns);
+	const [bannerColor, setBannerColor] = useState(resolvedInitialBanner);
+	const [bioDraft, setBioDraft] = useState(initialBio);
 
 	const avatarPreviewUrl = useMemo(
 		() => (avatarFile ? URL.createObjectURL(avatarFile) : null),
@@ -55,21 +72,53 @@ export function UserSettingsProfilesSection({
 		avatarFile !== null ||
 		avatarCleared ||
 		nameDraft !== displayName ||
-		pronounsDraft !== "" ||
-		bannerColor !== DEFAULT_BANNER_COLOR ||
-		bioDraft !== "";
+		pronounsDraft !== initialPronouns ||
+		bannerColor !== resolvedInitialBanner ||
+		bioDraft !== initialBio;
 
 	const handleReset = () => {
 		setAvatarFile(null);
 		setAvatarCleared(false);
 		setNameDraft(displayName);
-		setPronounsDraft("");
-		setBannerColor(DEFAULT_BANNER_COLOR);
-		setBioDraft("");
+		setPronounsDraft(initialPronouns);
+		setBannerColor(resolvedInitialBanner);
+		setBioDraft(initialBio);
+	};
+
+	const handleSave = async () => {
+		try {
+			const saved = await saveProfile.mutateAsync({
+				display_name: nameDraft.trim() || displayName,
+				pronouns: pronounsDraft.trim(),
+				bio: bioDraft.trim(),
+				banner_color: bannerColor === DEFAULT_BANNER_COLOR ? "" : bannerColor,
+				clear_avatar: avatarCleared && !avatarFile,
+				avatarFile,
+			});
+			setAvatarFile(null);
+			setAvatarCleared(false);
+			setNameDraft(saved.display_name || displayName);
+			setPronounsDraft(saved.pronouns ?? "");
+			setBioDraft(saved.bio ?? "");
+			setBannerColor(saved.banner_color?.trim() || DEFAULT_BANNER_COLOR);
+			toast.success(t("user_settings.profiles.save_success"));
+		} catch (err) {
+			toast.error(translateError(t, err));
+		}
 	};
 
 	const effectiveAvatarSrc = avatarPreviewUrl ?? (avatarCleared ? "" : avatarUrl);
 	const trimmedPronouns = pronounsDraft.trim();
+	const formattedMemberSince = useMemo(() => {
+		const raw = createdAt.trim();
+		const parsed = raw ? new Date(raw) : new Date();
+		const date = Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+		return new Intl.DateTimeFormat(i18n.language, {
+			month: "short",
+			day: "numeric",
+			year: "numeric",
+		}).format(date);
+	}, [createdAt, i18n.language]);
 
 	return (
 		<div className="flex flex-col">
@@ -154,6 +203,18 @@ export function UserSettingsProfilesSection({
 							inputClassName={authInputClass}
 						/>
 					</div>
+
+					<div className={settingsSectionDividerWrapClass} role="presentation">
+						<div className={settingsSectionDividerLineClass} />
+					</div>
+
+					<div className="space-y-1.5">
+						<p className={authFieldLabelClass}>{t("user_settings.profiles.member_since")}</p>
+						<div className="flex items-center gap-2 text-sm text-muted-foreground">
+							<CalendarDays className="size-4 shrink-0 opacity-80" aria-hidden />
+							<span className="font-medium text-foreground/90">{formattedMemberSince}</span>
+						</div>
+					</div>
 				</div>
 
 				{/* Right column — sticky live preview card matching UserProfilePopover */}
@@ -165,7 +226,7 @@ export function UserSettingsProfilesSection({
 							style={{ backgroundColor: bannerColor }}
 						/>
 						<div className="px-5 pb-5">
-							<div className="-mt-[40px]">
+							<div className="-mt-[40px] flex items-center gap-2.5">
 								<UserAvatar
 									src={effectiveAvatarSrc}
 									initials={initials}
@@ -173,6 +234,7 @@ export function UserSettingsProfilesSection({
 									status={status}
 									ringClassName="ring-[5px] ring-card"
 								/>
+								<UserStatusNotePill label={statusNoteLabel} />
 							</div>
 							<div className="mt-3 min-w-0">
 								<p className="truncate text-base font-bold leading-tight text-foreground">
@@ -204,13 +266,20 @@ export function UserSettingsProfilesSection({
 							{t("user_settings.profiles.unsaved_hint")}
 						</p>
 						<div className="flex shrink-0 items-center gap-2">
-							<Button type="button" variant="ghost" size="sm" onClick={handleReset}>
+							<Button
+								type="button"
+								variant="ghost"
+								size="sm"
+								disabled={saveProfile.isPending}
+								onClick={handleReset}
+							>
 								{t("user_settings.profiles.reset")}
 							</Button>
 							<Button
 								type="button"
 								size="sm"
-								onClick={() => toast.info(t("shell.group_rail_menu.coming_soon"))}
+								disabled={saveProfile.isPending}
+								onClick={() => void handleSave()}
 							>
 								{t("user_settings.profiles.save_changes")}
 							</Button>

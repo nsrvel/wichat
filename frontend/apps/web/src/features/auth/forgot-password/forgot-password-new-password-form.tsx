@@ -46,7 +46,6 @@ export function ForgotPasswordNewPasswordForm({
 					control={form.control}
 					name="password"
 					label={t("forgot_password.new_password")}
-					placeholder={t("register.password_placeholder")}
 					autoComplete="new-password"
 					required
 					showLabel={t("login.show_password")}
@@ -58,7 +57,6 @@ export function ForgotPasswordNewPasswordForm({
 					control={form.control}
 					name="confirm_password"
 					label={t("forgot_password.confirm_password")}
-					placeholder={t("forgot_password.confirm_password_placeholder")}
 					autoComplete="new-password"
 					required
 					showLabel={t("login.show_password")}

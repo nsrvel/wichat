@@ -90,7 +90,7 @@ export function UserSettingsSidebar({
 	return (
 		<aside className="flex h-full w-[15rem] shrink-0 flex-col border-r border-sidebar-border/60 bg-sidebar text-sidebar-foreground">
 			{/* Same profile button as ShellUserDock + emoji-style search bar */}
-			<div className={cn("shrink-0 pt-3.5 pb-2", SIDEBAR_INSET_X)}>
+			<div className={cn("shrink-0 pt-3.5 pb-1", SIDEBAR_INSET_X)}>
 				<div className="flex">
 					<UserProfileButton
 						displayName={displayName}
@@ -132,7 +132,7 @@ export function UserSettingsSidebar({
 			</div>
 
 			{/* Scrollbar sits flush at the sidebar right edge; SIDEBAR_INSET_X is on inner nav */}
-			<div className="thin-scroll flex min-h-0 flex-1 flex-col overflow-y-auto pt-3 pb-3">
+			<div className="thin-scroll flex min-h-0 flex-1 flex-col overflow-y-auto pt-1 pb-3">
 				<nav
 					className={cn("flex flex-col", SIDEBAR_INSET_X)}
 					aria-label={t("user_settings.title")}

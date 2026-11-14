@@ -6,6 +6,7 @@ import { Q_INSTANCE_POLICY, Q_SESSION } from "@/services/auth/auth.key";
 import { Q_JOINABLE_GROUPS, Q_MY_GROUPS } from "@/services/group/group.key";
 import { prefetchMyGroups } from "@/services/group/prefetch-my-groups";
 import {
+	beginLoginWebAuthn,
 	forgotPasswordRequest,
 	forgotPasswordReset,
 	forgotPasswordVerify,
@@ -15,6 +16,7 @@ import {
 	resendLoginCode,
 	resendRegisterCode,
 	verifyLogin,
+	verifyLoginMfa,
 	verifyRegister,
 } from "@/services/auth/auth.service";
 
@@ -43,6 +45,18 @@ export function useVerifyLoginMutation() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: verifyLogin,
+		onSuccess: (session) => applySession(queryClient, session),
+	});
+}
+
+export function useBeginLoginWebAuthnMutation() {
+	return useMutation({ mutationFn: beginLoginWebAuthn });
+}
+
+export function useVerifyLoginMfaMutation() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: verifyLoginMfa,
 		onSuccess: (session) => applySession(queryClient, session),
 	});
 }

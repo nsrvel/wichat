@@ -143,7 +143,7 @@ export function WiChatDialogStepCarousel({
 
 	return (
 		<div
-			className={cn("w-full overflow-hidden", className)}
+			className={cn("w-full overflow-clip", className)}
 			style={viewportHeight === undefined ? undefined : { height: viewportHeight }}
 		>
 			<div

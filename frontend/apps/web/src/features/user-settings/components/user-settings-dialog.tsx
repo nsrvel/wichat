@@ -6,6 +6,7 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { UserSettingsAccountSection } from "@/features/user-settings/components/sections/user-settings-account-section";
+import { UserSettingsDevicesSection } from "@/features/user-settings/components/sections/user-settings-devices-section";
 import { UserSettingsLanguageSection } from "@/features/user-settings/components/sections/user-settings-language-section";
 import { UserSettingsPlaceholderSection } from "@/features/user-settings/components/sections/user-settings-placeholder-section";
 import { UserSettingsProfilesSection } from "@/features/user-settings/components/sections/user-settings-profiles-section";
@@ -29,6 +30,7 @@ type UserSettingsDialogProps = {
 	avatarUrl: string;
 	initials: string;
 	status: UserPresenceStatus;
+	statusNoteLabel?: string;
 };
 
 export function UserSettingsDialog({
@@ -41,6 +43,7 @@ export function UserSettingsDialog({
 	avatarUrl,
 	initials,
 	status,
+	statusNoteLabel = "",
 }: UserSettingsDialogProps) {
 	const { t } = useTranslation();
 	const titleId = useId();
@@ -86,7 +89,7 @@ export function UserSettingsDialog({
 				if (!el) {
 					return;
 				}
-				el.scrollIntoView({ behavior: "smooth", block: "center" });
+				el.scrollIntoView({ behavior: "smooth", block: "start" });
 				if (
 					el instanceof HTMLInputElement ||
 					el instanceof HTMLTextAreaElement ||
@@ -94,10 +97,6 @@ export function UserSettingsDialog({
 				) {
 					el.focus({ preventScroll: true });
 				}
-				el.classList.add("ring-2", "ring-ring/70", "ring-offset-2", "ring-offset-background", "rounded-lg");
-				window.setTimeout(() => {
-					el.classList.remove("ring-2", "ring-ring/70", "ring-offset-2", "ring-offset-background", "rounded-lg");
-				}, 1400);
 			});
 			return;
 		}
@@ -204,6 +203,7 @@ export function UserSettingsDialog({
 							<UserSettingsAccountSection
 								user={user}
 								onNavigateSection={(sec) => handleSelectSection(sec)}
+								onAccountClosed={() => onOpenChange(false)}
 							/>
 						) : activeSection === "profiles" ? (
 							<UserSettingsProfilesSection
@@ -212,9 +212,19 @@ export function UserSettingsDialog({
 								avatarUrl={avatarUrl}
 								initials={initials}
 								status={status}
+								statusNoteLabel={statusNoteLabel}
+								createdAt={user?.created_at ?? ""}
+								initialPronouns={user?.pronouns ?? ""}
+								initialBio={user?.bio ?? ""}
+								initialBannerColor={user?.banner_color ?? ""}
 							/>
 						) : activeSection === "language" ? (
 							<UserSettingsLanguageSection />
+						) : activeSection === "devices" ? (
+							<UserSettingsDevicesSection
+								hasPassword={user?.has_password ?? true}
+								onNavigateSection={(sec) => handleSelectSection(sec)}
+							/>
 						) : (
 							<UserSettingsPlaceholderSection sectionId={activeSection} />
 						)}

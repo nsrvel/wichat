@@ -170,6 +170,7 @@ export function ShellUserDock() {
 				avatarUrl={avatarUrl}
 				initials={initials}
 				status={status}
+				statusNoteLabel={statusNoteLabel}
 			/>
 		</>
 	);

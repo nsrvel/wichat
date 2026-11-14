@@ -25,7 +25,80 @@ export const UserSchema = z.object({
 	display_name: z.string(),
 	username: z.string(),
 	avatar_url: z.string().optional().default(""),
+	pronouns: z.string().optional().default(""),
+	bio: z.string().optional().default(""),
+	banner_color: z.string().optional().default(""),
+	has_password: z.boolean().default(true),
+	created_at: z.string().optional().default(""),
 });
+
+export const UpdateUserProfileRequestSchema = z.object({
+	display_name: z.string(),
+	pronouns: z.string().optional().default(""),
+	bio: z.string().optional().default(""),
+	banner_color: z.string().optional().default(""),
+	clear_avatar: z.boolean().optional().default(false),
+});
+
+export type UpdateUserProfileRequest = z.infer<
+	typeof UpdateUserProfileRequestSchema
+>;
+
+export const UpdateUsernameRequestSchema = z.object({
+	username: usernameSchema,
+	current_password: z.string().min(1),
+});
+
+export type UpdateUsernameRequest = z.infer<typeof UpdateUsernameRequestSchema>;
+
+export const RequestEmailChangeRequestSchema = z.object({
+	locale: z.string().optional().default("en"),
+});
+
+export type RequestEmailChangeRequest = z.infer<
+	typeof RequestEmailChangeRequestSchema
+>;
+
+export const VerifyEmailChangeRequestSchema = z.object({
+	challenge_id: z.string().trim().min(1),
+	code: z.string().trim().min(1).max(16),
+});
+
+export type VerifyEmailChangeRequest = z.infer<
+	typeof VerifyEmailChangeRequestSchema
+>;
+
+export const VerifyEmailChangeResponseSchema = z.object({
+	change_token: z.string().min(1),
+});
+
+export type VerifyEmailChangeResponse = z.infer<
+	typeof VerifyEmailChangeResponseSchema
+>;
+
+export const CompleteEmailChangeRequestSchema = z.object({
+	change_token: z.string().trim().min(1),
+	new_email: z.email(),
+	current_password: z.string().min(1),
+	reason: z.string().trim().optional().default(""),
+});
+
+export type CompleteEmailChangeRequest = z.infer<
+	typeof CompleteEmailChangeRequestSchema
+>;
+
+export const UpdatePasswordRequestSchema = z.object({
+	current_password: z.string().optional().default(""),
+	new_password: z.string().min(12).max(128),
+});
+
+export type UpdatePasswordRequest = z.infer<typeof UpdatePasswordRequestSchema>;
+
+export const AccountActionRequestSchema = z.object({
+	current_password: z.string().optional().default(""),
+});
+
+export type AccountActionRequest = z.infer<typeof AccountActionRequestSchema>;
 
 export const SessionSchema = z.object({
 	access_token: z.string(),
@@ -33,12 +106,79 @@ export const SessionSchema = z.object({
 	user: UserSchema,
 });
 
+export const MfaMethodSchema = z.enum(["webauthn", "totp", "recovery"]);
+export type MfaMethod = z.infer<typeof MfaMethodSchema>;
+
 export const AuthChallengeSchema = z.object({
-	otp_required: z.boolean(),
+	otp_required: z.boolean().optional().default(false),
+	mfa_required: z.boolean().optional().default(false),
+	mfa_methods: z.array(MfaMethodSchema).optional().default([]),
+	webauthn_options: z.unknown().optional(),
 	challenge_id: z.string(),
-	email_hint: z.string(),
-	resend_after_seconds: z.number().int().nonnegative(),
+	email_hint: z.string().optional().default(""),
+	resend_after_seconds: z.number().int().nonnegative().optional().default(0),
 });
+
+export const SecurityKeySchema = z.object({
+	id: z.string(),
+	name: z.string(),
+	created_at: z.string(),
+	last_used_at: z.string().optional(),
+	transports: z.array(z.string()).default([]),
+});
+export type SecurityKey = z.infer<typeof SecurityKeySchema>;
+
+export const MfaStatusSchema = z.object({
+	totp_enabled: z.boolean(),
+	security_keys: z.array(SecurityKeySchema).default([]),
+	recovery_codes_remaining: z.number().int().nonnegative(),
+});
+export type MfaStatus = z.infer<typeof MfaStatusSchema>;
+
+export const BeginTotpSetupResponseSchema = z.object({
+	setup_token: z.string(),
+	secret: z.string(),
+	otpauth_uri: z.string(),
+});
+export type BeginTotpSetupResponse = z.infer<
+	typeof BeginTotpSetupResponseSchema
+>;
+
+export const RecoveryCodesResponseSchema = z.object({
+	recovery_codes: z.array(z.string()),
+});
+export type RecoveryCodesResponse = z.infer<typeof RecoveryCodesResponseSchema>;
+
+export const BeginWebAuthnRegisterResponseSchema = z.object({
+	challenge_id: z.string(),
+	options: z.unknown(),
+});
+export type BeginWebAuthnRegisterResponse = z.infer<
+	typeof BeginWebAuthnRegisterResponseSchema
+>;
+
+export const FinishWebAuthnRegisterResponseSchema = z.object({
+	security_key: SecurityKeySchema,
+	recovery_codes: z.array(z.string()).optional(),
+});
+export type FinishWebAuthnRegisterResponse = z.infer<
+	typeof FinishWebAuthnRegisterResponseSchema
+>;
+
+export const BeginLoginWebAuthnResponseSchema = z.object({
+	webauthn_options: z.unknown(),
+});
+export type BeginLoginWebAuthnResponse = z.infer<
+	typeof BeginLoginWebAuthnResponseSchema
+>;
+
+export const VerifyLoginMfaRequestSchema = z.object({
+	challenge_id: z.string().trim().min(1),
+	method: MfaMethodSchema,
+	code: z.string().optional(),
+	assertion: z.unknown().optional(),
+});
+export type VerifyLoginMfaRequest = z.infer<typeof VerifyLoginMfaRequestSchema>;
 
 export const VerifyEmailCodeSchema = z.object({
 	challenge_id: z.string().trim().min(1),
@@ -218,7 +358,8 @@ export type ResendEmailCodeResponse = z.infer<
 
 export type PasswordAuthStep =
 	| { kind: "session"; session: Session }
-	| { kind: "challenge"; challenge: AuthChallenge };
+	| { kind: "challenge"; challenge: AuthChallenge }
+	| { kind: "mfa_challenge"; challenge: AuthChallenge };
 
 export function parsePasswordAuthStep(data: unknown): PasswordAuthStep {
 	const record =
@@ -227,7 +368,11 @@ export function parsePasswordAuthStep(data: unknown): PasswordAuthStep {
 		typeof record.challenge_id === "string" &&
 		record.challenge_id.length > 0
 	) {
-		return { kind: "challenge", challenge: AuthChallengeSchema.parse(data) };
+		const challenge = AuthChallengeSchema.parse(data);
+		if (challenge.mfa_required) {
+			return { kind: "mfa_challenge", challenge };
+		}
+		return { kind: "challenge", challenge };
 	}
 
 	return { kind: "session", session: SessionSchema.parse(data) };
@@ -357,3 +502,30 @@ export const RedeemInviteResultSchema = z.object({
 	group_id: publicEntityIdSchema,
 	channel_id: z.union([publicEntityIdSchema, z.literal("")]).optional(),
 });
+
+export const DeviceSessionSchema = z.object({
+	id: z.string(),
+	platform: z.string().optional().default("web"),
+	device_label: z.string().optional().default(""),
+	location_label: z.string().optional().default(""),
+	user_agent: z.string().optional().default(""),
+	last_used_at: z.string(),
+	created_at: z.string(),
+	is_current: z.boolean(),
+});
+
+export type DeviceSession = z.infer<typeof DeviceSessionSchema>;
+
+export const DeviceSessionsResponseSchema = z.object({
+	devices: z.array(DeviceSessionSchema),
+});
+
+export type DeviceSessionsResponse = z.infer<
+	typeof DeviceSessionsResponseSchema
+>;
+
+export const RevokeDeviceRequestSchema = z.object({
+	current_password: z.string().optional().default(""),
+});
+
+export type RevokeDeviceRequest = z.infer<typeof RevokeDeviceRequestSchema>;

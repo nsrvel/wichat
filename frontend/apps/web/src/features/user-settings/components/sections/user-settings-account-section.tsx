@@ -1,17 +1,34 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import type { User } from "@wichat/contracts";
-import { CheckCircle2, ChevronRight, Info } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+	AccountStatusDialog,
+	type AccountStatusDialogMode,
+} from "@/features/user-settings/components/dialogs/account-status-dialog";
+import { ChangeEmailDialog } from "@/features/user-settings/components/dialogs/change-email-dialog";
+import { ChangePasswordDialog } from "@/features/user-settings/components/dialogs/change-password-dialog";
+import { ChangeUsernameDialog } from "@/features/user-settings/components/dialogs/change-username-dialog";
+import { MfaSettingsDialog } from "@/features/user-settings/components/dialogs/mfa/mfa-settings-dialog";
 import type { UserSettingsSectionId } from "@/features/user-settings/lib/user-settings-nav";
+import {
+	settingsSectionDividerLineClass,
+	settingsSectionDividerWrapClass,
+} from "@/lib/settings-chrome";
+import { myMfaStatusQueryOptions } from "@/services/user/user.query";
 
 type UserSettingsAccountSectionProps = {
 	user: User | null | undefined;
 	onNavigateSection: (section: UserSettingsSectionId) => void;
+	onAccountClosed?: () => void;
 };
+
+const editButtonClass = "px-3.5 text-[13px]";
+const statusActionButtonClass = "min-w-[140px] px-4 text-[13px]";
 
 function maskEmail(email: string): string {
 	const trimmed = email.trim();
@@ -25,26 +42,34 @@ function maskEmail(email: string): string {
 export function UserSettingsAccountSection({
 	user,
 	onNavigateSection,
+	onAccountClosed,
 }: UserSettingsAccountSectionProps) {
 	const { t } = useTranslation();
 	const [revealEmail, setRevealEmail] = useState(false);
+	const [changeUsernameOpen, setChangeUsernameOpen] = useState(false);
+	const [changeEmailOpen, setChangeEmailOpen] = useState(false);
+	const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+	const [mfaOpen, setMfaOpen] = useState(false);
+	const [accountStatusMode, setAccountStatusMode] = useState<AccountStatusDialogMode | null>(null);
+
+	const { data: mfaStatus } = useQuery(myMfaStatusQueryOptions());
+	const mfaEnabled = Boolean(
+		mfaStatus?.totp_enabled || (mfaStatus?.security_keys?.length ?? 0) > 0,
+	);
 
 	const username = user?.username?.trim() || "";
 	const email = user?.email?.trim() || "";
-
-	const notifySoon = () => {
-		toast.info(t("shell.group_rail_menu.coming_soon"));
-	};
+	const hasPassword = user?.has_password ?? true;
 
 	return (
-		<div className="space-y-7">
+		<div className="flex flex-col">
 			{/* Account Info */}
-			<section id="user-settings-account-info" className="space-y-3">
+			<section id="user-settings-account-info" className="scroll-mt-4 space-y-2">
 				<h3 className="text-base font-semibold tracking-tight text-foreground">
 					{t("user_settings.account.info_heading")}
 				</h3>
-				<div className="divide-y divide-border/60 rounded-xl border border-border/70 bg-muted/20 px-4">
-					<div className="flex items-center justify-between gap-4 py-3.5">
+				<div className="space-y-1">
+					<div className="flex items-center justify-between gap-4 py-2.5">
 						<span className="text-sm font-medium text-muted-foreground">
 							{t("user_settings.account.username")}
 						</span>
@@ -52,13 +77,18 @@ export function UserSettingsAccountSection({
 							<span className="truncate text-sm text-foreground">
 								{username || t("user_settings.account.not_set")}
 							</span>
-							<Button type="button" variant="secondary" size="sm" onClick={notifySoon}>
+							<Button
+								type="button"
+								variant="secondary"
+								className={editButtonClass}
+								onClick={() => setChangeUsernameOpen(true)}
+							>
 								{t("user_settings.account.edit")}
 							</Button>
 						</div>
 					</div>
 
-					<div className="flex items-center justify-between gap-4 py-3.5">
+					<div className="flex items-center justify-between gap-4 py-2.5">
 						<span className="text-sm font-medium text-muted-foreground">
 							{t("user_settings.account.email")}
 						</span>
@@ -83,7 +113,12 @@ export function UserSettingsAccountSection({
 									</button>
 								) : null}
 							</div>
-							<Button type="button" variant="secondary" size="sm" onClick={notifySoon}>
+							<Button
+								type="button"
+								variant="secondary"
+								className={editButtonClass}
+								onClick={() => setChangeEmailOpen(true)}
+							>
 								{t("user_settings.account.edit")}
 							</Button>
 						</div>
@@ -91,36 +126,64 @@ export function UserSettingsAccountSection({
 				</div>
 			</section>
 
+			<div className={settingsSectionDividerWrapClass} role="presentation">
+				<div className={settingsSectionDividerLineClass} />
+			</div>
+
 			{/* Password & Security */}
-			<section id="user-settings-password-security" className="space-y-3">
+			<section id="user-settings-password-security" className="scroll-mt-4 space-y-2">
 				<h3 className="text-base font-semibold tracking-tight text-foreground">
 					{t("user_settings.account.security_heading")}
 				</h3>
-				<div className="divide-y divide-border/60 rounded-xl border border-border/70 bg-muted/20 px-4">
-					<div className="flex items-center justify-between gap-4 py-3.5">
+				<div className="space-y-1">
+					<div className="flex items-center justify-between gap-4 py-2.5">
 						<span className="text-sm font-medium text-muted-foreground">
 							{t("user_settings.account.password")}
 						</span>
 						<div className="flex items-center gap-3">
-							<span className="text-sm tracking-widest text-muted-foreground">
-								{t("user_settings.account.password_masked")}
+							<span
+								className={
+									hasPassword
+										? "text-sm tracking-widest text-muted-foreground"
+										: "text-sm text-muted-foreground"
+								}
+							>
+								{hasPassword
+									? t("user_settings.account.password_masked")
+									: t("user_settings.account.not_set")}
 							</span>
-							<Button type="button" variant="secondary" size="sm" onClick={notifySoon}>
-								{t("user_settings.account.edit")}
+							<Button
+								type="button"
+								variant="secondary"
+								className={editButtonClass}
+								onClick={() => setChangePasswordOpen(true)}
+							>
+								{hasPassword
+									? t("user_settings.account.edit")
+									: t("user_settings.account.password_setup")}
 							</Button>
 						</div>
 					</div>
 
 					<button
 						type="button"
-						onClick={notifySoon}
-						className="flex w-full items-center justify-between gap-4 py-3.5 text-left transition-colors hover:text-foreground"
+						onClick={() => setMfaOpen(true)}
+						className="flex w-full items-center justify-between gap-4 py-2.5 text-left transition-colors hover:text-foreground"
 					>
-						<span className="text-sm font-medium text-muted-foreground">
-							{t("user_settings.account.mfa")}
+						<span className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground">
+							<span>{t("user_settings.account.mfa")}</span>
+							{mfaEnabled ? (
+								<span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[11px] font-medium text-emerald-500">
+									{t("user_settings.account.mfa_enabled")}
+								</span>
+							) : null}
 						</span>
 						<span className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground">
-							<span>{t("user_settings.account.mfa_setup")}</span>
+							<span>
+								{mfaEnabled
+									? t("user_settings.account.mfa_manage")
+									: t("user_settings.account.mfa_setup")}
+							</span>
 							<ChevronRight className="size-4 text-muted-foreground" aria-hidden />
 						</span>
 					</button>
@@ -128,7 +191,7 @@ export function UserSettingsAccountSection({
 					<button
 						type="button"
 						onClick={() => onNavigateSection("devices")}
-						className="flex w-full items-center justify-between gap-4 py-3.5 text-left transition-colors hover:text-foreground"
+						className="flex w-full items-center justify-between gap-4 py-2.5 text-left transition-colors hover:text-foreground"
 					>
 						<span className="text-sm font-medium text-muted-foreground">
 							{t("user_settings.account.devices")}
@@ -141,35 +204,85 @@ export function UserSettingsAccountSection({
 				</div>
 			</section>
 
+			<div className={settingsSectionDividerWrapClass} role="presentation">
+				<div className={settingsSectionDividerLineClass} />
+			</div>
+
 			{/* Account Status */}
-			<section id="user-settings-account-status" className="space-y-3">
+			<section id="user-settings-account-status" className="scroll-mt-4 space-y-2">
 				<h3 className="text-base font-semibold tracking-tight text-foreground">
 					{t("user_settings.account.status_heading")}
 				</h3>
-				<div className="flex items-center gap-2.5 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-xs text-foreground/90">
-					<Info className="size-4 shrink-0 text-primary" aria-hidden />
-					<span>{t("user_settings.account.status_banner")}</span>
-				</div>
-
-				<div className="flex items-center justify-between gap-4 rounded-xl border border-border/70 bg-muted/20 px-4 py-3.5">
-					<div className="flex min-w-0 items-center gap-3">
-						<span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-500">
-							<CheckCircle2 className="size-5" aria-hidden />
-						</span>
+				<div className="space-y-1">
+					<div className="flex items-center justify-between gap-4 py-2.5">
 						<div className="min-w-0">
 							<p className="text-sm font-medium text-foreground">
-								{t("user_settings.account.standing_title")}
+								{t("user_settings.account.disable_title")}
 							</p>
-							<p className="text-xs text-muted-foreground">
-								{t("user_settings.account.standing_subtitle")}
+							<p className="mt-0.5 text-xs text-muted-foreground">
+								{t("user_settings.account.disable_subtitle")}
 							</p>
 						</div>
+						<Button
+							type="button"
+							variant="secondary"
+							size="lg"
+							onClick={() => setAccountStatusMode("disable")}
+							className={`shrink-0 text-destructive hover:text-destructive ${statusActionButtonClass}`}
+						>
+							{t("user_settings.account.disable_action")}
+						</Button>
 					</div>
-					<span className="shrink-0 text-sm font-medium text-emerald-500">
-						{t("user_settings.account.standing_badge")}
-					</span>
+
+					<div className="flex items-center justify-between gap-4 py-2.5">
+						<div className="min-w-0">
+							<p className="text-sm font-medium text-foreground">
+								{t("user_settings.account.delete_title")}
+							</p>
+							<p className="mt-0.5 text-xs text-muted-foreground">
+								{t("user_settings.account.delete_subtitle")}
+							</p>
+						</div>
+						<Button
+							type="button"
+							variant="destructive"
+							size="lg"
+							onClick={() => setAccountStatusMode("delete")}
+							className={`shrink-0 ${statusActionButtonClass}`}
+						>
+							{t("user_settings.account.delete_action")}
+						</Button>
+					</div>
 				</div>
 			</section>
+
+			<ChangeUsernameDialog
+				open={changeUsernameOpen}
+				onOpenChange={setChangeUsernameOpen}
+				currentUsername={username}
+			/>
+			<ChangeEmailDialog
+				open={changeEmailOpen}
+				onOpenChange={setChangeEmailOpen}
+				currentEmail={email}
+			/>
+			<ChangePasswordDialog
+				open={changePasswordOpen}
+				onOpenChange={setChangePasswordOpen}
+				hasPassword={hasPassword}
+			/>
+			<MfaSettingsDialog open={mfaOpen} onOpenChange={setMfaOpen} />
+			<AccountStatusDialog
+				open={accountStatusMode !== null}
+				onOpenChange={(nextOpen) => {
+					if (!nextOpen) {
+						setAccountStatusMode(null);
+					}
+				}}
+				mode={accountStatusMode ?? "disable"}
+				hasPassword={hasPassword}
+				onAccountClosed={onAccountClosed}
+			/>
 		</div>
 	);
 }
