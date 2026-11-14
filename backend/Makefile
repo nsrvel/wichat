@@ -3,7 +3,7 @@ REPO_ROOT := ..
 COMPOSE_FILE := $(REPO_ROOT)/deploy/docker-compose.yml
 COMPOSE := docker compose -f $(COMPOSE_FILE)
 
-.PHONY: help check check-layout run run-infra run-infra-minio-check run-down dev-ms-user dev-ms-chat dev-ms-notification dev-api-gateway run-ms-user run-ms-chat run-ms-notification run-api-gateway migrate-up migrate-down migrate-status
+.PHONY: help check check-layout run tunnel run-infra run-infra-minio-check run-down dev-ms-user dev-ms-chat dev-ms-notification dev-api-gateway run-ms-user run-ms-chat run-ms-notification run-api-gateway migrate-up migrate-down migrate-status
 
 help:
 	@echo "WiChat backend — common targets:"
@@ -23,6 +23,7 @@ help:
 	@echo "  make run-ms-chat        ms-chat once (go run, no reload)"
 	@echo "  make run-ms-notification ms-notification once (go run, no reload)"
 	@echo "  make run-api-gateway    api-gateway once (go run, no reload)"
+	@echo "  make tunnel             api-gateway with tunnel WEB_ORIGIN & TRUSTED_PROXIES"
 	@echo ""
 	@echo "Per module: cd ms-user|api-gateway|wi-shared && make dev|run|check"
 
@@ -54,12 +55,18 @@ run-infra-minio-check:
 run-down:
 	$(COMPOSE) down
 
+GATEWAY_TARGET ?= run
+MS_USER_ENV ?=
+
+tunnel:
+	$(MAKE) run GATEWAY_TARGET=tunnel MS_USER_ENV='GOOGLE_REDIRECT_URL=https://wichat.wistudio.my.id/api/auth/callback/google'
+
 # Infra + microservices (no Air). Ctrl+C stops Go children; infra stays up (use make run-down).
 run: run-infra
 	@bash -ec '\
 		trap "kill 0" INT TERM; \
 		echo "Starting ms-user (3001)..."; \
-		$(MAKE) -C ms-user run & \
+		$(MAKE) -C ms-user run $(MS_USER_ENV) & \
 		sleep 1; \
 		echo "Starting ms-chat (3002)..."; \
 		$(MAKE) -C ms-chat run & \
@@ -67,7 +74,7 @@ run: run-infra
 		$(MAKE) -C ms-notification run & \
 		sleep 1; \
 		echo "Starting api-gateway (3000)..."; \
-		$(MAKE) -C api-gateway run & \
+		$(MAKE) -C api-gateway $(GATEWAY_TARGET) & \
 		wait \
 	'
 

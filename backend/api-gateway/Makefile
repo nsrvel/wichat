@@ -14,7 +14,7 @@ BACKEND_ROOT := ..
 test-cover:
 	@bash "$(BACKEND_ROOT)/scripts/coverage-gate.sh" "$(CURDIR)" 90
 
-.PHONY: fmt lint test check dev run
+.PHONY: fmt lint test check dev run tunnel
 
 fmt:
 	$(GOLANGCI) fmt ./...
@@ -32,3 +32,9 @@ dev:
 
 run:
 	go run ./cmd
+
+TUNNEL_ORIGIN ?= https://wichat.wistudio.my.id
+TUNNEL_TRUSTED_PROXIES ?= 127.0.0.1,::1
+
+tunnel:
+	WEB_ORIGIN=$(TUNNEL_ORIGIN) TRUSTED_PROXIES=$(TUNNEL_TRUSTED_PROXIES) go run ./cmd

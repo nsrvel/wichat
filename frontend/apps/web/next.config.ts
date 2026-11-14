@@ -16,6 +16,7 @@ const devMinioImagePatterns: RemotePattern[] = [
 ];
 
 const nextConfig: NextConfig = {
+	allowedDevOrigins: ["wichat.wistudio.my.id"],
 	transpilePackages: ["@wichat/contracts", "@wichat/api-client", "@wichat/i18n"],
 	images: {
 		remotePatterns: [
