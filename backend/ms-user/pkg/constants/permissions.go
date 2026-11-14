@@ -19,8 +19,6 @@ const (
 	PermViewGroupInsights    = "view_group_insights"
 	PermManageWebhooks       = "manage_webhooks"
 	PermCreateInvite         = "create_invite"
-	PermChangeNickname       = "change_nickname"
-	PermManageNicknames      = "manage_nicknames"
 	PermKickMembers          = "kick_members"
 	PermBanMembers           = "ban_members"
 	PermTimeoutMembers       = "timeout_members"
@@ -67,8 +65,6 @@ var AllKnownPermissions = []string{
 	PermViewGroupInsights,
 	PermManageWebhooks,
 	PermCreateInvite,
-	PermChangeNickname,
-	PermManageNicknames,
 	PermKickMembers,
 	PermBanMembers,
 	PermTimeoutMembers,
