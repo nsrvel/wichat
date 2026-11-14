@@ -124,18 +124,6 @@ export const ROLE_PERMISSION_GROUPS: RolePermissionGroup[] = [
 				tier: "core",
 			},
 			{
-				id: "change_nickname",
-				titleKey: "group_settings.roles.detail.perm_change_nickname",
-				descriptionKey: "group_settings.roles.detail.perm_change_nickname_desc",
-				tier: "next",
-			},
-			{
-				id: "manage_nicknames",
-				titleKey: "group_settings.roles.detail.perm_manage_nicknames",
-				descriptionKey: "group_settings.roles.detail.perm_manage_nicknames_desc",
-				tier: "next",
-			},
-			{
 				id: "kick_members",
 				titleKey: "group_settings.roles.detail.perm_kick_members",
 				descriptionKey: "group_settings.roles.detail.perm_kick_members_desc",
@@ -368,8 +356,6 @@ export function defaultPermissionsForRole(): Record<string, boolean> {
 		view_group_insights: false,
 		manage_webhooks: false,
 		create_invite: true,
-		change_nickname: true,
-		manage_nicknames: false,
 		kick_members: false,
 		ban_members: false,
 		timeout_members: false,

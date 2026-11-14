@@ -4,7 +4,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
 import type { AuthChallenge, LoginRequest } from "@wichat/contracts";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -24,7 +23,6 @@ import {
 } from "@/features/auth/components/auth-shell";
 import { resendRateLimitCooldownSec } from "@/features/auth/lib/resend-cooldown";
 import { translateError } from "@/integrations/i18n/translate-error";
-import { postAuthRedirectPath } from "@/lib/auth-invite";
 import {
 	useLoginMutation,
 	useResendLoginCodeMutation,
@@ -39,9 +37,8 @@ const LoginFormSchema = z.object({
 
 type LoginFormValues = z.infer<typeof LoginFormSchema>;
 
-export function LoginForm({ authReturnTo = "/" }: { authReturnTo?: string }) {
+export function LoginForm() {
 	const { t, i18n } = useTranslation();
-	const router = useRouter();
 	const login = useLoginMutation();
 	const verify = useVerifyLoginMutation();
 	const resend = useResendLoginCodeMutation();
@@ -92,10 +89,7 @@ export function LoginForm({ authReturnTo = "/" }: { authReturnTo?: string }) {
 				}}
 				onSubmit={(code) => {
 					resend.reset();
-					verify.mutate(
-						{ challenge_id: challenge.challenge_id, code },
-						{ onSuccess: () => router.push(postAuthRedirectPath(authReturnTo)) },
-					);
+					verify.mutate({ challenge_id: challenge.challenge_id, code });
 				}}
 			/>
 		);
@@ -116,9 +110,7 @@ export function LoginForm({ authReturnTo = "/" }: { authReturnTo?: string }) {
 							if (step.kind === "challenge") {
 								setChallenge(step.challenge);
 								setResendCooldown(step.challenge.resend_after_seconds);
-								return;
 							}
-							router.push(postAuthRedirectPath(authReturnTo));
 						},
 						onError: () => {
 							if (turnstileSiteKey) {
@@ -169,7 +161,7 @@ export function LoginForm({ authReturnTo = "/" }: { authReturnTo?: string }) {
 				<Button
 					type="submit"
 					disabled={login.isPending || Boolean(turnstileSiteKey && !turnstileToken)}
-					className={`mt-2 ${authSubmitClass}`}
+					className={turnstileSiteKey ? authSubmitClass : `mt-2 ${authSubmitClass}`}
 				>
 					{login.isPending ? t("login.submitting") : t("login.submit")}
 				</Button>

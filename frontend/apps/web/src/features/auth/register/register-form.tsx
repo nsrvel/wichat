@@ -9,7 +9,6 @@ import {
 	type RegisterRequest,
 } from "@wichat/contracts";
 import { Check, Loader2, X } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -30,7 +29,6 @@ import {
 import { resendRateLimitCooldownSec } from "@/features/auth/lib/resend-cooldown";
 import { translateError } from "@/integrations/i18n/translate-error";
 import { birthPartsDefaults, formatBirthDate, refineMinAgeBirth } from "@/lib/auth-validators";
-import { postAuthRedirectPath } from "@/lib/auth-invite";
 import {
 	useRegisterMutation,
 	useResendRegisterCodeMutation,
@@ -79,9 +77,8 @@ type UsernameCheckState =
 	| { status: "available"; normalized: string }
 	| { status: "taken" };
 
-export function RegisterForm({ authReturnTo = "/" }: { authReturnTo?: string }) {
+export function RegisterForm() {
 	const { t, i18n } = useTranslation();
-	const router = useRouter();
 	const register = useRegisterMutation();
 	const verify = useVerifyRegisterMutation();
 	const resend = useResendRegisterCodeMutation();
@@ -178,10 +175,7 @@ export function RegisterForm({ authReturnTo = "/" }: { authReturnTo?: string }) 
 				}}
 				onSubmit={(code) => {
 					resend.reset();
-					verify.mutate(
-						{ challenge_id: challenge.challenge_id, code },
-						{ onSuccess: () => router.push(postAuthRedirectPath(authReturnTo)) },
-					);
+					verify.mutate({ challenge_id: challenge.challenge_id, code });
 				}}
 			/>
 		);
@@ -197,9 +191,7 @@ export function RegisterForm({ authReturnTo = "/" }: { authReturnTo?: string }) 
 							if (step.kind === "challenge") {
 								setChallenge(step.challenge);
 								setResendCooldown(step.challenge.resend_after_seconds);
-								return;
 							}
-							router.push(postAuthRedirectPath(authReturnTo));
 						},
 						onError: () => {
 							if (turnstileSiteKey) {
@@ -306,7 +298,7 @@ export function RegisterForm({ authReturnTo = "/" }: { authReturnTo?: string }) 
 						effectiveUsernameCheck.status === "taken" ||
 						Boolean(turnstileSiteKey && !turnstileToken)
 					}
-					className={`mt-2 ${authSubmitClass}`}
+					className={turnstileSiteKey ? authSubmitClass : `mt-2 ${authSubmitClass}`}
 				>
 					{register.isPending ? t("register.submitting") : t("register.submit")}
 				</Button>

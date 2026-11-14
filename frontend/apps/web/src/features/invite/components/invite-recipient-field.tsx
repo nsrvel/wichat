@@ -1,11 +1,11 @@
 "use client";
 
 import { Send, X } from "lucide-react";
-import Image from "next/image";
 import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { authInputClass } from "@/features/auth/components/auth-shell";
 import {
 	type RecipientChip,
@@ -204,23 +204,11 @@ export function InviteRecipientField({
 								className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors hover:bg-muted/80"
 								onClick={() => pick(hit)}
 							>
-								{hit.avatar_url ? (
-									<Image
-										src={hit.avatar_url}
-										alt=""
-										width={32}
-										height={32}
-										unoptimized
-										className="size-8 shrink-0 rounded-full object-cover ring-1 ring-border/50"
-									/>
-								) : (
-									<span
-										className="flex size-8 shrink-0 items-center justify-center rounded-full bg-field text-xs font-semibold ring-1 ring-border/50"
-										aria-hidden
-									>
-										{userInitials(hit.display_name, hit.username)}
-									</span>
-								)}
+								<UserAvatar
+									src={hit.avatar_url}
+									initials={userInitials(hit.display_name, hit.username)}
+									size="sm"
+								/>
 								<span className="min-w-0 flex-1 truncate">
 									<span className="block truncate font-medium text-foreground">
 										{hit.display_name.trim() || `@${hit.username}`}

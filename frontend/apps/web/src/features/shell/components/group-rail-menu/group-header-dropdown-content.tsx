@@ -7,7 +7,6 @@ import {
 	Fingerprint,
 	FolderPlus,
 	LogOut,
-	Pencil,
 	Settings,
 	Shield,
 	UserPlus,
@@ -141,17 +140,6 @@ export function GroupHeaderDropdownContent({
 				<Shield className={menuIconClass} aria-hidden />
 				{t("shell.group_rail_menu.privacy_settings")}
 			</kit.Item>
-			{manage ? (
-				<kit.Item className={menuItemClass} onClick={openGroupSettingsForGroup}>
-					<Pencil className={menuIconClass} aria-hidden />
-					{t("shell.group_rail_menu.edit_group_profile")}
-				</kit.Item>
-			) : (
-				<kit.Item className={menuItemClass} onClick={showComingSoon}>
-					<Pencil className={menuIconClass} aria-hidden />
-					{t("shell.group_rail_menu.edit_group_profile")}
-				</kit.Item>
-			)}
 
 			{showMemberLeave ? (
 				<>

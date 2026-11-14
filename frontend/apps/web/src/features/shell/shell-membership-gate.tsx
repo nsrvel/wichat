@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
-import { useTranslation } from "react-i18next";
+import { WorkspaceLoader } from "@/components/layout/workspace-loader";
 import { useMyGroupsQuery } from "@/hooks/use-my-groups-query";
 import { APP_HOME_PATH } from "@/lib/app-routes";
 
@@ -12,7 +12,6 @@ type Props = {
 };
 
 export function ShellMembershipGate({ groupId, children }: Props) {
-	const { t } = useTranslation();
 	const router = useRouter();
 	const myGroups = useMyGroupsQuery();
 
@@ -30,25 +29,11 @@ export function ShellMembershipGate({ groupId, children }: Props) {
 	const groups = myGroups.isError ? [] : (myGroups.data ?? []);
 
 	if (myGroups.isPending && groups.length === 0) {
-		return (
-			<div
-				className="flex flex-1 items-center justify-center bg-background text-sm text-muted-foreground"
-				suppressHydrationWarning
-			>
-				{t("shell.loading")}
-			</div>
-		);
+		return <WorkspaceLoader />;
 	}
 
 	if (!groups.some((g) => g.id === groupId)) {
-		return (
-			<div
-				className="flex flex-1 items-center justify-center bg-background text-sm text-muted-foreground"
-				suppressHydrationWarning
-			>
-				{t("shell.loading")}
-			</div>
-		);
+		return <WorkspaceLoader />;
 	}
 
 	return children;

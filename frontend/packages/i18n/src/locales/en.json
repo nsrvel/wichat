@@ -388,10 +388,6 @@
         "perm_manage_webhooks_desc": "Allows members to create, edit, or delete webhooks that can post messages from other apps or sites into this group.",
         "perm_create_invite": "Create Invite",
         "perm_create_invite_desc": "Allows members to invite new people to this group.",
-        "perm_change_nickname": "Change Nickname",
-        "perm_change_nickname_desc": "Allows members to change their own nickname, a custom name for just this group.",
-        "perm_manage_nicknames": "Manage Nicknames",
-        "perm_manage_nicknames_desc": "Allows members to change the nicknames of other members.",
         "perm_kick_members": "Kick, Approve, and Reject Members",
         "perm_kick_members_desc": "Kick will remove other members from this group (they can rejoin with another invite). If membership approval is enabled, this permission allows approving or rejecting join requests.",
         "perm_ban_members": "Ban Members",
@@ -605,7 +601,6 @@
       "show_all_channels": "Show All Channels",
       "group_settings": "Group Settings",
       "privacy_settings": "Privacy Settings",
-      "edit_group_profile": "Edit Per-Group Profile",
       "create_channel": "Create Channel",
       "create_category": "Create Category",
       "move_to": "Reorder In List",
@@ -634,11 +629,35 @@
       "invite": "Invite Members",
       "group_settings": "Group Settings",
       "privacy_settings": "Privacy Settings",
-      "edit_profile": "Edit Per-Group Profile",
       "create_channel": "New Channel",
       "create_category": "New Category",
       "notifications": "Notification Settings",
       "copy_group_id": "Copy Group ID"
+    },
+    "user_dock": {
+      "open_profile": "Open profile",
+      "status_note_placeholder": "What's on your mind?",
+      "status_note_save": "Save",
+      "status_note_clear": "Clear status note",
+      "edit_profile": "Edit Profile",
+      "switch_accounts": "Switch Accounts",
+      "status_online": "Online",
+      "status_idle": "Idle",
+      "status_dnd": "Do Not Disturb",
+      "status_dnd_desc": "You will not receive desktop notifications",
+      "status_invisible": "Invisible",
+      "status_invisible_desc": "You will appear offline",
+      "in_voice": "In voice",
+      "open_voice": "Open Voice",
+      "set_status_title": "Set your status",
+      "set_status_label": "Status",
+      "set_status_save": "Save",
+      "pick_emoji": "Pick emoji",
+      "clear_after_today": "Clear today",
+      "clear_after_4h": "Clear in 4 hours",
+      "clear_after_1h": "Clear in 1 hour",
+      "clear_after_30m": "Clear in 30 minutes",
+      "clear_after_never": "Don't clear"
     },
     "marketplace": "Marketplace",
     "download_apps": "Download apps",
@@ -741,5 +760,115 @@
       "flags": "Flags"
     }
   },
-  "logout": "Sign out"
+  "logout": "Sign out",
+  "status_pages": {
+    "actions": {
+      "back_home": "Back to home",
+      "try_again": "Try again",
+      "sign_in": "Sign in"
+    },
+    "not_found": {
+      "eyebrow": "Page not found",
+      "title": "404",
+      "description": "The page or channel you're looking for doesn't exist or was moved."
+    },
+    "forbidden": {
+      "eyebrow": "Access denied",
+      "title": "403",
+      "description": "You don't have permission to view this page. Contact an admin if needed."
+    },
+    "unauthorized": {
+      "eyebrow": "Sign in required",
+      "title": "401",
+      "description": "Your session has ended. Please sign in again to continue."
+    },
+    "server_error": {
+      "eyebrow": "Something went wrong",
+      "title": "500",
+      "description": "We ran into an unexpected issue. Please try again in a moment."
+    },
+    "maintenance": {
+      "eyebrow": "Under maintenance",
+      "title": "503",
+      "description": "WiChat is temporarily unavailable for maintenance. Please check back soon."
+    },
+    "preview": {
+      "label": "Status Preview"
+    }
+  },
+  "user_settings": {
+    "title": "User Settings",
+    "close": "Close settings",
+    "search_placeholder": "Search",
+    "edit_profiles": "Edit Profiles",
+    "sign_out": "Sign out",
+    "coming_soon_hint": "This section is being prepared and will be connected soon.",
+    "groups": {
+      "user": "User Settings",
+      "app": "App Settings",
+      "advanced": "Advanced"
+    },
+    "nav": {
+      "account": "Account",
+      "account_info": "Account Info",
+      "password_security": "Password & Security",
+      "account_status": "Account Status",
+      "profiles": "Profiles",
+      "privacy": "Data & Privacy",
+      "notifications": "Notifications",
+      "appearance": "Appearance",
+      "voice": "Voice & Video",
+      "accessibility": "Accessibility",
+      "language": "Language & Time",
+      "devices": "Devices",
+      "developer": "Developer"
+    },
+    "account": {
+      "info_heading": "Account Info",
+      "username": "Username",
+      "email": "Email",
+      "not_set": "Not set",
+      "reveal": "Reveal",
+      "hide": "Hide",
+      "edit": "Edit",
+      "security_heading": "Password & Security",
+      "password": "Password",
+      "password_masked": "••••••••••••",
+      "mfa": "Multi-Factor Authentication",
+      "mfa_setup": "Set up",
+      "devices": "Logged-in Devices",
+      "devices_count": "Current session",
+      "status_heading": "Account Status",
+      "status_banner": "Your WiChat account is active and in good standing.",
+      "standing_title": "Account Standing",
+      "standing_subtitle": "All features and channels are available for your account.",
+      "standing_badge": "All good"
+    },
+    "profiles": {
+      "heading": "Profiles",
+      "subtitle": "Customize how your profile appears across WiChat.",
+      "avatar": "Avatar",
+      "change_avatar": "Change avatar",
+      "remove_avatar": "Remove avatar",
+      "avatar_invalid_type": "Please choose a PNG, JPG, or WebP image.",
+      "avatar_too_large": "Image must be 5 MB or smaller.",
+      "display_name": "Display Name",
+      "display_name_placeholder": "Your display name",
+      "pronouns": "Pronouns",
+      "pronouns_placeholder": "e.g. he/him, she/her, they/them",
+      "banner_color": "Banner Color",
+      "banner_color_reset": "Reset",
+      "bio": "About Me",
+      "bio_placeholder": "Write a short bio about yourself...",
+      "preview_label": "Preview",
+      "reset": "Reset",
+      "unsaved_hint": "Careful — you have unsaved changes!",
+      "save_changes": "Save Changes"
+    },
+    "language": {
+      "heading": "Language & Time",
+      "subtitle": "Choose the display language for WiChat.",
+      "select_label": "Display Language"
+    }
+  }
 }

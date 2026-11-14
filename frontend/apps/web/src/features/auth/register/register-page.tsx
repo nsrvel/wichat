@@ -39,7 +39,7 @@ export function RegisterPage({
 		>
 			<GoogleButton label={t("auth.google")} authReturnTo={authReturnTo} />
 			<AuthOr label={t("auth.or")} />
-			<RegisterForm authReturnTo={authReturnTo} />
+			<RegisterForm />
 			<AuthPrivacyNotice />
 		</AuthSessionLayout>
 	);

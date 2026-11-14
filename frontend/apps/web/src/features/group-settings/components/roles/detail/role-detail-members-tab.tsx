@@ -2,12 +2,12 @@
 
 import type { GroupMember } from "@wichat/contracts";
 import { Search, X } from "lucide-react";
-import Image from "next/image";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { authInputClass } from "@/features/auth/components/auth-shell";
 import type { GroupSettingsRoleRow } from "@/features/group-settings/lib/group-settings-roles-view";
 import { userInitials } from "@/features/invite/lib/user-initials";
@@ -87,20 +87,11 @@ export function RoleDetailMembersTab({ role, members, canManage }: RoleDetailMem
 								className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-background/40"
 							>
 								<div className="flex min-w-0 items-center gap-3">
-									{member.avatar_url ? (
-										<Image
-											src={member.avatar_url}
-											alt=""
-											width={36}
-											height={36}
-											unoptimized
-											className="size-9 shrink-0 rounded-full object-cover ring-1 ring-border/60"
-										/>
-									) : (
-										<div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-background text-xs font-semibold text-foreground ring-1 ring-border/60">
-											{userInitials(name, member.username)}
-										</div>
-									)}
+									<UserAvatar
+										src={member.avatar_url}
+										initials={userInitials(name, member.username)}
+										size="md"
+									/>
 									<div className="min-w-0">
 										<p className="truncate text-sm font-medium text-foreground">{name}</p>
 										{member.username ? (

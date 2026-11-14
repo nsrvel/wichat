@@ -62,8 +62,8 @@ export function PopoverContent({
 			>
 				<PopoverPrimitive.Popup
 					className={cn(
-						"origin-[var(--transform-origin)] rounded-xl border border-border bg-popover text-popover-foreground shadow-xl outline-none",
-						"transition-[transform,opacity] duration-150 ease-out data-[ending-style]:scale-95 data-[ending-style]:opacity-0 data-[starting-style]:scale-95 data-[starting-style]:opacity-0 motion-reduce:transition-none",
+						"transform-gpu will-change-[transform,opacity] origin-[var(--transform-origin)] rounded-xl border border-border bg-popover text-popover-foreground shadow-xl outline-none",
+						"transition-[transform,opacity] duration-100 ease-out data-[starting-style]:scale-[0.98] data-[starting-style]:opacity-0 data-[ending-style]:duration-75 data-[ending-style]:scale-[0.98] data-[ending-style]:opacity-0 motion-reduce:transition-none",
 						className,
 					)}
 				>

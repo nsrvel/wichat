@@ -10,9 +10,9 @@ import {
 	type RowSelectionState,
 } from "@tanstack/react-table";
 import { Check, EllipsisVertical, Plus } from "lucide-react";
-import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { GroupSettingsMemberRoleBadge } from "@/features/group-settings/components/members/group-settings-member-role-badge";
 import { GroupSettingsMembersPagination } from "@/features/group-settings/components/members/group-settings-members-pagination";
 import {
@@ -290,23 +290,11 @@ export function GroupSettingsMembersTable({
 					const name = member.display_name.trim() || t("invite.member_name_fallback");
 					return (
 						<div className="flex min-w-0 items-center gap-3">
-							{member.avatar_url ? (
-								<Image
-									src={member.avatar_url}
-									alt=""
-									width={36}
-									height={36}
-									unoptimized
-									className="size-9 shrink-0 rounded-full object-cover ring-1 ring-border/60"
-								/>
-							) : (
-								<div
-									className="flex size-9 shrink-0 items-center justify-center rounded-full bg-background text-xs font-semibold text-foreground ring-1 ring-border/60"
-									aria-hidden
-								>
-									{userInitials(member.display_name, member.username)}
-								</div>
-							)}
+							<UserAvatar
+								src={member.avatar_url}
+								initials={userInitials(member.display_name, member.username)}
+								size="md"
+							/>
 							<div className="min-w-0">
 								<p className="truncate font-medium">{name}</p>
 								{member.username ? (

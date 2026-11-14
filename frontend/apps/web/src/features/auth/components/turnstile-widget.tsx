@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type TurnstileAPI = {
 	render: (
@@ -8,6 +8,7 @@ type TurnstileAPI = {
 		options: {
 			sitekey: string;
 			theme?: "auto" | "light" | "dark";
+			size?: "normal" | "flexible" | "compact";
 			callback?: (token: string) => void;
 			"expired-callback"?: () => void;
 			"error-callback"?: () => void;
@@ -27,6 +28,9 @@ const TURNSTILE_SCRIPT_ID = "wichat-turnstile-script";
 const TURNSTILE_SCRIPT_SRC =
 	"https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
 
+const TURNSTILE_BASE_WIDTH = 300;
+const TURNSTILE_BASE_HEIGHT = 65;
+
 type TurnstileWidgetProps = {
 	siteKey: string;
 	resetKey?: number;
@@ -34,13 +38,34 @@ type TurnstileWidgetProps = {
 };
 
 export function TurnstileWidget({ siteKey, resetKey = 0, onToken }: TurnstileWidgetProps) {
+	const outerRef = useRef<HTMLDivElement>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
 	const widgetIdRef = useRef<string | null>(null);
 	const onTokenRef = useRef(onToken);
+	const [scale, setScale] = useState(1);
 
 	useEffect(() => {
 		onTokenRef.current = onToken;
 	}, [onToken]);
+
+	useEffect(() => {
+		const el = outerRef.current;
+		if (!siteKey || !el) {
+			return;
+		}
+		const updateScale = () => {
+			const width = el.getBoundingClientRect().width;
+			setScale(
+				width > 0 && width < TURNSTILE_BASE_WIDTH
+					? Math.max(0.5, (width - 2) / TURNSTILE_BASE_WIDTH)
+					: 1,
+			);
+		};
+		updateScale();
+		const observer = new ResizeObserver(updateScale);
+		observer.observe(el);
+		return () => observer.disconnect();
+	}, [siteKey]);
 
 	useEffect(() => {
 		if (!siteKey) {
@@ -55,6 +80,7 @@ export function TurnstileWidget({ siteKey, resetKey = 0, onToken }: TurnstileWid
 			widgetIdRef.current = window.turnstile.render(containerRef.current, {
 				sitekey: siteKey,
 				theme: "auto",
+				size: "flexible",
 				callback: (token) => onTokenRef.current(token),
 				"expired-callback": () => onTokenRef.current(""),
 				"error-callback": () => onTokenRef.current(""),
@@ -103,5 +129,29 @@ export function TurnstileWidget({ siteKey, resetKey = 0, onToken }: TurnstileWid
 		return null;
 	}
 
-	return <div ref={containerRef} className="flex justify-center" />;
+	return (
+		<div
+			ref={outerRef}
+			className="my-2 w-0 min-w-full overflow-hidden"
+			style={
+				scale < 1
+					? { height: `${Math.round(TURNSTILE_BASE_HEIGHT * scale)}px` }
+					: undefined
+			}
+		>
+			<div
+				ref={containerRef}
+				className="leading-none [&_iframe]:block"
+				style={
+					scale < 1
+						? {
+								width: `${TURNSTILE_BASE_WIDTH}px`,
+								transform: `scale(${scale})`,
+								transformOrigin: "top left",
+							}
+						: { width: "100%" }
+				}
+			/>
+		</div>
+	);
 }

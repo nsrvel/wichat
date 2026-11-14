@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, Plus, Store } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useGroupOnboarding } from "@/features/group/group-onboarding-provider";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
@@ -98,16 +98,6 @@ export function ShellGroupRail({
 							<Plus aria-hidden className="size-[18px]" strokeWidth={2} />
 						</IconRailTooltipTile>
 					</GroupRailAddGroupContextMenu>
-				</IconRailActionRow>
-				<IconRailActionRow>
-					<IconRailTooltipTile variant="muted" label={t("shell.marketplace")}>
-						<Store aria-hidden className="size-[18px]" strokeWidth={2} />
-					</IconRailTooltipTile>
-				</IconRailActionRow>
-				<IconRailActionRow>
-					<IconRailTooltipTile variant="muted" label={t("shell.download_apps")}>
-						<Download aria-hidden className="size-[18px]" strokeWidth={2} />
-					</IconRailTooltipTile>
 				</IconRailActionRow>
 			</div>
 		</aside>

@@ -3,21 +3,9 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { useTranslation } from "react-i18next";
+import { WorkspaceLoader } from "@/components/layout/workspace-loader";
 import { useMounted } from "@/hooks/use-mounted";
 import { bootstrapApp, Q_APP_BOOTSTRAP } from "@/services/auth/bootstrap-app";
-
-function AuthGateLoading() {
-	const { t } = useTranslation();
-	return (
-		<div
-			className="flex min-h-[50vh] flex-1 items-center justify-center bg-background text-sm text-muted-foreground"
-			suppressHydrationWarning
-		>
-			{t("shell.loading")}
-		</div>
-	);
-}
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
 	const router = useRouter();
@@ -41,11 +29,11 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 	}, [bootstrap.data, bootstrap.isPending, mounted, router]);
 
 	if (!mounted || bootstrap.isPending) {
-		return <AuthGateLoading />;
+		return <WorkspaceLoader className="min-h-[50vh]" />;
 	}
 
 	if (!bootstrap.data) {
-		return <AuthGateLoading />;
+		return <WorkspaceLoader className="min-h-[50vh]" />;
 	}
 
 	return children;

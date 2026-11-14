@@ -40,7 +40,7 @@ export function LoginPage({
 		>
 			<GoogleButton label={t("auth.google")} authReturnTo={authReturnTo} />
 			<AuthOr label={t("auth.or")} />
-			<LoginForm authReturnTo={authReturnTo} />
+			<LoginForm />
 			<AuthPrivacyNotice />
 		</AuthSessionLayout>
 	);

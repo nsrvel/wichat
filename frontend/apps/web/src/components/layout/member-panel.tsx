@@ -11,8 +11,9 @@ import {
 	User,
 	X,
 } from "lucide-react";
-import Image from "next/image";
 import type { ReactNode } from "react";
+import { UserAvatar } from "@/components/ui/user-avatar";
+import { userInitials } from "@/features/invite/lib/user-initials";
 
 const tabs = ["Info", "Pins", "Files", "Links"];
 
@@ -89,12 +90,11 @@ function Member({
 }) {
 	return (
 		<div className={`flex items-center gap-3 py-2 ${dim ? "opacity-50" : ""}`}>
-			<Image
+			<UserAvatar
 				src={avatar}
-				alt=""
-				width={40}
-				height={40}
-				className={`size-10 rounded-full object-cover ${dim ? "grayscale" : ""}`}
+				initials={userInitials(name)}
+				size="lg"
+				imgClassName={dim ? "grayscale" : undefined}
 			/>
 			<div className="min-w-0">
 				<div className="truncate text-sm font-semibold text-[#18181b]">{name}</div>
@@ -138,13 +138,7 @@ export function MemberPanel({ onClose }: { onClose?: () => void }) {
 			<div className="thin-scroll flex-1 overflow-y-auto px-4 pb-6">
 				<h3 className="mt-3 mb-0.5 text-[15px] font-bold text-[#18181b]">Main info</h3>
 				<InfoRow icon={<User className="size-4" strokeWidth={1.7} />} label="Creator">
-					<Image
-						src="/avatars/demo/andrew.jpg"
-						alt=""
-						width={24}
-						height={24}
-						className="size-6 rounded-full object-cover"
-					/>
+					<UserAvatar src="/avatars/demo/andrew.jpg" initials="AM" size="xs" />
 					<span className="text-sm font-medium text-[#18181b]">Andrew M.</span>
 				</InfoRow>
 				<InfoRow icon={<Calendar className="size-4" strokeWidth={1.7} />} label="Date of creation">

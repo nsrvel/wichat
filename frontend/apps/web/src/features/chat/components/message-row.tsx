@@ -1,5 +1,5 @@
-import Image from "next/image";
 import { memo, type ReactNode } from "react";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { userInitials } from "@/features/invite/lib/user-initials";
 import { cn } from "@/lib/utils";
 
@@ -45,26 +45,15 @@ export const MessageRow = memo(function MessageRow({
 		);
 	}
 
-	const hasAvatar = Boolean(authorAvatarUrl && authorAvatarUrl.trim().length > 0);
-
 	return (
 		<article className="flex gap-2.5 [content-visibility:auto] [contain-intrinsic-size:auto_68px]">
-			{hasAvatar ? (
-				<Image
-					src={authorAvatarUrl!}
-					alt={authorDisplayName}
-					width={32}
-					height={32}
-					className="mt-0.5 size-8 shrink-0 rounded-full object-cover ring-1 ring-chat-surface-border"
-				/>
-			) : (
-				<div
-					className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-background text-xs font-semibold text-foreground ring-1 ring-chat-surface-border"
-					aria-hidden
-				>
-					{userInitials(authorDisplayName)}
-				</div>
-			)}
+			<UserAvatar
+				src={authorAvatarUrl}
+				alt={authorDisplayName}
+				initials={userInitials(authorDisplayName)}
+				size="sm"
+				className="mt-0.5"
+			/>
 			<div className="min-w-0 max-w-[min(88%,34rem)]">
 				<div className="mb-1 flex items-baseline gap-2 px-0.5">
 					<span className="text-[13px] font-semibold text-foreground">{authorDisplayName}</span>

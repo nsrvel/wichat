@@ -17,6 +17,15 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
 	title: "WiChat",
 	description: "Self-hosted team communication",
+	icons: {
+		icon: [
+			{ url: "/favicon/favicon.ico", sizes: "any" },
+			{ url: "/favicon/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+			{ url: "/favicon/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+		],
+		apple: [{ url: "/favicon/apple-touch-icon.png", sizes: "180x180" }],
+	},
+	manifest: "/favicon/site.webmanifest",
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -35,7 +44,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 			>
 				<ThemeProvider
 					attribute="class"
-					defaultTheme="light"
+					defaultTheme="dark"
+					forcedTheme="dark"
 					enableSystem={false}
 					storageKey="wichat-theme"
 					disableTransitionOnChange

@@ -2,11 +2,11 @@
 
 import { GroupMemberSchema } from "@wichat/contracts";
 import { ChevronLeft, ChevronRight, Crown } from "lucide-react";
-import Image from "next/image";
 import { useMemo } from "react";
 import type { z } from "zod";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { userInitials } from "@/features/invite/lib/user-initials";
 import {
 	menuDropdownTriggerClass,
@@ -41,31 +41,13 @@ function MemberAvatar({
 	onlineLabel: string;
 }) {
 	return (
-		<div className="relative shrink-0">
-			{avatarUrl ? (
-				<Image
-					src={avatarUrl}
-					alt=""
-					width={36}
-					height={36}
-					unoptimized
-					className="size-9 rounded-full object-cover ring-1 ring-border/60"
-				/>
-			) : (
-				<div
-					className="flex size-9 items-center justify-center rounded-full bg-background text-xs font-semibold text-foreground ring-1 ring-border/60"
-					aria-hidden
-				>
-					{userInitials(displayName, username)}
-				</div>
-			)}
-			{isOnline ? (
-				<span
-					className="absolute right-0 bottom-0 size-2.5 rounded-full border-2 border-[color-mix(in_oklab,var(--card)_88%,var(--background))] bg-presence-online"
-					role="img"
-					aria-label={onlineLabel}
-				/>
-			) : null}
+		<div className="relative shrink-0" aria-label={isOnline ? onlineLabel : undefined}>
+			<UserAvatar
+				src={avatarUrl}
+				initials={userInitials(displayName, username)}
+				size="md"
+				status={isOnline ? "online" : undefined}
+			/>
 		</div>
 	);
 }

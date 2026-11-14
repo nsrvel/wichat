@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -20,6 +20,7 @@ import { GroupSettingsToggle } from "@/features/group-settings/components/group-
 import { authFieldLabelClass, authInputClass } from "@/features/auth/components/auth-shell";
 import { GroupBannerField } from "@/features/group/components/group-banner-field";
 import { GroupIconUpload } from "@/features/group/components/group-icon-upload";
+import { GroupProfileCardPreview } from "@/features/group/components/group-profile-card-preview";
 import {
 	GROUP_BANNER_COLOR_DEFAULT,
 	GROUP_BANNER_IMAGE_ID,
@@ -117,6 +118,17 @@ function GroupSettingsProfileForm({ target }: GroupSettingsProfileSectionProps) 
 	});
 
 	const watchedName = useWatch({ control: form.control, name: "name" });
+	const bannerPreviewUrl = useMemo(
+		() => (bannerFile ? URL.createObjectURL(bannerFile) : null),
+		[bannerFile],
+	);
+
+	useEffect(() => {
+		if (!bannerPreviewUrl) {
+			return;
+		}
+		return () => URL.revokeObjectURL(bannerPreviewUrl);
+	}, [bannerPreviewUrl]);
 	const savedBannerSelection: GroupBannerColorId = target.bannerUrl?.trim()
 		? GROUP_BANNER_IMAGE_ID
 		: normalizeGroupBannerColor(target.bannerColor);
@@ -205,11 +217,12 @@ function GroupSettingsProfileForm({ target }: GroupSettingsProfileSectionProps) 
 							<p className={groupSettingsSectionLeadClass}>{t("group_settings.profile.lead")}</p>
 						</div>
 
-						<form
-							id={GROUP_SETTINGS_PROFILE_FORM_ID}
-							className="flex flex-col"
-							onSubmit={form.handleSubmit(onSubmit)}
-						>
+						<div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_260px] xl:items-start">
+							<form
+								id={GROUP_SETTINGS_PROFILE_FORM_ID}
+								className="flex flex-col"
+								onSubmit={form.handleSubmit(onSubmit)}
+							>
 							<GroupIconUpload
 								value={iconFile}
 								onChange={setIconFile}
@@ -304,7 +317,30 @@ function GroupSettingsProfileForm({ target }: GroupSettingsProfileSectionProps) 
 									</FormItem>
 								)}
 							/>
-						</form>
+							</form>
+
+							<div className="space-y-2 xl:sticky xl:top-0">
+								<p className={authFieldLabelClass}>{t("user_settings.profiles.preview_label")}</p>
+								<GroupProfileCardPreview
+									groupName={watchedName || target.groupName}
+									bannerMode={isGroupBannerImageId(bannerSelection) ? "image" : "color"}
+									bannerColor={
+										isGroupBannerImageId(bannerSelection)
+											? GROUP_BANNER_COLOR_DEFAULT
+											: bannerSelection
+									}
+									bannerImageSrc={
+										bannerPreviewUrl ?? (existingBannerCleared ? "" : target.bannerUrl)
+									}
+									showBannerImage={
+										isGroupBannerImageId(bannerSelection) &&
+										Boolean(bannerPreviewUrl || (!existingBannerCleared && target.bannerUrl?.trim()))
+									}
+									logoUrl={existingLogoCleared ? "" : target.logoUrl}
+									iconFile={iconFile}
+								/>
+							</div>
+						</div>
 					</div>
 				</div>
 

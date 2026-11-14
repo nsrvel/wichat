@@ -337,10 +337,6 @@
         "perm_manage_webhooks_desc": "Mengizinkan anggota membuat, mengubah, atau menghapus webhook yang mengirimkan pesan otomatis dari aplikasi luar ke group ini.",
         "perm_create_invite": "Buat Undangan",
         "perm_create_invite_desc": "Mengizinkan anggota mengundang orang baru ke group ini.",
-        "perm_change_nickname": "Ubah Nama Panggilan",
-        "perm_change_nickname_desc": "Mengizinkan anggota mengubah nama panggilan pribadi khusus untuk group ini.",
-        "perm_manage_nicknames": "Kelola Nama Panggilan",
-        "perm_manage_nicknames_desc": "Mengizinkan anggota mengubah nama panggilan anggota lain di group ini.",
         "perm_kick_members": "Keluarkan, Setujui, dan Tolak Anggota",
         "perm_kick_members_desc": "Mengeluarkan anggota dari group ini (dapat bergabung kembali dengan undangan baru). Jika persetujuan anggota aktif, izin ini mengizinkan menyetujui atau menolak permintaan gabung.",
         "perm_ban_members": "Blokir Anggota",
@@ -554,7 +550,6 @@
       "show_all_channels": "Tampilkan Semua Channel",
       "group_settings": "Pengaturan Group",
       "privacy_settings": "Pengaturan Privasi",
-      "edit_group_profile": "Edit Profil Per Group",
       "create_channel": "Buat Channel",
       "create_category": "Buat Kategori",
       "move_to": "Urutkan Di Daftar",
@@ -583,11 +578,35 @@
       "invite": "Undang Anggota",
       "group_settings": "Pengaturan Group",
       "privacy_settings": "Pengaturan Privasi",
-      "edit_profile": "Edit Profil Per Group",
       "create_channel": "Channel Baru",
       "create_category": "Kategori Baru",
       "notifications": "Pengaturan Notifikasi",
       "copy_group_id": "Salin ID Group"
+    },
+    "user_dock": {
+      "open_profile": "Buka profil",
+      "status_note_placeholder": "Apa yang sedang kamu pikirkan?",
+      "status_note_save": "Simpan",
+      "status_note_clear": "Hapus catatan status",
+      "edit_profile": "Edit Profil",
+      "switch_accounts": "Ganti Akun",
+      "status_online": "Online",
+      "status_idle": "Diam",
+      "status_dnd": "Jangan Ganggu",
+      "status_dnd_desc": "Kamu tidak akan menerima notifikasi desktop",
+      "status_invisible": "Tak Terlihat",
+      "status_invisible_desc": "Kamu akan terlihat offline",
+      "in_voice": "Di voice",
+      "open_voice": "Buka Voice",
+      "set_status_title": "Atur statusmu",
+      "set_status_label": "Status",
+      "set_status_save": "Simpan",
+      "pick_emoji": "Pilih emoji",
+      "clear_after_today": "Hapus hari ini",
+      "clear_after_4h": "Hapus dalam 4 jam",
+      "clear_after_1h": "Hapus dalam 1 jam",
+      "clear_after_30m": "Hapus dalam 30 menit",
+      "clear_after_never": "Jangan hapus"
     },
     "marketplace": "Marketplace",
     "download_apps": "Unduh aplikasi",
@@ -741,5 +760,115 @@
       "flags": "Bendera"
     }
   },
-  "logout": "Keluar"
+  "logout": "Keluar",
+  "status_pages": {
+    "actions": {
+      "back_home": "Kembali ke beranda",
+      "try_again": "Coba lagi",
+      "sign_in": "Masuk"
+    },
+    "not_found": {
+      "eyebrow": "Halaman tidak ditemukan",
+      "title": "404",
+      "description": "Halaman atau channel yang kamu cari tidak ada atau sudah dipindahkan."
+    },
+    "forbidden": {
+      "eyebrow": "Akses ditolak",
+      "title": "403",
+      "description": "Kamu tidak punya izin untuk membuka halaman ini. Hubungi admin jika diperlukan."
+    },
+    "unauthorized": {
+      "eyebrow": "Perlu masuk",
+      "title": "401",
+      "description": "Sesi kamu sudah berakhir. Silakan masuk kembali untuk melanjutkan."
+    },
+    "server_error": {
+      "eyebrow": "Terjadi kesalahan",
+      "title": "500",
+      "description": "Ada kendala saat memuat halaman ini. Silakan coba beberapa saat lagi."
+    },
+    "maintenance": {
+      "eyebrow": "Sedang pemeliharaan",
+      "title": "503",
+      "description": "WiChat sedang dalam pemeliharaan sementara. Silakan kembali sebentar lagi."
+    },
+    "preview": {
+      "label": "Preview Status"
+    }
+  },
+  "user_settings": {
+    "title": "Pengaturan Akun",
+    "close": "Tutup pengaturan",
+    "search_placeholder": "Cari",
+    "edit_profiles": "Edit Profil",
+    "sign_out": "Keluar",
+    "coming_soon_hint": "Bagian ini sedang disiapkan dan akan segera terhubung.",
+    "groups": {
+      "user": "Pengaturan Pengguna",
+      "app": "Pengaturan Aplikasi",
+      "advanced": "Lanjutan"
+    },
+    "nav": {
+      "account": "Akun",
+      "account_info": "Info Akun",
+      "password_security": "Kata Sandi & Keamanan",
+      "account_status": "Status Akun",
+      "profiles": "Profil",
+      "privacy": "Data & Privasi",
+      "notifications": "Notifikasi",
+      "appearance": "Tampilan",
+      "voice": "Suara & Video",
+      "accessibility": "Aksesibilitas",
+      "language": "Bahasa & Waktu",
+      "devices": "Perangkat",
+      "developer": "Pengembang"
+    },
+    "account": {
+      "info_heading": "Info Akun",
+      "username": "Username",
+      "email": "Email",
+      "not_set": "Belum diatur",
+      "reveal": "Tampilkan",
+      "hide": "Sembunyikan",
+      "edit": "Edit",
+      "security_heading": "Kata Sandi & Keamanan",
+      "password": "Kata Sandi",
+      "password_masked": "••••••••••••",
+      "mfa": "Autentikasi Dua Faktor",
+      "mfa_setup": "Atur",
+      "devices": "Perangkat Terhubung",
+      "devices_count": "Sesi aktif saat ini",
+      "status_heading": "Status Akun",
+      "status_banner": "Akun WiChat kamu aktif dan dalam kondisi baik.",
+      "standing_title": "Status Akun",
+      "standing_subtitle": "Semua fitur dan channel tersedia untuk akun kamu.",
+      "standing_badge": "Aman"
+    },
+    "profiles": {
+      "heading": "Profil",
+      "subtitle": "Atur tampilan profil kamu di seluruh WiChat.",
+      "avatar": "Avatar",
+      "change_avatar": "Ganti avatar",
+      "remove_avatar": "Hapus avatar",
+      "avatar_invalid_type": "Pilih gambar PNG, JPG, atau WebP.",
+      "avatar_too_large": "Ukuran gambar maksimal 5 MB.",
+      "display_name": "Nama Tampilan",
+      "display_name_placeholder": "Nama tampilan kamu",
+      "pronouns": "Pronoun",
+      "pronouns_placeholder": "mis. dia/mereka",
+      "banner_color": "Warna Banner",
+      "banner_color_reset": "Reset",
+      "bio": "Tentang Saya",
+      "bio_placeholder": "Tulis bio singkat tentang dirimu...",
+      "preview_label": "Pratinjau",
+      "reset": "Reset",
+      "unsaved_hint": "Hati-hati — ada perubahan yang belum disimpan!",
+      "save_changes": "Simpan Perubahan"
+    },
+    "language": {
+      "heading": "Bahasa & Waktu",
+      "subtitle": "Pilih bahasa tampilan untuk WiChat.",
+      "select_label": "Bahasa Tampilan"
+    }
+  }
 }
