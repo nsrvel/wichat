@@ -104,4 +104,14 @@ func TestMappersNilAndValues(t *testing.T) {
 	if len(rolesPb) != 1 || rolesPb[0].Id != "role-pub-1" {
 		t.Fatalf("rolesPb: %+v", rolesPb)
 	}
+
+	chromeMeta := authPb.Meta("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36", "127.0.0.1")
+	if chromeMeta.Platform != "web" || chromeMeta.DeviceLabel != "Chrome · macOS" || chromeMeta.LocationLabel != "Local Network" {
+		t.Fatalf("unexpected chrome meta: %+v", chromeMeta)
+	}
+
+	iosMeta := authPb.Meta("Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Safari/604.1", "203.0.113.5")
+	if iosMeta.Platform != "mobile" || iosMeta.DeviceLabel != "Safari · iOS" || iosMeta.LocationLabel != "" {
+		t.Fatalf("unexpected ios meta: %+v", iosMeta)
+	}
 }

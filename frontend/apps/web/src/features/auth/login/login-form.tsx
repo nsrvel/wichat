@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQuery } from "@tanstack/react-query";
 import type { AuthChallenge, LoginRequest } from "@wichat/contracts";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -13,6 +14,7 @@ import { TextField } from "@/components/form/text-field";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { AuthEmailOtpStep } from "@/features/auth/components/auth-email-otp-step";
+import { TurnstileWidget } from "@/features/auth/components/turnstile-widget";
 import {
 	authFieldLabelClass,
 	authFormClass,
@@ -28,10 +30,11 @@ import {
 	useResendLoginCodeMutation,
 	useVerifyLoginMutation,
 } from "@/services/auth/auth.mutation";
+import { instancePolicyQueryOpts } from "@/services/auth/auth.query";
 
 const LoginFormSchema = z.object({
 	login: z.string().trim().min(1, "validation.login").max(254),
-	password: z.string().min(12, "validation.password").max(128),
+	password: z.string().min(1, "validation.password_required").max(128),
 });
 
 type LoginFormValues = z.infer<typeof LoginFormSchema>;
@@ -42,8 +45,12 @@ export function LoginForm({ authReturnTo = "/" }: { authReturnTo?: string }) {
 	const login = useLoginMutation();
 	const verify = useVerifyLoginMutation();
 	const resend = useResendLoginCodeMutation();
+	const { data: policy } = useQuery(instancePolicyQueryOpts());
+	const turnstileSiteKey = policy?.turnstile_site_key ?? "";
 	const [challenge, setChallenge] = useState<AuthChallenge | null>(null);
 	const [resendCooldown, setResendCooldown] = useState(0);
+	const [turnstileToken, setTurnstileToken] = useState("");
+	const [turnstileResetKey, setTurnstileResetKey] = useState(0);
 	const form = useForm<LoginFormValues>({
 		resolver: zodResolver(LoginFormSchema),
 		defaultValues: { login: "", password: "" },
@@ -76,6 +83,13 @@ export function LoginForm({ authReturnTo = "/" }: { authReturnTo?: string }) {
 						},
 					);
 				}}
+				onBack={() => {
+					verify.reset();
+					resend.reset();
+					login.reset();
+					setChallenge(null);
+					setResendCooldown(0);
+				}}
 				onSubmit={(code) => {
 					resend.reset();
 					verify.mutate(
@@ -95,6 +109,7 @@ export function LoginForm({ authReturnTo = "/" }: { authReturnTo?: string }) {
 					const payload: LoginRequest = {
 						...values,
 						locale: i18n.language,
+						turnstile_token: turnstileToken || undefined,
 					};
 					login.mutate(payload, {
 						onSuccess: (step) => {
@@ -104,6 +119,12 @@ export function LoginForm({ authReturnTo = "/" }: { authReturnTo?: string }) {
 								return;
 							}
 							router.push(postAuthRedirectPath(authReturnTo));
+						},
+						onError: () => {
+							if (turnstileSiteKey) {
+								setTurnstileToken("");
+								setTurnstileResetKey((k) => k + 1);
+							}
 						},
 					});
 				})}
@@ -135,12 +156,21 @@ export function LoginForm({ authReturnTo = "/" }: { authReturnTo?: string }) {
 						</Link>
 					}
 				/>
+				<TurnstileWidget
+					siteKey={turnstileSiteKey}
+					resetKey={turnstileResetKey}
+					onToken={setTurnstileToken}
+				/>
 				{login.error ? (
-					<p className="text-destructive text-[11px] font-medium">
+					<p role="alert" className="text-destructive text-[11px] font-medium">
 						{translateError(t, login.error)}
 					</p>
 				) : null}
-				<Button type="submit" disabled={login.isPending} className={`mt-2 ${authSubmitClass}`}>
+				<Button
+					type="submit"
+					disabled={login.isPending || Boolean(turnstileSiteKey && !turnstileToken)}
+					className={`mt-2 ${authSubmitClass}`}
+				>
 					{login.isPending ? t("login.submitting") : t("login.submit")}
 				</Button>
 			</form>

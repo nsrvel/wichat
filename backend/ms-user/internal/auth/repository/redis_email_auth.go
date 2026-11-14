@@ -14,6 +14,10 @@ import (
 
 // EmailAuthStore holds register/login email OTP challenges in Redis.
 type EmailAuthStore interface {
+	EnsureCanAttemptLogin(ctx context.Context, login string) error
+	RecordFailedLogin(ctx context.Context, login string) (int64, error)
+	ClearFailedLogin(ctx context.Context, login string) error
+
 	EnsureCanSendEmailCode(ctx context.Context, email string) error
 	RecordEmailCodeSent(ctx context.Context, email string) (time.Duration, error)
 	RecordWrongEmailCode(ctx context.Context, email string) error
@@ -39,6 +43,56 @@ type redisEmailAuthStore struct {
 // NewRedisEmailAuthStore stores email OTP challenges in Redis.
 func NewRedisEmailAuthStore(rdb *redis.Client) EmailAuthStore {
 	return redisEmailAuthStore{rdb: rdb}
+}
+
+const (
+	maxFailedLoginAttempts = 5
+	failedLoginWindow      = 5 * time.Minute
+)
+
+func failedLoginKey(login string) string {
+	return authRedis.KeyPrefix + "login:fail:" + authRedis.EmailKey(login)
+}
+
+func (s redisEmailAuthStore) EnsureCanAttemptLogin(ctx context.Context, login string) error {
+	key := failedLoginKey(login)
+	count, err := s.rdb.Get(ctx, key).Int64()
+	if errors.Is(err, redis.Nil) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if count >= maxFailedLoginAttempts {
+		ttl, err := s.rdb.TTL(ctx, key).Result()
+		if err != nil {
+			return err
+		}
+		if ttl > 0 {
+			return &models.ResetRateLimitError{RetryAfter: ttl}
+		}
+	}
+
+	return nil
+}
+
+func (s redisEmailAuthStore) RecordFailedLogin(ctx context.Context, login string) (int64, error) {
+	key := failedLoginKey(login)
+	n, err := s.rdb.Incr(ctx, key).Result()
+	if err != nil {
+		return 0, err
+	}
+	if n == 1 {
+		if err := s.rdb.Expire(ctx, key, failedLoginWindow).Err(); err != nil {
+			return 0, err
+		}
+	}
+
+	return n, nil
+}
+
+func (s redisEmailAuthStore) ClearFailedLogin(ctx context.Context, login string) error {
+	return s.rdb.Del(ctx, failedLoginKey(login)).Err()
 }
 
 func (s redisEmailAuthStore) EnsureCanSendEmailCode(ctx context.Context, email string) error {

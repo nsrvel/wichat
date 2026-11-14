@@ -23,13 +23,18 @@ type Handler interface {
 }
 
 type handler struct {
-	ms  *microservices.Clients
-	log logger.Logger
+	ms               *microservices.Clients
+	log              logger.Logger
+	turnstileSiteKey string
 }
 
 // NewHandler wires user HTTP to the ms-user client.
-func NewHandler(ms *microservices.Clients, log logger.Logger) Handler {
-	return handler{ms: ms, log: log}
+func NewHandler(ms *microservices.Clients, log logger.Logger, turnstileSiteKey ...string) Handler {
+	siteKey := ""
+	if len(turnstileSiteKey) > 0 {
+		siteKey = strings.TrimSpace(turnstileSiteKey[0])
+	}
+	return handler{ms: ms, log: log, turnstileSiteKey: siteKey}
 }
 
 func (h handler) SetupStatus(w http.ResponseWriter, r *http.Request) {
@@ -43,6 +48,7 @@ func (h handler) SetupStatus(w http.ResponseWriter, r *http.Request) {
 	// Response
 	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(authHttp.SetupStatusBody{
 		RegistrationMode: out.GetRegistrationMode(),
+		TurnstileSiteKey: h.turnstileSiteKey,
 	}))
 }
 

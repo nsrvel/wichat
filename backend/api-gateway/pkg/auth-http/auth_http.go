@@ -29,20 +29,22 @@ type SetupBody = RegisterBody
 
 // RegisterBody is the JSON body for POST /api/v1/auth/register.
 type RegisterBody struct {
-	Email       string `json:"email"`
-	Username    string `json:"username"`
-	Password    string `json:"password"`
-	DisplayName string `json:"display_name"`
-	BirthDate   string `json:"birth_date"`
-	Locale      string `json:"locale"`
+	Email          string `json:"email"`
+	Username       string `json:"username"`
+	Password       string `json:"password"`
+	DisplayName    string `json:"display_name"`
+	BirthDate      string `json:"birth_date"`
+	Locale         string `json:"locale"`
+	TurnstileToken string `json:"turnstile_token"`
 }
 
 // LoginBody is the JSON body for POST /api/v1/auth/login.
 type LoginBody struct {
-	Login    string `json:"login"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
-	Locale   string `json:"locale"`
+	Login          string `json:"login"`
+	Email          string `json:"email"`
+	Password       string `json:"password"`
+	Locale         string `json:"locale"`
+	TurnstileToken string `json:"turnstile_token"`
 }
 
 // AuthChallengeBody is the email OTP step before a session is issued.
@@ -72,6 +74,7 @@ type ResendEmailCodeData struct {
 // SetupStatusBody is the JSON data for GET /api/v1/auth/setup-status (instance policy).
 type SetupStatusBody struct {
 	RegistrationMode string `json:"registration_mode"`
+	TurnstileSiteKey string `json:"turnstile_site_key,omitempty"`
 }
 
 // InstanceSetupBody is POST /api/v1/auth/instance-setup.

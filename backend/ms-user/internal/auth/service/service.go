@@ -141,10 +141,6 @@ func (s service) Register(ctx context.Context, in models.RegisterInput) (*models
 		return nil, err
 	}
 
-	if err := s.sessions.DeleteExpired(ctx, s.now()); err != nil {
-		return nil, err
-	}
-
 	if _, err := s.users.FindUserByEmail(ctx, email); err == nil {
 		return nil, exception.Conflict(exception.MsgEmailTaken, nil)
 	} else if !errors.Is(err, constants.ErrNotFound) {
@@ -272,8 +268,13 @@ func (s service) Login(ctx context.Context, in models.LoginInput) (*models.Passw
 		return nil, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "password"})
 	}
 
-	if err := s.sessions.DeleteExpired(ctx, s.now()); err != nil {
-		return nil, err
+	if s.emailAuth != nil {
+		if err := s.emailAuth.EnsureCanAttemptLogin(ctx, login); err != nil {
+			if retry, ok := models.ResetRateLimitRetryAfter(err); ok {
+				return nil, resetRateLimited(retry)
+			}
+			return nil, err
+		}
 	}
 
 	user, findErr := s.users.FindUserByLogin(ctx, login)
@@ -282,7 +283,13 @@ func (s service) Login(ctx context.Context, in models.LoginInput) (*models.Passw
 		hash = user.PasswordHash
 	}
 	if !password.Verify(hash, in.Password) || findErr != nil || user.PasswordHash == "" {
+		if s.emailAuth != nil {
+			_, _ = s.emailAuth.RecordFailedLogin(ctx, login)
+		}
 		return nil, exception.Unauthenticated(exception.MsgInvalidCredentials, nil)
+	}
+	if s.emailAuth != nil {
+		_ = s.emailAuth.ClearFailedLogin(ctx, login)
 	}
 
 	ch, code, err := s.beginEmailChallenge(ctx, user.Email, user.DisplayName, in.Locale, "sign_in")
@@ -735,10 +742,6 @@ func (s service) CompletePasswordReset(ctx context.Context, resetToken, newPassw
 func (s service) Refresh(ctx context.Context, refreshToken string, _ models.ClientMeta) (*models.SessionResult, error) {
 	if refreshToken == "" {
 		return nil, exception.Unauthenticated(exception.MsgUnauthorized, nil)
-	}
-
-	if err := s.sessions.DeleteExpired(ctx, s.now()); err != nil {
-		return nil, err
 	}
 
 	currentHash := token.HashRefresh(refreshToken)

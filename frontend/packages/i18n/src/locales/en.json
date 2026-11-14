@@ -13,6 +13,7 @@
     "google_email_unverified": "That Google account does not have a verified email.",
     "reset_code_invalid": "That code is incorrect or has expired.",
     "reset_rate_limited": "Wait {{retry_after_seconds}}s before requesting another code.",
+    "captcha_failed": "Verification failed. Please try again.",
     "title_login": "Login to your account",
     "title_register": "Create your account",
     "google": "Continue with Google",
@@ -507,7 +508,54 @@
   },
   "channel": {
     "placeholder_title": "Chat is being rebuilt",
-    "placeholder_lead": "Messages and composer will appear here as we wire the channel API."
+    "placeholder_lead": "Messages and composer will appear here as we wire the channel API.",
+    "create_category_dialog": {
+      "title": "Create Category",
+      "name_label": "Category Name",
+      "name_placeholder": "New Category",
+      "emoji_picker": "Insert emoji",
+      "private_title": "Private Category",
+      "private_description": "By making a category private, only select members and roles will be able to view this category. Linked channels in this category will automatically match to this setting.",
+      "cancel": "Cancel",
+      "submit": "Create Category",
+      "validation_required": "Category name is required.",
+      "validation_max": "Category name must be 64 characters or fewer.",
+      "preview_toast": "Category \"{{name}}\" is ready — backend endpoint will be wired next."
+    },
+    "create_channel_dialog": {
+      "title": "Create Channel",
+      "type_label": "Channel Type",
+      "types": {
+        "text_only": {
+          "label": "Text",
+          "description": "Send messages, images, GIFs, emoji, and replies"
+        },
+        "voice_only": {
+          "label": "Voice",
+          "description": "Hang out together with voice, video, and screen share"
+        },
+        "forum": {
+          "label": "Forum",
+          "description": "Create a space for organized discussions"
+        },
+        "broadcast": {
+          "label": "Announcement",
+          "description": "Important updates for people in and out of the group"
+        }
+      },
+      "name_label": "Channel Name",
+      "name_placeholder": "new-channel",
+      "category_label": "Category",
+      "category_none": "No Category",
+      "emoji_picker": "Insert emoji",
+      "private_title": "Private Channel",
+      "private_description": "Only selected members and roles will be able to view this channel.",
+      "cancel": "Cancel",
+      "submit": "Create Channel",
+      "validation_required": "Channel name is required.",
+      "validation_max": "Channel name must be 64 characters or fewer.",
+      "preview_toast": "Channel \"{{name}}\" ({{type}}) is ready — backend endpoint will be wired next."
+    }
   },
   "chat": {
     "empty_title": "No messages yet",
@@ -631,6 +679,7 @@
   "validation": {
     "email": "Enter a valid email.",
     "password": "Password must be at least 12 characters.",
+    "password_required": "Enter your password.",
     "display_name": "Display name must be at least 2 characters.",
     "display_name_length": "Display name can be at most 50 characters.",
     "display_name_chars": "Display name cannot contain @, #, :, `, or control characters.",
@@ -660,6 +709,37 @@
     "dark": "Dark",
     "dark_short": "Dark",
     "toggle": "Toggle color theme"
+  },
+  "expression": {
+    "tabs": {
+      "all": "All",
+      "emoji": "Emoji",
+      "gifs": "GIFs",
+      "stickers": "Stickers"
+    },
+    "search_placeholder": "Find something fun",
+    "clear_search": "Clear search",
+    "see_all": "See all",
+    "recent": "Recent",
+    "sticker_packs": "Sticker Packs",
+    "back_to_packs": "Back to packs",
+    "skin_tone": "Skin tone",
+    "skin_tone_hint": "Choose your default skin tone",
+    "no_results": "No matches found",
+    "gifs_powered_by": "GIFs powered by {{provider}}",
+    "gifs_unconfigured": "GIF search requires KLIPY_APP_KEY or GIPHY_API_KEY on the server.",
+    "emoji_categories": {
+      "recent": "Recent",
+      "smileys": "Smileys & Emotion",
+      "people": "People & Body",
+      "nature": "Animals & Nature",
+      "food": "Food & Drink",
+      "travel": "Travel & Places",
+      "activities": "Activities",
+      "objects": "Objects",
+      "symbols": "Symbols",
+      "flags": "Flags"
+    }
   },
   "logout": "Sign out"
 }

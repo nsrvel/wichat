@@ -16,6 +16,7 @@ type AuthSessionLayoutProps = {
 	lead?: ReactNode;
 	inviteBanner?: ReactNode;
 	notice?: string;
+	authenticatedRedirectTo?: string;
 	redirectIfUnauthenticated?: boolean;
 	children: ReactNode;
 };
@@ -26,6 +27,7 @@ export function AuthSessionLayout({
 	lead,
 	inviteBanner,
 	notice,
+	authenticatedRedirectTo = "/",
 	redirectIfUnauthenticated = false,
 	children,
 }: AuthSessionLayoutProps) {
@@ -36,9 +38,9 @@ export function AuthSessionLayout({
 
 	useEffect(() => {
 		if (session.data) {
-			router.replace("/");
+			router.replace(authenticatedRedirectTo);
 		}
-	}, [router, session.data]);
+	}, [authenticatedRedirectTo, router, session.data]);
 
 	useEffect(() => {
 		if (!redirectIfUnauthenticated || session.isPending || session.data) {

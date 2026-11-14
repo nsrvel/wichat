@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQuery } from "@tanstack/react-query";
 import {
 	displayNameSchema,
 	usernameSchema,
@@ -19,6 +20,7 @@ import { TextField } from "@/components/form/text-field";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { AuthEmailOtpStep } from "@/features/auth/components/auth-email-otp-step";
+import { TurnstileWidget } from "@/features/auth/components/turnstile-widget";
 import {
 	authFieldLabelClass,
 	authFormClass,
@@ -34,6 +36,7 @@ import {
 	useResendRegisterCodeMutation,
 	useVerifyRegisterMutation,
 } from "@/services/auth/auth.mutation";
+import { instancePolicyQueryOpts } from "@/services/auth/auth.query";
 import { checkUsername } from "@/services/auth/auth.service";
 
 const birthDaySchema = z.string().regex(/^\d{2}$/);
@@ -54,7 +57,11 @@ const RegisterFormSchema = z
 
 type RegisterFormValues = z.infer<typeof RegisterFormSchema>;
 
-function toRegisterRequest(values: RegisterFormValues, locale: string): RegisterRequest {
+function toRegisterRequest(
+	values: RegisterFormValues,
+	locale: string,
+	turnstileToken: string,
+): RegisterRequest {
 	return {
 		email: values.email,
 		username: values.username,
@@ -62,6 +69,7 @@ function toRegisterRequest(values: RegisterFormValues, locale: string): Register
 		display_name: values.display_name,
 		birth_date: formatBirthDate(values.birth_year, values.birth_month, values.birth_day),
 		locale,
+		turnstile_token: turnstileToken || undefined,
 	};
 }
 
@@ -77,8 +85,12 @@ export function RegisterForm({ authReturnTo = "/" }: { authReturnTo?: string }) 
 	const register = useRegisterMutation();
 	const verify = useVerifyRegisterMutation();
 	const resend = useResendRegisterCodeMutation();
+	const { data: policy } = useQuery(instancePolicyQueryOpts());
+	const turnstileSiteKey = policy?.turnstile_site_key ?? "";
 	const [challenge, setChallenge] = useState<AuthChallenge | null>(null);
 	const [resendCooldown, setResendCooldown] = useState(0);
+	const [turnstileToken, setTurnstileToken] = useState("");
+	const [turnstileResetKey, setTurnstileResetKey] = useState(0);
 	const [usernameCheck, setUsernameCheck] = useState<
 		{ query: string; result: UsernameCheckState } | null
 	>(null);
@@ -157,6 +169,13 @@ export function RegisterForm({ authReturnTo = "/" }: { authReturnTo?: string }) 
 						},
 					);
 				}}
+				onBack={() => {
+					verify.reset();
+					resend.reset();
+					register.reset();
+					setChallenge(null);
+					setResendCooldown(0);
+				}}
 				onSubmit={(code) => {
 					resend.reset();
 					verify.mutate(
@@ -173,7 +192,7 @@ export function RegisterForm({ authReturnTo = "/" }: { authReturnTo?: string }) 
 			<form
 				className={authFormClass}
 				onSubmit={form.handleSubmit((values) => {
-					register.mutate(toRegisterRequest(values, i18n.language), {
+					register.mutate(toRegisterRequest(values, i18n.language, turnstileToken), {
 						onSuccess: (step) => {
 							if (step.kind === "challenge") {
 								setChallenge(step.challenge);
@@ -181,6 +200,12 @@ export function RegisterForm({ authReturnTo = "/" }: { authReturnTo?: string }) 
 								return;
 							}
 							router.push(postAuthRedirectPath(authReturnTo));
+						},
+						onError: () => {
+							if (turnstileSiteKey) {
+								setTurnstileToken("");
+								setTurnstileResetKey((k) => k + 1);
+							}
 						},
 					});
 				})}
@@ -263,14 +288,24 @@ export function RegisterForm({ authReturnTo = "/" }: { authReturnTo?: string }) 
 					labelClassName={authFieldLabelClass}
 					selectClassName={authInputClass}
 				/>
+				<TurnstileWidget
+					siteKey={turnstileSiteKey}
+					resetKey={turnstileResetKey}
+					onToken={setTurnstileToken}
+				/>
 				{register.error ? (
-					<p className="text-destructive text-[11px] font-medium">
+					<p role="alert" className="text-destructive text-[11px] font-medium">
 						{translateError(t, register.error)}
 					</p>
 				) : null}
 				<Button
 					type="submit"
-					disabled={register.isPending || effectiveUsernameCheck.status === "taken"}
+					disabled={
+						register.isPending ||
+						effectiveUsernameCheck.status === "checking" ||
+						effectiveUsernameCheck.status === "taken" ||
+						Boolean(turnstileSiteKey && !turnstileToken)
+					}
 					className={`mt-2 ${authSubmitClass}`}
 				>
 					{register.isPending ? t("register.submitting") : t("register.submit")}

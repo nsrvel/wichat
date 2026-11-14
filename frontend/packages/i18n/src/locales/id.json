@@ -13,6 +13,7 @@
     "google_email_unverified": "Akun Google itu belum memiliki email terverifikasi.",
     "reset_code_invalid": "Kode salah atau sudah kedaluwarsa.",
     "reset_rate_limited": "Tunggu {{retry_after_seconds}} detik sebelum meminta kode lagi.",
+    "captcha_failed": "Verifikasi keamanan gagal. Silakan coba lagi.",
     "title_login": "Masuk ke akun Anda",
     "title_register": "Buat akun Anda",
     "google": "Lanjutkan dengan Google",
@@ -456,7 +457,54 @@
   },
   "channel": {
     "placeholder_title": "Chat sedang dibangun ulang",
-    "placeholder_lead": "Pesan dan composer akan muncul di sini setelah API channel terhubung."
+    "placeholder_lead": "Pesan dan composer akan muncul di sini setelah API channel terhubung.",
+    "create_category_dialog": {
+      "title": "Buat Kategori",
+      "name_label": "Nama Kategori",
+      "name_placeholder": "Kategori Baru",
+      "emoji_picker": "Sisipkan emoji",
+      "private_title": "Kategori Privat",
+      "private_description": "Dengan membuat kategori privat, hanya anggota dan role terpilih yang dapat melihat kategori ini. Channel di dalam kategori ini akan mengikuti pengaturan ini secara otomatis.",
+      "cancel": "Batal",
+      "submit": "Buat Kategori",
+      "validation_required": "Nama kategori wajib diisi.",
+      "validation_max": "Nama kategori maksimal 64 karakter.",
+      "preview_toast": "Kategori \"{{name}}\" siap — endpoint backend akan dihubungkan di tahap berikutnya."
+    },
+    "create_channel_dialog": {
+      "title": "Buat Channel",
+      "type_label": "Tipe Channel",
+      "types": {
+        "text_only": {
+          "label": "Teks",
+          "description": "Kirim pesan, gambar, GIF, emoji, dan balasan"
+        },
+        "voice_only": {
+          "label": "Suara",
+          "description": "Ngobrol bareng lewat suara, video, dan berbagi layar"
+        },
+        "forum": {
+          "label": "Forum",
+          "description": "Buat ruang untuk diskusi yang terstruktur"
+        },
+        "broadcast": {
+          "label": "Pengumuman",
+          "description": "Info penting untuk anggota di dalam maupun luar grup"
+        }
+      },
+      "name_label": "Nama Channel",
+      "name_placeholder": "channel-baru",
+      "category_label": "Kategori",
+      "category_none": "Tanpa Kategori",
+      "emoji_picker": "Sisipkan emoji",
+      "private_title": "Channel Privat",
+      "private_description": "Hanya anggota dan role terpilih yang dapat melihat channel ini.",
+      "cancel": "Batal",
+      "submit": "Buat Channel",
+      "validation_required": "Nama channel wajib diisi.",
+      "validation_max": "Nama channel maksimal 64 karakter.",
+      "preview_toast": "Channel \"{{name}}\" ({{type}}) siap — endpoint backend akan dihubungkan di tahap berikutnya."
+    }
   },
   "chat": {
     "empty_title": "Belum ada pesan",
@@ -631,6 +679,7 @@
   "validation": {
     "email": "Masukkan email yang valid.",
     "password": "Kata sandi minimal 12 karakter.",
+    "password_required": "Masukkan kata sandi Anda.",
     "display_name": "Nama tampilan minimal 2 karakter.",
     "display_name_length": "Nama tampilan maksimal 50 karakter.",
     "display_name_chars": "Nama tampilan tidak boleh mengandung @, #, :, `, atau karakter kontrol.",
@@ -660,6 +709,37 @@
     "dark": "Gelap",
     "dark_short": "Gelap",
     "toggle": "Ganti tema warna"
+  },
+  "expression": {
+    "tabs": {
+      "all": "Semua",
+      "emoji": "Emoji",
+      "gifs": "GIF",
+      "stickers": "Stiker"
+    },
+    "search_placeholder": "Cari sesuatu yang seru",
+    "clear_search": "Hapus pencarian",
+    "see_all": "Lihat semua",
+    "recent": "Terbaru",
+    "sticker_packs": "Paket Stiker",
+    "back_to_packs": "Kembali ke paket",
+    "skin_tone": "Warna kulit",
+    "skin_tone_hint": "Pilih warna kulit default",
+    "no_results": "Tidak ada hasil yang cocok",
+    "gifs_powered_by": "GIF didukung oleh {{provider}}",
+    "gifs_unconfigured": "Pencarian GIF membutuhkan KLIPY_APP_KEY atau GIPHY_API_KEY di server.",
+    "emoji_categories": {
+      "recent": "Terbaru",
+      "smileys": "Senyum & Emosi",
+      "people": "Orang & Tubuh",
+      "nature": "Hewan & Alam",
+      "food": "Makanan & Minuman",
+      "travel": "Perjalanan & Tempat",
+      "activities": "Aktivitas",
+      "objects": "Objek",
+      "symbols": "Simbol",
+      "flags": "Bendera"
+    }
   },
   "logout": "Keluar"
 }

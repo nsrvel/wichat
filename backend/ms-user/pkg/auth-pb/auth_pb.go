@@ -2,15 +2,94 @@
 package authPb
 
 import (
+	"net"
+	"strings"
 	"time"
 
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
 	userv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/user/v1"
 )
 
-// Meta builds client hints from gRPC request fields.
+// Meta builds client hints (device, platform, local network location) from gRPC request fields.
 func Meta(userAgent, clientIP string) models.ClientMeta {
-	return models.ClientMeta{UserAgent: userAgent, ClientIP: clientIP}
+	ua := strings.TrimSpace(userAgent)
+	ip := strings.TrimSpace(clientIP)
+	platform, device := parseUserAgent(ua)
+	return models.ClientMeta{
+		UserAgent:     ua,
+		ClientIP:      ip,
+		Platform:      platform,
+		DeviceLabel:   device,
+		LocationLabel: locationFromIP(ip),
+	}
+}
+
+func parseUserAgent(ua string) (platform, device string) {
+	if ua == "" {
+		return "web", ""
+	}
+	lower := strings.ToLower(ua)
+
+	osName := "Unknown OS"
+	switch {
+	case strings.Contains(lower, "iphone") || strings.Contains(lower, "ipad"):
+		osName = "iOS"
+		platform = "mobile"
+	case strings.Contains(lower, "android"):
+		osName = "Android"
+		platform = "mobile"
+	case strings.Contains(lower, "mac os x") || strings.Contains(lower, "macintosh"):
+		osName = "macOS"
+		platform = "web"
+	case strings.Contains(lower, "windows"):
+		osName = "Windows"
+		platform = "web"
+	case strings.Contains(lower, "linux"):
+		osName = "Linux"
+		platform = "web"
+	default:
+		platform = "web"
+	}
+
+	if strings.Contains(lower, "electron") || strings.Contains(lower, "wichatdesktop") {
+		platform = "desktop"
+	}
+
+	browser := ""
+	switch {
+	case strings.Contains(lower, "edg/"):
+		browser = "Edge"
+	case strings.Contains(lower, "opr/") || strings.Contains(lower, "opera"):
+		browser = "Opera"
+	case strings.Contains(lower, "chrome/") && !strings.Contains(lower, "chromium"):
+		browser = "Chrome"
+	case strings.Contains(lower, "firefox/"):
+		browser = "Firefox"
+	case strings.Contains(lower, "safari/") && !strings.Contains(lower, "chrome/"):
+		browser = "Safari"
+	}
+
+	switch {
+	case browser != "" && osName != "Unknown OS":
+		return platform, browser + " · " + osName
+	case browser != "":
+		return platform, browser
+	case osName != "Unknown OS":
+		return platform, osName
+	default:
+		return platform, ""
+	}
+}
+
+func locationFromIP(clientIP string) string {
+	ip := net.ParseIP(clientIP)
+	if ip == nil {
+		return ""
+	}
+	if ip.IsLoopback() || ip.IsPrivate() {
+		return "Local Network"
+	}
+	return ""
 }
 
 // Challenge maps an email OTP challenge to protobuf.

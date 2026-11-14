@@ -155,3 +155,30 @@ func TestEmailAuthDeleteRegisterPending(t *testing.T) {
 		t.Fatalf("get after delete: %v", err)
 	}
 }
+
+func TestFailedLoginThrottling(t *testing.T) {
+	store := newEmailAuthStore(t)
+	ctx := context.Background()
+
+	if err := store.EnsureCanAttemptLogin(ctx, "ada@example.com"); err != nil {
+		t.Fatalf("initial attempt should be allowed: %v", err)
+	}
+
+	for i := 0; i < 5; i++ {
+		if _, err := store.RecordFailedLogin(ctx, "ADA@example.com"); err != nil {
+			t.Fatalf("record failed login %d: %v", i, err)
+		}
+	}
+
+	err := store.EnsureCanAttemptLogin(ctx, "ada@example.com")
+	if retry, ok := models.ResetRateLimitRetryAfter(err); !ok || retry <= 0 {
+		t.Fatalf("expected rate limit after 5 failures, got %v", err)
+	}
+
+	if err := store.ClearFailedLogin(ctx, "ada@example.com"); err != nil {
+		t.Fatalf("clear failed login: %v", err)
+	}
+	if err := store.EnsureCanAttemptLogin(ctx, "ada@example.com"); err != nil {
+		t.Fatalf("attempt after clear should be allowed: %v", err)
+	}
+}

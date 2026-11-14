@@ -7,6 +7,7 @@ import (
 	"github.com/wichat/wichat/backend/api-gateway/internal/middleware"
 	authHttp "github.com/wichat/wichat/backend/api-gateway/pkg/auth-http"
 	"github.com/wichat/wichat/backend/api-gateway/pkg/cookie"
+	"github.com/wichat/wichat/backend/api-gateway/pkg/turnstile"
 	"github.com/wichat/wichat/backend/wi-shared/exception"
 	"github.com/wichat/wichat/backend/wi-shared/infra/logger"
 	"github.com/wichat/wichat/backend/wi-shared/microservices"
@@ -39,15 +40,21 @@ type handler struct {
 	log          logger.Logger
 	secureCookie bool
 	webOrigin    string
+	turnstile    turnstile.Verifier
 }
 
 // NewHandler wires auth HTTP to the ms-user client.
-func NewHandler(ms *microservices.Clients, log logger.Logger, secureCookie bool, webOrigin string) Handler {
+func NewHandler(ms *microservices.Clients, log logger.Logger, secureCookie bool, webOrigin string, turnstileSecret ...string) Handler {
+	secret := ""
+	if len(turnstileSecret) > 0 {
+		secret = turnstileSecret[0]
+	}
 	return handler{
 		ms:           ms,
 		log:          log,
 		secureCookie: secureCookie,
 		webOrigin:    strings.TrimRight(strings.TrimSpace(webOrigin), "/"),
+		turnstile:    turnstile.NewVerifier(secret),
 	}
 }
 
@@ -59,6 +66,11 @@ func (h handler) Register(w http.ResponseWriter, r *http.Request) {
 	// Bind
 	var body authHttp.RegisterBody
 	if err := authHttp.DecodeJSON(w, r, &body); err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	if err := h.turnstile.Verify(r.Context(), body.TurnstileToken, middleware.ClientIP(r)); err != nil {
 		authHttp.WriteOutbound(w, r, h.log, err)
 		return
 	}
@@ -126,6 +138,11 @@ func (h handler) Login(w http.ResponseWriter, r *http.Request) {
 	// Bind
 	var body authHttp.LoginBody
 	if err := authHttp.DecodeJSON(w, r, &body); err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	if err := h.turnstile.Verify(r.Context(), body.TurnstileToken, middleware.ClientIP(r)); err != nil {
 		authHttp.WriteOutbound(w, r, h.log, err)
 		return
 	}

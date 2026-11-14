@@ -61,6 +61,7 @@ export const RegistrationModeSchema = z.enum([
 
 export const InstancePolicySchema = z.object({
 	registration_mode: RegistrationModeSchema,
+	turnstile_site_key: z.string().optional().default(""),
 });
 
 export const CheckUsernameResponseSchema = z.object({
@@ -186,8 +187,9 @@ export const ForgotPasswordRequestResponseSchema = z.object({
 
 export const LoginRequestSchema = z.object({
 	login: z.string().trim().min(1).max(254),
-	password: z.string().min(12).max(128),
+	password: z.string().min(1).max(128),
 	locale: z.string().trim().optional(),
+	turnstile_token: z.string().optional(),
 });
 
 const birthDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -199,6 +201,7 @@ export const RegisterRequestSchema = z.object({
 	display_name: displayNameSchema,
 	birth_date: birthDateSchema,
 	locale: z.string().trim().optional(),
+	turnstile_token: z.string().optional(),
 });
 
 /** @deprecated Use RegisterRequestSchema */

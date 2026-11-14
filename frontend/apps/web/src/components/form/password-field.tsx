@@ -7,6 +7,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import type { ReactNode } from "react";
 import type { FieldPath, FieldValues } from "react-hook-form";
+import { cn } from "@/lib/utils";
 
 type PasswordFieldProps<T extends FieldValues> = {
 	control: import("react-hook-form").Control<T>;
@@ -45,9 +46,9 @@ export function PasswordField<T extends FieldValues>({
 				<FormItem>
 					{labelAction ? (
 						<div className="flex min-w-0 items-center justify-between gap-2">
-							<span className={labelClassName}>
+							<FormLabel className={labelClassName}>
 								<FieldLabelContent required={required}>{label}</FieldLabelContent>
-							</span>
+							</FormLabel>
 							{labelAction}
 						</div>
 					) : (
@@ -63,7 +64,7 @@ export function PasswordField<T extends FieldValues>({
 								placeholder={placeholder}
 								aria-required={required}
 								aria-invalid={!!fieldState.error}
-								className={`${inputClassName ?? ""} pr-10`}
+								className={cn(inputClassName, "pr-11 sm:pr-11")}
 								{...field}
 							/>
 							<button

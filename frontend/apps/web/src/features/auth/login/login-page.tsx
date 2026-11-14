@@ -7,7 +7,7 @@ import { AuthOr, authLeadSwitchClass, authLinkClass } from "@/features/auth/comp
 import { AuthSessionLayout } from "@/features/auth/components/auth-session-layout";
 import { GoogleButton } from "@/features/auth/components/google-button";
 import { LoginForm } from "./login-form";
-import { authPathWithReturn } from "@/lib/auth-invite";
+import { authPathWithReturn, postAuthRedirectPath } from "@/lib/auth-invite";
 
 export function LoginPage({
 	notice,
@@ -36,6 +36,7 @@ export function LoginPage({
 			loadingHeadline={t("auth.title_login")}
 			lead={lead}
 			notice={notice}
+			authenticatedRedirectTo={postAuthRedirectPath(authReturnTo)}
 		>
 			<GoogleButton label={t("auth.google")} authReturnTo={authReturnTo} />
 			<AuthOr label={t("auth.or")} />

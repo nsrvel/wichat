@@ -22,6 +22,9 @@ type Config struct {
 	KafkaChatEventsTopic       string         `mapstructure:"kafka_chat_events_topic"`
 	KafkaRealtimeConsumerGroup string         `mapstructure:"kafka_realtime_consumer_group"`
 	InstanceID                 string         `mapstructure:"instance_id"`
+	TrustedProxies             string         `mapstructure:"trusted_proxies"`
+	TurnstileSiteKey           string         `mapstructure:"turnstile_site_key"`
+	TurnstileSecretKey         string         `mapstructure:"turnstile_secret_key"`
 	Microservices              utils.Settings `mapstructure:",squash"`
 }
 

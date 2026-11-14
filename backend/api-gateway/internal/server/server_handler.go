@@ -18,6 +18,10 @@ import (
 )
 
 func (s *server) buildHandler(ms *microservices.Clients, rtHub *hub.Hub) (http.Handler, error) {
+	if err := middleware.ConfigureTrustedProxies(s.cfg.TrustedProxies); err != nil {
+		return nil, err
+	}
+
 	// Routes
 	mux := http.NewServeMux()
 	s.mapHandlers(mux, ms, rtHub)
@@ -28,8 +32,8 @@ func (s *server) buildHandler(ms *microservices.Clients, rtHub *hub.Hub) (http.H
 
 func (s *server) mapHandlers(mux *http.ServeMux, ms *microservices.Clients, rtHub *hub.Hub) {
 	// APIs
-	authdelivery.Register(mux, authdelivery.NewHandler(ms, s.log, s.cfg.SecureCookies(), s.cfg.WebOrigin))
-	userdelivery.Register(mux, userdelivery.NewHandler(ms, s.log))
+	authdelivery.Register(mux, authdelivery.NewHandler(ms, s.log, s.cfg.SecureCookies(), s.cfg.WebOrigin, s.cfg.TurnstileSecretKey))
+	userdelivery.Register(mux, userdelivery.NewHandler(ms, s.log, s.cfg.TurnstileSiteKey))
 	groupdelivery.Register(mux, groupdelivery.NewHandler(ms, s.log))
 	groupmemberdelivery.Register(mux, groupmemberdelivery.NewHandler(ms, s.log))
 	channeldelivery.Register(mux, channeldelivery.NewHandler(ms, s.log))

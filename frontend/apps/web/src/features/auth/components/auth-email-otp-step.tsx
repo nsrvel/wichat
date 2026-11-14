@@ -43,6 +43,8 @@ type AuthEmailOtpStepProps = {
 	isResendPending?: boolean;
 	onSubmit: (code: string) => void;
 	onResend: () => void;
+	onBack?: () => void;
+	backLabel?: string;
 	resendCooldownSec?: number;
 };
 
@@ -57,6 +59,8 @@ export function AuthEmailOtpStep({
 	isResendPending = false,
 	onSubmit,
 	onResend,
+	onBack,
+	backLabel,
 	resendCooldownSec = 0,
 }: AuthEmailOtpStepProps) {
 	const { t } = useTranslation();
@@ -103,6 +107,17 @@ export function AuthEmailOtpStep({
 				<Button type="submit" disabled={isPending} className={`mt-2 ${authSubmitClass}`}>
 					{isPending ? t(submittingKey) : t(submitKey)}
 				</Button>
+				{onBack ? (
+					<Button
+						type="button"
+						variant="ghost"
+						disabled={isPending}
+						onClick={onBack}
+						className="h-9 w-full text-xs font-medium text-muted-foreground hover:text-foreground"
+					>
+						{backLabel ?? t("auth.back")}
+					</Button>
+				) : null}
 			</form>
 		</Form>
 	);

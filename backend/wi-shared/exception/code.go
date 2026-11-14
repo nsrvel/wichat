@@ -26,6 +26,7 @@ const (
 	MsgGoogleEmailUnverified MessageCode = "auth.google_email_unverified"
 	MsgResetCodeInvalid      MessageCode = "auth.reset_code_invalid"
 	MsgResetRateLimited      MessageCode = "auth.reset_rate_limited"
+	MsgCaptchaFailed         MessageCode = "auth.captcha_failed"
 
 	MsgUserNotFound MessageCode = "user.not_found"
 )

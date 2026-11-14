@@ -1,7 +1,9 @@
 package middleware
 
 import (
+	"math"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
@@ -12,20 +14,23 @@ import (
 // Limiter is a fixed-window counter kept in this process.
 // ponytail: one gateway process only; move the buckets to Redis when the gateway is scaled out.
 type Limiter struct {
-	limit  int
-	window time.Duration
-	mu     sync.Mutex
-	hits   map[string][]time.Time
-	now    func() time.Time
+	limit     int
+	window    time.Duration
+	mu        sync.Mutex
+	hits      map[string][]time.Time
+	lastPrune time.Time
+	now       func() time.Time
 }
 
 // NewLimiter allows limit events per key inside window.
 func NewLimiter(limit int, window time.Duration) *Limiter {
+	nowFn := time.Now
 	return &Limiter{
-		limit:  limit,
-		window: window,
-		hits:   map[string][]time.Time{},
-		now:    time.Now,
+		limit:     limit,
+		window:    window,
+		hits:      map[string][]time.Time{},
+		lastPrune: nowFn(),
+		now:       nowFn,
 	}
 }
 
@@ -41,7 +46,10 @@ func (l *Limiter) Allow(key string) bool {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	l.prune(cutoff)
+	if now.Sub(l.lastPrune) >= l.window {
+		l.prune(cutoff)
+		l.lastPrune = now
+	}
 
 	kept := l.hits[key][:0]
 	for _, ts := range l.hits[key] {
@@ -83,6 +91,9 @@ func (l *Limiter) prune(cutoff time.Time) {
 func (l *Limiter) Wrap(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !l.Allow(ClientIP(r)) {
+			if retryAfter := int(math.Ceil(l.window.Seconds())); retryAfter > 0 {
+				w.Header().Set("Retry-After", strconv.Itoa(retryAfter))
+			}
 			responsehttp.WriteError(w, r, exception.RateLimited(exception.MsgRateLimited, nil))
 
 			return
