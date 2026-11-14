@@ -16,6 +16,7 @@
 ./pkg/db
 ./pkg/invite
 ./pkg/jwt
+./pkg/mfa
 ./pkg/oauth
 ./pkg/otp
 ./pkg/password

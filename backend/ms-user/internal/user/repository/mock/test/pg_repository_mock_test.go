@@ -165,3 +165,96 @@ func TestStateSessionHelpers(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestUserMockProfileAndMFA(t *testing.T) {
+	st := usermock.NewState()
+	repo := usermock.NewPgRepositoryMock(st)
+	ctx := context.Background()
+	now := time.Now().UTC()
+
+	err := repo.CreateFirstUser(ctx, models.User{
+		ID:           "u-mfa-1",
+		Email:        "mfa-mock@example.com",
+		Username:     "mfamock",
+		PasswordHash: "hash",
+		DisplayName:  "MFA Mock",
+		CreatedAt:    now,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := repo.UpdateUserAvatarURL(ctx, "u-mfa-1", "/media/avatars/u.png", now); err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.UpdateUserProfile(ctx, "u-mfa-1", models.UserProfilePatch{
+		DisplayName: "New Name",
+		Pronouns:    "they/them",
+		Bio:         "Bio",
+		BannerColor: "#112233",
+	}, now); err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.UpdateUsername(ctx, "u-mfa-1", "mfamock2", now); err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.UpdateEmail(ctx, "u-mfa-1", "mfa-mock2@example.com", now); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := repo.UpsertMFATOTP(ctx, models.MFATOTP{UserID: "u-mfa-1", SecretEncrypted: []byte("enc"), CreatedAt: now, UpdatedAt: now}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := repo.GetMFATOTP(ctx, "u-mfa-1"); err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.UpdateMFATOTPLastUsedStep(ctx, "u-mfa-1", 42, now); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := repo.InsertWebAuthnCredential(ctx, models.WebAuthnCredential{
+		ID:           "cred-id-row-1",
+		UserID:       "u-mfa-1",
+		Name:         "YubiKey",
+		CredentialID: []byte("cid-1"),
+		PublicKey:    []byte("pk-1"),
+		Transports:   []string{"usb"},
+		CreatedAt:    now,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if creds, err := repo.ListWebAuthnCredentials(ctx, "u-mfa-1"); err != nil || len(creds) != 1 {
+		t.Fatalf("ListWebAuthnCredentials: %v, len=%d", err, len(creds))
+	}
+	if err := repo.UpdateWebAuthnCredentialUsage(ctx, []byte("cid-1"), 5, true, true, now); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := repo.RenameWebAuthnCredential(ctx, "u-mfa-1", "cred-id-row-1", "YubiKey 5C"); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := repo.ReplaceRecoveryCodes(ctx, "u-mfa-1", [][]byte{[]byte("h1"), []byte("h2")}, now); err != nil {
+		t.Fatal(err)
+	}
+	if n, err := repo.CountUnusedRecoveryCodes(ctx, "u-mfa-1"); err != nil || n != 2 {
+		t.Fatalf("CountUnusedRecoveryCodes: %d, %v", n, err)
+	}
+	if ok, err := repo.ConsumeRecoveryCode(ctx, "u-mfa-1", []byte("h1"), now); err != nil || !ok {
+		t.Fatalf("ConsumeRecoveryCode: %v, %v", ok, err)
+	}
+
+	if err := repo.DeleteWebAuthnCredential(ctx, "u-mfa-1", "cred-id-row-1"); err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.DeleteMFATOTP(ctx, "u-mfa-1"); err != nil {
+		t.Fatal(err)
+	}
+	_, _ = repo.FindUserByUsername(ctx, "mfamock2")
+	_, _ = repo.FindUserByLogin(ctx, "mfamock2")
+	_, _ = repo.FindUserByID(ctx, "u-mfa-1")
+	_ = repo.UpdateUserProfile(ctx, "u-mfa-1", models.UserProfilePatch{ClearAvatar: true}, now)
+	_ = repo.DeleteMFATOTP(ctx, "u-mfa-1")
+	_, _ = repo.RenameWebAuthnCredential(ctx, "u-mfa-1", "missing", "x")
+	_ = repo.DeleteWebAuthnCredential(ctx, "u-mfa-1", "missing")
+	_, _ = repo.ConsumeRecoveryCode(ctx, "u-mfa-1", []byte("missing"), now)
+}

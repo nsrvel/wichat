@@ -35,6 +35,7 @@ import (
 	usergrpc "github.com/wichat/wichat/backend/ms-user/internal/user/delivery/grpc"
 	userrepo "github.com/wichat/wichat/backend/ms-user/internal/user/repository"
 	userservice "github.com/wichat/wichat/backend/ms-user/internal/user/service"
+	"github.com/wichat/wichat/backend/ms-user/pkg/mfa"
 	googleoauth "github.com/wichat/wichat/backend/ms-user/pkg/oauth"
 	"github.com/wichat/wichat/backend/wi-shared/infra/minio"
 	msNotification "github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-notification"
@@ -115,15 +116,30 @@ func (s *server) Run(ctx context.Context) error {
 	if err := minio.EnsurePublicReadBucket(ctx, minioClient); err != nil {
 		return fmt.Errorf("minio bootstrap: %w", err)
 	}
+	userMinio := userrepo.NewMinioRepository(minioClient)
 	groupMinio := grouprepo.NewMinioRepository(minioClient)
 	channelPg := channelrepo.NewPgRepository(db, s.log)
 	invitePg := inviterepo.NewPgRepository(db, s.log)
 	authSessions := authrepo.NewSessionRepository(db)
 	authRefresh := authrepo.NewRedisRefreshStore(rdb)
+	emailAuthStore := authrepo.NewRedisEmailAuthStore(rdb)
+	emailChangeStore := userrepo.NewRedisEmailChangeStore(rdb)
+	authMFAStore := authrepo.NewMFAStore(rdb)
+	userMFAStore := userrepo.NewMFAEnrollmentStore(rdb)
 	secret := []byte(s.cfg.AuthJWTSecret)
 
+	mfaSecretSrc := s.cfg.MFAEncryptionKey
+	if mfaSecretSrc == "" {
+		mfaSecretSrc = s.cfg.AuthJWTSecret
+	}
+	mfaKey := mfa.DeriveEncryptionKey(mfaSecretSrc)
+	wa, err := mfa.NewWebAuthn(s.cfg.WebOrigin, s.cfg.WebAuthnRPID, s.cfg.WebAuthnRPOrigins, s.cfg.WebAuthnRPDisplayName)
+	if err != nil {
+		return fmt.Errorf("webauthn config: %w", err)
+	}
+
 	// Services
-	userSvc := userservice.NewService(userPg, groupPg, groupMemberPg, authSessions, secret, s.log)
+	userSvc := userservice.NewServiceWithMFA(userPg, groupPg, groupMemberPg, userMinio, authSessions, authRefresh, emailAuthStore, emailChangeStore, userMFAStore, wa, mfaKey, notifyClient, secret, s.log)
 	channelSvc := channelservice.NewService(channelPg, groupPg, groupMemberPg, groupRolePg, authSessions, secret, s.log)
 	groupSvc := groupservice.NewService(groupPg, groupMemberPg, groupRolePg, channelSvc, userPg, groupMinio, authSessions, secret, s.log)
 	groupMemberSvc := groupmemberservice.NewService(groupMemberPg, groupPg, groupRolePg, authSessions, secret, s.log)
@@ -136,7 +152,11 @@ func (s *server) Run(ctx context.Context) error {
 		ClientID:     s.cfg.GoogleClientID,
 		ClientSecret: s.cfg.GoogleClientSecret,
 		RedirectURL:  s.cfg.GoogleRedirectURL,
-	}, authrepo.NewRedisPasswordResetStore(rdb), authrepo.NewRedisEmailAuthStore(rdb), notifyClient, userSvc, nil)
+	}, authrepo.NewRedisPasswordResetStore(rdb), emailAuthStore, notifyClient, userSvc, &authservice.Options{
+		MFA:      authMFAStore,
+		WebAuthn: wa,
+		MFAKey:   mfaKey,
+	})
 	if err != nil {
 		return err
 	}

@@ -21,6 +21,7 @@ import (
 	userrepo "github.com/wichat/wichat/backend/ms-user/internal/user/repository"
 	usermock "github.com/wichat/wichat/backend/ms-user/internal/user/repository/mock"
 	userservice "github.com/wichat/wichat/backend/ms-user/internal/user/service"
+	"github.com/wichat/wichat/backend/ms-user/pkg/mfa"
 	googleoauth "github.com/wichat/wichat/backend/ms-user/pkg/oauth"
 	"github.com/wichat/wichat/backend/ms-user/pkg/username"
 	"github.com/wichat/wichat/backend/wi-shared/infra/logger"
@@ -80,15 +81,23 @@ func NewAuthService(t *testing.T, st *usermock.State, now func() time.Time) (ser
 	log := logger.New(logger.Options{Service: "auth-test", Env: "test", Level: "error"})
 	members := groupmembermock.NewPgRepositoryMock(st)
 	roles := grouprolemock.NewPgRepositoryMock(st)
-	userSvc := userservice.NewService(users, groups, members, sessions, []byte(TestJWTSecret), log)
+	emailAuth := authrepo.NewRedisEmailAuthStore(rdb)
+	mfaKey := mfa.DeriveEncryptionKey(TestJWTSecret)
+	wa, err := mfa.NewWebAuthn("http://localhost:8080", "localhost", "http://localhost:8080", "WiChat")
+	if err != nil {
+		t.Fatal(err)
+	}
+	refresh := authrepo.NewRedisRefreshStore(rdb)
+	userSvc := userservice.NewServiceWithMFA(users, groups, members, nil, sessions, refresh, emailAuth, userrepo.NewRedisEmailChangeStore(rdb), userrepo.NewMFAEnrollmentStore(rdb), wa, mfaKey, notify, []byte(TestJWTSecret), log)
 	channelSvc := channelservice.NewService(channelmock.NewPgRepositoryMock(st), groups, members, roles, sessions, []byte(TestJWTSecret), log)
 	groupSvc := groupservice.NewService(groups, members, roles, channelSvc, users, disabledGroupMinio(log), sessions, []byte(TestJWTSecret), log)
-	refresh := authrepo.NewRedisRefreshStore(rdb)
-	var opts *service.Options
-	if now != nil {
-		opts = &service.Options{Now: now}
+	opts := &service.Options{
+		Now:      now,
+		MFA:      authrepo.NewMFAStore(rdb),
+		WebAuthn: wa,
+		MFAKey:   mfaKey,
 	}
-	svc, err := service.NewService(users, sessions, refresh, []byte(TestJWTSecret), log, googleoauth.Config{}, authrepo.NewRedisPasswordResetStore(rdb), authrepo.NewRedisEmailAuthStore(rdb), notify, userSvc, opts)
+	svc, err := service.NewService(users, sessions, refresh, []byte(TestJWTSecret), log, googleoauth.Config{}, authrepo.NewRedisPasswordResetStore(rdb), emailAuth, notify, userSvc, opts)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -25,6 +25,8 @@ func Register(mux *http.ServeMux, h Handler) {
 	mux.Handle("POST /api/v1/auth/login", loginLimit.Wrap(http.HandlerFunc(h.Login)))
 	mux.Handle("POST /api/v1/auth/login/verify", loginVerifyLimit.Wrap(http.HandlerFunc(h.VerifyLogin)))
 	mux.Handle("POST /api/v1/auth/login/resend", loginResendLimit.Wrap(http.HandlerFunc(h.ResendLoginCode)))
+	mux.Handle("POST /api/v1/auth/login/mfa/verify", loginVerifyLimit.Wrap(http.HandlerFunc(h.VerifyLoginMFA)))
+	mux.Handle("POST /api/v1/auth/login/mfa/webauthn/begin", loginLimit.Wrap(http.HandlerFunc(h.BeginLoginWebAuthn)))
 	googleStart := googleLimit.Wrap(http.HandlerFunc(h.GoogleStart))
 	googleCallback := googleLimit.Wrap(http.HandlerFunc(h.GoogleCallback))
 	mux.Handle("GET /api/v1/auth/google", googleStart)

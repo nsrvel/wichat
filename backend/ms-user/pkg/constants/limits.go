@@ -4,14 +4,17 @@ import "time"
 
 // Account and credential limits.
 const (
-	MinPasswordLen      = 12
-	MaxPasswordLen      = 128
-	MinJWTSecretLen     = 32
-	MinDisplayNameRunes = 2
-	MaxDisplayNameRunes = 50
-	MaxAvatarURLRunes   = 2048
-	MaxUserAgentLen     = 512
-	MinAgeYears         = 13
+	MinPasswordLen       = 12
+	MaxPasswordLen       = 128
+	MinJWTSecretLen      = 32
+	MinDisplayNameRunes  = 2
+	MaxDisplayNameRunes  = 50
+	MaxUserPronounsRunes = 40
+	MaxUserBioRunes      = 190
+	MaxAvatarURLRunes    = 2048
+	MaxUserAvatarBytes   = 5 * 1024 * 1024
+	MaxUserAgentLen      = 512
+	MinAgeYears          = 13
 )
 
 // Group, role, channel, and instance setup limits.
@@ -72,3 +75,14 @@ const (
 
 // GoogleOAuthProvider is the identity provider key stored for Google link rows.
 const GoogleOAuthProvider = "google"
+
+// Multi-factor authentication (TOTP, WebAuthn, recovery codes) limits and TTLs.
+const (
+	MFAChallengeTTL         = 10 * time.Minute
+	TOTPSetupTTL            = 10 * time.Minute
+	WebAuthnChallengeTTL    = 5 * time.Minute
+	MFAMaxAttempts          = 5
+	RecoveryCodeCount       = 10
+	MaxSecurityKeyNameRunes = 64
+	MaxSecurityKeysPerUser  = 10
+)

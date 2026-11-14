@@ -46,6 +46,77 @@ func TestFindUserByEmailAfterCreate(t *testing.T) {
 	if got.ID != user.ID {
 		t.Fatalf("got %+v", got)
 	}
+
+	// TOTP CRUD
+	if err := users.UpsertMFATOTP(ctx, models.MFATOTP{
+		UserID:          user.ID,
+		SecretEncrypted: []byte("sealed-secret"),
+		LastUsedStep:    100,
+		EnabledAt:       now,
+		CreatedAt:       now,
+		UpdatedAt:       now,
+	}); err != nil {
+		t.Fatalf("UpsertMFATOTP: %v", err)
+	}
+	if err := users.UpdateMFATOTPLastUsedStep(ctx, user.ID, 101, now); err != nil {
+		t.Fatalf("UpdateMFATOTPLastUsedStep: %v", err)
+	}
+	totpRec, err := users.GetMFATOTP(ctx, user.ID)
+	if err != nil || totpRec.LastUsedStep != 101 {
+		t.Fatalf("GetMFATOTP: %+v %v", totpRec, err)
+	}
+	if err := users.DeleteMFATOTP(ctx, user.ID); err != nil {
+		t.Fatalf("DeleteMFATOTP: %v", err)
+	}
+
+	// WebAuthn credentials CRUD
+	cred := models.WebAuthnCredential{
+		ID:              "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+		UserID:          user.ID,
+		Name:            "YubiKey",
+		CredentialID:    []byte("cred-1"),
+		PublicKey:       []byte("pk-1"),
+		AttestationType: "none",
+		AAGUID:          []byte{1, 2, 3, 4},
+		SignCount:       1,
+		Transports:      []string{"usb"},
+		CreatedAt:       now,
+	}
+	if err := users.InsertWebAuthnCredential(ctx, cred); err != nil {
+		t.Fatalf("InsertWebAuthnCredential: %v", err)
+	}
+	if err := users.UpdateWebAuthnCredentialUsage(ctx, cred.CredentialID, 2, false, true, now); err != nil {
+		t.Fatalf("UpdateWebAuthnCredentialUsage: %v", err)
+	}
+	renamed, err := users.RenameWebAuthnCredential(ctx, user.ID, cred.ID, "Backup Key")
+	if err != nil || renamed.Name != "Backup Key" {
+		t.Fatalf("RenameWebAuthnCredential: %+v %v", renamed, err)
+	}
+	creds, err := users.ListWebAuthnCredentials(ctx, user.ID)
+	if err != nil || len(creds) != 1 || creds[0].SignCount != 2 {
+		t.Fatalf("ListWebAuthnCredentials: %+v %v", creds, err)
+	}
+	if err := users.DeleteWebAuthnCredential(ctx, user.ID, cred.ID); err != nil {
+		t.Fatalf("DeleteWebAuthnCredential: %v", err)
+	}
+
+	// Recovery codes CRUD
+	hashes := [][]byte{[]byte("hash-1"), []byte("hash-2")}
+	if err := users.ReplaceRecoveryCodes(ctx, user.ID, hashes, now); err != nil {
+		t.Fatalf("ReplaceRecoveryCodes: %v", err)
+	}
+	cnt, err := users.CountUnusedRecoveryCodes(ctx, user.ID)
+	if err != nil || cnt != 2 {
+		t.Fatalf("CountUnusedRecoveryCodes: %d %v", cnt, err)
+	}
+	ok, err := users.ConsumeRecoveryCode(ctx, user.ID, []byte("hash-1"), now)
+	if err != nil || !ok {
+		t.Fatalf("ConsumeRecoveryCode: %v %v", ok, err)
+	}
+	cnt2, err := users.CountUnusedRecoveryCodes(ctx, user.ID)
+	if err != nil || cnt2 != 1 {
+		t.Fatalf("CountUnusedRecoveryCodes after consume: %d %v", cnt2, err)
+	}
 }
 
 func newUserPgRepository(t *testing.T) (userrepo.PgRepository, func()) {

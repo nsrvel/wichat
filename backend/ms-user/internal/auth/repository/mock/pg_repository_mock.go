@@ -38,8 +38,16 @@ func (m *pgRepositoryMock) ListSessionIDsForUser(_ context.Context, userID strin
 	return m.st.ListSessionIDsForUser(userID)
 }
 
+func (m *pgRepositoryMock) ListActiveSessionsForUser(_ context.Context, userID string, now time.Time) ([]models.Session, error) {
+	return m.st.ListActiveSessionsForUser(userID, now)
+}
+
 func (m *pgRepositoryMock) RevokeSession(_ context.Context, sessionID string, now time.Time) error {
 	return m.st.RevokeSession(sessionID, now)
+}
+
+func (m *pgRepositoryMock) RevokeOtherSessionsForUser(_ context.Context, userID, exceptSessionID string, now time.Time) ([]string, error) {
+	return m.st.RevokeOtherSessionsForUser(userID, exceptSessionID, now)
 }
 
 func (m *pgRepositoryMock) RevokeAllSessionsForUser(_ context.Context, userID string, now time.Time) error {

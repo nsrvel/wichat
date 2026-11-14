@@ -81,6 +81,8 @@ func emailCodeCopy(locale, purpose string) (headline, lead, subjectTitle string)
 		switch purpose {
 		case "sign_up":
 			return "Verifikasi email Anda", "gunakan kode ini untuk menyelesaikan pendaftaran.", "Kode verifikasi WiChat"
+		case "email_change":
+			return "Verifikasi ubah email", "gunakan kode ini untuk mengganti alamat email Anda.", "Kode ubah email WiChat"
 		default:
 			return "Verifikasi masuk", "gunakan kode ini untuk menyelesaikan masuk.", "Kode masuk WiChat"
 		}
@@ -88,6 +90,8 @@ func emailCodeCopy(locale, purpose string) (headline, lead, subjectTitle string)
 	switch purpose {
 	case "sign_up":
 		return "Verify your email", "use this code to finish creating your account.", "Your WiChat verification code"
+	case "email_change":
+		return "Verify email change", "use this code to change your email address.", "Your WiChat email change code"
 	default:
 		return "Verify your sign-in", "use this code to finish signing in.", "Your WiChat sign-in code"
 	}

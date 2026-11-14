@@ -27,8 +27,11 @@ const (
 	MsgResetCodeInvalid      MessageCode = "auth.reset_code_invalid"
 	MsgResetRateLimited      MessageCode = "auth.reset_rate_limited"
 	MsgCaptchaFailed         MessageCode = "auth.captcha_failed"
+	MsgAccountDisabled       MessageCode = "auth.account_disabled"
+	MsgAccountDeleted        MessageCode = "auth.account_deleted"
 
-	MsgUserNotFound MessageCode = "user.not_found"
+	MsgUserNotFound   MessageCode = "user.not_found"
+	MsgUserOwnsGroups MessageCode = "user.owns_groups"
 )
 
 // ValidMessageCode reports whether code is an allowed i18n key shape from trusted services.

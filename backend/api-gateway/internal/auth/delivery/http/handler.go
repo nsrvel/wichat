@@ -24,6 +24,8 @@ type Handler interface {
 	ResendRegisterCode(w http.ResponseWriter, r *http.Request)
 	Login(w http.ResponseWriter, r *http.Request)
 	VerifyLogin(w http.ResponseWriter, r *http.Request)
+	VerifyLoginMFA(w http.ResponseWriter, r *http.Request)
+	BeginLoginWebAuthn(w http.ResponseWriter, r *http.Request)
 	ResendLoginCode(w http.ResponseWriter, r *http.Request)
 	Refresh(w http.ResponseWriter, r *http.Request)
 	Logout(w http.ResponseWriter, r *http.Request)
@@ -394,4 +396,45 @@ func (h handler) ForgotPasswordReset(w http.ResponseWriter, r *http.Request) {
 
 	// Response
 	responsehttp.WriteJSON(w, http.StatusOK, map[string]any{"data": authHttp.OKBody{OK: true}})
+}
+
+func (h handler) BeginLoginWebAuthn(w http.ResponseWriter, r *http.Request) {
+	var body authHttp.BeginLoginWebAuthnBody
+	if err := authHttp.DecodeJSON(w, r, &body); err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	out, err := h.ms.User.GRPC.Auth.BeginLoginWebAuthn(r.Context(), &userv1.BeginLoginWebAuthnRequest{
+		ChallengeId: body.ChallengeID,
+	})
+	if err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(authHttp.WebAuthnOptionsData{
+		WebAuthnOptions: []byte(out.GetWebauthnOptionsJson()),
+	}))
+}
+
+func (h handler) VerifyLoginMFA(w http.ResponseWriter, r *http.Request) {
+	var body authHttp.VerifyLoginMFABody
+	if err := authHttp.DecodeJSON(w, r, &body); err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	out, err := h.ms.User.GRPC.Auth.VerifyLoginMFA(r.Context(), &userv1.VerifyLoginMFARequest{
+		ChallengeId:   body.ChallengeID,
+		Method:        body.Method,
+		Code:          body.Code,
+		AssertionJson: string(body.Assertion),
+	})
+	if err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	authHttp.WriteSession(w, out.GetSession(), h.secureCookie)
 }

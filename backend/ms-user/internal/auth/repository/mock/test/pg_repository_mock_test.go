@@ -51,6 +51,14 @@ func TestSessionMockLifecycle(t *testing.T) {
 	if err != nil || len(ids) != 1 {
 		t.Fatalf("%v %v", ids, err)
 	}
+	active, err := repo.ListActiveSessionsForUser(ctx, "u1", now)
+	if err != nil || len(active) != 1 || active[0].ID != "s1" {
+		t.Fatalf("%+v %v", active, err)
+	}
+	otherRevoked, err := repo.RevokeOtherSessionsForUser(ctx, "u1", "s1", now)
+	if err != nil || len(otherRevoked) != 0 {
+		t.Fatalf("%v %v", otherRevoked, err)
+	}
 	if err := repo.RevokeSession(ctx, "s1", now); err != nil {
 		t.Fatal(err)
 	}

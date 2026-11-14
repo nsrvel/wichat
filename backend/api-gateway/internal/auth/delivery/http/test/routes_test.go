@@ -16,6 +16,8 @@ func (routeStub) VerifyRegister(http.ResponseWriter, *http.Request)        {}
 func (routeStub) ResendRegisterCode(http.ResponseWriter, *http.Request)    {}
 func (routeStub) Login(http.ResponseWriter, *http.Request)                 {}
 func (routeStub) VerifyLogin(http.ResponseWriter, *http.Request)           {}
+func (routeStub) VerifyLoginMFA(http.ResponseWriter, *http.Request)        {}
+func (routeStub) BeginLoginWebAuthn(http.ResponseWriter, *http.Request)    {}
 func (routeStub) ResendLoginCode(http.ResponseWriter, *http.Request)       {}
 func (routeStub) Refresh(http.ResponseWriter, *http.Request)               {}
 func (routeStub) Logout(http.ResponseWriter, *http.Request)                {}

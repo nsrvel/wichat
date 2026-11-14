@@ -14,6 +14,48 @@ service UserService {
   rpc SearchUsers(SearchUsersRequest) returns (SearchUsersResponse);
   // CheckUsername checks whether a username is valid, not reserved, and available.
   rpc CheckUsername(CheckUsernameRequest) returns (CheckUsernameResponse);
+  // UploadUserAvatar stores a user avatar in object storage and updates users.avatar_url.
+  rpc UploadUserAvatar(UploadUserAvatarRequest) returns (UploadUserAvatarResponse);
+  // UpdateUserProfile replaces caller-editable user profile scalars.
+  rpc UpdateUserProfile(UpdateUserProfileRequest) returns (UpdateUserProfileResponse);
+  // UpdateUsername changes the caller's username after verifying their current password.
+  rpc UpdateUsername(UpdateUsernameRequest) returns (UpdateUsernameResponse);
+  // RequestEmailChange sends a verification code to the caller's current email.
+  rpc RequestEmailChange(RequestEmailChangeRequest) returns (RequestEmailChangeResponse);
+  // VerifyEmailChange verifies the OTP code and issues a one-time email-change token.
+  rpc VerifyEmailChange(VerifyEmailChangeRequest) returns (VerifyEmailChangeResponse);
+  // CompleteEmailChange updates the caller's email after verifying the change token and current password.
+  rpc CompleteEmailChange(CompleteEmailChangeRequest) returns (CompleteEmailChangeResponse);
+  // UpdatePassword changes the caller's password after verifying their current password.
+  rpc UpdatePassword(UpdatePasswordRequest) returns (UpdatePasswordResponse);
+  // GetMFAStatus returns the caller's enrolled MFA methods and remaining recovery codes.
+  rpc GetMFAStatus(GetMFAStatusRequest) returns (GetMFAStatusResponse);
+  // BeginTOTPSetup verifies current_password and returns an ephemeral TOTP secret and otpauth URI.
+  rpc BeginTOTPSetup(BeginTOTPSetupRequest) returns (BeginTOTPSetupResponse);
+  // ConfirmTOTPSetup verifies the TOTP code, enables TOTP, and returns recovery codes if newly generated.
+  rpc ConfirmTOTPSetup(ConfirmTOTPSetupRequest) returns (ConfirmTOTPSetupResponse);
+  // DisableTOTP removes TOTP after verifying current_password.
+  rpc DisableTOTP(DisableTOTPRequest) returns (DisableTOTPResponse);
+  // BeginWebAuthnRegister verifies current_password and returns WebAuthn credential creation options.
+  rpc BeginWebAuthnRegister(BeginWebAuthnRegisterRequest) returns (BeginWebAuthnRegisterResponse);
+  // FinishWebAuthnRegister verifies the WebAuthn attestation, stores the security key, and returns recovery codes if newly generated.
+  rpc FinishWebAuthnRegister(FinishWebAuthnRegisterRequest) returns (FinishWebAuthnRegisterResponse);
+  // RenameWebAuthnCredential updates the display name of an enrolled security key.
+  rpc RenameWebAuthnCredential(RenameWebAuthnCredentialRequest) returns (RenameWebAuthnCredentialResponse);
+  // DeleteWebAuthnCredential removes an enrolled security key after verifying current_password.
+  rpc DeleteWebAuthnCredential(DeleteWebAuthnCredentialRequest) returns (DeleteWebAuthnCredentialResponse);
+  // RegenerateRecoveryCodes replaces all recovery codes after verifying current_password.
+  rpc RegenerateRecoveryCodes(RegenerateRecoveryCodesRequest) returns (RegenerateRecoveryCodesResponse);
+  // DisableAccount marks the caller's account disabled and revokes all active sessions.
+  rpc DisableAccount(DisableAccountRequest) returns (DisableAccountResponse);
+  // DeleteAccount soft-deletes and anonymizes the caller's account and revokes all sessions.
+  rpc DeleteAccount(DeleteAccountRequest) returns (DeleteAccountResponse);
+  // ListSessions returns active sessions (logged-in devices) for the caller.
+  rpc ListSessions(ListSessionsRequest) returns (ListSessionsResponse);
+  // RevokeSession revokes a single non-current session for the caller.
+  rpc RevokeSession(RevokeSessionRequest) returns (RevokeSessionResponse);
+  // RevokeOtherSessions revokes all active sessions except the caller's current session.
+  rpc RevokeOtherSessions(RevokeOtherSessionsRequest) returns (RevokeOtherSessionsResponse);
 }
 
 // User is the public account view.
@@ -25,6 +67,11 @@ message User {
   reserved 5;
   reserved "is_guest";
   string avatar_url = 6;
+  string pronouns = 7;
+  string bio = 8;
+  string banner_color = 9;
+  string created_at = 10;
+  bool has_password = 11;
 }
 
 // SetupStatusRequest is empty.
@@ -80,5 +127,230 @@ message SearchUsersRequest {
 
 message SearchUsersResponse {
   repeated UserSearchHit users = 1;
+}
+
+message UploadUserAvatarRequest {
+  string access_token = 1;
+  string content_type = 2;
+  bytes data = 3;
+}
+
+message UploadUserAvatarResponse {
+  User user = 1;
+}
+
+message UpdateUserProfileRequest {
+  string access_token = 1;
+  string display_name = 2;
+  string pronouns = 3;
+  string bio = 4;
+  string banner_color = 5;
+  bool clear_avatar = 6;
+}
+
+message UpdateUserProfileResponse {
+  User user = 1;
+}
+
+message UpdateUsernameRequest {
+  string access_token = 1;
+  string username = 2;
+  string current_password = 3;
+}
+
+message UpdateUsernameResponse {
+  User user = 1;
+}
+
+message RequestEmailChangeRequest {
+  string access_token = 1;
+  string locale = 2;
+}
+
+message RequestEmailChangeResponse {
+  string challenge_id = 1;
+  string email_hint = 2;
+  int32 resend_cooldown_seconds = 3;
+}
+
+message VerifyEmailChangeRequest {
+  string access_token = 1;
+  string challenge_id = 2;
+  string code = 3;
+}
+
+message VerifyEmailChangeResponse {
+  string change_token = 1;
+}
+
+message CompleteEmailChangeRequest {
+  string access_token = 1;
+  string change_token = 2;
+  string new_email = 3;
+  string current_password = 4;
+  string reason = 5;
+}
+
+message CompleteEmailChangeResponse {
+  User user = 1;
+}
+
+message UpdatePasswordRequest {
+  string access_token = 1;
+  string current_password = 2;
+  string new_password = 3;
+}
+
+message UpdatePasswordResponse {}
+
+message SecurityKey {
+  string id = 1;
+  string name = 2;
+  string created_at = 3;
+  string last_used_at = 4;
+  repeated string transports = 5;
+}
+
+message GetMFAStatusRequest {
+  string access_token = 1;
+}
+
+message GetMFAStatusResponse {
+  bool totp_enabled = 1;
+  repeated SecurityKey security_keys = 2;
+  int32 recovery_codes_remaining = 3;
+}
+
+message BeginTOTPSetupRequest {
+  string access_token = 1;
+  string current_password = 2;
+}
+
+message BeginTOTPSetupResponse {
+  string setup_token = 1;
+  string secret = 2;
+  string otpauth_uri = 3;
+}
+
+message ConfirmTOTPSetupRequest {
+  string access_token = 1;
+  string setup_token = 2;
+  string code = 3;
+}
+
+message ConfirmTOTPSetupResponse {
+  repeated string recovery_codes = 1;
+}
+
+message DisableTOTPRequest {
+  string access_token = 1;
+  string current_password = 2;
+}
+
+message DisableTOTPResponse {}
+
+message BeginWebAuthnRegisterRequest {
+  string access_token = 1;
+  string current_password = 2;
+  string name = 3;
+}
+
+message BeginWebAuthnRegisterResponse {
+  string challenge_id = 1;
+  string options_json = 2;
+}
+
+message FinishWebAuthnRegisterRequest {
+  string access_token = 1;
+  string challenge_id = 2;
+  string credential_json = 3;
+}
+
+message FinishWebAuthnRegisterResponse {
+  SecurityKey security_key = 1;
+  repeated string recovery_codes = 2;
+}
+
+message RenameWebAuthnCredentialRequest {
+  string access_token = 1;
+  string credential_id = 2;
+  string name = 3;
+}
+
+message RenameWebAuthnCredentialResponse {
+  SecurityKey security_key = 1;
+}
+
+message DeleteWebAuthnCredentialRequest {
+  string access_token = 1;
+  string credential_id = 2;
+  string current_password = 3;
+}
+
+message DeleteWebAuthnCredentialResponse {}
+
+message RegenerateRecoveryCodesRequest {
+  string access_token = 1;
+  string current_password = 2;
+}
+
+message RegenerateRecoveryCodesResponse {
+  repeated string recovery_codes = 1;
+}
+
+message DisableAccountRequest {
+  string access_token = 1;
+  string current_password = 2;
+}
+
+message DisableAccountResponse {
+  bool ok = 1;
+}
+
+message DeleteAccountRequest {
+  string access_token = 1;
+  string current_password = 2;
+}
+
+message DeleteAccountResponse {
+  bool ok = 1;
+}
+
+message UserSession {
+  string id = 1;
+  string platform = 2;
+  string device_label = 3;
+  string location_label = 4;
+  string user_agent = 5;
+  string last_used_at = 6;
+  string created_at = 7;
+  bool is_current = 8;
+}
+
+message ListSessionsRequest {
+  string access_token = 1;
+}
+
+message ListSessionsResponse {
+  repeated UserSession sessions = 1;
+}
+
+message RevokeSessionRequest {
+  string access_token = 1;
+  string session_id = 2;
+  string current_password = 3;
+}
+
+message RevokeSessionResponse {
+  bool ok = 1;
+}
+
+message RevokeOtherSessionsRequest {
+  string access_token = 1;
+  string current_password = 2;
+}
+
+message RevokeOtherSessionsResponse {
+  bool ok = 1;
 }
 

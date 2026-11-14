@@ -3,6 +3,7 @@ package mock
 import (
 	"bytes"
 	"context"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -18,20 +19,28 @@ type googleLink struct {
 	userID   string
 }
 
+type recoveryCodeMock struct {
+	hash []byte
+	used bool
+}
+
 // State is shared in-memory storage for user and auth repository mocks.
 type State struct {
-	mu          sync.Mutex
-	Users       []models.User
-	Sessions    []models.Session
-	Links       []googleLink
-	Settings    models.InstanceSettings
-	Groups      []models.Group
-	Members     []models.GroupMember
-	Invites     []models.GroupInviteRow
-	Channels    []models.Channel
-	Roles       []models.GroupRole
-	MemberRoles []models.GroupMemberRoleRow
-	Bans        []models.GroupBanRow
+	mu            sync.Mutex
+	Users         []models.User
+	Sessions      []models.Session
+	Links         []googleLink
+	Settings      models.InstanceSettings
+	Groups        []models.Group
+	Members       []models.GroupMember
+	Invites       []models.GroupInviteRow
+	Channels      []models.Channel
+	Roles         []models.GroupRole
+	MemberRoles   []models.GroupMemberRoleRow
+	Bans          []models.GroupBanRow
+	MFATOTPs      map[string]models.MFATOTP
+	WebAuthnCreds []models.WebAuthnCredential
+	RecoveryCodes map[string][]recoveryCodeMock
 }
 
 // NewState returns empty mock storage.
@@ -127,6 +136,23 @@ func (s *State) ListSessionIDsForUser(userID string) ([]string, error) {
 	return ids, nil
 }
 
+func (s *State) ListActiveSessionsForUser(userID string, now time.Time) ([]models.Session, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	var out []models.Session
+	for _, session := range s.Sessions {
+		if session.UserID == userID && session.RevokedAt == nil && session.ExpiresAt.After(now) {
+			out = append(out, session)
+		}
+	}
+	slices.SortFunc(out, func(a, b models.Session) int {
+		return b.LastUsedAt.Compare(a.LastUsedAt)
+	})
+
+	return out, nil
+}
+
 func (s *State) RevokeSession(sessionID string, now time.Time) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -139,6 +165,22 @@ func (s *State) RevokeSession(sessionID string, now time.Time) error {
 	}
 
 	return nil
+}
+
+func (s *State) RevokeOtherSessionsForUser(userID, exceptSessionID string, now time.Time) ([]string, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	var ids []string
+	for i := range s.Sessions {
+		if s.Sessions[i].UserID == userID && s.Sessions[i].ID != exceptSessionID && s.Sessions[i].RevokedAt == nil {
+			revoked := now
+			s.Sessions[i].RevokedAt = &revoked
+			ids = append(ids, s.Sessions[i].ID)
+		}
+	}
+
+	return ids, nil
 }
 
 func (s *State) RevokeAllSessionsForUser(userID string, now time.Time) error {
@@ -330,6 +372,9 @@ func (m *pgRepositoryMock) SearchUsers(_ context.Context, query string, limit in
 
 	var out []models.UserSearchHit
 	for _, user := range m.st.Users {
+		if user.DeletedAt != nil || user.DisabledAt != nil {
+			continue
+		}
 		if _, inGroup := memberIDs[user.ID]; inGroup {
 			continue
 		}
@@ -400,4 +445,306 @@ func (m *pgRepositoryMock) SaveGoogleUser(_ context.Context, user models.User, _
 	m.st.Links = append(m.st.Links, googleLink{provider: provider, subject: subject, userID: user.ID})
 
 	return user, nil
+}
+
+func (m *pgRepositoryMock) DisableAccount(_ context.Context, userID string, now time.Time) error {
+	m.st.mu.Lock()
+	defer m.st.mu.Unlock()
+
+	for i := range m.st.Users {
+		if m.st.Users[i].ID == userID && m.st.Users[i].DeletedAt == nil {
+			t := now
+			m.st.Users[i].DisabledAt = &t
+			m.st.Users[i].UpdatedAt = now
+
+			return nil
+		}
+	}
+
+	return constants.ErrNotFound
+}
+
+func (m *pgRepositoryMock) SoftDeleteAccount(_ context.Context, userID, anonymizedUsername string, now time.Time) error {
+	m.st.mu.Lock()
+	defer m.st.mu.Unlock()
+
+	found := false
+	for i := range m.st.Users {
+		if m.st.Users[i].ID == userID && m.st.Users[i].DeletedAt == nil {
+			t := now
+			m.st.Users[i].DeletedAt = &t
+			m.st.Users[i].DisabledAt = nil
+			m.st.Users[i].Email = ""
+			m.st.Users[i].Username = anonymizedUsername
+			m.st.Users[i].DisplayName = "Deleted User"
+			m.st.Users[i].PasswordHash = ""
+			m.st.Users[i].AvatarURL = ""
+			m.st.Users[i].Pronouns = ""
+			m.st.Users[i].Bio = ""
+			m.st.Users[i].BannerColor = ""
+			m.st.Users[i].UpdatedAt = now
+			found = true
+			break
+		}
+	}
+	if !found {
+		return constants.ErrNotFound
+	}
+
+	links := m.st.Links[:0]
+	for _, l := range m.st.Links {
+		if l.userID != userID {
+			links = append(links, l)
+		}
+	}
+	m.st.Links = links
+
+	members := m.st.Members[:0]
+	for _, mem := range m.st.Members {
+		if mem.UserID != userID {
+			members = append(members, mem)
+		}
+	}
+	m.st.Members = members
+
+	delete(m.st.MFATOTPs, userID)
+	delete(m.st.RecoveryCodes, userID)
+	creds := m.st.WebAuthnCreds[:0]
+	for _, c := range m.st.WebAuthnCreds {
+		if c.UserID != userID {
+			creds = append(creds, c)
+		}
+	}
+	m.st.WebAuthnCreds = creds
+
+	return nil
+}
+
+func (m *pgRepositoryMock) UpdateUserAvatarURL(_ context.Context, userID, avatarURL string, now time.Time) error {
+	m.st.mu.Lock()
+	defer m.st.mu.Unlock()
+
+	for i := range m.st.Users {
+		if m.st.Users[i].ID == userID {
+			m.st.Users[i].AvatarURL = avatarURL
+			m.st.Users[i].UpdatedAt = now
+			return nil
+		}
+	}
+	return constants.ErrNotFound
+}
+
+func (m *pgRepositoryMock) UpdateUserProfile(_ context.Context, userID string, patch models.UserProfilePatch, now time.Time) error {
+	m.st.mu.Lock()
+	defer m.st.mu.Unlock()
+
+	for i := range m.st.Users {
+		if m.st.Users[i].ID == userID {
+			m.st.Users[i].DisplayName = patch.DisplayName
+			m.st.Users[i].Pronouns = patch.Pronouns
+			m.st.Users[i].Bio = patch.Bio
+			m.st.Users[i].BannerColor = patch.BannerColor
+			if patch.ClearAvatar {
+				m.st.Users[i].AvatarURL = ""
+			}
+			m.st.Users[i].UpdatedAt = now
+			return nil
+		}
+	}
+	return constants.ErrNotFound
+}
+
+func (m *pgRepositoryMock) UpdateUsername(_ context.Context, userID, username string, now time.Time) error {
+	m.st.mu.Lock()
+	defer m.st.mu.Unlock()
+
+	for _, u := range m.st.Users {
+		if u.ID != userID && u.Username == username {
+			return constants.ErrConflict
+		}
+	}
+	for i := range m.st.Users {
+		if m.st.Users[i].ID == userID {
+			m.st.Users[i].Username = username
+			m.st.Users[i].UpdatedAt = now
+			return nil
+		}
+	}
+	return constants.ErrNotFound
+}
+
+func (m *pgRepositoryMock) UpdateEmail(_ context.Context, userID, email string, now time.Time) error {
+	m.st.mu.Lock()
+	defer m.st.mu.Unlock()
+
+	for _, u := range m.st.Users {
+		if u.ID != userID && strings.EqualFold(u.Email, email) {
+			return constants.ErrConflict
+		}
+	}
+	for i := range m.st.Users {
+		if m.st.Users[i].ID == userID {
+			m.st.Users[i].Email = email
+			m.st.Users[i].UpdatedAt = now
+			return nil
+		}
+	}
+	return constants.ErrNotFound
+}
+
+func (m *pgRepositoryMock) GetMFATOTP(_ context.Context, userID string) (models.MFATOTP, error) {
+	m.st.mu.Lock()
+	defer m.st.mu.Unlock()
+
+	if m.st.MFATOTPs == nil {
+		return models.MFATOTP{}, constants.ErrNotFound
+	}
+	t, ok := m.st.MFATOTPs[userID]
+	if !ok {
+		return models.MFATOTP{}, constants.ErrNotFound
+	}
+	return t, nil
+}
+
+func (m *pgRepositoryMock) UpsertMFATOTP(_ context.Context, totp models.MFATOTP) error {
+	m.st.mu.Lock()
+	defer m.st.mu.Unlock()
+
+	if m.st.MFATOTPs == nil {
+		m.st.MFATOTPs = make(map[string]models.MFATOTP)
+	}
+	m.st.MFATOTPs[totp.UserID] = totp
+	return nil
+}
+
+func (m *pgRepositoryMock) UpdateMFATOTPLastUsedStep(_ context.Context, userID string, step int64, now time.Time) error {
+	m.st.mu.Lock()
+	defer m.st.mu.Unlock()
+
+	if m.st.MFATOTPs == nil {
+		return nil
+	}
+	if t, ok := m.st.MFATOTPs[userID]; ok {
+		t.LastUsedStep = step
+		t.UpdatedAt = now
+		m.st.MFATOTPs[userID] = t
+	}
+	return nil
+}
+
+func (m *pgRepositoryMock) DeleteMFATOTP(_ context.Context, userID string) error {
+	m.st.mu.Lock()
+	defer m.st.mu.Unlock()
+
+	if _, ok := m.st.MFATOTPs[userID]; !ok {
+		return constants.ErrNotFound
+	}
+	delete(m.st.MFATOTPs, userID)
+	return nil
+}
+
+func (m *pgRepositoryMock) ListWebAuthnCredentials(_ context.Context, userID string) ([]models.WebAuthnCredential, error) {
+	m.st.mu.Lock()
+	defer m.st.mu.Unlock()
+
+	var out []models.WebAuthnCredential
+	for _, c := range m.st.WebAuthnCreds {
+		if c.UserID == userID {
+			out = append(out, c)
+		}
+	}
+	return out, nil
+}
+
+func (m *pgRepositoryMock) InsertWebAuthnCredential(_ context.Context, cred models.WebAuthnCredential) error {
+	m.st.mu.Lock()
+	defer m.st.mu.Unlock()
+
+	m.st.WebAuthnCreds = append(m.st.WebAuthnCreds, cred)
+	return nil
+}
+
+func (m *pgRepositoryMock) UpdateWebAuthnCredentialUsage(_ context.Context, credentialID []byte, signCount uint32, cloneWarning, backupState bool, now time.Time) error {
+	m.st.mu.Lock()
+	defer m.st.mu.Unlock()
+
+	for i := range m.st.WebAuthnCreds {
+		if bytes.Equal(m.st.WebAuthnCreds[i].CredentialID, credentialID) {
+			m.st.WebAuthnCreds[i].SignCount = signCount
+			m.st.WebAuthnCreds[i].CloneWarning = cloneWarning
+			m.st.WebAuthnCreds[i].BackupState = backupState
+			t := now
+			m.st.WebAuthnCreds[i].LastUsedAt = &t
+			return nil
+		}
+	}
+	return nil
+}
+
+func (m *pgRepositoryMock) RenameWebAuthnCredential(_ context.Context, userID, id, name string) (models.WebAuthnCredential, error) {
+	m.st.mu.Lock()
+	defer m.st.mu.Unlock()
+
+	for i := range m.st.WebAuthnCreds {
+		if m.st.WebAuthnCreds[i].UserID == userID && m.st.WebAuthnCreds[i].ID == id {
+			m.st.WebAuthnCreds[i].Name = name
+			return m.st.WebAuthnCreds[i], nil
+		}
+	}
+	return models.WebAuthnCredential{}, constants.ErrNotFound
+}
+
+func (m *pgRepositoryMock) DeleteWebAuthnCredential(_ context.Context, userID, id string) error {
+	m.st.mu.Lock()
+	defer m.st.mu.Unlock()
+
+	for i := range m.st.WebAuthnCreds {
+		if m.st.WebAuthnCreds[i].UserID == userID && m.st.WebAuthnCreds[i].ID == id {
+			m.st.WebAuthnCreds = append(m.st.WebAuthnCreds[:i], m.st.WebAuthnCreds[i+1:]...)
+			return nil
+		}
+	}
+	return constants.ErrNotFound
+}
+
+func (m *pgRepositoryMock) CountUnusedRecoveryCodes(_ context.Context, userID string) (int32, error) {
+	m.st.mu.Lock()
+	defer m.st.mu.Unlock()
+
+	var count int32
+	for _, rc := range m.st.RecoveryCodes[userID] {
+		if !rc.used {
+			count++
+		}
+	}
+	return count, nil
+}
+
+func (m *pgRepositoryMock) ReplaceRecoveryCodes(_ context.Context, userID string, codeHashes [][]byte, _ time.Time) error {
+	m.st.mu.Lock()
+	defer m.st.mu.Unlock()
+
+	if m.st.RecoveryCodes == nil {
+		m.st.RecoveryCodes = make(map[string][]recoveryCodeMock)
+	}
+	rows := make([]recoveryCodeMock, len(codeHashes))
+	for i, h := range codeHashes {
+		rows[i] = recoveryCodeMock{hash: h}
+	}
+	m.st.RecoveryCodes[userID] = rows
+	return nil
+}
+
+func (m *pgRepositoryMock) ConsumeRecoveryCode(_ context.Context, userID string, codeHash []byte, _ time.Time) (bool, error) {
+	m.st.mu.Lock()
+	defer m.st.mu.Unlock()
+
+	rows := m.st.RecoveryCodes[userID]
+	for i := range rows {
+		if !rows[i].used && bytes.Equal(rows[i].hash, codeHash) {
+			rows[i].used = true
+			return true, nil
+		}
+	}
+	return false, nil
 }

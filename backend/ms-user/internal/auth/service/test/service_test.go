@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pquerna/otp/totp"
 	authrepo "github.com/wichat/wichat/backend/ms-user/internal/auth/repository"
 	"github.com/wichat/wichat/backend/ms-user/internal/auth/service"
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
@@ -306,7 +307,7 @@ func TestGoogleCreatesLinksAndRejectsPassword(t *testing.T) {
 	rdb := testSupport.RedisClient(t)
 	refresh := authrepo.NewRedisRefreshStore(rdb)
 	log := logger.New(logger.Options{Service: "auth-test", Env: "test", Level: "error"})
-	userSvc := userservice.NewService(users, nil, nil, sessions, []byte(testSupport.TestJWTSecret), log)
+	userSvc := userservice.NewService(users, nil, nil, nil, sessions, nil, nil, nil, []byte(testSupport.TestJWTSecret), log)
 	svc, err := service.NewService(users, sessions, refresh, []byte(testSupport.TestJWTSecret), log, googleoauth.Config{
 		ClientID:     "client",
 		ClientSecret: "secret",
@@ -651,7 +652,7 @@ func TestGoogleStartWhenConfigured(t *testing.T) {
 	users, _, sessions := testSupport.TestRepos(st)
 	rdb := testSupport.RedisClient(t)
 	log := logger.New(logger.Options{Service: "auth-test", Env: "test", Level: "error"})
-	userSvc := userservice.NewService(users, nil, nil, sessions, []byte(testSupport.TestJWTSecret), log)
+	userSvc := userservice.NewService(users, nil, nil, nil, sessions, nil, nil, nil, []byte(testSupport.TestJWTSecret), log)
 	svc, err := service.NewService(users, sessions, authrepo.NewRedisRefreshStore(rdb), []byte(testSupport.TestJWTSecret), log, googleoauth.Config{
 		ClientID: "client-id", ClientSecret: "secret", RedirectURL: "http://localhost/callback",
 	}, authrepo.NewRedisPasswordResetStore(rdb), authrepo.NewRedisEmailAuthStore(rdb), &testSupport.FakeNotifier{}, userSvc, nil)
@@ -1291,7 +1292,7 @@ func TestGoogleFinishUnavailableUpstream(t *testing.T) {
 
 	rdb := testSupport.RedisClient(t)
 	log := logger.New(logger.Options{Service: "auth-test", Env: "test", Level: "error"})
-	userSvc := userservice.NewService(users, nil, nil, sessions, []byte(testSupport.TestJWTSecret), log)
+	userSvc := userservice.NewService(users, nil, nil, nil, sessions, nil, nil, nil, []byte(testSupport.TestJWTSecret), log)
 	svc, err := service.NewService(users, sessions, authrepo.NewRedisRefreshStore(rdb), []byte(testSupport.TestJWTSecret), log, googleoauth.Config{
 		ClientID: "id", ClientSecret: "sec", RedirectURL: "http://cb",
 		TokenURL: srv.URL + "/token", UserInfoURL: srv.URL + "/info",
@@ -1313,7 +1314,7 @@ func TestGoogleFinishRejectsOversizeCode(t *testing.T) {
 	users, _, sessions := testSupport.TestRepos(st)
 	rdb := testSupport.RedisClient(t)
 	log := logger.New(logger.Options{Service: "auth-test", Env: "test", Level: "error"})
-	userSvc := userservice.NewService(users, nil, nil, sessions, []byte(testSupport.TestJWTSecret), log)
+	userSvc := userservice.NewService(users, nil, nil, nil, sessions, nil, nil, nil, []byte(testSupport.TestJWTSecret), log)
 	svc, err := service.NewService(users, sessions, authrepo.NewRedisRefreshStore(rdb), []byte(testSupport.TestJWTSecret), log, googleoauth.Config{
 		ClientID: "id", ClientSecret: "sec", RedirectURL: "http://cb",
 		TokenURL: "http://127.0.0.1:1/token", UserInfoURL: "http://127.0.0.1:1/info",
@@ -1380,7 +1381,7 @@ func TestRegisterUnavailableWithoutEmailStore(t *testing.T) {
 	users, _, sessions := testSupport.TestRepos(st)
 	rdb := testSupport.RedisClient(t)
 	log := logger.New(logger.Options{Service: "auth-test", Env: "test", Level: "error"})
-	userSvc := userservice.NewService(users, nil, nil, sessions, []byte(testSupport.TestJWTSecret), log)
+	userSvc := userservice.NewService(users, nil, nil, nil, sessions, nil, nil, nil, []byte(testSupport.TestJWTSecret), log)
 
 	svc, err := service.NewService(users, sessions, authrepo.NewRedisRefreshStore(rdb), []byte(testSupport.TestJWTSecret), log, googleoauth.Config{},
 		authrepo.NewRedisPasswordResetStore(rdb), nil, &testSupport.FakeNotifier{}, userSvc, nil)
@@ -1405,7 +1406,7 @@ func TestPasswordResetUnavailableWithoutResetStore(t *testing.T) {
 	rdb := testSupport.RedisClient(t)
 	log := logger.New(logger.Options{Service: "auth-test", Env: "test", Level: "error"})
 	_, _, sessions := testSupport.TestRepos(st)
-	userSvc := userservice.NewService(users, nil, nil, sessions, []byte(testSupport.TestJWTSecret), log)
+	userSvc := userservice.NewService(users, nil, nil, nil, sessions, nil, nil, nil, []byte(testSupport.TestJWTSecret), log)
 	svc, err := service.NewService(users, sessions, authrepo.NewRedisRefreshStore(rdb), []byte(testSupport.TestJWTSecret), log, googleoauth.Config{},
 		nil, authrepo.NewRedisEmailAuthStore(rdb), &testSupport.FakeNotifier{}, userSvc, nil)
 	if err != nil {
@@ -1425,7 +1426,7 @@ func TestNewServiceRejectsShortJWTSecret(t *testing.T) {
 	users, _, sessions := testSupport.TestRepos(st)
 	rdb := testSupport.RedisClient(t)
 	log := logger.New(logger.Options{Service: "t", Env: "test", Level: "error"})
-	userSvc := userservice.NewService(users, nil, nil, sessions, []byte(testSupport.TestJWTSecret), log)
+	userSvc := userservice.NewService(users, nil, nil, nil, sessions, nil, nil, nil, []byte(testSupport.TestJWTSecret), log)
 
 	_, err := service.NewService(users, sessions, authrepo.NewRedisRefreshStore(rdb), []byte("short"), log, googleoauth.Config{},
 		authrepo.NewRedisPasswordResetStore(rdb), authrepo.NewRedisEmailAuthStore(rdb), &testSupport.FakeNotifier{}, userSvc, nil)
@@ -1499,7 +1500,7 @@ func TestGoogleFinishExchangeDenied(t *testing.T) {
 
 	rdb := testSupport.RedisClient(t)
 	log := logger.New(logger.Options{Service: "auth-test", Env: "test", Level: "error"})
-	userSvc := userservice.NewService(users, nil, nil, sessions, []byte(testSupport.TestJWTSecret), log)
+	userSvc := userservice.NewService(users, nil, nil, nil, sessions, nil, nil, nil, []byte(testSupport.TestJWTSecret), log)
 	svc, err := service.NewService(users, sessions, authrepo.NewRedisRefreshStore(rdb), []byte(testSupport.TestJWTSecret), log, googleoauth.Config{
 		ClientID: "id", ClientSecret: "sec", RedirectURL: "http://cb", TokenURL: srv.URL,
 	}, authrepo.NewRedisPasswordResetStore(rdb), authrepo.NewRedisEmailAuthStore(rdb), &testSupport.FakeNotifier{}, userSvc, nil)
@@ -1510,5 +1511,171 @@ func TestGoogleFinishExchangeDenied(t *testing.T) {
 	_, err = svc.GoogleFinish(context.Background(), "code", "verifier", models.ClientMeta{})
 	if codeOf(t, err) != string(exception.MsgGoogleDenied) {
 		t.Fatalf("%v", err)
+	}
+}
+
+func TestLoginMFATOTPRecoveryAndReplayProtection(t *testing.T) {
+	now := time.Now().UTC()
+	st := usermock.NewState()
+	svc, notify, _, userSvc, _, _ := testSupport.NewAuthService(t, st, func() time.Time { return now })
+	ctx := context.Background()
+
+	in := registerInput("mfa-login@example.com")
+	sess := testSupport.RegisterSession(t, svc, notify, in)
+
+	setup, err := userSvc.BeginTOTPSetup(ctx, sess.AccessToken, in.Password)
+	if err != nil {
+		t.Fatal(err)
+	}
+	code, err := totp.GenerateCode(setup.Secret, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	recoveryCodes, err := userSvc.ConfirmTOTPSetup(ctx, sess.AccessToken, setup.SetupToken, code)
+	if err != nil || len(recoveryCodes) == 0 {
+		t.Fatalf("ConfirmTOTPSetup() = %v", err)
+	}
+
+	now = now.Add(30 * time.Second)
+	sendsBefore := notify.Sends
+
+	step, err := svc.Login(ctx, models.LoginInput{
+		Login:    in.Email,
+		Password: in.Password,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if step.Challenge == nil || !step.Challenge.MFARequired {
+		t.Fatalf("expected MFA challenge, got %+v", step.Challenge)
+	}
+	if notify.Sends != sendsBefore {
+		t.Fatal("expected no email OTP sent when MFA is enabled")
+	}
+
+	if _, err := svc.VerifyLoginMFA(ctx, step.Challenge.ChallengeID, "totp", "000000", ""); codeOf(t, err) != string(exception.MsgResetCodeInvalid) {
+		t.Fatalf("expected reset_code_invalid on wrong totp, got %v", err)
+	}
+
+	nextCode, err := totp.GenerateCode(setup.Secret, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	loginSess, err := svc.VerifyLoginMFA(ctx, step.Challenge.ChallengeID, "totp", nextCode, "")
+	if err != nil || loginSess.AccessToken == "" {
+		t.Fatalf("VerifyLoginMFA(totp) = %v", err)
+	}
+
+	step2, err := svc.Login(ctx, models.LoginInput{Login: in.Email, Password: in.Password})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.VerifyLoginMFA(ctx, step2.Challenge.ChallengeID, "totp", nextCode, ""); codeOf(t, err) != string(exception.MsgResetCodeInvalid) {
+		t.Fatalf("expected TOTP replay to fail, got %v", err)
+	}
+
+	loginSess2, err := svc.VerifyLoginMFA(ctx, step2.Challenge.ChallengeID, "recovery", recoveryCodes[0], "")
+	if err != nil || loginSess2.AccessToken == "" {
+		t.Fatalf("VerifyLoginMFA(recovery) = %v", err)
+	}
+	step3, err := svc.Login(ctx, models.LoginInput{Login: in.Email, Password: in.Password})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.VerifyLoginMFA(ctx, step3.Challenge.ChallengeID, "recovery", recoveryCodes[0], ""); codeOf(t, err) != string(exception.MsgResetCodeInvalid) {
+		t.Fatalf("expected used recovery code to fail, got %v", err)
+	}
+
+	// Pre-populate a WebAuthn credential to test BeginLoginWebAuthn & WebAuthn error branch
+	st.Lock()
+	st.WebAuthnCreds = append(st.WebAuthnCreds, models.WebAuthnCredential{
+		ID:              "wa-1",
+		UserID:          sess.User.ID,
+		Name:            "Touch ID",
+		CredentialID:    []byte("cred-id-1"),
+		PublicKey:       []byte("pk-1"),
+		AttestationType: "none",
+		Transports:      []string{"internal"},
+		CreatedAt:       now,
+	})
+	st.Unlock()
+
+	step4, err := svc.Login(ctx, models.LoginInput{Login: in.Email, Password: in.Password})
+	if err != nil || step4.Challenge == nil || !step4.Challenge.MFARequired {
+		t.Fatalf("expected MFA challenge with webauthn, got %+v %v", step4.Challenge, err)
+	}
+	waOpts, err := svc.BeginLoginWebAuthn(ctx, step4.Challenge.ChallengeID)
+	if err != nil || !strings.Contains(waOpts, "publicKey") {
+		t.Fatalf("BeginLoginWebAuthn() = %q, %v", waOpts, err)
+	}
+	if _, err := svc.VerifyLoginMFA(ctx, step4.Challenge.ChallengeID, "webauthn", "", `{"id":"bad"}`); err == nil {
+		t.Fatal("expected invalid webauthn assertion to fail")
+	}
+	if _, err := svc.VerifyLoginMFA(ctx, step4.Challenge.ChallengeID, "unknown", "", ""); err == nil {
+		t.Fatal("expected unknown MFA method to fail")
+	}
+	if _, err := svc.VerifyLoginMFA(ctx, "missing-challenge", "totp", "123456", ""); err == nil {
+		t.Fatal("expected missing MFA challenge to fail")
+	}
+	if _, err := svc.BeginLoginWebAuthn(ctx, "missing-challenge"); err == nil {
+		t.Fatal("expected missing challenge to fail BeginLoginWebAuthn")
+	}
+	// Trigger max attempts on step4
+	for range constants.MFAMaxAttempts {
+		_, _ = svc.VerifyLoginMFA(ctx, step4.Challenge.ChallengeID, "totp", "000000", "")
+	}
+	if _, err := svc.VerifyLoginMFA(ctx, step4.Challenge.ChallengeID, "totp", "000000", ""); err == nil {
+		t.Fatal("expected locked MFA challenge after max attempts")
+	}
+	if _, err := svc.VerifyLoginMFA(ctx, step4.Challenge.ChallengeID, "totp", "", ""); err == nil {
+		t.Fatal("expected empty code error")
+	}
+	if _, err := svc.VerifyLoginMFA(ctx, step4.Challenge.ChallengeID, "webauthn", "", ""); err == nil {
+		t.Fatal("expected empty assertion error")
+	}
+	if _, err := svc.ResendLoginCode(ctx, "missing-chal"); err == nil {
+		t.Fatal("expected missing challenge on ResendLoginCode")
+	}
+	if _, err := svc.VerifyPasswordReset(ctx, in.Email, "000000"); err == nil {
+		t.Fatal("expected invalid reset code error")
+	}
+	if err := svc.CompletePasswordReset(ctx, "bad-reset-tok", "NewStrongPassword123!"); err == nil {
+		t.Fatal("expected invalid reset token error")
+	}
+	if _, err := svc.Refresh(ctx, "bad-refresh-token", models.ClientMeta{}); err == nil {
+		t.Fatal("expected invalid refresh token error")
+	}
+	_ = svc.Logout(ctx, "bad-refresh-token")
+}
+
+func TestAuthSetupAndPasswordResetFlow(t *testing.T) {
+	st := usermock.NewState()
+	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, st, nil)
+	ctx := context.Background()
+
+	// Setup on fresh instance + Password reset flow
+	_, _ = svc.Setup(ctx, models.SetupInput{
+		Email:       "setup-owner@example.com",
+		Password:    "correct-horse-battery",
+		DisplayName: "Owner",
+	})
+	_ = testSupport.RegisterSession(t, svc, notify, models.RegisterInput{
+		Email:       "setup-owner@example.com",
+		Username:    "setup.owner",
+		Password:    "correct-horse-battery",
+		DisplayName: "Owner",
+		BirthDate:   "2000-01-01",
+	})
+
+	// Password reset flow
+	if _, err := svc.RequestPasswordReset(ctx, "setup-owner@example.com", "en"); err != nil {
+		t.Fatalf("RequestPasswordReset: %v", err)
+	}
+	resetTok, err := svc.VerifyPasswordReset(ctx, "setup-owner@example.com", notify.LastCode)
+	if err != nil || resetTok == "" {
+		t.Fatalf("VerifyPasswordReset: %v", err)
+	}
+	if err := svc.CompletePasswordReset(ctx, resetTok, "new-correct-horse-battery"); err != nil {
+		t.Fatalf("CompletePasswordReset: %v", err)
 	}
 }

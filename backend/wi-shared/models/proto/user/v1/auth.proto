@@ -38,6 +38,10 @@ service AuthService {
   rpc VerifyPasswordReset(VerifyPasswordResetRequest) returns (VerifyPasswordResetResponse);
   // CompletePasswordReset sets a new password and revokes sessions.
   rpc CompletePasswordReset(CompletePasswordResetRequest) returns (CompletePasswordResetResponse);
+  // VerifyLoginMFA completes password login after an MFA challenge (WebAuthn, TOTP, or recovery code).
+  rpc VerifyLoginMFA(VerifyLoginMFARequest) returns (VerifyLoginMFAResponse);
+  // BeginLoginWebAuthn returns WebAuthn assertion options for an active MFA login challenge.
+  rpc BeginLoginWebAuthn(BeginLoginWebAuthnRequest) returns (BeginLoginWebAuthnResponse);
 }
 
 // Session is the credential pair returned to the gateway.
@@ -63,12 +67,15 @@ message SetupResponse {
   Session session = 1;
 }
 
-// AuthChallenge is the email OTP step before a session is issued.
+// AuthChallenge is the email OTP or MFA step before a session is issued.
 message AuthChallenge {
   string challenge_id = 1;
   string email_hint = 2;
   int32 resend_cooldown_seconds = 3;
   bool otp_required = 4;
+  bool mfa_required = 5;
+  repeated string mfa_methods = 6;
+  string webauthn_options_json = 7;
 }
 
 // RegisterRequest is the member registration form.
@@ -220,4 +227,23 @@ message CompletePasswordResetRequest {
 
 message CompletePasswordResetResponse {
   bool ok = 1;
+}
+
+message VerifyLoginMFARequest {
+  string challenge_id = 1;
+  string method = 2;
+  string code = 3;
+  string assertion_json = 4;
+}
+
+message VerifyLoginMFAResponse {
+  Session session = 1;
+}
+
+message BeginLoginWebAuthnRequest {
+  string challenge_id = 1;
+}
+
+message BeginLoginWebAuthnResponse {
+  string webauthn_options_json = 1;
 }

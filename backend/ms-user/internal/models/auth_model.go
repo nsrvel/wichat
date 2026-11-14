@@ -15,9 +15,14 @@ type User struct {
 	PasswordHash    string
 	DisplayName     string
 	AvatarURL       string
+	Pronouns        string
+	Bio             string
+	BannerColor     string
 	BirthDate       *time.Time
 	IsGuest         bool
 	IsInstanceOwner bool
+	DisabledAt      *time.Time
+	DeletedAt       *time.Time
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 }
@@ -64,6 +69,11 @@ func (u User) Public() PublicUser {
 		Username:    u.Username,
 		DisplayName: u.DisplayName,
 		AvatarURL:   u.AvatarURL,
+		Pronouns:    u.Pronouns,
+		Bio:         u.Bio,
+		BannerColor: u.BannerColor,
+		CreatedAt:   u.CreatedAt,
+		HasPassword: u.PasswordHash != "",
 	}
 }
 
@@ -74,6 +84,20 @@ type PublicUser struct {
 	Username    string
 	DisplayName string
 	AvatarURL   string
+	Pronouns    string
+	Bio         string
+	BannerColor string
+	CreatedAt   time.Time
+	HasPassword bool
+}
+
+// UserProfilePatch updates user-editable profile fields on users.
+type UserProfilePatch struct {
+	DisplayName string
+	Pronouns    string
+	Bio         string
+	BannerColor string
+	ClearAvatar bool
 }
 
 // ClientMeta is the device hint stored on a session.
@@ -146,11 +170,14 @@ type SessionResult struct {
 	User         PublicUser
 }
 
-// AuthChallenge is the email OTP step before a session is issued.
+// AuthChallenge is the email OTP or MFA step before a session is issued.
 type AuthChallenge struct {
 	ChallengeID           string
 	EmailHint             string
 	ResendCooldownSeconds int32
+	MFARequired           bool
+	MFAMethods            []string
+	WebAuthnOptionsJSON   string
 }
 
 // PasswordAuthResult is either a session or an email OTP challenge.
@@ -222,4 +249,89 @@ type LoginPending struct {
 	Attempts    int    `json:"attempts"`
 	UserAgent   string `json:"user_agent"`
 	ClientIP    string `json:"client_ip"`
+}
+
+// EmailChangePending holds an email-change OTP challenge in Redis.
+type EmailChangePending struct {
+	UserID   string `json:"user_id"`
+	Email    string `json:"email"`
+	CodeHMAC string `json:"code_hmac"`
+	Attempts int    `json:"attempts"`
+}
+
+// EmailChangeTokenRecord holds a verified one-time email-change token in Redis.
+type EmailChangeTokenRecord struct {
+	UserID string `json:"user_id"`
+}
+
+// LoginMFAPending holds a password-verified login awaiting MFA (WebAuthn, TOTP, or recovery code).
+type LoginMFAPending struct {
+	UserID              string   `json:"user_id"`
+	Email               string   `json:"email"`
+	Methods             []string `json:"methods"`
+	Attempts            int      `json:"attempts"`
+	WebAuthnSessionJSON string   `json:"webauthn_session_json,omitempty"`
+	UserAgent           string   `json:"user_agent"`
+	ClientIP            string   `json:"client_ip"`
+}
+
+// TOTPSetupPending holds an unconfirmed TOTP secret in Redis.
+type TOTPSetupPending struct {
+	UserID string `json:"user_id"`
+	Secret string `json:"secret"`
+}
+
+// WebAuthnRegisterPending holds an ephemeral WebAuthn registration ceremony in Redis.
+type WebAuthnRegisterPending struct {
+	UserID      string `json:"user_id"`
+	KeyName     string `json:"key_name"`
+	SessionJSON string `json:"session_json"`
+}
+
+// MFATOTP represents an enabled TOTP configuration in PostgreSQL.
+type MFATOTP struct {
+	UserID          string
+	SecretEncrypted []byte
+	LastUsedStep    int64
+	EnabledAt       time.Time
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
+}
+
+// WebAuthnCredential represents a registered FIDO2/WebAuthn security key in PostgreSQL.
+type WebAuthnCredential struct {
+	ID              string
+	UserID          string
+	Name            string
+	CredentialID    []byte
+	PublicKey       []byte
+	AttestationType string
+	AAGUID          []byte
+	SignCount       uint32
+	CloneWarning    bool
+	Transports      []string
+	BackupEligible  bool
+	BackupState     bool
+	LastUsedAt      *time.Time
+	CreatedAt       time.Time
+}
+
+// MFAStatus is the user's enrolled MFA overview.
+type MFAStatus struct {
+	TOTPEnabled            bool
+	SecurityKeys           []WebAuthnCredential
+	RecoveryCodesRemaining int32
+}
+
+// TOTPSetupStart is returned when initiating TOTP enrollment.
+type TOTPSetupStart struct {
+	SetupToken string
+	Secret     string
+	OtpauthURI string
+}
+
+// WebAuthnRegisterBegin is returned when initiating Security Key enrollment.
+type WebAuthnRegisterBegin struct {
+	ChallengeID string
+	OptionsJSON string
 }

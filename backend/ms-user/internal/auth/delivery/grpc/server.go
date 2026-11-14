@@ -195,3 +195,21 @@ func (s *server) Me(ctx context.Context, req *userv1.MeRequest) (*userv1.MeRespo
 
 	return &userv1.MeResponse{User: authPb.User(*user)}, nil
 }
+
+func (s *server) BeginLoginWebAuthn(ctx context.Context, req *userv1.BeginLoginWebAuthnRequest) (*userv1.BeginLoginWebAuthnResponse, error) {
+	opts, err := s.auth.BeginLoginWebAuthn(ctx, req.GetChallengeId())
+	if err != nil {
+		return nil, responsegrpc.ToStatus(err)
+	}
+
+	return &userv1.BeginLoginWebAuthnResponse{WebauthnOptionsJson: opts}, nil
+}
+
+func (s *server) VerifyLoginMFA(ctx context.Context, req *userv1.VerifyLoginMFARequest) (*userv1.VerifyLoginMFAResponse, error) {
+	sess, err := s.auth.VerifyLoginMFA(ctx, req.GetChallengeId(), req.GetMethod(), req.GetCode(), req.GetAssertionJson())
+	if err != nil {
+		return nil, responsegrpc.ToStatus(err)
+	}
+
+	return &userv1.VerifyLoginMFAResponse{Session: authPb.Session(sess)}, nil
+}

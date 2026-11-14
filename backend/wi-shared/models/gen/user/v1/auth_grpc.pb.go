@@ -34,6 +34,8 @@ const (
 	AuthService_RequestPasswordReset_FullMethodName  = "/user.v1.AuthService/RequestPasswordReset"
 	AuthService_VerifyPasswordReset_FullMethodName   = "/user.v1.AuthService/VerifyPasswordReset"
 	AuthService_CompletePasswordReset_FullMethodName = "/user.v1.AuthService/CompletePasswordReset"
+	AuthService_VerifyLoginMFA_FullMethodName        = "/user.v1.AuthService/VerifyLoginMFA"
+	AuthService_BeginLoginWebAuthn_FullMethodName    = "/user.v1.AuthService/BeginLoginWebAuthn"
 )
 
 // AuthServiceClient is the client API for AuthService service.
@@ -72,6 +74,10 @@ type AuthServiceClient interface {
 	VerifyPasswordReset(ctx context.Context, in *VerifyPasswordResetRequest, opts ...grpc.CallOption) (*VerifyPasswordResetResponse, error)
 	// CompletePasswordReset sets a new password and revokes sessions.
 	CompletePasswordReset(ctx context.Context, in *CompletePasswordResetRequest, opts ...grpc.CallOption) (*CompletePasswordResetResponse, error)
+	// VerifyLoginMFA completes password login after an MFA challenge (WebAuthn, TOTP, or recovery code).
+	VerifyLoginMFA(ctx context.Context, in *VerifyLoginMFARequest, opts ...grpc.CallOption) (*VerifyLoginMFAResponse, error)
+	// BeginLoginWebAuthn returns WebAuthn assertion options for an active MFA login challenge.
+	BeginLoginWebAuthn(ctx context.Context, in *BeginLoginWebAuthnRequest, opts ...grpc.CallOption) (*BeginLoginWebAuthnResponse, error)
 }
 
 type authServiceClient struct {
@@ -232,6 +238,26 @@ func (c *authServiceClient) CompletePasswordReset(ctx context.Context, in *Compl
 	return out, nil
 }
 
+func (c *authServiceClient) VerifyLoginMFA(ctx context.Context, in *VerifyLoginMFARequest, opts ...grpc.CallOption) (*VerifyLoginMFAResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(VerifyLoginMFAResponse)
+	err := c.cc.Invoke(ctx, AuthService_VerifyLoginMFA_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authServiceClient) BeginLoginWebAuthn(ctx context.Context, in *BeginLoginWebAuthnRequest, opts ...grpc.CallOption) (*BeginLoginWebAuthnResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BeginLoginWebAuthnResponse)
+	err := c.cc.Invoke(ctx, AuthService_BeginLoginWebAuthn_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AuthServiceServer is the server API for AuthService service.
 // All implementations must embed UnimplementedAuthServiceServer
 // for forward compatibility.
@@ -268,6 +294,10 @@ type AuthServiceServer interface {
 	VerifyPasswordReset(context.Context, *VerifyPasswordResetRequest) (*VerifyPasswordResetResponse, error)
 	// CompletePasswordReset sets a new password and revokes sessions.
 	CompletePasswordReset(context.Context, *CompletePasswordResetRequest) (*CompletePasswordResetResponse, error)
+	// VerifyLoginMFA completes password login after an MFA challenge (WebAuthn, TOTP, or recovery code).
+	VerifyLoginMFA(context.Context, *VerifyLoginMFARequest) (*VerifyLoginMFAResponse, error)
+	// BeginLoginWebAuthn returns WebAuthn assertion options for an active MFA login challenge.
+	BeginLoginWebAuthn(context.Context, *BeginLoginWebAuthnRequest) (*BeginLoginWebAuthnResponse, error)
 	mustEmbedUnimplementedAuthServiceServer()
 }
 
@@ -322,6 +352,12 @@ func (UnimplementedAuthServiceServer) VerifyPasswordReset(context.Context, *Veri
 }
 func (UnimplementedAuthServiceServer) CompletePasswordReset(context.Context, *CompletePasswordResetRequest) (*CompletePasswordResetResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CompletePasswordReset not implemented")
+}
+func (UnimplementedAuthServiceServer) VerifyLoginMFA(context.Context, *VerifyLoginMFARequest) (*VerifyLoginMFAResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method VerifyLoginMFA not implemented")
+}
+func (UnimplementedAuthServiceServer) BeginLoginWebAuthn(context.Context, *BeginLoginWebAuthnRequest) (*BeginLoginWebAuthnResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BeginLoginWebAuthn not implemented")
 }
 func (UnimplementedAuthServiceServer) mustEmbedUnimplementedAuthServiceServer() {}
 func (UnimplementedAuthServiceServer) testEmbeddedByValue()                     {}
@@ -614,6 +650,42 @@ func _AuthService_CompletePasswordReset_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthService_VerifyLoginMFA_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(VerifyLoginMFARequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).VerifyLoginMFA(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_VerifyLoginMFA_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).VerifyLoginMFA(ctx, req.(*VerifyLoginMFARequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AuthService_BeginLoginWebAuthn_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BeginLoginWebAuthnRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).BeginLoginWebAuthn(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AuthService_BeginLoginWebAuthn_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).BeginLoginWebAuthn(ctx, req.(*BeginLoginWebAuthnRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AuthService_ServiceDesc is the grpc.ServiceDesc for AuthService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -680,6 +752,14 @@ var AuthService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CompletePasswordReset",
 			Handler:    _AuthService_CompletePasswordReset_Handler,
+		},
+		{
+			MethodName: "VerifyLoginMFA",
+			Handler:    _AuthService_VerifyLoginMFA_Handler,
+		},
+		{
+			MethodName: "BeginLoginWebAuthn",
+			Handler:    _AuthService_BeginLoginWebAuthn_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

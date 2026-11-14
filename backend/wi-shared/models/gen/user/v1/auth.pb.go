@@ -213,13 +213,16 @@ func (x *SetupResponse) GetSession() *Session {
 	return nil
 }
 
-// AuthChallenge is the email OTP step before a session is issued.
+// AuthChallenge is the email OTP or MFA step before a session is issued.
 type AuthChallenge struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
 	ChallengeId           string                 `protobuf:"bytes,1,opt,name=challenge_id,json=challengeId,proto3" json:"challenge_id,omitempty"`
 	EmailHint             string                 `protobuf:"bytes,2,opt,name=email_hint,json=emailHint,proto3" json:"email_hint,omitempty"`
 	ResendCooldownSeconds int32                  `protobuf:"varint,3,opt,name=resend_cooldown_seconds,json=resendCooldownSeconds,proto3" json:"resend_cooldown_seconds,omitempty"`
 	OtpRequired           bool                   `protobuf:"varint,4,opt,name=otp_required,json=otpRequired,proto3" json:"otp_required,omitempty"`
+	MfaRequired           bool                   `protobuf:"varint,5,opt,name=mfa_required,json=mfaRequired,proto3" json:"mfa_required,omitempty"`
+	MfaMethods            []string               `protobuf:"bytes,6,rep,name=mfa_methods,json=mfaMethods,proto3" json:"mfa_methods,omitempty"`
+	WebauthnOptionsJson   string                 `protobuf:"bytes,7,opt,name=webauthn_options_json,json=webauthnOptionsJson,proto3" json:"webauthn_options_json,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -280,6 +283,27 @@ func (x *AuthChallenge) GetOtpRequired() bool {
 		return x.OtpRequired
 	}
 	return false
+}
+
+func (x *AuthChallenge) GetMfaRequired() bool {
+	if x != nil {
+		return x.MfaRequired
+	}
+	return false
+}
+
+func (x *AuthChallenge) GetMfaMethods() []string {
+	if x != nil {
+		return x.MfaMethods
+	}
+	return nil
+}
+
+func (x *AuthChallenge) GetWebauthnOptionsJson() string {
+	if x != nil {
+		return x.WebauthnOptionsJson
+	}
+	return ""
 }
 
 // RegisterRequest is the member registration form.
@@ -1728,6 +1752,206 @@ func (x *CompletePasswordResetResponse) GetOk() bool {
 	return false
 }
 
+type VerifyLoginMFARequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ChallengeId   string                 `protobuf:"bytes,1,opt,name=challenge_id,json=challengeId,proto3" json:"challenge_id,omitempty"`
+	Method        string                 `protobuf:"bytes,2,opt,name=method,proto3" json:"method,omitempty"`
+	Code          string                 `protobuf:"bytes,3,opt,name=code,proto3" json:"code,omitempty"`
+	AssertionJson string                 `protobuf:"bytes,4,opt,name=assertion_json,json=assertionJson,proto3" json:"assertion_json,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *VerifyLoginMFARequest) Reset() {
+	*x = VerifyLoginMFARequest{}
+	mi := &file_user_v1_auth_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VerifyLoginMFARequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VerifyLoginMFARequest) ProtoMessage() {}
+
+func (x *VerifyLoginMFARequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_auth_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use VerifyLoginMFARequest.ProtoReflect.Descriptor instead.
+func (*VerifyLoginMFARequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_auth_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *VerifyLoginMFARequest) GetChallengeId() string {
+	if x != nil {
+		return x.ChallengeId
+	}
+	return ""
+}
+
+func (x *VerifyLoginMFARequest) GetMethod() string {
+	if x != nil {
+		return x.Method
+	}
+	return ""
+}
+
+func (x *VerifyLoginMFARequest) GetCode() string {
+	if x != nil {
+		return x.Code
+	}
+	return ""
+}
+
+func (x *VerifyLoginMFARequest) GetAssertionJson() string {
+	if x != nil {
+		return x.AssertionJson
+	}
+	return ""
+}
+
+type VerifyLoginMFAResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Session       *Session               `protobuf:"bytes,1,opt,name=session,proto3" json:"session,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *VerifyLoginMFAResponse) Reset() {
+	*x = VerifyLoginMFAResponse{}
+	mi := &file_user_v1_auth_proto_msgTypes[33]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VerifyLoginMFAResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VerifyLoginMFAResponse) ProtoMessage() {}
+
+func (x *VerifyLoginMFAResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_auth_proto_msgTypes[33]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use VerifyLoginMFAResponse.ProtoReflect.Descriptor instead.
+func (*VerifyLoginMFAResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_auth_proto_rawDescGZIP(), []int{33}
+}
+
+func (x *VerifyLoginMFAResponse) GetSession() *Session {
+	if x != nil {
+		return x.Session
+	}
+	return nil
+}
+
+type BeginLoginWebAuthnRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ChallengeId   string                 `protobuf:"bytes,1,opt,name=challenge_id,json=challengeId,proto3" json:"challenge_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BeginLoginWebAuthnRequest) Reset() {
+	*x = BeginLoginWebAuthnRequest{}
+	mi := &file_user_v1_auth_proto_msgTypes[34]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BeginLoginWebAuthnRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BeginLoginWebAuthnRequest) ProtoMessage() {}
+
+func (x *BeginLoginWebAuthnRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_auth_proto_msgTypes[34]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BeginLoginWebAuthnRequest.ProtoReflect.Descriptor instead.
+func (*BeginLoginWebAuthnRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_auth_proto_rawDescGZIP(), []int{34}
+}
+
+func (x *BeginLoginWebAuthnRequest) GetChallengeId() string {
+	if x != nil {
+		return x.ChallengeId
+	}
+	return ""
+}
+
+type BeginLoginWebAuthnResponse struct {
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	WebauthnOptionsJson string                 `protobuf:"bytes,1,opt,name=webauthn_options_json,json=webauthnOptionsJson,proto3" json:"webauthn_options_json,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *BeginLoginWebAuthnResponse) Reset() {
+	*x = BeginLoginWebAuthnResponse{}
+	mi := &file_user_v1_auth_proto_msgTypes[35]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BeginLoginWebAuthnResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BeginLoginWebAuthnResponse) ProtoMessage() {}
+
+func (x *BeginLoginWebAuthnResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_auth_proto_msgTypes[35]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BeginLoginWebAuthnResponse.ProtoReflect.Descriptor instead.
+func (*BeginLoginWebAuthnResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_auth_proto_rawDescGZIP(), []int{35}
+}
+
+func (x *BeginLoginWebAuthnResponse) GetWebauthnOptionsJson() string {
+	if x != nil {
+		return x.WebauthnOptionsJson
+	}
+	return ""
+}
+
 var File_user_v1_auth_proto protoreflect.FileDescriptor
 
 const file_user_v1_auth_proto_rawDesc = "" +
@@ -1747,13 +1971,17 @@ const file_user_v1_auth_proto_rawDesc = "" +
 	"user_agent\x18\x04 \x01(\tR\tuserAgent\x12\x1b\n" +
 	"\tclient_ip\x18\x05 \x01(\tR\bclientIp\";\n" +
 	"\rSetupResponse\x12*\n" +
-	"\asession\x18\x01 \x01(\v2\x10.user.v1.SessionR\asession\"\xac\x01\n" +
+	"\asession\x18\x01 \x01(\v2\x10.user.v1.SessionR\asession\"\xa4\x02\n" +
 	"\rAuthChallenge\x12!\n" +
 	"\fchallenge_id\x18\x01 \x01(\tR\vchallengeId\x12\x1d\n" +
 	"\n" +
 	"email_hint\x18\x02 \x01(\tR\temailHint\x126\n" +
 	"\x17resend_cooldown_seconds\x18\x03 \x01(\x05R\x15resendCooldownSeconds\x12!\n" +
-	"\fotp_required\x18\x04 \x01(\bR\votpRequired\"\xfb\x01\n" +
+	"\fotp_required\x18\x04 \x01(\bR\votpRequired\x12!\n" +
+	"\fmfa_required\x18\x05 \x01(\bR\vmfaRequired\x12\x1f\n" +
+	"\vmfa_methods\x18\x06 \x03(\tR\n" +
+	"mfaMethods\x122\n" +
+	"\x15webauthn_options_json\x18\a \x01(\tR\x13webauthnOptionsJson\"\xfb\x01\n" +
 	"\x0fRegisterRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1a\n" +
 	"\bpassword\x18\x02 \x01(\tR\bpassword\x12!\n" +
@@ -1842,7 +2070,19 @@ const file_user_v1_auth_proto_rawDesc = "" +
 	"resetToken\x12\x1a\n" +
 	"\bpassword\x18\x02 \x01(\tR\bpassword\"/\n" +
 	"\x1dCompletePasswordResetResponse\x12\x0e\n" +
-	"\x02ok\x18\x01 \x01(\bR\x02ok2\xfe\b\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok\"\x8d\x01\n" +
+	"\x15VerifyLoginMFARequest\x12!\n" +
+	"\fchallenge_id\x18\x01 \x01(\tR\vchallengeId\x12\x16\n" +
+	"\x06method\x18\x02 \x01(\tR\x06method\x12\x12\n" +
+	"\x04code\x18\x03 \x01(\tR\x04code\x12%\n" +
+	"\x0eassertion_json\x18\x04 \x01(\tR\rassertionJson\"D\n" +
+	"\x16VerifyLoginMFAResponse\x12*\n" +
+	"\asession\x18\x01 \x01(\v2\x10.user.v1.SessionR\asession\">\n" +
+	"\x19BeginLoginWebAuthnRequest\x12!\n" +
+	"\fchallenge_id\x18\x01 \x01(\tR\vchallengeId\"P\n" +
+	"\x1aBeginLoginWebAuthnResponse\x122\n" +
+	"\x15webauthn_options_json\x18\x01 \x01(\tR\x13webauthnOptionsJson2\xb0\n" +
+	"\n" +
 	"\vAuthService\x126\n" +
 	"\x05Setup\x12\x15.user.v1.SetupRequest\x1a\x16.user.v1.SetupResponse\x12?\n" +
 	"\bRegister\x12\x18.user.v1.RegisterRequest\x1a\x19.user.v1.RegisterResponse\x126\n" +
@@ -1858,7 +2098,9 @@ const file_user_v1_auth_proto_rawDesc = "" +
 	"\fGoogleFinish\x12\x1c.user.v1.GoogleFinishRequest\x1a\x1d.user.v1.GoogleFinishResponse\x12c\n" +
 	"\x14RequestPasswordReset\x12$.user.v1.RequestPasswordResetRequest\x1a%.user.v1.RequestPasswordResetResponse\x12`\n" +
 	"\x13VerifyPasswordReset\x12#.user.v1.VerifyPasswordResetRequest\x1a$.user.v1.VerifyPasswordResetResponse\x12f\n" +
-	"\x15CompletePasswordReset\x12%.user.v1.CompletePasswordResetRequest\x1a&.user.v1.CompletePasswordResetResponseB\x9b\x01\n" +
+	"\x15CompletePasswordReset\x12%.user.v1.CompletePasswordResetRequest\x1a&.user.v1.CompletePasswordResetResponse\x12Q\n" +
+	"\x0eVerifyLoginMFA\x12\x1e.user.v1.VerifyLoginMFARequest\x1a\x1f.user.v1.VerifyLoginMFAResponse\x12]\n" +
+	"\x12BeginLoginWebAuthn\x12\".user.v1.BeginLoginWebAuthnRequest\x1a#.user.v1.BeginLoginWebAuthnResponseB\x9b\x01\n" +
 	"\vcom.user.v1B\tAuthProtoP\x01ZDgithub.com/wichat/wichat/backend/wi-shared/models/gen/user/v1;userv1\xa2\x02\x03UXX\xaa\x02\aUser.V1\xca\x02\aUser\\V1\xe2\x02\x13User\\V1\\GPBMetadata\xea\x02\bUser::V1b\x06proto3"
 
 var (
@@ -1873,7 +2115,7 @@ func file_user_v1_auth_proto_rawDescGZIP() []byte {
 	return file_user_v1_auth_proto_rawDescData
 }
 
-var file_user_v1_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 32)
+var file_user_v1_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 36)
 var file_user_v1_auth_proto_goTypes = []any{
 	(*Session)(nil),                       // 0: user.v1.Session
 	(*SetupRequest)(nil),                  // 1: user.v1.SetupRequest
@@ -1907,10 +2149,14 @@ var file_user_v1_auth_proto_goTypes = []any{
 	(*VerifyPasswordResetResponse)(nil),   // 29: user.v1.VerifyPasswordResetResponse
 	(*CompletePasswordResetRequest)(nil),  // 30: user.v1.CompletePasswordResetRequest
 	(*CompletePasswordResetResponse)(nil), // 31: user.v1.CompletePasswordResetResponse
-	(*User)(nil),                          // 32: user.v1.User
+	(*VerifyLoginMFARequest)(nil),         // 32: user.v1.VerifyLoginMFARequest
+	(*VerifyLoginMFAResponse)(nil),        // 33: user.v1.VerifyLoginMFAResponse
+	(*BeginLoginWebAuthnRequest)(nil),     // 34: user.v1.BeginLoginWebAuthnRequest
+	(*BeginLoginWebAuthnResponse)(nil),    // 35: user.v1.BeginLoginWebAuthnResponse
+	(*User)(nil),                          // 36: user.v1.User
 }
 var file_user_v1_auth_proto_depIdxs = []int32{
-	32, // 0: user.v1.Session.user:type_name -> user.v1.User
+	36, // 0: user.v1.Session.user:type_name -> user.v1.User
 	0,  // 1: user.v1.SetupResponse.session:type_name -> user.v1.Session
 	0,  // 2: user.v1.RegisterResponse.session:type_name -> user.v1.Session
 	3,  // 3: user.v1.RegisterResponse.challenge:type_name -> user.v1.AuthChallenge
@@ -1919,43 +2165,48 @@ var file_user_v1_auth_proto_depIdxs = []int32{
 	0,  // 6: user.v1.VerifyRegisterResponse.session:type_name -> user.v1.Session
 	0,  // 7: user.v1.VerifyLoginResponse.session:type_name -> user.v1.Session
 	0,  // 8: user.v1.RefreshResponse.session:type_name -> user.v1.Session
-	32, // 9: user.v1.MeResponse.user:type_name -> user.v1.User
+	36, // 9: user.v1.MeResponse.user:type_name -> user.v1.User
 	0,  // 10: user.v1.GoogleFinishResponse.session:type_name -> user.v1.Session
-	1,  // 11: user.v1.AuthService.Setup:input_type -> user.v1.SetupRequest
-	4,  // 12: user.v1.AuthService.Register:input_type -> user.v1.RegisterRequest
-	6,  // 13: user.v1.AuthService.Login:input_type -> user.v1.LoginRequest
-	8,  // 14: user.v1.AuthService.VerifyRegister:input_type -> user.v1.VerifyRegisterRequest
-	10, // 15: user.v1.AuthService.VerifyLogin:input_type -> user.v1.VerifyLoginRequest
-	12, // 16: user.v1.AuthService.ResendRegisterCode:input_type -> user.v1.ResendRegisterCodeRequest
-	14, // 17: user.v1.AuthService.ResendLoginCode:input_type -> user.v1.ResendLoginCodeRequest
-	16, // 18: user.v1.AuthService.Refresh:input_type -> user.v1.RefreshRequest
-	18, // 19: user.v1.AuthService.Logout:input_type -> user.v1.LogoutRequest
-	20, // 20: user.v1.AuthService.Me:input_type -> user.v1.MeRequest
-	22, // 21: user.v1.AuthService.GoogleStart:input_type -> user.v1.GoogleStartRequest
-	24, // 22: user.v1.AuthService.GoogleFinish:input_type -> user.v1.GoogleFinishRequest
-	26, // 23: user.v1.AuthService.RequestPasswordReset:input_type -> user.v1.RequestPasswordResetRequest
-	28, // 24: user.v1.AuthService.VerifyPasswordReset:input_type -> user.v1.VerifyPasswordResetRequest
-	30, // 25: user.v1.AuthService.CompletePasswordReset:input_type -> user.v1.CompletePasswordResetRequest
-	2,  // 26: user.v1.AuthService.Setup:output_type -> user.v1.SetupResponse
-	5,  // 27: user.v1.AuthService.Register:output_type -> user.v1.RegisterResponse
-	7,  // 28: user.v1.AuthService.Login:output_type -> user.v1.LoginResponse
-	9,  // 29: user.v1.AuthService.VerifyRegister:output_type -> user.v1.VerifyRegisterResponse
-	11, // 30: user.v1.AuthService.VerifyLogin:output_type -> user.v1.VerifyLoginResponse
-	13, // 31: user.v1.AuthService.ResendRegisterCode:output_type -> user.v1.ResendRegisterCodeResponse
-	15, // 32: user.v1.AuthService.ResendLoginCode:output_type -> user.v1.ResendLoginCodeResponse
-	17, // 33: user.v1.AuthService.Refresh:output_type -> user.v1.RefreshResponse
-	19, // 34: user.v1.AuthService.Logout:output_type -> user.v1.LogoutResponse
-	21, // 35: user.v1.AuthService.Me:output_type -> user.v1.MeResponse
-	23, // 36: user.v1.AuthService.GoogleStart:output_type -> user.v1.GoogleStartResponse
-	25, // 37: user.v1.AuthService.GoogleFinish:output_type -> user.v1.GoogleFinishResponse
-	27, // 38: user.v1.AuthService.RequestPasswordReset:output_type -> user.v1.RequestPasswordResetResponse
-	29, // 39: user.v1.AuthService.VerifyPasswordReset:output_type -> user.v1.VerifyPasswordResetResponse
-	31, // 40: user.v1.AuthService.CompletePasswordReset:output_type -> user.v1.CompletePasswordResetResponse
-	26, // [26:41] is the sub-list for method output_type
-	11, // [11:26] is the sub-list for method input_type
-	11, // [11:11] is the sub-list for extension type_name
-	11, // [11:11] is the sub-list for extension extendee
-	0,  // [0:11] is the sub-list for field type_name
+	0,  // 11: user.v1.VerifyLoginMFAResponse.session:type_name -> user.v1.Session
+	1,  // 12: user.v1.AuthService.Setup:input_type -> user.v1.SetupRequest
+	4,  // 13: user.v1.AuthService.Register:input_type -> user.v1.RegisterRequest
+	6,  // 14: user.v1.AuthService.Login:input_type -> user.v1.LoginRequest
+	8,  // 15: user.v1.AuthService.VerifyRegister:input_type -> user.v1.VerifyRegisterRequest
+	10, // 16: user.v1.AuthService.VerifyLogin:input_type -> user.v1.VerifyLoginRequest
+	12, // 17: user.v1.AuthService.ResendRegisterCode:input_type -> user.v1.ResendRegisterCodeRequest
+	14, // 18: user.v1.AuthService.ResendLoginCode:input_type -> user.v1.ResendLoginCodeRequest
+	16, // 19: user.v1.AuthService.Refresh:input_type -> user.v1.RefreshRequest
+	18, // 20: user.v1.AuthService.Logout:input_type -> user.v1.LogoutRequest
+	20, // 21: user.v1.AuthService.Me:input_type -> user.v1.MeRequest
+	22, // 22: user.v1.AuthService.GoogleStart:input_type -> user.v1.GoogleStartRequest
+	24, // 23: user.v1.AuthService.GoogleFinish:input_type -> user.v1.GoogleFinishRequest
+	26, // 24: user.v1.AuthService.RequestPasswordReset:input_type -> user.v1.RequestPasswordResetRequest
+	28, // 25: user.v1.AuthService.VerifyPasswordReset:input_type -> user.v1.VerifyPasswordResetRequest
+	30, // 26: user.v1.AuthService.CompletePasswordReset:input_type -> user.v1.CompletePasswordResetRequest
+	32, // 27: user.v1.AuthService.VerifyLoginMFA:input_type -> user.v1.VerifyLoginMFARequest
+	34, // 28: user.v1.AuthService.BeginLoginWebAuthn:input_type -> user.v1.BeginLoginWebAuthnRequest
+	2,  // 29: user.v1.AuthService.Setup:output_type -> user.v1.SetupResponse
+	5,  // 30: user.v1.AuthService.Register:output_type -> user.v1.RegisterResponse
+	7,  // 31: user.v1.AuthService.Login:output_type -> user.v1.LoginResponse
+	9,  // 32: user.v1.AuthService.VerifyRegister:output_type -> user.v1.VerifyRegisterResponse
+	11, // 33: user.v1.AuthService.VerifyLogin:output_type -> user.v1.VerifyLoginResponse
+	13, // 34: user.v1.AuthService.ResendRegisterCode:output_type -> user.v1.ResendRegisterCodeResponse
+	15, // 35: user.v1.AuthService.ResendLoginCode:output_type -> user.v1.ResendLoginCodeResponse
+	17, // 36: user.v1.AuthService.Refresh:output_type -> user.v1.RefreshResponse
+	19, // 37: user.v1.AuthService.Logout:output_type -> user.v1.LogoutResponse
+	21, // 38: user.v1.AuthService.Me:output_type -> user.v1.MeResponse
+	23, // 39: user.v1.AuthService.GoogleStart:output_type -> user.v1.GoogleStartResponse
+	25, // 40: user.v1.AuthService.GoogleFinish:output_type -> user.v1.GoogleFinishResponse
+	27, // 41: user.v1.AuthService.RequestPasswordReset:output_type -> user.v1.RequestPasswordResetResponse
+	29, // 42: user.v1.AuthService.VerifyPasswordReset:output_type -> user.v1.VerifyPasswordResetResponse
+	31, // 43: user.v1.AuthService.CompletePasswordReset:output_type -> user.v1.CompletePasswordResetResponse
+	33, // 44: user.v1.AuthService.VerifyLoginMFA:output_type -> user.v1.VerifyLoginMFAResponse
+	35, // 45: user.v1.AuthService.BeginLoginWebAuthn:output_type -> user.v1.BeginLoginWebAuthnResponse
+	29, // [29:46] is the sub-list for method output_type
+	12, // [12:29] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_user_v1_auth_proto_init() }
@@ -1970,7 +2221,7 @@ func file_user_v1_auth_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_user_v1_auth_proto_rawDesc), len(file_user_v1_auth_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   32,
+			NumMessages:   36,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

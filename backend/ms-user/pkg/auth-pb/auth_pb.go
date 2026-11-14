@@ -92,7 +92,7 @@ func locationFromIP(clientIP string) string {
 	return ""
 }
 
-// Challenge maps an email OTP challenge to protobuf.
+// Challenge maps an email OTP or MFA challenge to protobuf.
 func Challenge(ch *models.AuthChallenge) *userv1.AuthChallenge {
 	if ch == nil {
 		return nil
@@ -102,7 +102,10 @@ func Challenge(ch *models.AuthChallenge) *userv1.AuthChallenge {
 		ChallengeId:           ch.ChallengeID,
 		EmailHint:             ch.EmailHint,
 		ResendCooldownSeconds: ch.ResendCooldownSeconds,
-		OtpRequired:           true,
+		OtpRequired:           !ch.MFARequired,
+		MfaRequired:           ch.MFARequired,
+		MfaMethods:            ch.MFAMethods,
+		WebauthnOptionsJson:   ch.WebAuthnOptionsJSON,
 	}
 }
 
@@ -134,12 +137,22 @@ func Session(out *models.SessionResult) *userv1.Session {
 
 // User maps a public user to protobuf.
 func User(user models.PublicUser) *userv1.User {
+	createdAt := ""
+	if !user.CreatedAt.IsZero() {
+		createdAt = user.CreatedAt.UTC().Format(time.RFC3339Nano)
+	}
+
 	return &userv1.User{
 		Id:          user.ID,
 		Email:       user.Email,
 		DisplayName: user.DisplayName,
 		Username:    user.Username,
 		AvatarUrl:   user.AvatarURL,
+		Pronouns:    user.Pronouns,
+		Bio:         user.Bio,
+		BannerColor: user.BannerColor,
+		CreatedAt:   createdAt,
+		HasPassword: user.HasPassword,
 	}
 }
 
@@ -258,5 +271,30 @@ func UserSearchHits(users []models.UserSearchHit) []*userv1.UserSearchHit {
 		}
 	}
 
+	return out
+}
+
+// SecurityKey maps a WebAuthn credential model to protobuf.
+func SecurityKey(k models.WebAuthnCredential) *userv1.SecurityKey {
+	var lastUsed string
+	if k.LastUsedAt != nil && !k.LastUsedAt.IsZero() {
+		lastUsed = k.LastUsedAt.UTC().Format(time.RFC3339Nano)
+	}
+
+	return &userv1.SecurityKey{
+		Id:         k.ID,
+		Name:       k.Name,
+		CreatedAt:  k.CreatedAt.UTC().Format(time.RFC3339Nano),
+		LastUsedAt: lastUsed,
+		Transports: k.Transports,
+	}
+}
+
+// SecurityKeys maps a slice of WebAuthn credentials to protobuf.
+func SecurityKeys(keys []models.WebAuthnCredential) []*userv1.SecurityKey {
+	out := make([]*userv1.SecurityKey, len(keys))
+	for i, k := range keys {
+		out[i] = SecurityKey(k)
+	}
 	return out
 }

@@ -19,10 +19,31 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	UserService_SetupStatus_FullMethodName           = "/user.v1.UserService/SetupStatus"
-	UserService_CompleteInstanceSetup_FullMethodName = "/user.v1.UserService/CompleteInstanceSetup"
-	UserService_SearchUsers_FullMethodName           = "/user.v1.UserService/SearchUsers"
-	UserService_CheckUsername_FullMethodName         = "/user.v1.UserService/CheckUsername"
+	UserService_SetupStatus_FullMethodName              = "/user.v1.UserService/SetupStatus"
+	UserService_CompleteInstanceSetup_FullMethodName    = "/user.v1.UserService/CompleteInstanceSetup"
+	UserService_SearchUsers_FullMethodName              = "/user.v1.UserService/SearchUsers"
+	UserService_CheckUsername_FullMethodName            = "/user.v1.UserService/CheckUsername"
+	UserService_UploadUserAvatar_FullMethodName         = "/user.v1.UserService/UploadUserAvatar"
+	UserService_UpdateUserProfile_FullMethodName        = "/user.v1.UserService/UpdateUserProfile"
+	UserService_UpdateUsername_FullMethodName           = "/user.v1.UserService/UpdateUsername"
+	UserService_RequestEmailChange_FullMethodName       = "/user.v1.UserService/RequestEmailChange"
+	UserService_VerifyEmailChange_FullMethodName        = "/user.v1.UserService/VerifyEmailChange"
+	UserService_CompleteEmailChange_FullMethodName      = "/user.v1.UserService/CompleteEmailChange"
+	UserService_UpdatePassword_FullMethodName           = "/user.v1.UserService/UpdatePassword"
+	UserService_GetMFAStatus_FullMethodName             = "/user.v1.UserService/GetMFAStatus"
+	UserService_BeginTOTPSetup_FullMethodName           = "/user.v1.UserService/BeginTOTPSetup"
+	UserService_ConfirmTOTPSetup_FullMethodName         = "/user.v1.UserService/ConfirmTOTPSetup"
+	UserService_DisableTOTP_FullMethodName              = "/user.v1.UserService/DisableTOTP"
+	UserService_BeginWebAuthnRegister_FullMethodName    = "/user.v1.UserService/BeginWebAuthnRegister"
+	UserService_FinishWebAuthnRegister_FullMethodName   = "/user.v1.UserService/FinishWebAuthnRegister"
+	UserService_RenameWebAuthnCredential_FullMethodName = "/user.v1.UserService/RenameWebAuthnCredential"
+	UserService_DeleteWebAuthnCredential_FullMethodName = "/user.v1.UserService/DeleteWebAuthnCredential"
+	UserService_RegenerateRecoveryCodes_FullMethodName  = "/user.v1.UserService/RegenerateRecoveryCodes"
+	UserService_DisableAccount_FullMethodName           = "/user.v1.UserService/DisableAccount"
+	UserService_DeleteAccount_FullMethodName            = "/user.v1.UserService/DeleteAccount"
+	UserService_ListSessions_FullMethodName             = "/user.v1.UserService/ListSessions"
+	UserService_RevokeSession_FullMethodName            = "/user.v1.UserService/RevokeSession"
+	UserService_RevokeOtherSessions_FullMethodName      = "/user.v1.UserService/RevokeOtherSessions"
 )
 
 // UserServiceClient is the client API for UserService service.
@@ -39,6 +60,48 @@ type UserServiceClient interface {
 	SearchUsers(ctx context.Context, in *SearchUsersRequest, opts ...grpc.CallOption) (*SearchUsersResponse, error)
 	// CheckUsername checks whether a username is valid, not reserved, and available.
 	CheckUsername(ctx context.Context, in *CheckUsernameRequest, opts ...grpc.CallOption) (*CheckUsernameResponse, error)
+	// UploadUserAvatar stores a user avatar in object storage and updates users.avatar_url.
+	UploadUserAvatar(ctx context.Context, in *UploadUserAvatarRequest, opts ...grpc.CallOption) (*UploadUserAvatarResponse, error)
+	// UpdateUserProfile replaces caller-editable user profile scalars.
+	UpdateUserProfile(ctx context.Context, in *UpdateUserProfileRequest, opts ...grpc.CallOption) (*UpdateUserProfileResponse, error)
+	// UpdateUsername changes the caller's username after verifying their current password.
+	UpdateUsername(ctx context.Context, in *UpdateUsernameRequest, opts ...grpc.CallOption) (*UpdateUsernameResponse, error)
+	// RequestEmailChange sends a verification code to the caller's current email.
+	RequestEmailChange(ctx context.Context, in *RequestEmailChangeRequest, opts ...grpc.CallOption) (*RequestEmailChangeResponse, error)
+	// VerifyEmailChange verifies the OTP code and issues a one-time email-change token.
+	VerifyEmailChange(ctx context.Context, in *VerifyEmailChangeRequest, opts ...grpc.CallOption) (*VerifyEmailChangeResponse, error)
+	// CompleteEmailChange updates the caller's email after verifying the change token and current password.
+	CompleteEmailChange(ctx context.Context, in *CompleteEmailChangeRequest, opts ...grpc.CallOption) (*CompleteEmailChangeResponse, error)
+	// UpdatePassword changes the caller's password after verifying their current password.
+	UpdatePassword(ctx context.Context, in *UpdatePasswordRequest, opts ...grpc.CallOption) (*UpdatePasswordResponse, error)
+	// GetMFAStatus returns the caller's enrolled MFA methods and remaining recovery codes.
+	GetMFAStatus(ctx context.Context, in *GetMFAStatusRequest, opts ...grpc.CallOption) (*GetMFAStatusResponse, error)
+	// BeginTOTPSetup verifies current_password and returns an ephemeral TOTP secret and otpauth URI.
+	BeginTOTPSetup(ctx context.Context, in *BeginTOTPSetupRequest, opts ...grpc.CallOption) (*BeginTOTPSetupResponse, error)
+	// ConfirmTOTPSetup verifies the TOTP code, enables TOTP, and returns recovery codes if newly generated.
+	ConfirmTOTPSetup(ctx context.Context, in *ConfirmTOTPSetupRequest, opts ...grpc.CallOption) (*ConfirmTOTPSetupResponse, error)
+	// DisableTOTP removes TOTP after verifying current_password.
+	DisableTOTP(ctx context.Context, in *DisableTOTPRequest, opts ...grpc.CallOption) (*DisableTOTPResponse, error)
+	// BeginWebAuthnRegister verifies current_password and returns WebAuthn credential creation options.
+	BeginWebAuthnRegister(ctx context.Context, in *BeginWebAuthnRegisterRequest, opts ...grpc.CallOption) (*BeginWebAuthnRegisterResponse, error)
+	// FinishWebAuthnRegister verifies the WebAuthn attestation, stores the security key, and returns recovery codes if newly generated.
+	FinishWebAuthnRegister(ctx context.Context, in *FinishWebAuthnRegisterRequest, opts ...grpc.CallOption) (*FinishWebAuthnRegisterResponse, error)
+	// RenameWebAuthnCredential updates the display name of an enrolled security key.
+	RenameWebAuthnCredential(ctx context.Context, in *RenameWebAuthnCredentialRequest, opts ...grpc.CallOption) (*RenameWebAuthnCredentialResponse, error)
+	// DeleteWebAuthnCredential removes an enrolled security key after verifying current_password.
+	DeleteWebAuthnCredential(ctx context.Context, in *DeleteWebAuthnCredentialRequest, opts ...grpc.CallOption) (*DeleteWebAuthnCredentialResponse, error)
+	// RegenerateRecoveryCodes replaces all recovery codes after verifying current_password.
+	RegenerateRecoveryCodes(ctx context.Context, in *RegenerateRecoveryCodesRequest, opts ...grpc.CallOption) (*RegenerateRecoveryCodesResponse, error)
+	// DisableAccount marks the caller's account disabled and revokes all active sessions.
+	DisableAccount(ctx context.Context, in *DisableAccountRequest, opts ...grpc.CallOption) (*DisableAccountResponse, error)
+	// DeleteAccount soft-deletes and anonymizes the caller's account and revokes all sessions.
+	DeleteAccount(ctx context.Context, in *DeleteAccountRequest, opts ...grpc.CallOption) (*DeleteAccountResponse, error)
+	// ListSessions returns active sessions (logged-in devices) for the caller.
+	ListSessions(ctx context.Context, in *ListSessionsRequest, opts ...grpc.CallOption) (*ListSessionsResponse, error)
+	// RevokeSession revokes a single non-current session for the caller.
+	RevokeSession(ctx context.Context, in *RevokeSessionRequest, opts ...grpc.CallOption) (*RevokeSessionResponse, error)
+	// RevokeOtherSessions revokes all active sessions except the caller's current session.
+	RevokeOtherSessions(ctx context.Context, in *RevokeOtherSessionsRequest, opts ...grpc.CallOption) (*RevokeOtherSessionsResponse, error)
 }
 
 type userServiceClient struct {
@@ -89,6 +152,216 @@ func (c *userServiceClient) CheckUsername(ctx context.Context, in *CheckUsername
 	return out, nil
 }
 
+func (c *userServiceClient) UploadUserAvatar(ctx context.Context, in *UploadUserAvatarRequest, opts ...grpc.CallOption) (*UploadUserAvatarResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UploadUserAvatarResponse)
+	err := c.cc.Invoke(ctx, UserService_UploadUserAvatar_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) UpdateUserProfile(ctx context.Context, in *UpdateUserProfileRequest, opts ...grpc.CallOption) (*UpdateUserProfileResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateUserProfileResponse)
+	err := c.cc.Invoke(ctx, UserService_UpdateUserProfile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) UpdateUsername(ctx context.Context, in *UpdateUsernameRequest, opts ...grpc.CallOption) (*UpdateUsernameResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateUsernameResponse)
+	err := c.cc.Invoke(ctx, UserService_UpdateUsername_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) RequestEmailChange(ctx context.Context, in *RequestEmailChangeRequest, opts ...grpc.CallOption) (*RequestEmailChangeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RequestEmailChangeResponse)
+	err := c.cc.Invoke(ctx, UserService_RequestEmailChange_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) VerifyEmailChange(ctx context.Context, in *VerifyEmailChangeRequest, opts ...grpc.CallOption) (*VerifyEmailChangeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(VerifyEmailChangeResponse)
+	err := c.cc.Invoke(ctx, UserService_VerifyEmailChange_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) CompleteEmailChange(ctx context.Context, in *CompleteEmailChangeRequest, opts ...grpc.CallOption) (*CompleteEmailChangeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CompleteEmailChangeResponse)
+	err := c.cc.Invoke(ctx, UserService_CompleteEmailChange_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) UpdatePassword(ctx context.Context, in *UpdatePasswordRequest, opts ...grpc.CallOption) (*UpdatePasswordResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdatePasswordResponse)
+	err := c.cc.Invoke(ctx, UserService_UpdatePassword_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) GetMFAStatus(ctx context.Context, in *GetMFAStatusRequest, opts ...grpc.CallOption) (*GetMFAStatusResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetMFAStatusResponse)
+	err := c.cc.Invoke(ctx, UserService_GetMFAStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) BeginTOTPSetup(ctx context.Context, in *BeginTOTPSetupRequest, opts ...grpc.CallOption) (*BeginTOTPSetupResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BeginTOTPSetupResponse)
+	err := c.cc.Invoke(ctx, UserService_BeginTOTPSetup_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) ConfirmTOTPSetup(ctx context.Context, in *ConfirmTOTPSetupRequest, opts ...grpc.CallOption) (*ConfirmTOTPSetupResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ConfirmTOTPSetupResponse)
+	err := c.cc.Invoke(ctx, UserService_ConfirmTOTPSetup_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) DisableTOTP(ctx context.Context, in *DisableTOTPRequest, opts ...grpc.CallOption) (*DisableTOTPResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DisableTOTPResponse)
+	err := c.cc.Invoke(ctx, UserService_DisableTOTP_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) BeginWebAuthnRegister(ctx context.Context, in *BeginWebAuthnRegisterRequest, opts ...grpc.CallOption) (*BeginWebAuthnRegisterResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BeginWebAuthnRegisterResponse)
+	err := c.cc.Invoke(ctx, UserService_BeginWebAuthnRegister_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) FinishWebAuthnRegister(ctx context.Context, in *FinishWebAuthnRegisterRequest, opts ...grpc.CallOption) (*FinishWebAuthnRegisterResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(FinishWebAuthnRegisterResponse)
+	err := c.cc.Invoke(ctx, UserService_FinishWebAuthnRegister_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) RenameWebAuthnCredential(ctx context.Context, in *RenameWebAuthnCredentialRequest, opts ...grpc.CallOption) (*RenameWebAuthnCredentialResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RenameWebAuthnCredentialResponse)
+	err := c.cc.Invoke(ctx, UserService_RenameWebAuthnCredential_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) DeleteWebAuthnCredential(ctx context.Context, in *DeleteWebAuthnCredentialRequest, opts ...grpc.CallOption) (*DeleteWebAuthnCredentialResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteWebAuthnCredentialResponse)
+	err := c.cc.Invoke(ctx, UserService_DeleteWebAuthnCredential_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) RegenerateRecoveryCodes(ctx context.Context, in *RegenerateRecoveryCodesRequest, opts ...grpc.CallOption) (*RegenerateRecoveryCodesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RegenerateRecoveryCodesResponse)
+	err := c.cc.Invoke(ctx, UserService_RegenerateRecoveryCodes_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) DisableAccount(ctx context.Context, in *DisableAccountRequest, opts ...grpc.CallOption) (*DisableAccountResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DisableAccountResponse)
+	err := c.cc.Invoke(ctx, UserService_DisableAccount_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) DeleteAccount(ctx context.Context, in *DeleteAccountRequest, opts ...grpc.CallOption) (*DeleteAccountResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteAccountResponse)
+	err := c.cc.Invoke(ctx, UserService_DeleteAccount_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) ListSessions(ctx context.Context, in *ListSessionsRequest, opts ...grpc.CallOption) (*ListSessionsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListSessionsResponse)
+	err := c.cc.Invoke(ctx, UserService_ListSessions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) RevokeSession(ctx context.Context, in *RevokeSessionRequest, opts ...grpc.CallOption) (*RevokeSessionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RevokeSessionResponse)
+	err := c.cc.Invoke(ctx, UserService_RevokeSession_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) RevokeOtherSessions(ctx context.Context, in *RevokeOtherSessionsRequest, opts ...grpc.CallOption) (*RevokeOtherSessionsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RevokeOtherSessionsResponse)
+	err := c.cc.Invoke(ctx, UserService_RevokeOtherSessions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UserServiceServer is the server API for UserService service.
 // All implementations must embed UnimplementedUserServiceServer
 // for forward compatibility.
@@ -103,6 +376,48 @@ type UserServiceServer interface {
 	SearchUsers(context.Context, *SearchUsersRequest) (*SearchUsersResponse, error)
 	// CheckUsername checks whether a username is valid, not reserved, and available.
 	CheckUsername(context.Context, *CheckUsernameRequest) (*CheckUsernameResponse, error)
+	// UploadUserAvatar stores a user avatar in object storage and updates users.avatar_url.
+	UploadUserAvatar(context.Context, *UploadUserAvatarRequest) (*UploadUserAvatarResponse, error)
+	// UpdateUserProfile replaces caller-editable user profile scalars.
+	UpdateUserProfile(context.Context, *UpdateUserProfileRequest) (*UpdateUserProfileResponse, error)
+	// UpdateUsername changes the caller's username after verifying their current password.
+	UpdateUsername(context.Context, *UpdateUsernameRequest) (*UpdateUsernameResponse, error)
+	// RequestEmailChange sends a verification code to the caller's current email.
+	RequestEmailChange(context.Context, *RequestEmailChangeRequest) (*RequestEmailChangeResponse, error)
+	// VerifyEmailChange verifies the OTP code and issues a one-time email-change token.
+	VerifyEmailChange(context.Context, *VerifyEmailChangeRequest) (*VerifyEmailChangeResponse, error)
+	// CompleteEmailChange updates the caller's email after verifying the change token and current password.
+	CompleteEmailChange(context.Context, *CompleteEmailChangeRequest) (*CompleteEmailChangeResponse, error)
+	// UpdatePassword changes the caller's password after verifying their current password.
+	UpdatePassword(context.Context, *UpdatePasswordRequest) (*UpdatePasswordResponse, error)
+	// GetMFAStatus returns the caller's enrolled MFA methods and remaining recovery codes.
+	GetMFAStatus(context.Context, *GetMFAStatusRequest) (*GetMFAStatusResponse, error)
+	// BeginTOTPSetup verifies current_password and returns an ephemeral TOTP secret and otpauth URI.
+	BeginTOTPSetup(context.Context, *BeginTOTPSetupRequest) (*BeginTOTPSetupResponse, error)
+	// ConfirmTOTPSetup verifies the TOTP code, enables TOTP, and returns recovery codes if newly generated.
+	ConfirmTOTPSetup(context.Context, *ConfirmTOTPSetupRequest) (*ConfirmTOTPSetupResponse, error)
+	// DisableTOTP removes TOTP after verifying current_password.
+	DisableTOTP(context.Context, *DisableTOTPRequest) (*DisableTOTPResponse, error)
+	// BeginWebAuthnRegister verifies current_password and returns WebAuthn credential creation options.
+	BeginWebAuthnRegister(context.Context, *BeginWebAuthnRegisterRequest) (*BeginWebAuthnRegisterResponse, error)
+	// FinishWebAuthnRegister verifies the WebAuthn attestation, stores the security key, and returns recovery codes if newly generated.
+	FinishWebAuthnRegister(context.Context, *FinishWebAuthnRegisterRequest) (*FinishWebAuthnRegisterResponse, error)
+	// RenameWebAuthnCredential updates the display name of an enrolled security key.
+	RenameWebAuthnCredential(context.Context, *RenameWebAuthnCredentialRequest) (*RenameWebAuthnCredentialResponse, error)
+	// DeleteWebAuthnCredential removes an enrolled security key after verifying current_password.
+	DeleteWebAuthnCredential(context.Context, *DeleteWebAuthnCredentialRequest) (*DeleteWebAuthnCredentialResponse, error)
+	// RegenerateRecoveryCodes replaces all recovery codes after verifying current_password.
+	RegenerateRecoveryCodes(context.Context, *RegenerateRecoveryCodesRequest) (*RegenerateRecoveryCodesResponse, error)
+	// DisableAccount marks the caller's account disabled and revokes all active sessions.
+	DisableAccount(context.Context, *DisableAccountRequest) (*DisableAccountResponse, error)
+	// DeleteAccount soft-deletes and anonymizes the caller's account and revokes all sessions.
+	DeleteAccount(context.Context, *DeleteAccountRequest) (*DeleteAccountResponse, error)
+	// ListSessions returns active sessions (logged-in devices) for the caller.
+	ListSessions(context.Context, *ListSessionsRequest) (*ListSessionsResponse, error)
+	// RevokeSession revokes a single non-current session for the caller.
+	RevokeSession(context.Context, *RevokeSessionRequest) (*RevokeSessionResponse, error)
+	// RevokeOtherSessions revokes all active sessions except the caller's current session.
+	RevokeOtherSessions(context.Context, *RevokeOtherSessionsRequest) (*RevokeOtherSessionsResponse, error)
 	mustEmbedUnimplementedUserServiceServer()
 }
 
@@ -124,6 +439,69 @@ func (UnimplementedUserServiceServer) SearchUsers(context.Context, *SearchUsersR
 }
 func (UnimplementedUserServiceServer) CheckUsername(context.Context, *CheckUsernameRequest) (*CheckUsernameResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CheckUsername not implemented")
+}
+func (UnimplementedUserServiceServer) UploadUserAvatar(context.Context, *UploadUserAvatarRequest) (*UploadUserAvatarResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UploadUserAvatar not implemented")
+}
+func (UnimplementedUserServiceServer) UpdateUserProfile(context.Context, *UpdateUserProfileRequest) (*UpdateUserProfileResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateUserProfile not implemented")
+}
+func (UnimplementedUserServiceServer) UpdateUsername(context.Context, *UpdateUsernameRequest) (*UpdateUsernameResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateUsername not implemented")
+}
+func (UnimplementedUserServiceServer) RequestEmailChange(context.Context, *RequestEmailChangeRequest) (*RequestEmailChangeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RequestEmailChange not implemented")
+}
+func (UnimplementedUserServiceServer) VerifyEmailChange(context.Context, *VerifyEmailChangeRequest) (*VerifyEmailChangeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method VerifyEmailChange not implemented")
+}
+func (UnimplementedUserServiceServer) CompleteEmailChange(context.Context, *CompleteEmailChangeRequest) (*CompleteEmailChangeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CompleteEmailChange not implemented")
+}
+func (UnimplementedUserServiceServer) UpdatePassword(context.Context, *UpdatePasswordRequest) (*UpdatePasswordResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdatePassword not implemented")
+}
+func (UnimplementedUserServiceServer) GetMFAStatus(context.Context, *GetMFAStatusRequest) (*GetMFAStatusResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetMFAStatus not implemented")
+}
+func (UnimplementedUserServiceServer) BeginTOTPSetup(context.Context, *BeginTOTPSetupRequest) (*BeginTOTPSetupResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BeginTOTPSetup not implemented")
+}
+func (UnimplementedUserServiceServer) ConfirmTOTPSetup(context.Context, *ConfirmTOTPSetupRequest) (*ConfirmTOTPSetupResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ConfirmTOTPSetup not implemented")
+}
+func (UnimplementedUserServiceServer) DisableTOTP(context.Context, *DisableTOTPRequest) (*DisableTOTPResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DisableTOTP not implemented")
+}
+func (UnimplementedUserServiceServer) BeginWebAuthnRegister(context.Context, *BeginWebAuthnRegisterRequest) (*BeginWebAuthnRegisterResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method BeginWebAuthnRegister not implemented")
+}
+func (UnimplementedUserServiceServer) FinishWebAuthnRegister(context.Context, *FinishWebAuthnRegisterRequest) (*FinishWebAuthnRegisterResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method FinishWebAuthnRegister not implemented")
+}
+func (UnimplementedUserServiceServer) RenameWebAuthnCredential(context.Context, *RenameWebAuthnCredentialRequest) (*RenameWebAuthnCredentialResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RenameWebAuthnCredential not implemented")
+}
+func (UnimplementedUserServiceServer) DeleteWebAuthnCredential(context.Context, *DeleteWebAuthnCredentialRequest) (*DeleteWebAuthnCredentialResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteWebAuthnCredential not implemented")
+}
+func (UnimplementedUserServiceServer) RegenerateRecoveryCodes(context.Context, *RegenerateRecoveryCodesRequest) (*RegenerateRecoveryCodesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RegenerateRecoveryCodes not implemented")
+}
+func (UnimplementedUserServiceServer) DisableAccount(context.Context, *DisableAccountRequest) (*DisableAccountResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DisableAccount not implemented")
+}
+func (UnimplementedUserServiceServer) DeleteAccount(context.Context, *DeleteAccountRequest) (*DeleteAccountResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteAccount not implemented")
+}
+func (UnimplementedUserServiceServer) ListSessions(context.Context, *ListSessionsRequest) (*ListSessionsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListSessions not implemented")
+}
+func (UnimplementedUserServiceServer) RevokeSession(context.Context, *RevokeSessionRequest) (*RevokeSessionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RevokeSession not implemented")
+}
+func (UnimplementedUserServiceServer) RevokeOtherSessions(context.Context, *RevokeOtherSessionsRequest) (*RevokeOtherSessionsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RevokeOtherSessions not implemented")
 }
 func (UnimplementedUserServiceServer) mustEmbedUnimplementedUserServiceServer() {}
 func (UnimplementedUserServiceServer) testEmbeddedByValue()                     {}
@@ -218,6 +596,384 @@ func _UserService_CheckUsername_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserService_UploadUserAvatar_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UploadUserAvatarRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).UploadUserAvatar(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_UploadUserAvatar_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).UploadUserAvatar(ctx, req.(*UploadUserAvatarRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_UpdateUserProfile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateUserProfileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).UpdateUserProfile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_UpdateUserProfile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).UpdateUserProfile(ctx, req.(*UpdateUserProfileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_UpdateUsername_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateUsernameRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).UpdateUsername(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_UpdateUsername_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).UpdateUsername(ctx, req.(*UpdateUsernameRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_RequestEmailChange_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RequestEmailChangeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).RequestEmailChange(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_RequestEmailChange_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).RequestEmailChange(ctx, req.(*RequestEmailChangeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_VerifyEmailChange_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(VerifyEmailChangeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).VerifyEmailChange(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_VerifyEmailChange_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).VerifyEmailChange(ctx, req.(*VerifyEmailChangeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_CompleteEmailChange_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CompleteEmailChangeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).CompleteEmailChange(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_CompleteEmailChange_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).CompleteEmailChange(ctx, req.(*CompleteEmailChangeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_UpdatePassword_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdatePasswordRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).UpdatePassword(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_UpdatePassword_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).UpdatePassword(ctx, req.(*UpdatePasswordRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_GetMFAStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetMFAStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).GetMFAStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_GetMFAStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).GetMFAStatus(ctx, req.(*GetMFAStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_BeginTOTPSetup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BeginTOTPSetupRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).BeginTOTPSetup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_BeginTOTPSetup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).BeginTOTPSetup(ctx, req.(*BeginTOTPSetupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_ConfirmTOTPSetup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ConfirmTOTPSetupRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).ConfirmTOTPSetup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_ConfirmTOTPSetup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).ConfirmTOTPSetup(ctx, req.(*ConfirmTOTPSetupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_DisableTOTP_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DisableTOTPRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).DisableTOTP(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_DisableTOTP_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).DisableTOTP(ctx, req.(*DisableTOTPRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_BeginWebAuthnRegister_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BeginWebAuthnRegisterRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).BeginWebAuthnRegister(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_BeginWebAuthnRegister_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).BeginWebAuthnRegister(ctx, req.(*BeginWebAuthnRegisterRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_FinishWebAuthnRegister_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FinishWebAuthnRegisterRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).FinishWebAuthnRegister(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_FinishWebAuthnRegister_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).FinishWebAuthnRegister(ctx, req.(*FinishWebAuthnRegisterRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_RenameWebAuthnCredential_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RenameWebAuthnCredentialRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).RenameWebAuthnCredential(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_RenameWebAuthnCredential_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).RenameWebAuthnCredential(ctx, req.(*RenameWebAuthnCredentialRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_DeleteWebAuthnCredential_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteWebAuthnCredentialRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).DeleteWebAuthnCredential(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_DeleteWebAuthnCredential_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).DeleteWebAuthnCredential(ctx, req.(*DeleteWebAuthnCredentialRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_RegenerateRecoveryCodes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RegenerateRecoveryCodesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).RegenerateRecoveryCodes(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_RegenerateRecoveryCodes_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).RegenerateRecoveryCodes(ctx, req.(*RegenerateRecoveryCodesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_DisableAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DisableAccountRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).DisableAccount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_DisableAccount_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).DisableAccount(ctx, req.(*DisableAccountRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_DeleteAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteAccountRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).DeleteAccount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_DeleteAccount_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).DeleteAccount(ctx, req.(*DeleteAccountRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_ListSessions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListSessionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).ListSessions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_ListSessions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).ListSessions(ctx, req.(*ListSessionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_RevokeSession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RevokeSessionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).RevokeSession(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_RevokeSession_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).RevokeSession(ctx, req.(*RevokeSessionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_RevokeOtherSessions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RevokeOtherSessionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).RevokeOtherSessions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_RevokeOtherSessions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).RevokeOtherSessions(ctx, req.(*RevokeOtherSessionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // UserService_ServiceDesc is the grpc.ServiceDesc for UserService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -240,6 +996,90 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CheckUsername",
 			Handler:    _UserService_CheckUsername_Handler,
+		},
+		{
+			MethodName: "UploadUserAvatar",
+			Handler:    _UserService_UploadUserAvatar_Handler,
+		},
+		{
+			MethodName: "UpdateUserProfile",
+			Handler:    _UserService_UpdateUserProfile_Handler,
+		},
+		{
+			MethodName: "UpdateUsername",
+			Handler:    _UserService_UpdateUsername_Handler,
+		},
+		{
+			MethodName: "RequestEmailChange",
+			Handler:    _UserService_RequestEmailChange_Handler,
+		},
+		{
+			MethodName: "VerifyEmailChange",
+			Handler:    _UserService_VerifyEmailChange_Handler,
+		},
+		{
+			MethodName: "CompleteEmailChange",
+			Handler:    _UserService_CompleteEmailChange_Handler,
+		},
+		{
+			MethodName: "UpdatePassword",
+			Handler:    _UserService_UpdatePassword_Handler,
+		},
+		{
+			MethodName: "GetMFAStatus",
+			Handler:    _UserService_GetMFAStatus_Handler,
+		},
+		{
+			MethodName: "BeginTOTPSetup",
+			Handler:    _UserService_BeginTOTPSetup_Handler,
+		},
+		{
+			MethodName: "ConfirmTOTPSetup",
+			Handler:    _UserService_ConfirmTOTPSetup_Handler,
+		},
+		{
+			MethodName: "DisableTOTP",
+			Handler:    _UserService_DisableTOTP_Handler,
+		},
+		{
+			MethodName: "BeginWebAuthnRegister",
+			Handler:    _UserService_BeginWebAuthnRegister_Handler,
+		},
+		{
+			MethodName: "FinishWebAuthnRegister",
+			Handler:    _UserService_FinishWebAuthnRegister_Handler,
+		},
+		{
+			MethodName: "RenameWebAuthnCredential",
+			Handler:    _UserService_RenameWebAuthnCredential_Handler,
+		},
+		{
+			MethodName: "DeleteWebAuthnCredential",
+			Handler:    _UserService_DeleteWebAuthnCredential_Handler,
+		},
+		{
+			MethodName: "RegenerateRecoveryCodes",
+			Handler:    _UserService_RegenerateRecoveryCodes_Handler,
+		},
+		{
+			MethodName: "DisableAccount",
+			Handler:    _UserService_DisableAccount_Handler,
+		},
+		{
+			MethodName: "DeleteAccount",
+			Handler:    _UserService_DeleteAccount_Handler,
+		},
+		{
+			MethodName: "ListSessions",
+			Handler:    _UserService_ListSessions_Handler,
+		},
+		{
+			MethodName: "RevokeSession",
+			Handler:    _UserService_RevokeSession_Handler,
+		},
+		{
+			MethodName: "RevokeOtherSessions",
+			Handler:    _UserService_RevokeOtherSessions_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

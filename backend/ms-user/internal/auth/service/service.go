@@ -3,10 +3,13 @@ package service
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"strings"
 	"time"
 
+	"github.com/go-webauthn/webauthn/protocol"
+	"github.com/go-webauthn/webauthn/webauthn"
 	authrepo "github.com/wichat/wichat/backend/ms-user/internal/auth/repository"
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
 	userrepo "github.com/wichat/wichat/backend/ms-user/internal/user/repository"
@@ -14,6 +17,7 @@ import (
 	authRedis "github.com/wichat/wichat/backend/ms-user/pkg/auth-redis"
 	"github.com/wichat/wichat/backend/ms-user/pkg/constants"
 	"github.com/wichat/wichat/backend/ms-user/pkg/jwt"
+	"github.com/wichat/wichat/backend/ms-user/pkg/mfa"
 	google "github.com/wichat/wichat/backend/ms-user/pkg/oauth"
 	"github.com/wichat/wichat/backend/ms-user/pkg/otp"
 	"github.com/wichat/wichat/backend/ms-user/pkg/password"
@@ -47,6 +51,8 @@ type Service interface {
 	RequestPasswordReset(ctx context.Context, email, locale string) (int, error)
 	VerifyPasswordReset(ctx context.Context, email, code string) (string, error)
 	CompletePasswordReset(ctx context.Context, resetToken, password string) error
+	BeginLoginWebAuthn(ctx context.Context, challengeID string) (string, error)
+	VerifyLoginMFA(ctx context.Context, challengeID, method, code, assertionJSON string) (*models.SessionResult, error)
 }
 
 type service struct {
@@ -56,6 +62,9 @@ type service struct {
 	workspace userservice.Service
 	reset     authrepo.PasswordResetStore
 	emailAuth authrepo.EmailAuthStore
+	mfa       authrepo.MFAStore
+	webauthn  *webauthn.WebAuthn
+	mfaKey    [32]byte
 	notify    Notifier
 	log       logger.Logger
 	secret    []byte
@@ -64,9 +73,12 @@ type service struct {
 	google    google.Config
 }
 
-// Options overrides auth service wiring (tests only).
+// Options overrides auth service wiring (tests and optional MFA).
 type Options struct {
-	Now func() time.Time
+	Now      func() time.Time
+	MFA      authrepo.MFAStore
+	WebAuthn *webauthn.WebAuthn
+	MFAKey   [32]byte
 }
 
 // NewService builds the auth use cases. secret is the HMAC key and must be at least 32 bytes.
@@ -96,8 +108,16 @@ func NewService(
 	copy(copied, secret)
 
 	now := func() time.Time { return time.Now().UTC() }
-	if opts != nil && opts.Now != nil {
-		now = opts.Now
+	var mfaStore authrepo.MFAStore
+	var wa *webauthn.WebAuthn
+	var mfaKey [32]byte
+	if opts != nil {
+		if opts.Now != nil {
+			now = opts.Now
+		}
+		mfaStore = opts.MFA
+		wa = opts.WebAuthn
+		mfaKey = opts.MFAKey
 	}
 
 	return service{
@@ -107,6 +127,9 @@ func NewService(
 		workspace: workspace,
 		reset:     reset,
 		emailAuth: emailAuth,
+		mfa:       mfaStore,
+		webauthn:  wa,
+		mfaKey:    mfaKey,
 		notify:    notify,
 		log:       log,
 		secret:    copied,
@@ -290,6 +313,15 @@ func (s service) Login(ctx context.Context, in models.LoginInput) (*models.Passw
 	}
 	if s.emailAuth != nil {
 		_ = s.emailAuth.ClearFailedLogin(ctx, login)
+	}
+	if err := ensureAccountActive(user); err != nil {
+		return nil, err
+	}
+
+	if res, ok, err := s.maybeBeginLoginMFA(ctx, user, in.UserAgent, in.ClientIP); err != nil {
+		return nil, err
+	} else if ok {
+		return res, nil
 	}
 
 	ch, code, err := s.beginEmailChallenge(ctx, user.Email, user.DisplayName, in.Locale, "sign_in")
@@ -823,6 +855,9 @@ func (s service) finishRefreshRotation(ctx context.Context, sess models.Session,
 	if err != nil {
 		return nil, err
 	}
+	if err := ensureAccountActive(user); err != nil {
+		return nil, err
+	}
 
 	access, expiresIn, err := jwt.Issue(s.secret, user.ID, sess.ID, now, constants.AccessTokenTTL)
 	if err != nil {
@@ -983,7 +1018,21 @@ func (s service) GoogleFinish(ctx context.Context, code, verifier string, meta m
 	return s.openSession(ctx, user, meta)
 }
 
+func ensureAccountActive(user models.User) error {
+	if user.DeletedAt != nil {
+		return exception.Unauthenticated(exception.MsgAccountDeleted, nil)
+	}
+	if user.DisabledAt != nil {
+		return exception.PermissionDenied(exception.MsgAccountDisabled, nil)
+	}
+
+	return nil
+}
+
 func (s service) openSession(ctx context.Context, user models.User, meta models.ClientMeta) (*models.SessionResult, error) {
+	if err := ensureAccountActive(user); err != nil {
+		return nil, err
+	}
 	now := s.now()
 	sessionID, err := token.NewID()
 	if err != nil {
@@ -1089,4 +1138,280 @@ func resetRateLimited(retry time.Duration) error {
 	}
 
 	return exception.RateLimited(exception.MsgResetRateLimited, params)
+}
+
+func (s service) maybeBeginLoginMFA(ctx context.Context, user models.User, userAgent, clientIP string) (*models.PasswordAuthResult, bool, error) {
+	if s.mfa == nil {
+		return nil, false, nil
+	}
+
+	totpEnabled := true
+	if _, err := s.users.GetMFATOTP(ctx, user.ID); errors.Is(err, constants.ErrNotFound) {
+		totpEnabled = false
+	} else if err != nil {
+		return nil, false, err
+	}
+
+	waCreds, err := s.users.ListWebAuthnCredentials(ctx, user.ID)
+	if err != nil {
+		return nil, false, err
+	}
+	if !totpEnabled && len(waCreds) == 0 {
+		return nil, false, nil
+	}
+
+	var methods []string
+	var waOptsJSON string
+	var waSessJSON string
+
+	if len(waCreds) > 0 && s.webauthn != nil {
+		methods = append(methods, "webauthn")
+		waUser := mfa.WebAuthnUser{
+			ID:          []byte(user.ID),
+			Name:        user.Username,
+			DisplayName: user.DisplayName,
+			Credentials: toAuthWebAuthnCreds(waCreds),
+		}
+		assertion, sessData, err := s.webauthn.BeginLogin(waUser)
+		if err != nil {
+			return nil, false, exception.Internal(err)
+		}
+		optsBytes, err := json.Marshal(assertion)
+		if err != nil {
+			return nil, false, exception.Internal(err)
+		}
+		sessBytes, err := json.Marshal(sessData)
+		if err != nil {
+			return nil, false, exception.Internal(err)
+		}
+		waOptsJSON = string(optsBytes)
+		waSessJSON = string(sessBytes)
+	}
+	if totpEnabled {
+		methods = append(methods, "totp")
+	}
+	methods = append(methods, "recovery")
+
+	challengeID, err := token.NewID()
+	if err != nil {
+		return nil, false, exception.Internal(err)
+	}
+	if err := s.mfa.PutLoginMFA(ctx, challengeID, models.LoginMFAPending{
+		UserID:              user.ID,
+		Email:               user.Email,
+		Methods:             methods,
+		WebAuthnSessionJSON: waSessJSON,
+		UserAgent:           userAgent,
+		ClientIP:            clientIP,
+	}, constants.MFAChallengeTTL); err != nil {
+		return nil, false, err
+	}
+
+	return &models.PasswordAuthResult{
+		Challenge: &models.AuthChallenge{
+			ChallengeID:         challengeID,
+			MFARequired:         true,
+			MFAMethods:          methods,
+			WebAuthnOptionsJSON: waOptsJSON,
+		},
+	}, true, nil
+}
+
+func (s service) BeginLoginWebAuthn(ctx context.Context, challengeID string) (string, error) {
+	if s.mfa == nil || s.webauthn == nil {
+		return "", exception.Unavailable(exception.MsgUnavailable, nil)
+	}
+	challengeID = strings.TrimSpace(challengeID)
+	if challengeID == "" {
+		return "", exception.InvalidInput(exception.MsgInvalidInput, nil)
+	}
+
+	pending, err := s.mfa.GetLoginMFA(ctx, challengeID)
+	if errors.Is(err, constants.ErrNotFound) {
+		return "", exception.Unauthenticated(exception.MsgResetCodeInvalid, nil)
+	}
+	if err != nil {
+		return "", err
+	}
+
+	user, err := s.users.FindUserByID(ctx, pending.UserID)
+	if err != nil {
+		return "", err
+	}
+	waCreds, err := s.users.ListWebAuthnCredentials(ctx, user.ID)
+	if err != nil {
+		return "", err
+	}
+	if len(waCreds) == 0 {
+		return "", exception.InvalidInput(exception.MsgInvalidInput, nil)
+	}
+
+	waUser := mfa.WebAuthnUser{
+		ID:          []byte(user.ID),
+		Name:        user.Username,
+		DisplayName: user.DisplayName,
+		Credentials: toAuthWebAuthnCreds(waCreds),
+	}
+	assertion, sessData, err := s.webauthn.BeginLogin(waUser)
+	if err != nil {
+		return "", exception.Internal(err)
+	}
+	optsBytes, err := json.Marshal(assertion)
+	if err != nil {
+		return "", exception.Internal(err)
+	}
+	sessBytes, err := json.Marshal(sessData)
+	if err != nil {
+		return "", exception.Internal(err)
+	}
+
+	pending.WebAuthnSessionJSON = string(sessBytes)
+	if err := s.mfa.UpdateLoginMFA(ctx, challengeID, pending, constants.MFAChallengeTTL); err != nil {
+		return "", err
+	}
+
+	return string(optsBytes), nil
+}
+
+func (s service) VerifyLoginMFA(ctx context.Context, challengeID, method, code, assertionJSON string) (*models.SessionResult, error) {
+	if s.mfa == nil {
+		return nil, exception.Unavailable(exception.MsgUnavailable, nil)
+	}
+	challengeID = strings.TrimSpace(challengeID)
+	method = strings.TrimSpace(method)
+	if challengeID == "" || method == "" {
+		return nil, exception.InvalidInput(exception.MsgInvalidInput, nil)
+	}
+
+	pending, err := s.mfa.GetLoginMFA(ctx, challengeID)
+	if errors.Is(err, constants.ErrNotFound) {
+		return nil, exception.Unauthenticated(exception.MsgResetCodeInvalid, nil)
+	}
+	if err != nil {
+		return nil, err
+	}
+	if pending.Attempts >= constants.MFAMaxAttempts {
+		_ = s.mfa.DeleteLoginMFA(ctx, challengeID)
+		return nil, exception.Unauthenticated(exception.MsgResetCodeInvalid, nil)
+	}
+
+	user, err := s.users.FindUserByID(ctx, pending.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	now := s.now()
+	var verified bool
+
+	switch method {
+	case "totp":
+		totpRec, err := s.users.GetMFATOTP(ctx, user.ID)
+		if errors.Is(err, constants.ErrNotFound) {
+			return nil, exception.InvalidInput(exception.MsgInvalidInput, nil)
+		}
+		if err != nil {
+			return nil, err
+		}
+		secret, err := mfa.DecryptSecret(s.mfaKey, totpRec.SecretEncrypted)
+		if err != nil {
+			return nil, exception.Internal(err)
+		}
+		if step, ok := mfa.VerifyTOTP(secret, code, now, totpRec.LastUsedStep); ok {
+			if err := s.users.UpdateMFATOTPLastUsedStep(ctx, user.ID, step, now); err != nil {
+				return nil, err
+			}
+			verified = true
+		}
+	case "recovery":
+		if strings.TrimSpace(code) != "" {
+			hash := mfa.HashRecoveryCode(s.secret, code)
+			ok, err := s.users.ConsumeRecoveryCode(ctx, user.ID, hash, now)
+			if err != nil {
+				return nil, err
+			}
+			verified = ok
+		}
+	case "webauthn":
+		if s.webauthn == nil || pending.WebAuthnSessionJSON == "" || strings.TrimSpace(assertionJSON) == "" {
+			return nil, exception.InvalidInput(exception.MsgInvalidInput, nil)
+		}
+		var sessData webauthn.SessionData
+		if err := json.Unmarshal([]byte(pending.WebAuthnSessionJSON), &sessData); err != nil {
+			return nil, exception.Internal(err)
+		}
+		parsed, err := protocol.ParseCredentialRequestResponseBody(strings.NewReader(assertionJSON))
+		if err != nil {
+			return nil, exception.InvalidInput(exception.MsgInvalidInput, nil)
+		}
+		waCreds, err := s.users.ListWebAuthnCredentials(ctx, user.ID)
+		if err != nil {
+			return nil, err
+		}
+		waUser := mfa.WebAuthnUser{
+			ID:          []byte(user.ID),
+			Name:        user.Username,
+			DisplayName: user.DisplayName,
+			Credentials: toAuthWebAuthnCreds(waCreds),
+		}
+		cred, err := s.webauthn.ValidateLogin(waUser, sessData, parsed)
+		if err == nil && cred != nil {
+			if err := s.users.UpdateWebAuthnCredentialUsage(
+				ctx,
+				cred.ID,
+				cred.Authenticator.SignCount,
+				cred.Authenticator.CloneWarning,
+				cred.Flags.BackupState,
+				now,
+			); err != nil {
+				return nil, err
+			}
+			verified = true
+		}
+	default:
+		return nil, exception.InvalidInput(exception.MsgInvalidInput, nil)
+	}
+
+	if !verified {
+		pending.Attempts++
+		if pending.Attempts >= constants.MFAMaxAttempts {
+			_ = s.mfa.DeleteLoginMFA(ctx, challengeID)
+		} else {
+			_ = s.mfa.UpdateLoginMFA(ctx, challengeID, pending, constants.MFAChallengeTTL)
+		}
+		return nil, exception.Unauthenticated(exception.MsgResetCodeInvalid, nil)
+	}
+
+	sess, err := s.openSession(ctx, user, models.ClientMeta{UserAgent: pending.UserAgent, ClientIP: pending.ClientIP})
+	if err != nil {
+		return nil, err
+	}
+	_ = s.mfa.DeleteLoginMFA(ctx, challengeID)
+
+	return sess, nil
+}
+
+func toAuthWebAuthnCreds(creds []models.WebAuthnCredential) []webauthn.Credential {
+	out := make([]webauthn.Credential, len(creds))
+	for i, c := range creds {
+		transports := make([]protocol.AuthenticatorTransport, len(c.Transports))
+		for j, t := range c.Transports {
+			transports[j] = protocol.AuthenticatorTransport(t)
+		}
+		out[i] = webauthn.Credential{
+			ID:              c.CredentialID,
+			PublicKey:       c.PublicKey,
+			AttestationType: c.AttestationType,
+			Transport:       transports,
+			Flags: webauthn.CredentialFlags{
+				BackupEligible: c.BackupEligible,
+				BackupState:    c.BackupState,
+			},
+			Authenticator: webauthn.Authenticator{
+				AAGUID:       c.AAGUID,
+				SignCount:    c.SignCount,
+				CloneWarning: c.CloneWarning,
+			},
+		}
+	}
+	return out
 }

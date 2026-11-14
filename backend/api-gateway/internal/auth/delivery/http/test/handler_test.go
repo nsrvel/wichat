@@ -113,9 +113,11 @@ func testClients(f msUserFakes) *microservices.Clients {
 }
 
 type fakeAuth struct {
-	login        func(context.Context, *userv1.LoginRequest) (*userv1.LoginResponse, error)
-	verifyLogin  func(context.Context, *userv1.VerifyLoginRequest) (*userv1.VerifyLoginResponse, error)
-	googleFinish func(context.Context, *userv1.GoogleFinishRequest) (*userv1.GoogleFinishResponse, error)
+	login              func(context.Context, *userv1.LoginRequest) (*userv1.LoginResponse, error)
+	verifyLogin        func(context.Context, *userv1.VerifyLoginRequest) (*userv1.VerifyLoginResponse, error)
+	verifyLoginMFA     func(context.Context, *userv1.VerifyLoginMFARequest) (*userv1.VerifyLoginMFAResponse, error)
+	beginLoginWebAuthn func(context.Context, *userv1.BeginLoginWebAuthnRequest) (*userv1.BeginLoginWebAuthnResponse, error)
+	googleFinish       func(context.Context, *userv1.GoogleFinishRequest) (*userv1.GoogleFinishResponse, error)
 }
 
 func (f fakeAuth) Setup(context.Context, *userv1.SetupRequest) (*userv1.SetupResponse, error) {
@@ -137,6 +139,20 @@ func (f fakeAuth) VerifyRegister(context.Context, *userv1.VerifyRegisterRequest)
 func (f fakeAuth) VerifyLogin(ctx context.Context, in *userv1.VerifyLoginRequest) (*userv1.VerifyLoginResponse, error) {
 	if f.verifyLogin != nil {
 		return f.verifyLogin(ctx, in)
+	}
+	return nil, status.Error(codes.Unimplemented, "error.internal")
+}
+
+func (f fakeAuth) VerifyLoginMFA(ctx context.Context, in *userv1.VerifyLoginMFARequest) (*userv1.VerifyLoginMFAResponse, error) {
+	if f.verifyLoginMFA != nil {
+		return f.verifyLoginMFA(ctx, in)
+	}
+	return nil, status.Error(codes.Unimplemented, "error.internal")
+}
+
+func (f fakeAuth) BeginLoginWebAuthn(ctx context.Context, in *userv1.BeginLoginWebAuthnRequest) (*userv1.BeginLoginWebAuthnResponse, error) {
+	if f.beginLoginWebAuthn != nil {
+		return f.beginLoginWebAuthn(ctx, in)
 	}
 	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
@@ -291,4 +307,36 @@ func TestGoogleCallbackRejectsStateMismatch(t *testing.T) {
 
 func testLog() logger.Logger {
 	return logger.New(logger.Options{Service: "gateway-test", Env: "test", Level: "error"})
+}
+
+func TestAuthMFAHandlersForwardFields(t *testing.T) {
+	handler := authdelivery.NewHandler(testClients(msUserFakes{Auth: fakeAuth{
+		beginLoginWebAuthn: func(_ context.Context, in *userv1.BeginLoginWebAuthnRequest) (*userv1.BeginLoginWebAuthnResponse, error) {
+			return &userv1.BeginLoginWebAuthnResponse{WebauthnOptionsJson: `{"publicKey":{"challenge":"abc"}}`}, nil
+		},
+		verifyLoginMFA: func(_ context.Context, in *userv1.VerifyLoginMFARequest) (*userv1.VerifyLoginMFAResponse, error) {
+			return &userv1.VerifyLoginMFAResponse{
+				Session: &userv1.Session{
+					AccessToken:  "access-mfa",
+					ExpiresIn:    900,
+					RefreshToken: refreshSecret,
+					User:         &userv1.User{Id: "u1", Email: "ada@example.com", DisplayName: "Ada"},
+				},
+			}, nil
+		},
+	}}), testLog(), false, "http://localhost:8080")
+
+	req1 := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login/mfa/webauthn/begin", strings.NewReader(`{"challenge_id":"mfa-1"}`))
+	rec1 := httptest.NewRecorder()
+	handler.BeginLoginWebAuthn(rec1, req1)
+	if rec1.Code != http.StatusOK || !strings.Contains(rec1.Body.String(), `"webauthn_options"`) {
+		t.Fatalf("begin webauthn: %d %s", rec1.Code, rec1.Body.String())
+	}
+
+	req2 := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login/mfa/verify", strings.NewReader(`{"challenge_id":"mfa-1","method":"totp","code":"123456"}`))
+	rec2 := httptest.NewRecorder()
+	handler.VerifyLoginMFA(rec2, req2)
+	if rec2.Code != http.StatusOK || !strings.Contains(rec2.Body.String(), `"access-mfa"`) {
+		t.Fatalf("verify mfa: %d %s", rec2.Code, rec2.Body.String())
+	}
 }

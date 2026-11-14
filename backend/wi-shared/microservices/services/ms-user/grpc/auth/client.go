@@ -26,6 +26,8 @@ type Client interface {
 	RequestPasswordReset(ctx context.Context, in *userv1.RequestPasswordResetRequest) (*userv1.RequestPasswordResetResponse, error)
 	VerifyPasswordReset(ctx context.Context, in *userv1.VerifyPasswordResetRequest) (*userv1.VerifyPasswordResetResponse, error)
 	CompletePasswordReset(ctx context.Context, in *userv1.CompletePasswordResetRequest) (*userv1.CompletePasswordResetResponse, error)
+	VerifyLoginMFA(ctx context.Context, in *userv1.VerifyLoginMFARequest) (*userv1.VerifyLoginMFAResponse, error)
+	BeginLoginWebAuthn(ctx context.Context, in *userv1.BeginLoginWebAuthnRequest) (*userv1.BeginLoginWebAuthnResponse, error)
 }
 
 type client struct {
@@ -138,5 +140,17 @@ func (c *client) VerifyPasswordReset(ctx context.Context, in *userv1.VerifyPassw
 func (c *client) CompletePasswordReset(ctx context.Context, in *userv1.CompletePasswordResetRequest) (*userv1.CompletePasswordResetResponse, error) {
 	return utils.CallUnaryResult(ctx, c.none, c.log, "auth.AuthService/CompletePasswordReset", func(callCtx context.Context) (*userv1.CompletePasswordResetResponse, error) {
 		return c.stub.CompletePasswordReset(callCtx, in)
+	})
+}
+
+func (c *client) VerifyLoginMFA(ctx context.Context, in *userv1.VerifyLoginMFARequest) (*userv1.VerifyLoginMFAResponse, error) {
+	return utils.CallUnaryResult(ctx, c.none, c.log, "auth.AuthService/VerifyLoginMFA", func(callCtx context.Context) (*userv1.VerifyLoginMFAResponse, error) {
+		return c.stub.VerifyLoginMFA(callCtx, in)
+	})
+}
+
+func (c *client) BeginLoginWebAuthn(ctx context.Context, in *userv1.BeginLoginWebAuthnRequest) (*userv1.BeginLoginWebAuthnResponse, error) {
+	return utils.CallUnaryResult(ctx, c.none, c.log, "auth.AuthService/BeginLoginWebAuthn", func(callCtx context.Context) (*userv1.BeginLoginWebAuthnResponse, error) {
+		return c.stub.BeginLoginWebAuthn(callCtx, in)
 	})
 }

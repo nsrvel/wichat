@@ -16,7 +16,9 @@ type SessionRepository interface {
 	FindSessionByRefreshHash(ctx context.Context, hash []byte, now time.Time) (models.Session, error)
 	TouchSession(ctx context.Context, sessionID, refreshID string, refreshTokenHash []byte, expiresAt, lastUsedAt time.Time) error
 	ListSessionIDsForUser(ctx context.Context, userID string) ([]string, error)
+	ListActiveSessionsForUser(ctx context.Context, userID string, now time.Time) ([]models.Session, error)
 	RevokeSession(ctx context.Context, sessionID string, now time.Time) error
+	RevokeOtherSessionsForUser(ctx context.Context, userID, exceptSessionID string, now time.Time) ([]string, error)
 	RevokeAllSessionsForUser(ctx context.Context, userID string, now time.Time) error
 	DeleteExpired(ctx context.Context, now time.Time) error
 }
@@ -85,6 +87,27 @@ func (r pgSessionRepository) ListSessionIDsForUser(ctx context.Context, userID s
 	return ids, err
 }
 
+func (r pgSessionRepository) ListActiveSessionsForUser(ctx context.Context, userID string, now time.Time) ([]models.Session, error) {
+	var rows []models.SessionRow
+	err := r.db.NewSelect().
+		Model(&rows).
+		Where("user_id = ?", userID).
+		Where("revoked_at IS NULL").
+		Where("expires_at > ?", now).
+		Order("last_used_at DESC").
+		Scan(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]models.Session, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, row.ToModel())
+	}
+
+	return out, nil
+}
+
 func (r pgSessionRepository) RevokeSession(ctx context.Context, sessionID string, now time.Time) error {
 	_, err := r.db.NewUpdate().Model((*models.SessionRow)(nil)).
 		Set("revoked_at = ?", now).
@@ -93,6 +116,19 @@ func (r pgSessionRepository) RevokeSession(ctx context.Context, sessionID string
 		Exec(ctx)
 
 	return err
+}
+
+func (r pgSessionRepository) RevokeOtherSessionsForUser(ctx context.Context, userID, exceptSessionID string, now time.Time) ([]string, error) {
+	var ids []string
+	err := r.db.NewUpdate().Model((*models.SessionRow)(nil)).
+		Set("revoked_at = ?", now).
+		Where("user_id = ?", userID).
+		Where("id <> ?", exceptSessionID).
+		Where("revoked_at IS NULL").
+		Returning("id").
+		Scan(ctx, &ids)
+
+	return ids, err
 }
 
 func (r pgSessionRepository) RevokeAllSessionsForUser(ctx context.Context, userID string, now time.Time) error {

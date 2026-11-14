@@ -21,6 +21,9 @@ const maxBodyBytes = 1 << 20
 // MaxGroupIconBytes is the largest accepted group icon upload.
 const MaxGroupIconBytes = 5 * 1024 * 1024
 
+// MaxUserAvatarBytes is the largest accepted user avatar upload.
+const MaxUserAvatarBytes = 5 * 1024 * 1024
+
 // MaxGroupBannerBytes is the largest accepted group banner upload.
 const MaxGroupBannerBytes = 8 * 1024 * 1024
 
@@ -47,12 +50,15 @@ type LoginBody struct {
 	TurnstileToken string `json:"turnstile_token"`
 }
 
-// AuthChallengeBody is the email OTP step before a session is issued.
+// AuthChallengeBody is the email OTP or MFA step before a session is issued.
 type AuthChallengeBody struct {
-	OTPRequired        bool   `json:"otp_required"`
-	ChallengeID        string `json:"challenge_id"`
-	EmailHint          string `json:"email_hint"`
-	ResendAfterSeconds int32  `json:"resend_after_seconds"`
+	OTPRequired        bool            `json:"otp_required"`
+	MFARequired        bool            `json:"mfa_required,omitempty"`
+	MFAMethods         []string        `json:"mfa_methods,omitempty"`
+	WebAuthnOptions    json.RawMessage `json:"webauthn_options,omitempty"`
+	ChallengeID        string          `json:"challenge_id"`
+	EmailHint          string          `json:"email_hint"`
+	ResendAfterSeconds int32           `json:"resend_after_seconds"`
 }
 
 // VerifyEmailCodeBody is POST /api/v1/auth/register/verify and login/verify.
@@ -105,6 +111,142 @@ type UserBody struct {
 	DisplayName string `json:"display_name"`
 	Username    string `json:"username"`
 	AvatarURL   string `json:"avatar_url"`
+	Pronouns    string `json:"pronouns"`
+	Bio         string `json:"bio"`
+	BannerColor string `json:"banner_color"`
+	CreatedAt   string `json:"created_at"`
+	HasPassword bool   `json:"has_password"`
+}
+
+// UpdateUserProfileBody is PATCH /api/v1/users/me/profile.
+type UpdateUserProfileBody struct {
+	DisplayName string `json:"display_name"`
+	Pronouns    string `json:"pronouns"`
+	Bio         string `json:"bio"`
+	BannerColor string `json:"banner_color"`
+	ClearAvatar bool   `json:"clear_avatar"`
+}
+
+// UpdateUsernameBody is PATCH /api/v1/users/me/username.
+type UpdateUsernameBody struct {
+	Username        string `json:"username"`
+	CurrentPassword string `json:"current_password"`
+}
+
+// RequestEmailChangeBody is POST /api/v1/users/me/email/request.
+type RequestEmailChangeBody struct {
+	Locale string `json:"locale"`
+}
+
+// VerifyEmailChangeBody is POST /api/v1/users/me/email/verify.
+type VerifyEmailChangeBody struct {
+	ChallengeID string `json:"challenge_id"`
+	Code        string `json:"code"`
+}
+
+// VerifyEmailChangeData is the payload returned by POST /api/v1/users/me/email/verify.
+type VerifyEmailChangeData struct {
+	ChangeToken string `json:"change_token"`
+}
+
+// CompleteEmailChangeBody is PATCH /api/v1/users/me/email.
+type CompleteEmailChangeBody struct {
+	ChangeToken     string `json:"change_token"`
+	NewEmail        string `json:"new_email"`
+	CurrentPassword string `json:"current_password"`
+	Reason          string `json:"reason"`
+}
+
+// UpdatePasswordBody is PATCH /api/v1/users/me/password.
+type UpdatePasswordBody struct {
+	CurrentPassword string `json:"current_password"`
+	NewPassword     string `json:"new_password"`
+}
+
+// VerifyLoginMFABody is POST /api/v1/auth/login/mfa/verify.
+type VerifyLoginMFABody struct {
+	ChallengeID string          `json:"challenge_id"`
+	Method      string          `json:"method"`
+	Code        string          `json:"code"`
+	Assertion   json.RawMessage `json:"assertion"`
+}
+
+// BeginLoginWebAuthnBody is POST /api/v1/auth/login/mfa/webauthn/begin.
+type BeginLoginWebAuthnBody struct {
+	ChallengeID string `json:"challenge_id"`
+}
+
+// WebAuthnOptionsData wraps WebAuthn options JSON.
+type WebAuthnOptionsData struct {
+	WebAuthnOptions json.RawMessage `json:"webauthn_options"`
+}
+
+// SecurityKeyBody is a registered WebAuthn security key.
+type SecurityKeyBody struct {
+	ID         string   `json:"id"`
+	Name       string   `json:"name"`
+	CreatedAt  string   `json:"created_at"`
+	LastUsedAt string   `json:"last_used_at,omitempty"`
+	Transports []string `json:"transports"`
+}
+
+// MFAStatusBody is GET /api/v1/users/me/mfa.
+type MFAStatusBody struct {
+	TOTPEnabled            bool              `json:"totp_enabled"`
+	SecurityKeys           []SecurityKeyBody `json:"security_keys"`
+	RecoveryCodesRemaining int32             `json:"recovery_codes_remaining"`
+}
+
+// CurrentPasswordBody is used for password-gated MFA actions.
+type CurrentPasswordBody struct {
+	CurrentPassword string `json:"current_password"`
+}
+
+// TOTPSetupBeginData is POST /api/v1/users/me/mfa/totp/begin.
+type TOTPSetupBeginData struct {
+	SetupToken string `json:"setup_token"`
+	Secret     string `json:"secret"`
+	OtpauthURI string `json:"otpauth_uri"`
+}
+
+// TOTPSetupConfirmBody is POST /api/v1/users/me/mfa/totp/confirm.
+type TOTPSetupConfirmBody struct {
+	SetupToken string `json:"setup_token"`
+	Code       string `json:"code"`
+}
+
+// RecoveryCodesData wraps one-time recovery codes.
+type RecoveryCodesData struct {
+	RecoveryCodes []string `json:"recovery_codes"`
+}
+
+// BeginWebAuthnRegisterBody is POST /api/v1/users/me/mfa/security-keys/begin.
+type BeginWebAuthnRegisterBody struct {
+	CurrentPassword string `json:"current_password"`
+	Name            string `json:"name"`
+}
+
+// BeginWebAuthnRegisterData is returned when beginning security key registration.
+type BeginWebAuthnRegisterData struct {
+	ChallengeID string          `json:"challenge_id"`
+	Options     json.RawMessage `json:"options"`
+}
+
+// FinishWebAuthnRegisterBody is POST /api/v1/users/me/mfa/security-keys/finish.
+type FinishWebAuthnRegisterBody struct {
+	ChallengeID string          `json:"challenge_id"`
+	Credential  json.RawMessage `json:"credential"`
+}
+
+// FinishWebAuthnRegisterData is returned after saving a security key.
+type FinishWebAuthnRegisterData struct {
+	SecurityKey   SecurityKeyBody `json:"security_key"`
+	RecoveryCodes []string        `json:"recovery_codes,omitempty"`
+}
+
+// RenameSecurityKeyBody is PATCH /api/v1/users/me/mfa/security-keys/{id}.
+type RenameSecurityKeyBody struct {
+	Name string `json:"name"`
 }
 
 // OKBody is a minimal success payload.
@@ -390,6 +532,11 @@ func UserFromPB(user *userv1.User) UserBody {
 		DisplayName: user.GetDisplayName(),
 		Username:    user.GetUsername(),
 		AvatarURL:   user.GetAvatarUrl(),
+		Pronouns:    user.GetPronouns(),
+		Bio:         user.GetBio(),
+		BannerColor: user.GetBannerColor(),
+		CreatedAt:   user.GetCreatedAt(),
+		HasPassword: user.GetHasPassword(),
 	}
 }
 
@@ -399,22 +546,50 @@ func ChallengeFromPB(ch *userv1.AuthChallenge) AuthChallengeBody {
 		return AuthChallengeBody{}
 	}
 
+	var waOpts json.RawMessage
+	if raw := strings.TrimSpace(ch.GetWebauthnOptionsJson()); raw != "" {
+		waOpts = json.RawMessage(raw)
+	}
+
 	return AuthChallengeBody{
 		OTPRequired:        ch.GetOtpRequired(),
+		MFARequired:        ch.GetMfaRequired(),
+		MFAMethods:         ch.GetMfaMethods(),
+		WebAuthnOptions:    waOpts,
 		ChallengeID:        ch.GetChallengeId(),
 		EmailHint:          ch.GetEmailHint(),
 		ResendAfterSeconds: ch.GetResendCooldownSeconds(),
 	}
 }
 
-// WriteChallenge returns the email OTP step without setting a session cookie.
+// SecurityKeyFromPB maps a SecurityKey proto to JSON body.
+func SecurityKeyFromPB(k *userv1.SecurityKey) SecurityKeyBody {
+	if k == nil {
+		return SecurityKeyBody{}
+	}
+	transports := k.GetTransports()
+	if transports == nil {
+		transports = []string{}
+	}
+	return SecurityKeyBody{
+		ID:         k.GetId(),
+		Name:       k.GetName(),
+		CreatedAt:  k.GetCreatedAt(),
+		LastUsedAt: k.GetLastUsedAt(),
+		Transports: transports,
+	}
+}
+
+// WriteChallenge returns the email OTP or MFA step without setting a session cookie.
 func WriteChallenge(w http.ResponseWriter, ch *userv1.AuthChallenge) {
 	body := ChallengeFromPB(ch)
 	if body.ChallengeID == "" {
 		responsehttp.WriteError(w, nil, exception.Internal(nil))
 		return
 	}
-	body.OTPRequired = true
+	if !body.MFARequired {
+		body.OTPRequired = true
+	}
 	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(body))
 }
 

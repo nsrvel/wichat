@@ -39,9 +39,30 @@ func TestMappersNilAndValues(t *testing.T) {
 		t.Fatalf("%+v", ch)
 	}
 
-	user := models.PublicUser{ID: "u1", Email: "a@x.com", DisplayName: "Ada", Username: "ada"}
-	if authPb.User(user).Username != "ada" {
-		t.Fatal("user")
+	createdAt := time.Date(2026, 2, 3, 4, 5, 6, 0, time.UTC)
+	user := models.PublicUser{
+		ID:          "u1",
+		Email:       "a@x.com",
+		DisplayName: "Ada",
+		Username:    "ada",
+		AvatarURL:   "https://x/a.png",
+		Pronouns:    "she/her",
+		Bio:         "Mathematician",
+		BannerColor: "#336699",
+		CreatedAt:   createdAt,
+		HasPassword: true,
+	}
+	pbUser := authPb.User(user)
+	if pbUser.Username != "ada" ||
+		pbUser.Pronouns != "she/her" ||
+		pbUser.Bio != "Mathematician" ||
+		pbUser.BannerColor != "#336699" ||
+		pbUser.CreatedAt != createdAt.Format(time.RFC3339Nano) ||
+		!pbUser.HasPassword {
+		t.Fatalf("unexpected user proto: %+v", pbUser)
+	}
+	if zeroUser := authPb.User(models.PublicUser{ID: "u2"}); zeroUser.CreatedAt != "" {
+		t.Fatalf("expected empty created_at for zero time, got %q", zeroUser.CreatedAt)
 	}
 
 	group := models.PublicGroup{
@@ -113,5 +134,22 @@ func TestMappersNilAndValues(t *testing.T) {
 	iosMeta := authPb.Meta("Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Safari/604.1", "203.0.113.5")
 	if iosMeta.Platform != "mobile" || iosMeta.DeviceLabel != "Safari · iOS" || iosMeta.LocationLabel != "" {
 		t.Fatalf("unexpected ios meta: %+v", iosMeta)
+	}
+
+	_ = authPb.Meta("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0", "10.0.0.1")
+	_ = authPb.Meta("Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Edg/120.0.0.0", "")
+	_ = authPb.Meta("WiChat/1.0 Electron/28.0.0", "")
+	_ = authPb.Meta("", "")
+
+	lastUsed := now
+	keys := authPb.SecurityKeys([]models.WebAuthnCredential{{
+		ID:         "sk-1",
+		Name:       "YubiKey",
+		Transports: []string{"usb"},
+		CreatedAt:  now,
+		LastUsedAt: &lastUsed,
+	}})
+	if len(keys) != 1 || keys[0].GetId() != "sk-1" || keys[0].GetLastUsedAt() == "" {
+		t.Fatalf("unexpected SecurityKeys: %+v", keys)
 	}
 }
