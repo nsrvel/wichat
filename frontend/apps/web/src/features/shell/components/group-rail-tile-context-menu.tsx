@@ -11,7 +11,7 @@ import {
 import {
 	menuPopupClass,
 	menuPositionerClass,
-} from "@/features/shell/components/group-rail-menu/menu-chrome";
+} from "@/lib/menu-chrome";
 import { LeaveGroupConfirmDialog } from "@/features/shell/components/group-rail-menu/leave-group-confirm-dialog";
 import { useGroupMenuController } from "@/features/shell/components/group-rail-menu/use-group-menu-controller";
 import { WICHAT_CONTEXT_MENU_ATTR } from "@/lib/context-menu-chrome";

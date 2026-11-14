@@ -1,8 +1,8 @@
 "use client";
 
 import { useGroupMenuKit } from "@/features/shell/components/group-rail-menu/group-menu-kit";
-import { MenuRadioControl } from "@/features/shell/components/group-rail-menu/menu-radio-control";
-import { menuRadioItemClass } from "@/features/shell/components/group-rail-menu/menu-chrome";
+import { MenuRadioControl } from "@/components/ui/menu-radio-control";
+import { menuRadioItemClass } from "@/lib/menu-chrome";
 import { cn } from "@/lib/utils";
 
 type GroupRailMenuRadioItemProps = {

@@ -8,7 +8,7 @@ import {
 	groupBannerSwatchSelectedRingClass,
 	groupBannerSwatchSurfaceClass,
 	type GroupBannerColorId,
-} from "@/features/group/lib/group-banner-presets";
+} from "@/lib/group-banner-presets";
 import { useMounted } from "@/hooks/use-mounted";
 import { cn } from "@/lib/utils";
 

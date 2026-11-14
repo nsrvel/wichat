@@ -16,33 +16,21 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { GroupSettingsFormFooter } from "@/features/group-settings/components/group-settings-form-footer";
-import { GroupSettingsToggle } from "@/features/group-settings/components/group-settings-toggle";
-import { authFieldLabelClass, authInputClass } from "@/features/auth/components/auth-shell";
-import { GroupBannerField } from "@/features/group/components/group-banner-field";
-import { GroupIconUpload } from "@/features/group/components/group-icon-upload";
-import { GroupProfileCardPreview } from "@/features/group/components/group-profile-card-preview";
+import { SettingsToggle } from "@/components/ui/settings-toggle";
+import { authFieldLabelClass, authInputClass } from "@/lib/form-field-styles";
+import { GroupBannerField } from "@/components/group/group-banner-field";
+import { GroupIconUpload } from "@/components/group/group-icon-upload";
+import { GroupProfileCardPreview } from "@/components/group/group-profile-card-preview";
 import {
 	GROUP_BANNER_COLOR_DEFAULT,
 	GROUP_BANNER_IMAGE_ID,
 	isGroupBannerImageId,
 	normalizeGroupBannerColor,
 	type GroupBannerColorId,
-} from "@/features/group/lib/group-banner-presets";
+} from "@/lib/group-banner-presets";
 import { useGroupSettings } from "@/features/group-settings/group-settings-provider";
-import {
-	groupSettingsFormFooterFloatAlignClass,
-	groupSettingsFormFooterFloatColumnClass,
-	groupSettingsFormFooterFloatShellClass,
-	groupSettingsMainInnerClass,
-	groupSettingsMainScrollClass,
-	groupSettingsMainScrollDirtyPadClass,
-	groupSettingsProfileSectionDividerLineClass,
-	groupSettingsProfileSectionDividerWrapClass,
-	groupSettingsProfileSectionGapClass,
-	groupSettingsSectionHeaderClass,
-	groupSettingsSectionLeadClass,
-	groupSettingsSectionTitleClass,
-} from "@/features/group-settings/lib/group-settings-chrome";
+import { groupSettingsFormFooterFloatAlignClass, groupSettingsFormFooterFloatColumnClass, groupSettingsFormFooterFloatShellClass, groupSettingsMainInnerClass, groupSettingsMainScrollClass, groupSettingsMainScrollDirtyPadClass, groupSettingsSectionHeaderClass, groupSettingsSectionLeadClass, groupSettingsSectionTitleClass } from "@/features/group-settings/lib/group-settings-chrome";
+import { settingsSectionDividerLineClass, settingsSectionDividerWrapClass, settingsSectionGapClass } from "@/lib/settings-chrome";
 import {
 	groupSettingsProfileSchema,
 	type GroupSettingsProfileFormValues,
@@ -231,7 +219,7 @@ function GroupSettingsProfileForm({ target }: GroupSettingsProfileSectionProps) 
 								onClearExistingLogo={() => setExistingLogoCleared(true)}
 							/>
 
-							<div className={groupSettingsProfileSectionGapClass}>
+							<div className={settingsSectionGapClass}>
 								<TextField
 									control={form.control}
 									name="name"
@@ -244,8 +232,8 @@ function GroupSettingsProfileForm({ target }: GroupSettingsProfileSectionProps) 
 								/>
 							</div>
 
-							<div className={groupSettingsProfileSectionDividerWrapClass} role="presentation">
-								<div className={groupSettingsProfileSectionDividerLineClass} />
+							<div className={settingsSectionDividerWrapClass} role="presentation">
+								<div className={settingsSectionDividerLineClass} />
 							</div>
 
 							<GroupBannerField
@@ -261,8 +249,8 @@ function GroupSettingsProfileForm({ target }: GroupSettingsProfileSectionProps) 
 								onClearExistingImage={() => setExistingBannerCleared(true)}
 							/>
 
-							<div className={groupSettingsProfileSectionDividerWrapClass} role="presentation">
-								<div className={groupSettingsProfileSectionDividerLineClass} />
+							<div className={settingsSectionDividerWrapClass} role="presentation">
+								<div className={settingsSectionDividerLineClass} />
 							</div>
 
 							<FormField
@@ -288,8 +276,8 @@ function GroupSettingsProfileForm({ target }: GroupSettingsProfileSectionProps) 
 								)}
 							/>
 
-							<div className={groupSettingsProfileSectionDividerWrapClass} role="presentation">
-								<div className={groupSettingsProfileSectionDividerLineClass} />
+							<div className={settingsSectionDividerWrapClass} role="presentation">
+								<div className={settingsSectionDividerLineClass} />
 							</div>
 
 							<FormField
@@ -308,7 +296,7 @@ function GroupSettingsProfileForm({ target }: GroupSettingsProfileSectionProps) 
 											</p>
 										</div>
 										<FormControl className="shrink-0">
-											<GroupSettingsToggle
+											<SettingsToggle
 												checked={field.value}
 												onCheckedChange={field.onChange}
 												aria-label={t("group_settings.profile.is_private_label")}

@@ -8,7 +8,7 @@ import {
 	workspaceHeaderIconClass,
 } from "@/components/layout/workspace-header-icon-button";
 import { CustomSelect } from "@/components/ui/custom-select";
-import { authSelectGhostTriggerClass } from "@/features/auth/components/auth-shell";
+import { authSelectGhostTriggerClass } from "@/lib/form-field-styles";
 import { useMounted } from "@/hooks/use-mounted";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";

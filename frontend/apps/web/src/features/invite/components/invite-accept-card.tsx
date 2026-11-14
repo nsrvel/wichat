@@ -5,9 +5,9 @@ import Image from "next/image";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { authProductHeadlineClass, authSubmitClass } from "@/features/auth/components/auth-shell";
-import { groupInitials } from "@/features/shell/lib/group-initials";
-import { resolveGroupLogoUrl } from "@/features/shell/lib/group-logo-url";
+import { authProductHeadlineClass, authSubmitClass } from "@/lib/form-field-styles";
+import { groupInitials } from "@/lib/group-initials";
+import { resolveGroupLogoUrl } from "@/lib/group-logo-url";
 import { cn } from "@/lib/utils";
 
 type InviteAcceptCardProps = {

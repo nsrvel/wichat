@@ -8,13 +8,7 @@ import { GroupSettingsDefaultRoleCard } from "@/features/group-settings/componen
 import { GroupSettingsRoleDetailSection } from "@/features/group-settings/components/roles/group-settings-role-detail-section";
 import { GroupSettingsRolesTable } from "@/features/group-settings/components/roles/group-settings-roles-table";
 import { GroupSettingsRolesToolbar } from "@/features/group-settings/components/roles/group-settings-roles-toolbar";
-import {
-	groupSettingsMainInnerClass,
-	groupSettingsMainScrollClass,
-	groupSettingsSectionHeaderClass,
-	groupSettingsSectionLeadClass,
-	groupSettingsSectionTitleClass,
-} from "@/features/group-settings/lib/group-settings-chrome";
+import { groupSettingsMainInnerClass, groupSettingsMainScrollClass, groupSettingsSectionHeaderClass, groupSettingsSectionLeadClass, groupSettingsSectionTitleClass } from "@/features/group-settings/lib/group-settings-chrome";
 import type { GroupSettingsTarget } from "@/features/group-settings/lib/group-settings-target";
 import {
 	builtinRoleRows,

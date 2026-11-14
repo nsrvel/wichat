@@ -10,14 +10,7 @@ import { myGroupsQueryOpts } from "@/services/group/group.query";
 import { GroupSettingsCloseButton } from "@/features/group-settings/components/group-settings-close-button";
 import { GroupSettingsMainSection } from "@/features/group-settings/components/group-settings-main-section";
 import { GroupSettingsSidebar } from "@/features/group-settings/components/group-settings-sidebar";
-import {
-	groupSettingsBodyOuterClass,
-	groupSettingsCanvasClass,
-	groupSettingsMainPaneClass,
-	groupSettingsShellClass,
-	groupSettingsSidebarPaneClass,
-	groupSettingsSplitBackdropClass,
-} from "@/features/group-settings/lib/group-settings-chrome";
+import { groupSettingsBodyOuterClass, groupSettingsCanvasClass, groupSettingsMainPaneClass, groupSettingsShellClass, groupSettingsSidebarPaneClass, groupSettingsSplitBackdropClass } from "@/features/group-settings/lib/group-settings-chrome";
 import type {
 	GroupSettingsSection,
 	GroupSettingsTarget,

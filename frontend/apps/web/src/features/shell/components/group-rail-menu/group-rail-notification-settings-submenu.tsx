@@ -13,7 +13,7 @@ import {
 	menuPositionerClass,
 	menuSeparatorClass,
 	submenuTriggerClass,
-} from "@/features/shell/components/group-rail-menu/menu-chrome";
+} from "@/lib/menu-chrome";
 
 type NotificationLevel = "all" | "mentions" | "nothing";
 

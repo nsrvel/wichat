@@ -3,18 +3,18 @@
 import type { ButtonHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
-type GroupSettingsToggleProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "type" | "role"> & {
+type SettingsToggleProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "type" | "role"> & {
 	checked: boolean;
 	onCheckedChange: (checked: boolean) => void;
 };
 
-export function GroupSettingsToggle({
+export function SettingsToggle({
 	checked,
 	onCheckedChange,
 	className,
 	disabled,
 	...props
-}: GroupSettingsToggleProps) {
+}: SettingsToggleProps) {
 	return (
 		<button
 			type="button"

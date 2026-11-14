@@ -7,7 +7,7 @@ import { z } from "zod";
 import { OtpField } from "@/components/form/otp-field";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
-import { authFormClass, authSubmitClass } from "@/features/auth/components/auth-shell";
+import { authFormClass, authSubmitClass } from "@/lib/form-field-styles";
 import { translateError } from "@/integrations/i18n/translate-error";
 import { ForgotPasswordResendCode } from "./forgot-password-resend-code";
 

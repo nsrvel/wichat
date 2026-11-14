@@ -2,13 +2,8 @@
 
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import {
-	groupSettingsFormFooterBarClass,
-	groupSettingsFormFooterFloatAlignClass,
-	groupSettingsFormFooterFloatColumnClass,
-	groupSettingsFormFooterFloatShellClass,
-	groupSettingsMainInnerClass,
-} from "@/features/group-settings/lib/group-settings-chrome";
+import { groupSettingsFormFooterFloatAlignClass, groupSettingsFormFooterFloatColumnClass, groupSettingsFormFooterFloatShellClass, groupSettingsMainInnerClass } from "@/features/group-settings/lib/group-settings-chrome";
+import { settingsFormFooterBarClass } from "@/lib/settings-chrome";
 import { cn } from "@/lib/utils";
 
 type GroupSettingsMembersSelectionFooterProps = {
@@ -31,7 +26,7 @@ export function GroupSettingsMembersSelectionFooter({
 	}
 
 	const bar = (
-		<div className={groupSettingsFormFooterBarClass}>
+		<div className={settingsFormFooterBarClass}>
 			<p
 				className="flex min-w-0 flex-1 items-center text-sm font-medium text-foreground"
 				role="status"

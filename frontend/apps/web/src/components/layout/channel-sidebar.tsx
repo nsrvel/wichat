@@ -11,7 +11,7 @@ import {
 	sidebarNestedListClass,
 } from "@/components/layout/channel-sidebar/sidebar-nav-styles";
 import { useShellChrome } from "@/components/layout/shell-chrome-context";
-import { ChannelListIcon } from "@/features/channel/components/channel-list-icon";
+import { ChannelListIcon } from "@/components/layout/channel-list-icon";
 import {
 	channelNavBellIcon,
 	channelNavHashIcon,

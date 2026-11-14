@@ -5,12 +5,7 @@ import { EllipsisVertical } from "lucide-react";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { GroupSettingsMembersPagination } from "@/features/group-settings/components/members/group-settings-members-pagination";
-import {
-	groupSettingsDataTableBodyClass,
-	groupSettingsDataTableHeadRowClass,
-	groupSettingsDataTableRowClass,
-	groupSettingsDataTableShellClass,
-} from "@/features/group-settings/lib/group-settings-chrome";
+import { groupSettingsDataTableBodyClass, groupSettingsDataTableHeadRowClass, groupSettingsDataTableRowClass, groupSettingsDataTableShellClass } from "@/features/group-settings/lib/group-settings-chrome";
 import {
 	dataTableColumnPercentStyle,
 	dataTableEdgeCellClass,

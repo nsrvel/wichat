@@ -3,10 +3,7 @@
 import { GroupSettingsPlaceholderSection } from "@/features/group-settings/components/group-settings-placeholder-section";
 import { GroupSettingsProfileSection } from "@/features/group-settings/components/group-settings-profile-section";
 import { GroupSettingsRolesSection } from "@/features/group-settings/components/roles/group-settings-roles-section";
-import {
-	groupSettingsMainInnerClass,
-	groupSettingsMainScrollClass,
-} from "@/features/group-settings/lib/group-settings-chrome";
+import { groupSettingsMainInnerClass, groupSettingsMainScrollClass } from "@/features/group-settings/lib/group-settings-chrome";
 import { groupSettingsNavGroups } from "@/features/group-settings/lib/group-settings-nav";
 import type {
 	GroupSettingsSection,

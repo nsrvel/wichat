@@ -10,7 +10,7 @@ import {
 	menuPopupClass,
 	menuPositionerClass,
 	submenuTriggerClass,
-} from "@/features/shell/components/group-rail-menu/menu-chrome";
+} from "@/lib/menu-chrome";
 
 type GroupRailStubSubmenuProps = {
 	label: string;

@@ -4,10 +4,7 @@ import type { FieldErrors } from "react-hook-form";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import {
-	groupSettingsFormFooterBarClass,
-	groupSettingsFormFooterBarNudgeClass,
-} from "@/features/group-settings/lib/group-settings-chrome";
+import { settingsFormFooterBarClass, settingsFormFooterBarNudgeClass } from "@/lib/settings-chrome";
 import type { GroupSettingsProfileFormValues } from "@/features/group-settings/lib/group-settings-profile-schema";
 import { useGroupSettingsUnsaved } from "@/features/group-settings/lib/group-settings-unsaved-guard";
 import { translateFormFieldMessage } from "@/integrations/i18n/translate-form-field-message";
@@ -77,9 +74,9 @@ export function GroupSettingsFormFooter({
 					: "group-settings-footer-idle"
 			}
 			className={cn(
-				groupSettingsFormFooterBarClass,
+				settingsFormFooterBarClass,
 				"motion-safe:transition-[box-shadow,border-color,background-color] motion-safe:duration-300",
-				showUnsavedNudge && groupSettingsFormFooterBarNudgeClass,
+				showUnsavedNudge && settingsFormFooterBarNudgeClass,
 				showUnsavedNudge && "group-settings-footer-nudge",
 			)}
 		>

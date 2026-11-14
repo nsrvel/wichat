@@ -1,10 +1,7 @@
 "use client";
 
 import { useTranslation } from "react-i18next";
-import {
-	groupSettingsSectionLeadClass,
-	groupSettingsSectionTitleClass,
-} from "@/features/group-settings/lib/group-settings-chrome";
+import { groupSettingsSectionLeadClass, groupSettingsSectionTitleClass } from "@/features/group-settings/lib/group-settings-chrome";
 
 type GroupSettingsPlaceholderSectionProps = {
 	titleKey: string;

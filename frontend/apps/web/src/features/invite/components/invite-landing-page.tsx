@@ -5,11 +5,8 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import {
-	AuthShell,
-	authPageBackdropClass,
-	groupOnboardingCardShellClass,
-} from "@/features/auth/components/auth-shell";
+import { AuthShell } from "@/features/auth/components/auth-shell";
+import { authPageBackdropClass, groupOnboardingCardShellClass } from "@/lib/form-field-styles";
 import { InviteAcceptCard } from "@/features/invite/components/invite-accept-card";
 import { InviteAcceptCardSkeleton } from "@/features/invite/components/invite-accept-card-skeleton";
 import { translateError } from "@/integrations/i18n/translate-error";

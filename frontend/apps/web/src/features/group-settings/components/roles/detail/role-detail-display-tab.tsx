@@ -8,8 +8,8 @@ import { toast } from "sonner";
 import { FieldLabelContent } from "@/components/form/field-label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { authFieldLabelClass, authInputClass } from "@/features/auth/components/auth-shell";
-import { GroupSettingsToggle } from "@/features/group-settings/components/group-settings-toggle";
+import { authFieldLabelClass, authInputClass } from "@/lib/form-field-styles";
+import { SettingsToggle } from "@/components/ui/settings-toggle";
 import {
 	DEFAULT_ROLE_COLOR,
 	ROLE_COLOR_PRESETS,
@@ -324,7 +324,7 @@ export function RoleDetailDisplayTab({ role, roleLabel, canManage }: RoleDetailD
 							<span className="text-sm font-medium text-foreground">
 								{t("group_settings.roles.detail.hoist_label")}
 							</span>
-							<GroupSettingsToggle
+							<SettingsToggle
 								checked={hoist}
 								disabled={!editable}
 								onCheckedChange={setHoist}
@@ -336,7 +336,7 @@ export function RoleDetailDisplayTab({ role, roleLabel, canManage }: RoleDetailD
 								<span className="text-sm font-medium text-foreground">
 									{t("group_settings.roles.detail.mentionable_label")}
 								</span>
-								<GroupSettingsToggle
+								<SettingsToggle
 									checked={mentionable}
 									disabled={!editable}
 									onCheckedChange={setMentionable}

@@ -23,7 +23,7 @@ import {
 	type SidebarListIconVariant,
 } from "@/components/layout/sidebar-list-icon";
 import { cn } from "@/lib/utils";
-import { ChannelListIcon } from "@/features/channel/components/channel-list-icon";
+import { ChannelListIcon } from "@/components/layout/channel-list-icon";
 
 export const channelSidebarGlyphClass = channelListGlyphIconClass;
 const channelHeaderGlyphClass = "size-4";

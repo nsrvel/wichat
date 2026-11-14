@@ -12,7 +12,7 @@ import {
 	menuDestructiveItemClass,
 	menuItemClass,
 	menuSeparatorClass,
-} from "@/features/shell/components/group-rail-menu/menu-chrome";
+} from "@/lib/menu-chrome";
 import type { useGroupMenuController } from "@/features/shell/components/group-rail-menu/use-group-menu-controller";
 
 type GroupMenuContentProps = {

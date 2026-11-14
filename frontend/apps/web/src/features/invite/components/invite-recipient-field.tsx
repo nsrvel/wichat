@@ -6,13 +6,13 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { UserAvatar } from "@/components/ui/user-avatar";
-import { authInputClass } from "@/features/auth/components/auth-shell";
+import { authInputClass } from "@/lib/form-field-styles";
 import {
 	type RecipientChip,
 	type UserRecipientChip,
 	parseEmailChip,
 } from "@/features/invite/lib/recipient-chip";
-import { userInitials } from "@/features/invite/lib/user-initials";
+import { userInitials } from "@/lib/user-initials";
 import { UserSearchHitSchema } from "@wichat/contracts";
 import { cn } from "@/lib/utils";
 import type { z } from "zod";

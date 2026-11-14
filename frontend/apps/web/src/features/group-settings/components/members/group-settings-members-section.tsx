@@ -8,16 +8,7 @@ import { toast } from "sonner";
 import { GroupSettingsMembersSelectionFooter } from "@/features/group-settings/components/members/group-settings-members-selection-footer";
 import { GroupSettingsMembersTable } from "@/features/group-settings/components/members/group-settings-members-table";
 import { GroupSettingsMembersToolbar } from "@/features/group-settings/components/members/group-settings-members-toolbar";
-import {
-	groupSettingsMainInnerClass,
-	groupSettingsMainScrollClass,
-	groupSettingsMainScrollDirtyPadClass,
-	groupSettingsMembersWorkspaceInnerClass,
-	groupSettingsMembersWorkspaceScrollClass,
-	groupSettingsSectionHeaderClass,
-	groupSettingsSectionLeadClass,
-	groupSettingsSectionTitleClass,
-} from "@/features/group-settings/lib/group-settings-chrome";
+import { groupSettingsMainInnerClass, groupSettingsMainScrollClass, groupSettingsMainScrollDirtyPadClass, groupSettingsMembersWorkspaceInnerClass, groupSettingsMembersWorkspaceScrollClass, groupSettingsSectionHeaderClass, groupSettingsSectionLeadClass, groupSettingsSectionTitleClass } from "@/features/group-settings/lib/group-settings-chrome";
 import type { GroupSettingsTarget } from "@/features/group-settings/lib/group-settings-target";
 import {
 	applyMemberView,

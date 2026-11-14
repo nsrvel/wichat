@@ -6,7 +6,7 @@ import { useGroupMenuKit } from "@/features/shell/components/group-rail-menu/gro
 import {
 	menuCheckboxBoxClass,
 	menuCheckboxItemClass,
-} from "@/features/shell/components/group-rail-menu/menu-chrome";
+} from "@/lib/menu-chrome";
 import { cn } from "@/lib/utils";
 
 type GroupRailMenuCheckboxItemProps = {

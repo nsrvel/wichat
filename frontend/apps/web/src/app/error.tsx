@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { StatusScreen } from "@/features/status/status-screen";
+import { StatusScreen } from "@/components/status/status-screen";
 
 export default function AppErrorPage({
 	error,

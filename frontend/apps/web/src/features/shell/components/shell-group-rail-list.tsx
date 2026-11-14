@@ -23,8 +23,8 @@ import { IconRailTileButton } from "@/components/layout/shell-rail/icon-rail-til
 import { IconRailWorkspaceRow } from "@/components/layout/shell-rail/icon-rail-row";
 import { SHELL_RAIL_TILE_PX } from "@/components/layout/shell-rail/shell-rail-metrics";
 import { GroupRailTileContextMenu } from "@/features/shell/components/group-rail-tile-context-menu";
-import { groupInitials } from "@/features/shell/lib/group-initials";
-import { resolveGroupLogoUrl } from "@/features/shell/lib/group-logo-url";
+import { groupInitials } from "@/lib/group-initials";
+import { resolveGroupLogoUrl } from "@/lib/group-logo-url";
 import { useReorderMyGroupsMutation } from "@/services/group/group.mutation";
 import type { MyGroup } from "@/services/group/group.service";
 

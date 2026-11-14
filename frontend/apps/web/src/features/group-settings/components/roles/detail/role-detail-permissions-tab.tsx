@@ -4,8 +4,8 @@ import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
-import { authInputClass } from "@/features/auth/components/auth-shell";
-import { GroupSettingsToggle } from "@/features/group-settings/components/group-settings-toggle";
+import { authInputClass } from "@/lib/form-field-styles";
+import { SettingsToggle } from "@/components/ui/settings-toggle";
 import {
 	defaultPermissionsForRole,
 	ROLE_PERMISSION_GROUPS,
@@ -111,7 +111,7 @@ export function RoleDetailPermissionsTab({ canManage }: RoleDetailPermissionsTab
 													{t(item.descriptionKey)}
 												</p>
 											</div>
-											<GroupSettingsToggle
+											<SettingsToggle
 												checked={checked}
 												disabled={!editable}
 												onCheckedChange={(next) =>

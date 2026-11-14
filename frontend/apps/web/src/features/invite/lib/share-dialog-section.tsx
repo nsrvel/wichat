@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { authFieldLabelClass } from "@/features/auth/components/auth-shell";
+import { authFieldLabelClass } from "@/lib/form-field-styles";
 import { cn } from "@/lib/utils";
 
 export function ShareDialogSection({

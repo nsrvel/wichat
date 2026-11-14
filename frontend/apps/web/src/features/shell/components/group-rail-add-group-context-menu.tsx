@@ -7,7 +7,7 @@ import {
 	menuItemClass,
 	menuPopupClass,
 	menuPositionerClass,
-} from "@/features/shell/components/group-rail-menu/menu-chrome";
+} from "@/lib/menu-chrome";
 import { WICHAT_CONTEXT_MENU_ATTR } from "@/lib/context-menu-chrome";
 
 type GroupRailAddGroupContextMenuProps = {

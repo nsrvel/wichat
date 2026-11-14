@@ -7,12 +7,7 @@ import { z } from "zod";
 import { TextField } from "@/components/form/text-field";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
-import {
-	authFieldLabelClass,
-	authFormClass,
-	authInputClass,
-	authSubmitClass,
-} from "@/features/auth/components/auth-shell";
+import { authFieldLabelClass, authFormClass, authInputClass, authSubmitClass } from "@/lib/form-field-styles";
 import { translateError } from "@/integrations/i18n/translate-error";
 import { ForgotPasswordBackToLogin } from "./forgot-password-back-to-login";
 

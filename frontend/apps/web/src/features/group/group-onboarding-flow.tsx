@@ -20,15 +20,8 @@ import {
 	WiChatDialogHeader,
 	WiChatDialogStepCarousel,
 } from "@/components/ui/wichat-dialog";
-import {
-	authFieldLabelClass,
-	authFormClass,
-	authInputClass,
-	authSubmitClass,
-	authSubmitGhostClass,
-	groupOnboardingCardShellClass,
-} from "@/features/auth/components/auth-shell";
-import { GroupIconUpload } from "@/features/group/components/group-icon-upload";
+import { authFieldLabelClass, authFormClass, authInputClass, authSubmitClass, authSubmitGhostClass, groupOnboardingCardShellClass } from "@/lib/form-field-styles";
+import { GroupIconUpload } from "@/components/group/group-icon-upload";
 import { translateError } from "@/integrations/i18n/translate-error";
 import { groupNameSchema, type Group } from "@wichat/contracts";
 import { cn } from "@/lib/utils";

@@ -7,7 +7,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import {
 	StatusIllustration,
 	type StatusScreenVariant,
-} from "@/features/status/status-illustrations";
+} from "@/components/status/status-illustrations";
 import { cn } from "@/lib/utils";
 
 type StatusScreenProps = {

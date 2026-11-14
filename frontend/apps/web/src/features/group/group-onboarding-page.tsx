@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { authBrandWordmarkClass } from "@/features/auth/components/auth-shell";
+import { authBrandWordmarkClass } from "@/lib/form-field-styles";
 import { GroupOnboardingFlow } from "@/features/group/group-onboarding-flow";
 import { useLogoutMutation } from "@/services/auth/auth.mutation";
 

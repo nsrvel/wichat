@@ -8,9 +8,9 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { UserAvatar } from "@/components/ui/user-avatar";
-import { authInputClass } from "@/features/auth/components/auth-shell";
+import { authInputClass } from "@/lib/form-field-styles";
 import type { GroupSettingsRoleRow } from "@/features/group-settings/lib/group-settings-roles-view";
-import { userInitials } from "@/features/invite/lib/user-initials";
+import { userInitials } from "@/lib/user-initials";
 import { cn } from "@/lib/utils";
 
 type RoleDetailMembersTabProps = {

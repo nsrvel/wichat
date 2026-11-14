@@ -9,7 +9,7 @@ import {
 	menuPopupClass,
 	menuPositionerClass,
 	submenuTriggerClass,
-} from "@/features/shell/components/group-rail-menu/menu-chrome";
+} from "@/lib/menu-chrome";
 import { railOrderMove } from "@/features/shell/lib/rail-order";
 import { useReorderMyGroupsMutation } from "@/services/group/group.mutation";
 

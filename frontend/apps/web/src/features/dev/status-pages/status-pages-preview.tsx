@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import type { StatusScreenVariant } from "@/features/status/status-illustrations";
-import { StatusScreen } from "@/features/status/status-screen";
+import type { StatusScreenVariant } from "@/components/status/status-illustrations";
+import { StatusScreen } from "@/components/status/status-screen";
 import { cn } from "@/lib/utils";
 
 const VARIANTS: { id: StatusScreenVariant; label: string }[] = [

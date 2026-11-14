@@ -7,11 +7,11 @@ import type { z } from "zod";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/ui/user-avatar";
-import { userInitials } from "@/features/invite/lib/user-initials";
+import { userInitials } from "@/lib/user-initials";
 import {
 	menuDropdownTriggerClass,
 	menuDropdownTriggerLabelClass,
-} from "@/features/shell/components/group-rail-menu/menu-chrome";
+} from "@/lib/menu-chrome";
 import { cn } from "@/lib/utils";
 
 type Member = z.infer<typeof GroupMemberSchema>;

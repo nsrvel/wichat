@@ -19,7 +19,7 @@ import {
 	menuDestructiveItemClass,
 	menuItemClass,
 	menuSeparatorClass,
-} from "@/features/shell/components/group-rail-menu/menu-chrome";
+} from "@/lib/menu-chrome";
 import { useCreateCategoryDialog } from "@/features/channel/create-category-dialog-provider";
 import { useCreateChannelDialog } from "@/features/channel/create-channel-dialog-provider";
 import { useGroupSettings } from "@/features/group-settings/group-settings-provider";

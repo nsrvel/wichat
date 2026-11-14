@@ -26,12 +26,6 @@ export const groupSettingsSidebarPaneClass =
 export const groupSettingsMainPaneClass =
 	"relative flex min-h-0 min-w-0 flex-1 flex-col bg-background lg:col-span-2 lg:col-start-3 lg:h-full lg:overflow-hidden";
 
-export const groupSettingsFormFooterBarClass =
-	"flex min-h-12 items-center gap-4 rounded-xl border border-border bg-card px-4 py-2 sm:min-h-[3.25rem] sm:px-5";
-
-export const groupSettingsFormFooterBarNudgeClass =
-	"ring-2 ring-destructive/45 ring-offset-2 ring-offset-background";
-
 export const groupSettingsFormFooterFloatShellClass =
 	"pointer-events-none fixed inset-x-0 bottom-0 z-[65] flex justify-center px-6 pb-6 sm:px-10 sm:pb-8";
 
@@ -62,12 +56,6 @@ export const groupSettingsSectionTitleClass =
 	"text-lg font-semibold tracking-tight text-foreground";
 
 export const groupSettingsSectionLeadClass = "mt-1.5 text-sm leading-relaxed text-muted-foreground";
-
-export const groupSettingsProfileSectionDividerWrapClass = "py-5 sm:py-6";
-
-export const groupSettingsProfileSectionDividerLineClass = "border-t border-border";
-
-export const groupSettingsProfileSectionGapClass = "pt-5 sm:pt-6";
 
 /** Members / roles TanStack tables — borderless card */
 export const groupSettingsDataTableShellClass = "overflow-hidden rounded-xl bg-field/40";

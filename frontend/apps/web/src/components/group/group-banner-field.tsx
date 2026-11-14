@@ -4,9 +4,9 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FieldLabelContent } from "@/components/form/field-label";
 import { Label } from "@/components/ui/label";
-import { authFieldLabelClass } from "@/features/auth/components/auth-shell";
-import { GroupBannerImageSwatch } from "@/features/group/components/group-banner-image-swatch";
-import { GroupBannerPaletteSwatch } from "@/features/group/components/group-banner-palette-swatch";
+import { authFieldLabelClass } from "@/lib/form-field-styles";
+import { GroupBannerImageSwatch } from "@/components/group/group-banner-image-swatch";
+import { GroupBannerPaletteSwatch } from "@/components/group/group-banner-palette-swatch";
 import {
 	GROUP_BANNER_ACCEPT,
 	GROUP_BANNER_COLOR_PRESETS,
@@ -14,7 +14,7 @@ import {
 	MAX_GROUP_BANNER_BYTES,
 	isGroupBannerImageId,
 	type GroupBannerColorId,
-} from "@/features/group/lib/group-banner-presets";
+} from "@/lib/group-banner-presets";
 import { cn } from "@/lib/utils";
 
 type GroupBannerFieldProps = {

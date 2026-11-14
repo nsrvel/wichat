@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { authLinkClass } from "@/features/auth/components/auth-shell";
+import { authLinkClass } from "@/lib/form-field-styles";
 
 const DEFAULT_RESEND_COOLDOWN_SEC = 60;
 

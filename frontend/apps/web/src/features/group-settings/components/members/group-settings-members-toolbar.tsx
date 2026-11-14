@@ -4,18 +4,18 @@ import { Menu } from "@base-ui/react/menu";
 import { ArrowDownUp, ChevronDown, ChevronUp, Search } from "lucide-react";
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { authInputClass } from "@/features/auth/components/auth-shell";
+import { authInputClass } from "@/lib/form-field-styles";
 import { GroupSettingsMembersPruneDialog } from "@/features/group-settings/components/members/group-settings-members-prune-dialog";
 import type {
 	GroupSettingsMemberRow,
 	MembersSortKey,
 } from "@/features/group-settings/lib/group-settings-members-view";
-import { MenuRadioControl } from "@/features/shell/components/group-rail-menu/menu-radio-control";
+import { MenuRadioControl } from "@/components/ui/menu-radio-control";
 import {
 	menuPopupClass,
 	menuPositionerClass,
 	menuRadioItemClass,
-} from "@/features/shell/components/group-rail-menu/menu-chrome";
+} from "@/lib/menu-chrome";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 

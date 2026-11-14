@@ -20,12 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { AuthEmailOtpStep } from "@/features/auth/components/auth-email-otp-step";
 import { TurnstileWidget } from "@/features/auth/components/turnstile-widget";
-import {
-	authFieldLabelClass,
-	authFormClass,
-	authInputClass,
-	authSubmitClass,
-} from "@/features/auth/components/auth-shell";
+import { authFieldLabelClass, authFormClass, authInputClass, authSubmitClass } from "@/lib/form-field-styles";
 import { resendRateLimitCooldownSec } from "@/features/auth/lib/resend-cooldown";
 import { translateError } from "@/integrations/i18n/translate-error";
 import { birthPartsDefaults, formatBirthDate, refineMinAgeBirth } from "@/lib/auth-validators";

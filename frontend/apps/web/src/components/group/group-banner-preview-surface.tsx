@@ -9,7 +9,7 @@ import {
 	groupBannerSwatchSurfaceClass,
 	isGroupBannerColorDefault,
 	type GroupBannerMode,
-} from "@/features/group/lib/group-banner-presets";
+} from "@/lib/group-banner-presets";
 import { cn } from "@/lib/utils";
 
 type GroupBannerPreviewSurfaceProps = {

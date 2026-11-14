@@ -2,7 +2,7 @@
 
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { FieldLabelContent } from "@/components/form/field-label";
-import { authOtpCellClass } from "@/features/auth/components/auth-shell";
+import { authOtpCellClass } from "@/lib/form-field-styles";
 import { cn } from "@/lib/utils";
 import { useCallback, useRef, useState } from "react";
 import type { FieldPath, FieldValues } from "react-hook-form";

@@ -3,7 +3,7 @@
 import { Search } from "lucide-react";
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
-import { authInputClass } from "@/features/auth/components/auth-shell";
+import { authInputClass } from "@/lib/form-field-styles";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";

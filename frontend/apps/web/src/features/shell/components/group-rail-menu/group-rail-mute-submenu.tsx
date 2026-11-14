@@ -9,7 +9,7 @@ import {
 	menuPopupClass,
 	menuPositionerClass,
 	submenuTriggerClass,
-} from "@/features/shell/components/group-rail-menu/menu-chrome";
+} from "@/lib/menu-chrome";
 
 const MUTE_DURATION_MESSAGE_KEYS = [
 	"shell.group_rail_menu.mute_for_15_minutes",

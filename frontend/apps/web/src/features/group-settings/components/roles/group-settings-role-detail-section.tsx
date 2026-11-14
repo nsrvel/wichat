@@ -8,10 +8,7 @@ import { RoleDetailDisplayTab } from "@/features/group-settings/components/roles
 import { RoleDetailMembersTab } from "@/features/group-settings/components/roles/detail/role-detail-members-tab";
 import { RoleDetailPermissionsTab } from "@/features/group-settings/components/roles/detail/role-detail-permissions-tab";
 import { RoleDetailSidebar } from "@/features/group-settings/components/roles/detail/role-detail-sidebar";
-import {
-	groupSettingsRoleDetailPanePaddingClass,
-	groupSettingsSectionTitleClass,
-} from "@/features/group-settings/lib/group-settings-chrome";
+import { groupSettingsRoleDetailPanePaddingClass, groupSettingsSectionTitleClass } from "@/features/group-settings/lib/group-settings-chrome";
 import {
 	roleDisplayTitle,
 	type GroupSettingsRoleDetailTab,

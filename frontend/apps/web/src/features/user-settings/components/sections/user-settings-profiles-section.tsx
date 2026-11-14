@@ -7,14 +7,9 @@ import { Button } from "@/components/ui/button";
 import { HexColorField } from "@/components/ui/color-picker";
 import { Input } from "@/components/ui/input";
 import { UserAvatar } from "@/components/ui/user-avatar";
-import { authFieldLabelClass, authInputClass } from "@/features/auth/components/auth-shell";
-import {
-	groupSettingsFormFooterBarClass,
-	groupSettingsProfileSectionDividerLineClass,
-	groupSettingsProfileSectionDividerWrapClass,
-	groupSettingsProfileSectionGapClass,
-} from "@/features/group-settings/lib/group-settings-chrome";
-import { UserAvatarUpload } from "@/features/user-settings/components/user-avatar-upload";
+import { authFieldLabelClass, authInputClass } from "@/lib/form-field-styles";
+import { settingsFormFooterBarClass, settingsSectionDividerLineClass, settingsSectionDividerWrapClass, settingsSectionGapClass } from "@/lib/settings-chrome";
+import { UserAvatarUpload } from "@/components/user/user-avatar-upload";
 import { cn } from "@/lib/utils";
 import type { UserPresenceStatus } from "@/lib/user-status";
 
@@ -96,7 +91,7 @@ export function UserSettingsProfilesSection({
 					/>
 					</div>
 
-					<div className={cn(groupSettingsProfileSectionGapClass, "space-y-4")}>
+					<div className={cn(settingsSectionGapClass, "space-y-4")}>
 						<div className="space-y-2">
 							<label htmlFor="user-settings-display-name" className={cn(authFieldLabelClass, "block")}>
 								{t("user_settings.profiles.display_name")}
@@ -141,8 +136,8 @@ export function UserSettingsProfilesSection({
 						</div>
 					</div>
 
-					<div className={groupSettingsProfileSectionDividerWrapClass} role="presentation">
-						<div className={groupSettingsProfileSectionDividerLineClass} />
+					<div className={settingsSectionDividerWrapClass} role="presentation">
+						<div className={settingsSectionDividerLineClass} />
 					</div>
 
 					<div className="space-y-2">
@@ -204,7 +199,7 @@ export function UserSettingsProfilesSection({
 			{/* Floating unsaved changes bar */}
 			{dirty ? (
 				<div className="sticky bottom-3 z-20 mt-6">
-					<div className={cn(groupSettingsFormFooterBarClass, "shadow-lg")}>
+					<div className={cn(settingsFormFooterBarClass, "shadow-lg")}>
 						<p className="min-w-0 flex-1 truncate text-xs font-medium text-muted-foreground sm:text-sm">
 							{t("user_settings.profiles.unsaved_hint")}
 						</p>

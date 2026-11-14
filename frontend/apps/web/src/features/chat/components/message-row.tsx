@@ -1,6 +1,6 @@
 import { memo, type ReactNode } from "react";
 import { UserAvatar } from "@/components/ui/user-avatar";
-import { userInitials } from "@/features/invite/lib/user-initials";
+import { userInitials } from "@/lib/user-initials";
 import { cn } from "@/lib/utils";
 
 type MessageRowProps = {

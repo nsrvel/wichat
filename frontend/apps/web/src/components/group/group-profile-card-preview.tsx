@@ -4,15 +4,15 @@ import type { ReactNode } from "react";
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { GroupBannerPreviewSurface } from "@/features/group/components/group-banner-preview-surface";
+import { GroupBannerPreviewSurface } from "@/components/group/group-banner-preview-surface";
 import {
 	groupProfileCardBodyClass,
 	groupProfileCardIconClass,
 	groupProfileCardShellClass,
 	type GroupBannerMode,
-} from "@/features/group/lib/group-banner-presets";
-import { groupInitials } from "@/features/shell/lib/group-initials";
-import { resolveGroupLogoUrl } from "@/features/shell/lib/group-logo-url";
+} from "@/lib/group-banner-presets";
+import { groupInitials } from "@/lib/group-initials";
+import { resolveGroupLogoUrl } from "@/lib/group-logo-url";
 import { cn } from "@/lib/utils";
 
 type GroupProfileCardPreviewProps = {

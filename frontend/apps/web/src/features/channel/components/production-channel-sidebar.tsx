@@ -14,7 +14,7 @@ import {
 	sidebarNestedListClass,
 } from "@/components/layout/channel-sidebar/sidebar-nav-styles";
 import { sidebarNavGlyphIconClass } from "@/components/layout/sidebar-list-icon";
-import { ChannelListIcon } from "@/features/channel/components/channel-list-icon";
+import { ChannelListIcon } from "@/components/layout/channel-list-icon";
 import {
 	CHANNEL_SIDEBAR_MIN_WIDTH,
 	useResizableSidebarWidth,

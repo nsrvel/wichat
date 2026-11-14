@@ -1,4 +1,4 @@
-import { menuRadioCircleClass } from "@/features/shell/components/group-rail-menu/menu-chrome";
+import { menuRadioCircleClass } from "@/lib/menu-chrome";
 import { cn } from "@/lib/utils";
 
 /** Visual radio control — selection state comes from parent `RadioItem` (`group/radio` + `data-checked`). */

@@ -18,13 +18,7 @@ import {
 	WiChatDialogFooterActions,
 	WiChatDialogHeader,
 } from "@/components/ui/wichat-dialog";
-import {
-	authFieldLabelClass,
-	authFormClass,
-	authInputClass,
-	authSubmitClass,
-	authSubmitGhostClass,
-} from "@/features/auth/components/auth-shell";
+import { authFieldLabelClass, authFormClass, authInputClass, authSubmitClass, authSubmitGhostClass } from "@/lib/form-field-styles";
 import { cn } from "@/lib/utils";
 
 const CREATE_CATEGORY_FORM_ID = "wichat-create-category-form";

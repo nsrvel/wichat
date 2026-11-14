@@ -1,6 +1,6 @@
 "use client";
 
-import { authInputClass } from "@/features/auth/components/auth-shell";
+import { authInputClass } from "@/lib/form-field-styles";
 import { cn } from "@/lib/utils";
 import { googleStartUrl } from "@/services/auth/auth.service";
 

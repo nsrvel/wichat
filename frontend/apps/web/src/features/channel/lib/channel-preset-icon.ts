@@ -1,4 +1,4 @@
-import { resolveGroupLogoUrl } from "@/features/shell/lib/group-logo-url";
+import { resolveGroupLogoUrl } from "@/lib/group-logo-url";
 
 export type ResolveChannelIconInput = {
 	type: string;

@@ -6,7 +6,7 @@ import { useId, useMemo, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { WiChatDialog, WiChatDialogBody, WiChatDialogFooter } from "@/components/ui/wichat-dialog";
-import { authInputClass } from "@/features/auth/components/auth-shell";
+import { authInputClass } from "@/lib/form-field-styles";
 import {
 	countPruneKickCandidates,
 	pruneInactiveDayCount,
@@ -14,7 +14,7 @@ import {
 	type MembersPruneInactiveKey,
 	type PruneDialogRoleKey,
 } from "@/features/group-settings/lib/group-settings-members-view";
-import { MenuRadioControl } from "@/features/shell/components/group-rail-menu/menu-radio-control";
+import { MenuRadioControl } from "@/components/ui/menu-radio-control";
 import {
 	menuCheckboxBoxClass,
 	menuCheckboxItemClass,
@@ -23,7 +23,7 @@ import {
 	menuPopupClass,
 	menuPositionerClass,
 	menuRadioItemClass,
-} from "@/features/shell/components/group-rail-menu/menu-chrome";
+} from "@/lib/menu-chrome";
 import { cn } from "@/lib/utils";
 
 const PRUNE_INACTIVE_OPTIONS: MembersPruneInactiveKey[] = ["inactive_7d", "inactive_30d"];

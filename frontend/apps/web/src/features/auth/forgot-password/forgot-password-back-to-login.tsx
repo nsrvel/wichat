@@ -3,7 +3,7 @@
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
-import { authFieldLinkClass } from "@/features/auth/components/auth-shell";
+import { authFieldLinkClass } from "@/lib/form-field-styles";
 
 export function ForgotPasswordBackToLogin() {
 	const { t } = useTranslation();

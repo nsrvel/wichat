@@ -19,12 +19,7 @@ import {
 	formatRelativeUtc,
 	formatShortDate,
 } from "@/features/group-settings/lib/group-settings-members-format";
-import {
-	groupSettingsDataTableBodyClass,
-	groupSettingsDataTableHeadRowClass,
-	groupSettingsDataTableRowClass,
-	groupSettingsDataTableShellClass,
-} from "@/features/group-settings/lib/group-settings-chrome";
+import { groupSettingsDataTableBodyClass, groupSettingsDataTableHeadRowClass, groupSettingsDataTableRowClass, groupSettingsDataTableShellClass } from "@/features/group-settings/lib/group-settings-chrome";
 import {
 	dataTableColumnPercentStyle,
 	dataTableEdgeCellClass,
@@ -32,13 +27,13 @@ import {
 	MEMBERS_COLUMN_SIZE,
 } from "@/features/group-settings/lib/group-settings-data-table-column-size";
 import type { GroupSettingsMemberRow } from "@/features/group-settings/lib/group-settings-members-view";
-import { userInitials } from "@/features/invite/lib/user-initials";
+import { userInitials } from "@/lib/user-initials";
 import {
 	menuCheckboxBoxClass,
 	menuCheckboxItemClass,
 	menuPopupClass,
 	menuPositionerClass,
-} from "@/features/shell/components/group-rail-menu/menu-chrome";
+} from "@/lib/menu-chrome";
 import { cn } from "@/lib/utils";
 import { MEMBER_PAGE_SIZE } from "@/services/invite/invite.query";
 

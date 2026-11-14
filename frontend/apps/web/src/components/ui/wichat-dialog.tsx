@@ -4,10 +4,7 @@ import { X } from "lucide-react";
 import { Children, type ReactNode, useCallback, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import {
-	authCardInsetXClass,
-	groupOnboardingCardShellClass,
-} from "@/features/auth/components/auth-shell";
+import { authCardInsetXClass, groupOnboardingCardShellClass } from "@/lib/form-field-styles";
 import { cn } from "@/lib/utils";
 
 export const wichatDialogTitleClass =

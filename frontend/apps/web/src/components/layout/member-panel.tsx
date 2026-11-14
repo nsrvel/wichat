@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { UserAvatar } from "@/components/ui/user-avatar";
-import { userInitials } from "@/features/invite/lib/user-initials";
+import { userInitials } from "@/lib/user-initials";
 
 const tabs = ["Info", "Pins", "Files", "Links"];
 

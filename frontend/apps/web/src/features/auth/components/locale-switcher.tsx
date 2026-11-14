@@ -4,7 +4,7 @@ import { isAppLocale, SUPPORTED_LOCALES, type AppLocale } from "@wichat/i18n/loc
 import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { CustomSelect } from "@/components/ui/custom-select";
-import { authSelectGhostTriggerClass } from "@/features/auth/components/auth-shell";
+import { authSelectGhostTriggerClass } from "@/lib/form-field-styles";
 import { applyAppLocale } from "@/integrations/i18n/apply-app-locale";
 import { appSans } from "@/lib/fonts/app-sans";
 import { cn } from "@/lib/utils";
