@@ -253,6 +253,10 @@
 }
 
 /* Shared scrollbars (shell, chat, settings) — opt-in via class, never on `*` */
+.overlay-scroll {
+	scrollbar-gutter: stable;
+}
+
 /* Standard modern fallback (Firefox & standard browsers without ::-webkit-scrollbar) */
 @supports not selector(::-webkit-scrollbar) {
 	.thin-scroll,

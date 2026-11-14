@@ -198,7 +198,7 @@ export function UserSettingsDialog({
 
 					<div
 						ref={contentScrollRef}
-						className="thin-scroll flex-1 overflow-y-auto px-5 py-6 sm:px-7"
+						className="overlay-scroll flex-1 overflow-y-auto px-5 py-6 sm:px-7"
 					>
 						{activeSection === "account" ? (
 							<UserSettingsAccountSection
