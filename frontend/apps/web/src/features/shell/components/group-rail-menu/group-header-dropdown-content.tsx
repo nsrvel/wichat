@@ -21,6 +21,8 @@ import {
 	menuItemClass,
 	menuSeparatorClass,
 } from "@/features/shell/components/group-rail-menu/menu-chrome";
+import { useCreateCategoryDialog } from "@/features/channel/create-category-dialog-provider";
+import { useCreateChannelDialog } from "@/features/channel/create-channel-dialog-provider";
 import { useGroupSettings } from "@/features/group-settings/group-settings-provider";
 import { useInviteDialog } from "@/features/invite/invite-dialog-provider";
 import type { useGroupMenuController } from "@/features/shell/components/group-rail-menu/use-group-menu-controller";
@@ -42,6 +44,8 @@ export function GroupHeaderDropdownContent({
 	const kit = useGroupMenuKit();
 	const { openInvite } = useInviteDialog();
 	const { openGroupSettings } = useGroupSettings();
+	const { openCreateCategory } = useCreateCategoryDialog();
+	const { openCreateChannel } = useCreateChannelDialog();
 
 	const openGroupSettingsForGroup = () => {
 		openGroupSettings({
@@ -91,11 +95,29 @@ export function GroupHeaderDropdownContent({
 						<Settings className={menuIconClass} aria-hidden />
 						{t("shell.group_header_menu.group_settings")}
 					</kit.Item>
-					<kit.Item className={menuItemClass} onClick={showComingSoon}>
+					<kit.Item
+						className={menuItemClass}
+						onClick={() => {
+							openCreateChannel({
+								groupId: group.id,
+								groupName: group.name,
+							});
+							closeMenu();
+						}}
+					>
 						<CirclePlus className={menuIconClass} aria-hidden />
 						{t("shell.group_header_menu.create_channel")}
 					</kit.Item>
-					<kit.Item className={menuItemClass} onClick={showComingSoon}>
+					<kit.Item
+						className={menuItemClass}
+						onClick={() => {
+							openCreateCategory({
+								groupId: group.id,
+								groupName: group.name,
+							});
+							closeMenu();
+						}}
+					>
 						<FolderPlus className={menuIconClass} aria-hidden />
 						{t("shell.group_header_menu.create_category")}
 					</kit.Item>

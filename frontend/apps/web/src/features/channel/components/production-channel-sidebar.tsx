@@ -70,7 +70,7 @@ export function ProductionChannelSidebar({
 			style={embeddedInPanel ? undefined : { width }}
 		>
 			<div className={cn("flex min-h-0 flex-1 flex-col pt-1", SIDEBAR_INSET_X)}>
-				<div className="thin-scroll flex-1 overflow-y-auto">
+				<div className="thin-scroll flex-1 overflow-y-auto pb-20">
 					<div className="group/cat">
 						<SidebarCategoryRow
 							title={t("shell.sidebar.quick_views")}

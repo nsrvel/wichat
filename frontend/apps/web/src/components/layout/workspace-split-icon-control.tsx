@@ -5,13 +5,14 @@ import { cn } from "@/lib/utils";
 const segmentGhostClass =
 	"bg-transparent text-muted-foreground hover:bg-sidebar-control hover:text-sidebar-foreground";
 const segmentActiveClass =
-	"bg-destructive/10 text-destructive hover:bg-destructive/20 hover:text-destructive dark:bg-destructive/20 dark:hover:bg-destructive/30";
+	"bg-sidebar-control text-destructive hover:bg-sidebar-control hover:text-destructive";
 
 type WorkspaceSplitIconControlProps = {
 	mainAriaLabel: string;
 	optionsAriaLabel: string;
 	/** Muted / deafened — destructive fill; idle is ghost. */
 	mainActive?: boolean;
+	onMainClick?: () => void;
 	children: ReactNode;
 };
 
@@ -20,6 +21,7 @@ export function WorkspaceSplitIconControl({
 	mainAriaLabel,
 	optionsAriaLabel,
 	mainActive = false,
+	onMainClick,
 	children,
 }: WorkspaceSplitIconControlProps) {
 	const segmentClass = mainActive ? segmentActiveClass : segmentGhostClass;
@@ -28,6 +30,7 @@ export function WorkspaceSplitIconControl({
 		<div className="flex h-9 shrink-0 items-stretch">
 			<button
 				type="button"
+				onClick={onMainClick}
 				className={cn(
 					"flex size-9 items-center justify-center rounded-l-lg transition-colors",
 					segmentClass,

@@ -11,6 +11,8 @@ import { WorkspacePanel } from "@/components/layout/workspace-panel";
 import { ProductionChannelSidebar } from "@/features/channel/components/production-channel-sidebar";
 import type { QuickViewId } from "@/lib/app-routes";
 import { GroupOnboardingProvider } from "@/features/group/group-onboarding-provider";
+import { CreateCategoryDialogProvider } from "@/features/channel/create-category-dialog-provider";
+import { CreateChannelDialogProvider } from "@/features/channel/create-channel-dialog-provider";
 import { GroupSettingsProvider } from "@/features/group-settings/group-settings-provider";
 import { InviteDialogProvider } from "@/features/invite/invite-dialog-provider";
 import { useRedeemInviteFromQuery } from "@/features/invite/hooks/use-redeem-invite";
@@ -77,8 +79,12 @@ export function ShellLayout({ children, groupId, channelId, quickView }: ShellLa
 		<GroupOnboardingProvider>
 			<InviteDialogProvider>
 				<GroupSettingsProvider>
-					<ShellInviteEffects />
-					{chrome}
+					<CreateCategoryDialogProvider>
+						<CreateChannelDialogProvider>
+							<ShellInviteEffects />
+							{chrome}
+						</CreateChannelDialogProvider>
+					</CreateCategoryDialogProvider>
 				</GroupSettingsProvider>
 			</InviteDialogProvider>
 		</GroupOnboardingProvider>

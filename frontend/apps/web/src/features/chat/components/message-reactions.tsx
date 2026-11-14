@@ -1,14 +1,23 @@
+"use client";
+
 import { SmilePlus } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { ExpressionPickerPopover } from "@/components/expression-picker/expression-picker-popover";
 import type { ChannelMessageReaction } from "@/features/chat/lib/channel-message";
+import { cn } from "@/lib/utils";
 
 type MessageReactionsProps = {
 	reactions: ChannelMessageReaction[];
 	className?: string;
 	showAdd?: boolean;
+	onAddReaction?: (emoji: string) => void;
 };
 
-export function MessageReactions({ reactions, className, showAdd = true }: MessageReactionsProps) {
+export function MessageReactions({
+	reactions,
+	className,
+	showAdd = true,
+	onAddReaction,
+}: MessageReactionsProps) {
 	if (reactions.length === 0 && !showAdd) {
 		return null;
 	}
@@ -31,13 +40,26 @@ export function MessageReactions({ reactions, className, showAdd = true }: Messa
 				</span>
 			))}
 			{showAdd ? (
-				<button
-					type="button"
-					className="flex h-6 w-8 items-center justify-center rounded-full border border-chat-surface-border bg-chat-surface text-muted-foreground transition-colors hover:bg-sidebar-accent"
-					aria-label="Add reaction"
-				>
-					<SmilePlus className="size-3.5" strokeWidth={1.8} />
-				</button>
+				<ExpressionPickerPopover
+					only="emoji"
+					closeOnSelect
+					side="top"
+					align="start"
+					onSelect={(selection) => {
+						if (selection.kind === "emoji") {
+							onAddReaction?.(selection.emoji);
+						}
+					}}
+					trigger={
+						<button
+							type="button"
+							className="flex h-6 w-8 items-center justify-center rounded-full border border-chat-surface-border bg-chat-surface text-muted-foreground transition-colors hover:bg-sidebar-accent data-[popup-open]:bg-sidebar-accent data-[popup-open]:text-sidebar-foreground"
+							aria-label="Add reaction"
+						>
+							<SmilePlus className="size-3.5" strokeWidth={1.8} />
+						</button>
+					}
+				/>
 			) : null}
 		</div>
 	);

@@ -3,6 +3,8 @@
 import { AtSign, Paperclip, Plus, Send, Smile, Type } from "lucide-react";
 import { useCallback, useId, useRef, useState, type KeyboardEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { ExpressionPickerPopover } from "@/components/expression-picker/expression-picker-popover";
+import type { ExpressionSelection } from "@/lib/expressions/expression-types";
 import { cn } from "@/lib/utils";
 
 const COMPOSER_ACTIONS = [
@@ -19,6 +21,7 @@ type ChatComposerProps = {
 	value?: string;
 	onChange?: (value: string) => void;
 	onSubmit?: (value: string) => void;
+	onSelectExpression?: (selection: ExpressionSelection) => void;
 	disabled?: boolean;
 	submitDisabled?: boolean;
 };
@@ -29,6 +32,7 @@ export function ChatComposer({
 	value,
 	onChange,
 	onSubmit,
+	onSelectExpression,
 	disabled = false,
 	submitDisabled,
 }: ChatComposerProps) {
@@ -74,6 +78,43 @@ export function ChatComposer({
 		}
 	};
 
+	const insertEmoji = useCallback(
+		(emoji: string) => {
+			const el = textareaRef.current;
+			const start = el?.selectionStart ?? draft.length;
+			const end = el?.selectionEnd ?? draft.length;
+			const next = `${draft.slice(0, start)}${emoji}${draft.slice(end)}`;
+			if (controlled) {
+				onChange?.(next);
+			} else {
+				setInternalDraft(next);
+				if (el) {
+					el.value = next;
+				}
+			}
+			resizeTextarea();
+			requestAnimationFrame(() => {
+				if (!textareaRef.current) {
+					return;
+				}
+				const caret = start + emoji.length;
+				textareaRef.current.focus();
+				textareaRef.current.setSelectionRange(caret, caret);
+			});
+		},
+		[controlled, draft, onChange, resizeTextarea],
+	);
+
+	const handleSelectExpression = useCallback(
+		(selection: ExpressionSelection) => {
+			if (selection.kind === "emoji") {
+				insertEmoji(selection.emoji);
+			}
+			onSelectExpression?.(selection);
+		},
+		[insertEmoji, onSelectExpression],
+	);
+
 	return (
 		<div
 			className={cn(
@@ -106,17 +147,29 @@ export function ChatComposer({
 					className="thin-scroll max-h-40 min-h-6 min-w-0 flex-1 resize-none overflow-y-auto bg-transparent py-1 text-[15px] leading-6 text-foreground placeholder:text-muted-foreground focus:outline-none disabled:opacity-50"
 				/>
 				<div className="flex shrink-0 items-center">
-					{COMPOSER_ACTIONS.map(({ icon: Icon, labelKey }) => (
-						<button
-							key={labelKey}
-							type="button"
-							disabled={disabled}
-							className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground disabled:opacity-50"
-							aria-label={t(labelKey)}
-						>
-							<Icon className="size-[18px]" strokeWidth={1.75} />
-						</button>
-					))}
+					{COMPOSER_ACTIONS.map(({ icon: Icon, labelKey }) => {
+						const button = (
+							<button
+								key={labelKey}
+								type="button"
+								disabled={disabled}
+								className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground data-[popup-open]:bg-sidebar-accent data-[popup-open]:text-sidebar-foreground disabled:opacity-50"
+								aria-label={t(labelKey)}
+							>
+								<Icon className="size-[18px]" strokeWidth={1.75} />
+							</button>
+						);
+						if (labelKey === "chat.emoji" && !disabled) {
+							return (
+								<ExpressionPickerPopover
+									key={labelKey}
+									trigger={button}
+									onSelect={handleSelectExpression}
+								/>
+							);
+						}
+						return button;
+					})}
 					<span className="mx-1.5 h-6 w-px shrink-0 bg-chat-bubble-border" aria-hidden />
 					<button
 						type="button"

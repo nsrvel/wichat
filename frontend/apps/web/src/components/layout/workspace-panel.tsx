@@ -3,6 +3,7 @@
 import { cloneElement, isValidElement, useEffect, type ReactElement, type ReactNode } from "react";
 import { ChannelSidebar } from "@/components/layout/channel-sidebar";
 import { useShellChrome } from "@/components/layout/shell-chrome-context";
+import { ShellUserDock } from "@/components/layout/shell-user-dock";
 import { WorkspacePanelHeaderRow } from "@/components/layout/workspace-panel-header-row";
 import { WorkspaceSidebarResizeHandle } from "@/components/layout/workspace-sidebar-resize-handle";
 import {
@@ -72,6 +73,7 @@ export function WorkspacePanel({
 				</div>
 				<div className="flex min-h-0 min-w-0 flex-1 flex-col bg-chat-surface">{children}</div>
 			</div>
+			<ShellUserDock />
 			<WorkspaceSidebarResizeHandle
 				sidebarWidth={width}
 				className="hidden lg:block"
