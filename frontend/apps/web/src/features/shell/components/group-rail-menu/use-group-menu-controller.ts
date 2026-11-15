@@ -1,6 +1,6 @@
 "use client";
 
-import type { Group } from "@wichat/contracts";
+import type { Group } from "@wichat/contracts/group";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";

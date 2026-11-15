@@ -1,13 +1,13 @@
 import {
 	GroupInviteLinkSchema,
-	GroupMembersPageSchema,
 	InvitePreviewSchema,
 	RedeemInviteRequestSchema,
 	RedeemInviteResultSchema,
 	SendGroupInvitesRequestSchema,
 	SendGroupInvitesResultSchema,
-	UserSearchSchema,
-} from "@wichat/contracts";
+} from "@wichat/contracts/group/invite";
+import { GroupMembersPageSchema } from "@wichat/contracts/group/member";
+import { UserSearchSchema } from "@wichat/contracts/user";
 import { api } from "@/integrations/api-client";
 
 export async function listGroupMembers(

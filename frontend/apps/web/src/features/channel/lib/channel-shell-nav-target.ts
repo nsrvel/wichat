@@ -1,4 +1,4 @@
-import type { Channel } from "@wichat/contracts";
+import type { Channel } from "@wichat/contracts/chat/channel";
 import type { ShellNavTarget } from "@/components/layout/shell-navigation";
 import { formatChannelDisplayName } from "@/features/channel/lib/channel-display";
 

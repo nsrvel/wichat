@@ -10,11 +10,14 @@ import {
 	authLeadClass,
 } from "@/lib/form-field-styles";
 
+import { cn } from "@/lib/utils";
+
 export function AuthShell({
 	headline,
 	lead,
 	inviteBanner,
 	notice,
+	cardBanner,
 	cardIntro,
 	children,
 }: {
@@ -22,9 +25,12 @@ export function AuthShell({
 	lead?: ReactNode;
 	inviteBanner?: ReactNode;
 	notice?: string | null;
+	cardBanner?: ReactNode;
 	cardIntro?: ReactNode;
 	children: ReactNode;
 }) {
+	const hasCardBanner = Boolean(cardBanner);
+	const hasVisibleHeader = Boolean(inviteBanner || lead);
 	return (
 		<main className="overlay-scroll relative flex min-h-0 min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto bg-background pt-[max(0.75rem,env(safe-area-inset-top))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(1.25rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] text-foreground sm:px-6 sm:pt-6 sm:pb-8 md:px-10 md:pb-10">
 			<header className="relative z-10 flex min-w-0 items-center justify-between gap-3">
@@ -59,26 +65,45 @@ export function AuthShell({
 				<div className="mx-auto my-auto flex w-full min-w-0 max-w-xl flex-col items-center px-4 py-4 pb-8 sm:px-6 sm:py-6 sm:pb-10 max-h-[880px]:py-3 max-h-[880px]:pb-6">
 					<div className="flex w-full min-w-0 flex-col items-center text-center">
 						<div
-							className={`@container mb-5 w-full min-w-0 max-w-xl sm:mb-10 max-h-[880px]:mb-4 max-h-[880px]:sm:mb-6 ${authHeadlineInsetXClass}`}
+							className={cn(
+								"@container w-full min-w-0 max-w-xl",
+								authHeadlineInsetXClass,
+								hasVisibleHeader
+									? "mb-5 sm:mb-10 max-h-[880px]:mb-4 max-h-[880px]:sm:mb-6"
+									: "mb-0",
+							)}
 						>
 							{inviteBanner}
 							<h1
-								className={`${authHeadlineClass} mb-2 sm:mb-3 max-h-[880px]:mb-1.5 max-h-[880px]:sm:mb-2`}
+								className={cn(
+									authHeadlineClass,
+									hasVisibleHeader &&
+										"mb-2 sm:mb-3 max-h-[880px]:mb-1.5 max-h-[880px]:sm:mb-2",
+								)}
 							>
 								{headline}
 							</h1>
 							{lead ? <div className={authLeadClass}>{lead}</div> : null}
 						</div>
 
-						<div className={`${authCardShellClass} ${authCardInsetXClass}`}>
-							{notice ? (
-								<p className="border-destructive/30 bg-destructive/10 text-destructive mb-4 rounded-xl border p-3 text-xs">
-									{notice}
-								</p>
-							) : null}
-							{cardIntro ? <p className="mb-4 text-sm text-muted-foreground">{cardIntro}</p> : null}
-							<div className="space-y-3 sm:space-y-4 max-h-[880px]:space-y-2 max-h-[880px]:sm:space-y-2.5">
-								{children}
+						<div
+							className={cn(
+								authCardShellClass,
+								hasCardBanner &&
+									"overflow-hidden pt-0 sm:pt-0 md:pt-0 max-h-[880px]:pt-0 max-h-[880px]:sm:pt-0 max-h-[880px]:md:pt-0",
+							)}
+						>
+							{cardBanner ? <div className="w-full">{cardBanner}</div> : null}
+							<div className={authCardInsetXClass}>
+								{notice ? (
+									<p className="border-destructive/30 bg-destructive/10 text-destructive mb-4 rounded-xl border p-3 text-xs">
+										{notice}
+									</p>
+								) : null}
+								{cardIntro ? <p className="mb-4 text-sm text-muted-foreground">{cardIntro}</p> : null}
+								<div className="space-y-3 sm:space-y-4 max-h-[880px]:space-y-2 max-h-[880px]:sm:space-y-2.5">
+									{children}
+								</div>
 							</div>
 						</div>
 					</div>

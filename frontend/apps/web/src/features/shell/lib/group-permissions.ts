@@ -1,4 +1,4 @@
-import type { Group } from "@wichat/contracts";
+import type { Group } from "@wichat/contracts/group";
 
 /** ponytail: extend when group RBAC lands — today only owner vs member. */
 export function canManageGroup(role: Group["role"] | undefined): boolean {

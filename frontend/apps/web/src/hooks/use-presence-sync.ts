@@ -1,6 +1,6 @@
 "use client";
 
-import type { GroupMembersPage } from "@wichat/contracts";
+import type { GroupMembersPage } from "@wichat/contracts/group/member";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import { connectPresenceRealtime } from "@/integrations/realtime/presence-client";

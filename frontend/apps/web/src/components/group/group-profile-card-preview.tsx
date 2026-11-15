@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { GroupMemberStatsPill } from "@/components/group/group-member-stats-pill";
 import { groupInitials } from "@/lib/group-initials";
 import { resolveGroupLogoUrl } from "@/lib/group-logo-url";
 import { cn } from "@/lib/utils";
@@ -13,6 +14,8 @@ type GroupProfileCardPreviewProps = {
 	bannerColor: string;
 	logoUrl?: string;
 	iconFile?: File | null;
+	memberCount?: number;
+	onlineCount?: number;
 	className?: string;
 };
 
@@ -22,6 +25,8 @@ export function GroupProfileCardPreview({
 	bannerColor,
 	logoUrl = "",
 	iconFile = null,
+	memberCount,
+	onlineCount = 0,
 	className,
 }: GroupProfileCardPreviewProps) {
 	const { t } = useTranslation();
@@ -79,6 +84,13 @@ export function GroupProfileCardPreview({
 						<p className="truncate text-base font-bold leading-tight text-foreground">
 							{displayName}
 						</p>
+						{memberCount !== undefined ? (
+							<GroupMemberStatsPill
+								onlineCount={onlineCount}
+								memberCount={memberCount}
+								className="mt-2"
+							/>
+						) : null}
 						{trimmedDescription ? (
 							<p className="mt-2 whitespace-pre-wrap break-words text-xs leading-relaxed text-muted-foreground">
 								{trimmedDescription}

@@ -4,7 +4,20 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    "./common": "./src/common.ts",
+    "./auth": "./src/auth/auth.ts",
+    "./auth/mfa": "./src/auth/mfa.ts",
+    "./auth/recovery": "./src/auth/recovery.ts",
+    "./auth/device": "./src/auth/device.ts",
+    "./user": "./src/user/user.ts",
+    "./user/activity-log": "./src/user/activity-log.ts",
+    "./user/presence": "./src/user/presence.ts",
+    "./group": "./src/group/group.ts",
+    "./group/member": "./src/group/group-member.ts",
+    "./group/role": "./src/group/group-role.ts",
+    "./group/invite": "./src/group/invite.ts",
+    "./chat/channel": "./src/chat/channel.ts",
+    "./chat/message": "./src/chat/message.ts"
   },
   "dependencies": {
     "zod": "^4.6.5"

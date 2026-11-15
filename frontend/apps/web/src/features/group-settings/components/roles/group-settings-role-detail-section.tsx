@@ -1,6 +1,6 @@
 "use client";
 
-import type { GroupMember } from "@wichat/contracts";
+import type { GroupMember } from "@wichat/contracts/group/member";
 import { Ellipsis } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";

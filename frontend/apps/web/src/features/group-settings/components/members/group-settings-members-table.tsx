@@ -1,7 +1,7 @@
 "use client";
 
-import type { GroupMemberRoleSummary } from "@wichat/contracts";
-import { Menu } from "@base-ui/react/menu";
+import type { GroupMember } from "@wichat/contracts/group/member";
+import type { GroupRole } from "@wichat/contracts/group/role";
 import {
 	flexRender,
 	getCoreRowModel,
@@ -10,16 +10,17 @@ import {
 	type OnChangeFn,
 	type RowSelectionState,
 } from "@tanstack/react-table";
-import { Check, EllipsisVertical, Plus } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Check, EllipsisVertical } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { OwnerCrownIcon } from "@/components/ui/owner-crown-icon";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import {
-	resolveMemberHoistedRole,
-	resolveMemberNameColor,
-} from "@/lib/member-role-display";
-import { GroupSettingsMemberRoleBadge } from "@/features/group-settings/components/members/group-settings-member-role-badge";
+	createMemberContextMenuState,
+	MemberActionMenu,
+	type MemberActionMenuState,
+} from "@/features/group-settings/components/members/member-action-menu";
+import { MemberRolePickerPopover } from "@/features/group-settings/components/members/member-role-picker-popover";
 import { GroupSettingsMembersPagination } from "@/features/group-settings/components/members/group-settings-members-pagination";
 import {
 	formatRelativeUtc,
@@ -33,31 +34,20 @@ import {
 	MEMBERS_COLUMN_SIZE,
 } from "@/features/group-settings/lib/group-settings-data-table-column-size";
 import type { GroupSettingsMemberRow } from "@/features/group-settings/lib/group-settings-members-view";
-import { userInitials } from "@/lib/user-initials";
 import {
-	menuCheckboxBoxClass,
-	menuCheckboxItemClass,
-	menuPopupClass,
-	menuPositionerClass,
-} from "@/lib/menu-chrome";
+	getMemberModerationPolicy,
+	type MemberModerationPolicy,
+} from "@/features/group-settings/lib/member-moderation-policy";
+import { isNativeContextMenuAllowed } from "@/lib/context-menu-chrome";
+import type { GroupPermissionSubject } from "@/lib/group-permissions";
+import {
+	resolveMemberHoistedRole,
+	resolveMemberNameColor,
+} from "@/lib/member-role-display";
+import { menuCheckboxBoxClass } from "@/lib/menu-chrome";
+import { userInitials } from "@/lib/user-initials";
 import { cn } from "@/lib/utils";
 import { MEMBER_PAGE_SIZE } from "@/services/invite/invite.query";
-
-const MEMBER_ROLES = ["owner", "member"] as const;
-type MemberRoleKey = (typeof MEMBER_ROLES)[number];
-
-function normalizeSelectedRoles(roles: string[]): MemberRoleKey[] {
-	const set = new Set<MemberRoleKey>();
-	for (const r of roles) {
-		if (r === "owner" || r === "member") {
-			set.add(r);
-		}
-	}
-	if (set.size === 0) {
-		set.add("member");
-	}
-	return MEMBER_ROLES.filter((r) => set.has(r));
-}
 
 type MemberTableCheckboxProps = {
 	checked: boolean;
@@ -107,10 +97,14 @@ function MemberTableCheckbox({
 }
 
 type GroupSettingsMembersTableProps = {
+	groupId: string;
 	rows: GroupSettingsMemberRow[];
 	loading: boolean;
 	failed?: boolean;
-	canChangeRoles?: boolean;
+	actorUserId?: string;
+	actorGroup: GroupPermissionSubject | null | undefined;
+	actorBestRolePosition: number;
+	allRoles: readonly GroupRole[];
 	enableBulkSelect?: boolean;
 	hideRoles?: boolean;
 	rowSelection: RowSelectionState;
@@ -123,140 +117,24 @@ type GroupSettingsMembersTableProps = {
 	onPrev: () => void;
 	onNext: () => void;
 	onGoToPage: (page: number) => void;
+	onRequestKick: (member: GroupMember) => void;
+	onRequestBan: (member: GroupMember) => void;
 	emptySearch?: boolean;
 };
-
-/** ponytail: local multi-role UI until SetMemberRoles ships; at least one role stays checked. */
-function MemberRolesMenu({ roles }: { roles: string[] }) {
-	const { t } = useTranslation();
-	const [open, setOpen] = useState(false);
-	const [selected, setSelected] = useState<MemberRoleKey[]>(() => normalizeSelectedRoles(roles));
-
-	const toggleRole = (role: MemberRoleKey, next: boolean) => {
-		setSelected((prev) => {
-			if (next) {
-				return normalizeSelectedRoles([...prev, role]);
-			}
-			const filtered = prev.filter((r) => r !== role);
-			return filtered.length === 0 ? prev : filtered;
-		});
-	};
-
-	return (
-		<div className="flex flex-wrap items-center gap-1">
-			{selected.map((r) => (
-				<GroupSettingsMemberRoleBadge key={r} role={r} />
-			))}
-			<Menu.Root open={open} onOpenChange={setOpen}>
-				<Menu.Trigger
-					nativeButton
-					render={
-						<button
-							type="button"
-							className={cn(
-								"flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors",
-								"hover:bg-sidebar-accent hover:text-foreground",
-								open && "bg-sidebar-accent text-foreground",
-							)}
-							aria-haspopup="menu"
-							aria-expanded={open}
-							aria-label={t("group_settings.members.roles_menu_aria")}
-						/>
-					}
-				>
-					<Plus className="size-4" strokeWidth={2} aria-hidden />
-				</Menu.Trigger>
-				<Menu.Portal>
-					<Menu.Positioner className={menuPositionerClass} side="bottom" align="end" sideOffset={4}>
-						<Menu.Popup className={menuPopupClass}>
-							{MEMBER_ROLES.map((role) => {
-								const checked = selected.includes(role);
-								return (
-									<Menu.CheckboxItem
-										key={role}
-										className={cn(menuCheckboxItemClass, "group/checkbox")}
-										checked={checked}
-										closeOnClick={false}
-										onCheckedChange={(next) => toggleRole(role, Boolean(next))}
-									>
-										<span className="min-w-0 flex-1 pr-1">{t(`invite.role_${role}`)}</span>
-										<span className={menuCheckboxBoxClass} aria-hidden>
-											<Menu.CheckboxItemIndicator
-												keepMounted
-												className="flex items-center justify-center opacity-0 data-checked:opacity-100"
-											>
-												<Check className="size-3" strokeWidth={2.5} />
-											</Menu.CheckboxItemIndicator>
-										</span>
-									</Menu.CheckboxItem>
-								);
-							})}
-						</Menu.Popup>
-					</Menu.Positioner>
-				</Menu.Portal>
-			</Menu.Root>
-		</div>
-	);
-}
-
-function RoleBadges({
-	roles,
-	memberRoles,
-	isOwner,
-	hideRoles,
-	canChangeRoles,
-	memberId,
-}: {
-	roles: string[];
-	memberRoles?: readonly GroupMemberRoleSummary[];
-	isOwner: boolean;
-	hideRoles: boolean;
-	canChangeRoles: boolean;
-	memberId: string;
-}) {
-	const customRoles = (memberRoles ?? []).filter((r) => r.slug !== "everyone");
-	if (customRoles.length > 0) {
-		return (
-			<div className="flex flex-wrap items-center gap-1">
-				{isOwner ? <GroupSettingsMemberRoleBadge key="owner" role="owner" /> : null}
-				{customRoles.map((r) => (
-					<GroupSettingsMemberRoleBadge
-						key={r.id}
-						role={r.name}
-						color={r.color}
-						hideColor={hideRoles}
-					/>
-				))}
-			</div>
-		);
-	}
-
-	if (canChangeRoles) {
-		return <MemberRolesMenu key={`${memberId}:${roles.join(",")}`} roles={roles} />;
-	}
-
-	if (roles.length === 0) {
-		return <span className="text-muted-foreground">—</span>;
-	}
-
-	return (
-		<div className="flex flex-wrap items-center gap-1">
-			{roles.map((r) => (
-				<GroupSettingsMemberRoleBadge key={r} role={r} hideColor={hideRoles} />
-			))}
-		</div>
-	);
-}
 
 const thClass =
 	"px-3 py-2.5 text-left text-[11px] font-medium tracking-normal text-muted-foreground sm:text-xs";
 const tdClass = "px-3 py-2.5 align-middle text-sm text-foreground";
 
 export function GroupSettingsMembersTable({
+	groupId,
 	rows,
 	loading,
 	failed = false,
-	canChangeRoles = false,
+	actorUserId,
+	actorGroup,
+	actorBestRolePosition,
+	allRoles,
 	enableBulkSelect = false,
 	hideRoles = false,
 	rowSelection,
@@ -269,10 +147,46 @@ export function GroupSettingsMembersTable({
 	onPrev,
 	onNext,
 	onGoToPage,
+	onRequestKick,
+	onRequestBan,
 	emptySearch = false,
 }: GroupSettingsMembersTableProps) {
 	const { t, i18n } = useTranslation();
 	const locale = i18n.language;
+	const [menuState, setMenuState] = useState<MemberActionMenuState | null>(null);
+
+	const policyByUserId = useMemo(() => {
+		const map = new Map<string, MemberModerationPolicy>();
+		for (const row of rows) {
+			map.set(
+				row.member.user_id,
+				getMemberModerationPolicy({
+					actorUserId,
+					actorGroup,
+					actorBestRolePosition,
+					target: row.member,
+					allRoles,
+				}),
+			);
+		}
+		return map;
+	}, [actorBestRolePosition, actorGroup, actorUserId, allRoles, rows]);
+
+	const openRowContextMenu = useCallback(
+		(event: MouseEvent<HTMLElement>, member: GroupMember) => {
+			if (isNativeContextMenuAllowed(event.target)) {
+				return;
+			}
+			const policy = policyByUserId.get(member.user_id);
+			if (!policy) {
+				return;
+			}
+			event.preventDefault();
+			event.stopPropagation();
+			setMenuState(createMemberContextMenuState(member, policy, event.clientX, event.clientY));
+		},
+		[policyByUserId],
+	);
 
 	const columns = useMemo<ColumnDef<GroupSettingsMemberRow>[]>(() => {
 		const defs: ColumnDef<GroupSettingsMemberRow>[] = [];
@@ -403,16 +317,23 @@ export function GroupSettingsMembersTable({
 				...MEMBERS_COLUMN_SIZE.roles,
 				header: () => t("group_settings.members.col_roles"),
 				accessorFn: (row) => row.roles,
-				cell: ({ row }) => (
-					<RoleBadges
-						memberId={row.original.member.user_id}
-						roles={row.original.roles}
-						memberRoles={row.original.member.roles}
-						isOwner={row.original.member.role === "owner"}
-						hideRoles={hideRoles}
-						canChangeRoles={canChangeRoles}
-					/>
-				),
+				cell: ({ row }) => {
+					const member = row.original.member;
+					const policy = policyByUserId.get(member.user_id);
+					const assignableRoleIds = new Set(
+						(policy?.assignableRoles ?? []).map((role) => role.id),
+					);
+					return (
+						<MemberRolePickerPopover
+							groupId={groupId}
+							member={member}
+							allRoles={allRoles}
+							assignableRoleIds={assignableRoleIds}
+							canManageRoles={policy?.canManageRoles ?? false}
+							hideRoles={hideRoles}
+						/>
+					);
+				},
 			},
 			{
 				id: "last_updated",
@@ -438,7 +359,9 @@ export function GroupSettingsMembersTable({
 				header: () => null,
 				enableSorting: false,
 				cell: ({ row }) => {
-					const name = row.original.member.display_name.trim() || t("invite.member_name_fallback");
+					const member = row.original.member;
+					const policy = policyByUserId.get(member.user_id);
+					const name = member.display_name.trim() || t("invite.member_name_fallback");
 					return (
 						<div className="flex justify-end">
 							<button
@@ -447,11 +370,17 @@ export function GroupSettingsMembersTable({
 								aria-label={t("group_settings.members.row_actions_aria", { name })}
 								onClick={(event) => {
 									event.stopPropagation();
+									if (!policy) {
+										return;
+									}
+									setMenuState({
+										member,
+										policy,
+										anchor: event.currentTarget,
+										align: "end",
+									});
 								}}
-								onContextMenu={(event) => {
-									event.preventDefault();
-									event.stopPropagation();
-								}}
+								onContextMenu={(event) => openRowContextMenu(event, member)}
 							>
 								<EllipsisVertical className="size-4" strokeWidth={2} aria-hidden />
 							</button>
@@ -462,7 +391,7 @@ export function GroupSettingsMembersTable({
 		);
 
 		return defs;
-	}, [canChangeRoles, enableBulkSelect, hideRoles, locale, t]);
+	}, [allRoles, enableBulkSelect, groupId, hideRoles, locale, openRowContextMenu, policyByUserId, t]);
 
 	// eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table returns unstable table instance by design.
 	const table = useReactTable({
@@ -470,7 +399,8 @@ export function GroupSettingsMembersTable({
 		columns,
 		getCoreRowModel: getCoreRowModel(),
 		getRowId: (row) => row.member.user_id,
-		enableRowSelection: enableBulkSelect,
+		enableRowSelection: (row) =>
+			enableBulkSelect && (policyByUserId.get(row.original.member.user_id)?.canBulkSelect ?? false),
 		onRowSelectionChange,
 		state: { rowSelection },
 	});
@@ -529,7 +459,11 @@ export function GroupSettingsMembersTable({
 	}, [hideRoles, renderedRows, t]);
 
 	const renderDataRow = (row: (typeof renderedRows)[number]) => (
-		<tr key={row.id} className={groupSettingsDataTableRowClass}>
+		<tr
+			key={row.id}
+			className={cn(groupSettingsDataTableRowClass, "group/row")}
+			onContextMenu={(event) => openRowContextMenu(event, row.original.member)}
+		>
 			{row.getVisibleCells().map((cell) => (
 				<td
 					key={cell.id}
@@ -630,6 +564,14 @@ export function GroupSettingsMembersTable({
 					onGoToPage={onGoToPage}
 				/>
 			</div>
+
+			<MemberActionMenu
+				groupId={groupId}
+				menuState={menuState}
+				onCloseMenu={() => setMenuState(null)}
+				onRequestKick={onRequestKick}
+				onRequestBan={onRequestBan}
+			/>
 		</div>
 	);
 }

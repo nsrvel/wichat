@@ -1,6 +1,6 @@
 "use client";
 
-import { GroupMemberSchema } from "@wichat/contracts";
+import { GroupMemberSchema } from "@wichat/contracts/group/member";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useMemo } from "react";
 import type { z } from "zod";

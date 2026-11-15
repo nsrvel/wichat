@@ -1,6 +1,6 @@
 "use client";
 
-import type { User } from "@wichat/contracts";
+import type { User } from "@wichat/contracts/user";
 import {
 	Check,
 	ChevronRight,

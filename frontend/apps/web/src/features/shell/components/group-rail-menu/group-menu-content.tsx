@@ -1,6 +1,6 @@
 "use client";
 
-import type { Group } from "@wichat/contracts";
+import type { Group } from "@wichat/contracts/group";
 import { Fingerprint } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { GroupRailMenuCheckboxItem } from "@/features/shell/components/group-rail-menu/group-rail-menu-checkbox-item";

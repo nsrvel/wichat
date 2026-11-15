@@ -1,6 +1,6 @@
 "use client";
 
-import type { Group } from "@wichat/contracts";
+import type { Group } from "@wichat/contracts/group";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 

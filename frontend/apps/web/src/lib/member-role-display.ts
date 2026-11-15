@@ -1,4 +1,4 @@
-import type { GroupMember, GroupMemberRoleSummary } from "@wichat/contracts";
+import type { GroupMember, GroupMemberRoleSummary } from "@wichat/contracts/group/member";
 
 /**
  * Default neutral role colors that should not override the member's default

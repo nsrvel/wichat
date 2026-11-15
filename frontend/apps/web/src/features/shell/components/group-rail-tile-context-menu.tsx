@@ -1,7 +1,7 @@
 "use client";
 
 import { ContextMenu } from "@base-ui/react/context-menu";
-import type { Group } from "@wichat/contracts";
+import type { Group } from "@wichat/contracts/group";
 import { useRef, type ReactNode } from "react";
 import { GroupMenuContent } from "@/features/shell/components/group-rail-menu/group-menu-content";
 import {

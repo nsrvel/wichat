@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { BeginTotpSetupResponse } from "@wichat/contracts";
+import type { BeginTotpSetupResponse } from "@wichat/contracts/auth/mfa";
 import { Check, Copy } from "lucide-react";
 import Image from "next/image";
 import QRCode from "qrcode";

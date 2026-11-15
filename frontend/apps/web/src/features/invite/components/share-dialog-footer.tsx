@@ -7,7 +7,7 @@ import { WiChatDialogFooter } from "@/components/ui/wichat-dialog";
 import { shareDialogFooterButtonClass } from "@/features/invite/lib/share-dialog-chrome";
 import { authSubmitClass, authSubmitGhostClass } from "@/lib/form-field-styles";
 import { cn } from "@/lib/utils";
-import type { RegistrationMode } from "@wichat/contracts";
+import type { RegistrationMode } from "@wichat/contracts/auth";
 
 type ShareDialogFooterProps = {
 	currentMode: RegistrationMode | undefined;

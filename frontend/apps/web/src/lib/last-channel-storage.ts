@@ -1,4 +1,4 @@
-import { isPublicEntityId } from "@wichat/contracts";
+import { isPublicEntityId } from "@wichat/contracts/common";
 
 const STORAGE_KEY = "wichat.last_channel";
 

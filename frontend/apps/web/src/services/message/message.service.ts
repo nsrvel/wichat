@@ -5,7 +5,7 @@ import {
 	type CreateMessageBody,
 	type CreateMessageResponse,
 	type MessagesList,
-} from "@wichat/contracts";
+} from "@wichat/contracts/chat/message";
 import { api } from "@/integrations/api-client";
 
 export const CHANNEL_MESSAGES_PAGE_SIZE = 50;

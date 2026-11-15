@@ -255,6 +255,48 @@
       "clear_selection": "Hapus Pilihan",
       "ban_members": "Ban Anggota",
       "ban_coming_soon": "Ban anggota belum tersedia.",
+      "context_menu": {
+        "copy_username": "Salin Username",
+        "copied_username": "@{{username}} disalin",
+        "copy_user_id": "Salin ID Pengguna",
+        "copied_user_id": "ID pengguna disalin",
+        "roles": "Peran",
+        "no_assignable_roles": "Tidak ada peran yang bisa diatur",
+        "kick_member": "Kick {{name}}",
+        "ban_member": "Ban {{name}}"
+      },
+      "roles_popover": {
+        "search_placeholder": "Cari peran…",
+        "empty": "Peran tidak ditemukan",
+        "add_role_aria": "Atur peran",
+        "more_roles_aria": "Lihat {{count}} peran lainnya",
+        "added_toast": "Peran {{role}} ditambahkan ke {{name}}",
+        "removed_toast": "Peran {{role}} dihapus dari {{name}}"
+      },
+      "kick_dialog": {
+        "title": "Kick {{name}}",
+        "message": "Yakin ingin mengeluarkan {{name}} dari grup ini? Mereka masih bisa bergabung lagi lewat undangan baru.",
+        "cancel": "Batal",
+        "confirm": "Kick",
+        "success_toast": "{{name}} dikeluarkan dari grup."
+      },
+      "ban_dialog": {
+        "title": "Ban {{name}}",
+        "title_bulk": "Ban {{count}} anggota",
+        "message": "Yakin ingin mem-ban {{name}}? Mereka akan dikeluarkan dan tidak bisa bergabung lagi ke grup ini.",
+        "message_bulk": "Yakin ingin mem-ban {{count}} anggota terpilih? Mereka akan dikeluarkan dan tidak bisa bergabung lagi ke grup ini.",
+        "reason_label": "Alasan (opsional)",
+        "reason_placeholder": "Masukkan alasan ban…",
+        "delete_history_label": "Hapus riwayat pesan",
+        "delete_none": "Jangan hapus",
+        "delete_1h": "1 jam terakhir",
+        "delete_24h": "24 jam terakhir",
+        "delete_7d": "7 hari terakhir",
+        "cancel": "Batal",
+        "confirm": "Ban",
+        "success_toast": "{{name}} di-ban dari grup.",
+        "success_bulk_toast": "{{count}} anggota di-ban dari grup."
+      },
       "col_last_updated": "Terakhir Diperbarui",
       "row_actions_aria": "Aksi untuk {{name}}",
       "joined_wichat_pending": "Tanggal gabung WiChat belum tersedia untuk anggota ini.",

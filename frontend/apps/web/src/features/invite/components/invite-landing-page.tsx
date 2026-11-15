@@ -7,7 +7,10 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { AuthShell } from "@/features/auth/components/auth-shell";
 import { authPageBackdropClass, groupOnboardingCardShellClass } from "@/lib/form-field-styles";
-import { InviteAcceptCard } from "@/features/invite/components/invite-accept-card";
+import {
+	InviteAcceptCard,
+	InviteCardBanner,
+} from "@/features/invite/components/invite-accept-card";
 import { InviteAcceptCardSkeleton } from "@/features/invite/components/invite-accept-card-skeleton";
 import { translateError } from "@/integrations/i18n/translate-error";
 import { authPathWithReturn, inviteLandingPath } from "@/lib/auth-invite";
@@ -43,7 +46,7 @@ export function InviteLandingPage({ inviteToken }: InviteLandingPageProps) {
 		}
 		const cached = readInvitePreviewCache(token);
 		if (cached) {
-			queryClient.setQueryData([Q_INVITE_PREVIEW, token], cached);
+			queryClient.setQueryData([Q_INVITE_PREVIEW, token], cached, { updatedAt: 0 });
 		}
 	}, [mounted, token, queryClient]);
 
@@ -131,15 +134,21 @@ export function InviteLandingPage({ inviteToken }: InviteLandingPageProps) {
 	}
 
 	const showLoggedOutPreviewWait = authReady && !session.data && showAcceptSkeleton;
+	const showCardBanner = Boolean(showAcceptCard && previewData && !previewData.is_private);
 
 	return (
-		<AuthShell headline={headline} lead={lead}>
+		<AuthShell
+			headline={headline}
+			lead={lead}
+			cardBanner={showCardBanner && previewData ? <InviteCardBanner preview={previewData} /> : undefined}
+		>
 			{preview.isError && !previewData ? (
 				<p className="text-center text-sm text-destructive">{translateError(t, preview.error)}</p>
 			) : null}
 			{showAcceptCard ? (
 				<InviteAcceptCard
 					preview={previewData}
+					hasBanner={showCardBanner}
 					acceptPending={redeem.isPending}
 					onAccept={handleAccept}
 				/>

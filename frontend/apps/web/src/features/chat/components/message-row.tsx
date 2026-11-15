@@ -1,5 +1,5 @@
 import { memo, type ReactNode } from "react";
-import type { PresenceStatus } from "@wichat/contracts";
+import type { PresenceStatus } from "@wichat/contracts/user/presence";
 import { OwnerCrownIcon } from "@/components/ui/owner-crown-icon";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { userInitials } from "@/lib/user-initials";

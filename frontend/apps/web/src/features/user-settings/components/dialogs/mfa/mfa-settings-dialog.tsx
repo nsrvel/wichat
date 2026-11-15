@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
-import type { SecurityKey } from "@wichat/contracts";
+import type { SecurityKey } from "@wichat/contracts/auth/mfa";
 import { KeyRound, Pencil, Plus, ShieldCheck, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { useId, useState } from "react";

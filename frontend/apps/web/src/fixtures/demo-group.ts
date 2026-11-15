@@ -1,4 +1,4 @@
-import type { GroupsList } from "@wichat/contracts";
+import type { GroupsList } from "@wichat/contracts/group";
 
 /** Fixture workspace for `/dev/chat-ui` only — not used on production routes. */
 export const mockMyGroupsList: GroupsList = {

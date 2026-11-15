@@ -5,7 +5,8 @@ import {
 	startAuthentication,
 	type PublicKeyCredentialRequestOptionsJSON,
 } from "@simplewebauthn/browser";
-import type { AuthChallenge, MfaMethod } from "@wichat/contracts";
+import type { AuthChallenge } from "@wichat/contracts/auth";
+import type { MfaMethod } from "@wichat/contracts/auth/mfa";
 import { KeyRound, ShieldCheck, Smartphone } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";

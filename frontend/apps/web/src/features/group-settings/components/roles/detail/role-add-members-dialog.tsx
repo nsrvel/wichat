@@ -1,6 +1,6 @@
 "use client";
 
-import type { GroupMember } from "@wichat/contracts";
+import type { GroupMember } from "@wichat/contracts/group/member";
 import { Check, Search } from "lucide-react";
 import { useId, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";

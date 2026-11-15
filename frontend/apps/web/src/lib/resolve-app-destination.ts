@@ -1,4 +1,4 @@
-import type { Group } from "@wichat/contracts";
+import type { Group } from "@wichat/contracts/group";
 import { APP_HOME_PATH, channelPath } from "@/lib/app-routes";
 import type { LastChannelRef } from "@/lib/last-channel-storage";
 

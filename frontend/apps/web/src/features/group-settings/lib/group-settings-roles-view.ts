@@ -1,4 +1,4 @@
-import type { GroupRole } from "@wichat/contracts";
+import type { GroupRole } from "@wichat/contracts/group/role";
 
 /** Built-in membership role slugs. */
 export type GroupSettingsBuiltinRoleId = "member" | "everyone";

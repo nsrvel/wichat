@@ -2,12 +2,8 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
-import {
-	displayNameSchema,
-	usernameSchema,
-	type AuthChallenge,
-	type RegisterRequest,
-} from "@wichat/contracts";
+import { displayNameSchema, usernameSchema } from "@wichat/contracts/common";
+import type { AuthChallenge, RegisterRequest } from "@wichat/contracts/auth";
 import { Check, Loader2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";

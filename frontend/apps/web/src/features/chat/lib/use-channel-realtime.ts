@@ -2,7 +2,8 @@
 
 import { useQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { isPublicEntityId, type MessagesList } from "@wichat/contracts";
+import { isPublicEntityId } from "@wichat/contracts/common";
+import type { MessagesList } from "@wichat/contracts/chat/message";
 import { appendOrUpdateInfiniteChannelMessage } from "@/features/chat/lib/channel-message";
 import { subscribeChatChannel } from "@/integrations/realtime/chat-channel";
 import { sessionQueryOpts } from "@/services/auth/auth.query";

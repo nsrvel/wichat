@@ -1,6 +1,6 @@
 "use client";
 
-import { isPublicEntityId } from "@wichat/contracts";
+import { isPublicEntityId } from "@wichat/contracts/common";
 import { useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 import { useMyGroupsQuery } from "@/hooks/use-my-groups-query";

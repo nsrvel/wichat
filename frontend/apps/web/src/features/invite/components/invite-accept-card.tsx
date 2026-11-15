@@ -1,19 +1,77 @@
 "use client";
 
-import type { InvitePreview } from "@wichat/contracts";
-import { Lock } from "lucide-react";
+import type { InvitePreview } from "@wichat/contracts/group/invite";
 import Image from "next/image";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { GroupMemberStatsPill } from "@/components/group/group-member-stats-pill";
 import { Button } from "@/components/ui/button";
-import { authProductHeadlineClass, authSubmitClass } from "@/lib/form-field-styles";
+import { groupBannerSwatchSurfaceClass } from "@/lib/group-banner-presets";
+import { authSubmitClass } from "@/lib/form-field-styles";
 import { groupInitials } from "@/lib/group-initials";
 import { resolveGroupLogoUrl } from "@/lib/group-logo-url";
 import { cn } from "@/lib/utils";
 
+type InviteCardBannerProps = {
+	preview: InvitePreview;
+};
+
+/**
+ * Full-bleed banner header for the invite acceptance card, rendering the group's
+ * custom banner image or banner color with a clean fallback.
+ */
+export function InviteCardBanner({ preview }: InviteCardBannerProps) {
+	const [bannerBroken, setBannerBroken] = useState(false);
+	if (preview.is_private) {
+		return null;
+	}
+
+	const bannerSrc = resolveGroupLogoUrl(preview.group_banner_url ?? "");
+	const showBannerImage = Boolean(bannerSrc) && !bannerBroken;
+	const rawBannerColor = preview.group_banner_color?.trim() ?? "";
+	const isCustomHexBanner = /^#[0-9a-f]{3,8}$/i.test(rawBannerColor);
+	const presetBannerClass =
+		!showBannerImage && rawBannerColor && !isCustomHexBanner
+			? groupBannerSwatchSurfaceClass(rawBannerColor)
+			: "";
+
+	return (
+		<div
+			className={cn(
+				"relative h-28 w-full overflow-hidden border-b border-border/60 bg-muted/60 sm:h-32",
+				presetBannerClass,
+			)}
+			style={
+				!showBannerImage && !presetBannerClass
+					? {
+							background: isCustomHexBanner
+								? `linear-gradient(135deg, ${rawBannerColor} 0%, color-mix(in oklab, ${rawBannerColor} 68%, var(--card)) 100%)`
+								: "linear-gradient(135deg, color-mix(in oklab, var(--primary) 16%, var(--card)) 0%, var(--muted) 100%)",
+						}
+					: undefined
+			}
+		>
+			{showBannerImage ? (
+				<Image
+					src={bannerSrc}
+					alt=""
+					fill
+					unoptimized
+					loading="eager"
+					fetchPriority="high"
+					sizes="(max-width: 640px) 100vw, 448px"
+					className="object-cover"
+					onError={() => setBannerBroken(true)}
+				/>
+			) : null}
+		</div>
+	);
+}
+
 type InviteAcceptCardProps = {
 	preview: InvitePreview;
 	acceptPending?: boolean;
+	hasBanner?: boolean;
 	onAccept: () => void;
 	className?: string;
 };
@@ -21,6 +79,7 @@ type InviteAcceptCardProps = {
 export function InviteAcceptCard({
 	preview,
 	acceptPending = false,
+	hasBanner = false,
 	onAccept,
 	className,
 }: InviteAcceptCardProps) {
@@ -31,63 +90,62 @@ export function InviteAcceptCard({
 	const showLogo = Boolean(logoSrc) && !logoBroken;
 	const memberCount = preview.member_count ?? 0;
 	const onlineCount = preview.online_count ?? 0;
+	const groupDescription = isPrivate ? "" : (preview.group_description?.trim() ?? "");
 
 	return (
 		<div className={cn("flex w-full flex-col items-center text-center", className)}>
-			<div className="mb-5 flex size-[5.5rem] shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-border bg-card shadow-sm sm:mb-6 sm:size-24">
-				{isPrivate ? (
-					<Lock className="size-8 text-muted-foreground sm:size-9" aria-hidden />
-				) : showLogo ? (
+			<div
+				className={cn(
+					"relative z-10 flex size-[4.5rem] shrink-0 items-center justify-center overflow-hidden rounded-2xl border-4 border-card bg-card shadow-md sm:size-20",
+					hasBanner && !isPrivate ? "-mt-9 mb-3 sm:-mt-10 sm:mb-3.5" : "mb-4 sm:mb-5",
+				)}
+			>
+				{showLogo ? (
 					<Image
 						src={logoSrc}
 						alt=""
-						width={96}
-						height={96}
+						width={80}
+						height={80}
 						unoptimized
+						loading="eager"
+						fetchPriority="high"
 						decoding="async"
 						className="size-full object-cover"
 						onError={() => setLogoBroken(true)}
 					/>
 				) : (
-					<span className="text-xl font-semibold text-foreground sm:text-2xl">
+					<span className="flex size-full items-center justify-center bg-primary/15 text-lg font-semibold text-primary sm:text-xl">
 						{groupInitials(preview.group_name ?? "")}
 					</span>
 				)}
 			</div>
 
-			<p className="mb-1.5 text-sm font-medium text-muted-foreground sm:text-base">
+			<p className="mb-1 text-xs font-medium text-muted-foreground sm:text-[13px]">
 				{t("invite.landing_eyebrow")}
 			</p>
-			<h2 className={cn(authProductHeadlineClass, "mb-5 sm:mb-6")}>
-				{isPrivate ? t("invite.landing_private_title") : preview.group_name}
+			<h2 className="mb-2.5 w-full min-w-0 truncate text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+				{preview.group_name}
 			</h2>
 
-			{isPrivate ? (
-				<p className="mb-6 max-w-xs text-sm leading-relaxed text-muted-foreground sm:mb-7">
-					{t("invite.landing_private_hint")}
-				</p>
-			) : (
-				<>
-					<div className="mb-1 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[0.9375rem] text-muted-foreground sm:mb-2 sm:text-base">
-						<span className="inline-flex items-center gap-1.5">
-							<span className="size-2 shrink-0 rounded-full bg-presence-online" aria-hidden />
-							{t("invite.landing_stats_online", { count: onlineCount })}
-						</span>
-						<span className="text-border" aria-hidden>
-							·
-						</span>
-						<span>{t("invite.landing_stats_members", { count: memberCount })}</span>
-					</div>
+			<GroupMemberStatsPill
+				onlineCount={onlineCount}
+				memberCount={memberCount}
+				className="mb-4"
+			/>
 
-					{preview.channel_name ? (
-						<p className="mt-2 mb-5 text-xs text-muted-foreground sm:mb-6 sm:text-sm">
-							{t("invite.landing_lead_channel", { channel: preview.channel_name })}
-						</p>
-					) : (
-						<div className="mb-5 sm:mb-6" />
-					)}
-				</>
-			)}
+			{groupDescription ? (
+				<p className="mb-4 line-clamp-3 max-w-xs whitespace-pre-wrap break-words text-xs leading-relaxed text-muted-foreground sm:text-[13px]">
+					{groupDescription}
+				</p>
+			) : null}
+
+			{preview.channel_name ? (
+				<p className="mb-4 text-xs text-muted-foreground sm:mb-5">
+					{t("invite.landing_lead_channel", { channel: preview.channel_name })}
+				</p>
+			) : !groupDescription ? (
+				<div className="mb-1" />
+			) : null}
 
 			<Button
 				type="button"

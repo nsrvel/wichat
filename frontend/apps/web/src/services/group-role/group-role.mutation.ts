@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { GroupRolesListResponse, UpdateGroupRoleRequest } from "@wichat/contracts";
+import type { GroupRolesListResponse, UpdateGroupRoleRequest } from "@wichat/contracts/group/role";
 import { Q_MY_GROUPS } from "@/services/group/group.key";
 import { groupRoleKeys } from "@/services/group-role/group-role.key";
 import {

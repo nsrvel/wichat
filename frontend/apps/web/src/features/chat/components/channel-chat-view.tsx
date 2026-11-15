@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import type { GroupMember } from "@wichat/contracts";
+import type { GroupMember } from "@wichat/contracts/group/member";
 import { ChevronDown } from "lucide-react";
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";

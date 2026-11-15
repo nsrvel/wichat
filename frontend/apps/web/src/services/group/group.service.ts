@@ -1,15 +1,19 @@
 import {
+	BanGroupMembersRequestSchema,
+	BanGroupMembersResponseSchema,
+	type BanGroupMembersRequest,
+} from "@wichat/contracts/group/member";
+import {
 	CreateGroupRequestSchema,
 	GroupSchema,
 	GroupsListSchema,
-	OkSchema,
 	ReorderMyGroupsRequestSchema,
 	UpdateGroupProfileBodySchema,
 	type CreateGroupRequest,
 	type Group,
 	type UpdateGroupProfileBody,
-	isPublicEntityId,
-} from "@wichat/contracts";
+} from "@wichat/contracts/group";
+import { OkSchema, isPublicEntityId } from "@wichat/contracts/common";
 import { api } from "@/integrations/api-client";
 
 export type MyGroup = Group;
@@ -98,4 +102,17 @@ export async function saveGroupProfile(groupId: string, input: SaveGroupProfileI
 	return group;
 }
 
-export type { Group, UpdateGroupProfileBody };
+export async function kickGroupMember(groupId: string, userId: string) {
+	return api.post(
+		`/groups/${encodeURIComponent(groupId)}/members/${encodeURIComponent(userId)}/kick`,
+		OkSchema,
+		{},
+	);
+}
+
+export async function banGroupMembers(groupId: string, input: BanGroupMembersRequest) {
+	const payload = BanGroupMembersRequestSchema.parse(input);
+	return api.post(`/groups/${encodeURIComponent(groupId)}/bans`, BanGroupMembersResponseSchema, payload);
+}
+
+export type { BanGroupMembersRequest, Group, UpdateGroupProfileBody };

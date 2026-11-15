@@ -1,4 +1,4 @@
-import type { User } from "@wichat/contracts";
+import type { User } from "@wichat/contracts/user";
 import type { QueryClient } from "@tanstack/react-query";
 import { ensureAccessToken } from "@/integrations/api-client";
 import * as authQuery from "@/services/auth/auth.query";

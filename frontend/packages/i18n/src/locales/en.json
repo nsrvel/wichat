@@ -306,6 +306,48 @@
       "clear_selection": "Clear Selection",
       "ban_members": "Ban Members",
       "ban_coming_soon": "Banning members is not available yet.",
+      "context_menu": {
+        "copy_username": "Copy Username",
+        "copied_username": "Copied @{{username}}",
+        "copy_user_id": "Copy User ID",
+        "copied_user_id": "Copied user ID",
+        "roles": "Roles",
+        "no_assignable_roles": "No assignable roles",
+        "kick_member": "Kick {{name}}",
+        "ban_member": "Ban {{name}}"
+      },
+      "roles_popover": {
+        "search_placeholder": "Search roles…",
+        "empty": "No roles found",
+        "add_role_aria": "Assign roles",
+        "more_roles_aria": "Show {{count}} more roles",
+        "added_toast": "Added {{role}} to {{name}}",
+        "removed_toast": "Removed {{role}} from {{name}}"
+      },
+      "kick_dialog": {
+        "title": "Kick {{name}}",
+        "message": "Are you sure you want to kick {{name}} from this group? They can rejoin using a new invite.",
+        "cancel": "Cancel",
+        "confirm": "Kick",
+        "success_toast": "Kicked {{name}} from the group."
+      },
+      "ban_dialog": {
+        "title": "Ban {{name}}",
+        "title_bulk": "Ban {{count}} members",
+        "message": "Are you sure you want to ban {{name}}? They will be removed and prevented from rejoining this group.",
+        "message_bulk": "Are you sure you want to ban {{count}} selected members? They will be removed and prevented from rejoining this group.",
+        "reason_label": "Reason (optional)",
+        "reason_placeholder": "Enter a reason for the ban…",
+        "delete_history_label": "Delete message history",
+        "delete_none": "Don't delete any",
+        "delete_1h": "Previous hour",
+        "delete_24h": "Previous 24 hours",
+        "delete_7d": "Previous 7 days",
+        "cancel": "Cancel",
+        "confirm": "Ban",
+        "success_toast": "Banned {{name}} from the group.",
+        "success_bulk_toast": "Banned {{count}} members from the group."
+      },
       "col_last_updated": "Last Updated",
       "row_actions_aria": "Actions for {{name}}",
       "joined_wichat_pending": "WiChat join date is not available for this member yet.",

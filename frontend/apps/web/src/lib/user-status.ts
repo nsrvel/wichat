@@ -1,4 +1,4 @@
-import type { User } from "@wichat/contracts";
+import type { User } from "@wichat/contracts/user";
 
 export type UserPresenceStatus = "online" | "idle" | "dnd" | "invisible";
 

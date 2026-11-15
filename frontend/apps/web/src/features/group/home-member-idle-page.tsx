@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslation } from "react-i18next";
-import type { Group } from "@wichat/contracts";
+import type { Group } from "@wichat/contracts/group";
 
 type Props = {
 	groups: readonly Group[];

@@ -3,11 +3,16 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Q_GROUP_CHANNELS } from "@/services/channel/channel.key";
 import { Q_MY_GROUPS } from "@/services/group/group.key";
-import type { Group } from "@wichat/contracts";
+import { groupRoleKeys } from "@/services/group-role/group-role.key";
+import { Q_INVITE_MEMBERS } from "@/services/invite/invite.query";
+import type { BanGroupMembersRequest } from "@wichat/contracts/group/member";
+import type { Group } from "@wichat/contracts/group";
 import {
+	banGroupMembers,
 	createGroup,
 	deleteGroup,
 	joinGroup,
+	kickGroupMember,
 	leaveGroup,
 	reorderMyGroups,
 	saveGroupProfile,
@@ -104,6 +109,30 @@ export function useDeleteGroupMutation() {
 			queryClient.setQueryData<Group[]>([Q_MY_GROUPS], (prev) =>
 				(prev ?? []).filter((g) => g.id !== groupId),
 			);
+			void queryClient.invalidateQueries({ queryKey: [Q_MY_GROUPS] });
+		},
+	});
+}
+
+export function useKickGroupMemberMutation(groupId: string) {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: (userId: string) => kickGroupMember(groupId, userId),
+		onSuccess: () => {
+			void queryClient.invalidateQueries({ queryKey: [Q_INVITE_MEMBERS, groupId] });
+			void queryClient.invalidateQueries({ queryKey: groupRoleKeys.list(groupId) });
+			void queryClient.invalidateQueries({ queryKey: [Q_MY_GROUPS] });
+		},
+	});
+}
+
+export function useBanGroupMembersMutation(groupId: string) {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: (payload: BanGroupMembersRequest) => banGroupMembers(groupId, payload),
+		onSuccess: () => {
+			void queryClient.invalidateQueries({ queryKey: [Q_INVITE_MEMBERS, groupId] });
+			void queryClient.invalidateQueries({ queryKey: groupRoleKeys.list(groupId) });
 			void queryClient.invalidateQueries({ queryKey: [Q_MY_GROUPS] });
 		},
 	});

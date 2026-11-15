@@ -30,7 +30,7 @@ import type {
 	UpdateUserPreferencesRequest,
 	UpdateUserStatusNoteRequest,
 	User,
-} from "@wichat/contracts";
+} from "@wichat/contracts/user";
 
 export function useSaveMyProfileMutation() {
 	const queryClient = useQueryClient();

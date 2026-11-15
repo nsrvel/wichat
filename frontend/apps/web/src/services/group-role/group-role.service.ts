@@ -4,14 +4,16 @@ import {
 	GroupRoleMembersResponseSchema,
 	GroupRoleResponseSchema,
 	GroupRolesListResponseSchema,
-	OkSchema,
-	UpdateGroupHideRolesRequestSchema,
-	UpdateGroupHideRolesResponseSchema,
 	UpdateGroupRoleRequestSchema,
 	type AddGroupRoleMembersRequest,
 	type CreateGroupRoleRequest,
 	type UpdateGroupRoleRequest,
-} from "@wichat/contracts";
+} from "@wichat/contracts/group/role";
+import { OkSchema } from "@wichat/contracts/common";
+import {
+	UpdateGroupHideRolesRequestSchema,
+	UpdateGroupHideRolesResponseSchema,
+} from "@wichat/contracts/group";
 import { api } from "@/integrations/api-client";
 
 function rolesBase(groupId: string) {

@@ -1,5 +1,5 @@
 import type { InfiniteData } from "@tanstack/react-query";
-import type { Message, MessagesList } from "@wichat/contracts";
+import type { Message, MessagesList } from "@wichat/contracts/chat/message";
 
 export type ChannelMessageReaction = {
 	emoji: string;

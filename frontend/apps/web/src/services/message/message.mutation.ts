@@ -1,7 +1,11 @@
 "use client";
 
 import { useMutation, useQueryClient, type InfiniteData } from "@tanstack/react-query";
-import type { CreateMessageBody, Message, MessagesList } from "@wichat/contracts";
+import type {
+	CreateMessageBody,
+	Message,
+	MessagesList,
+} from "@wichat/contracts/chat/message";
 import { appendOrUpdateInfiniteChannelMessage } from "@/features/chat/lib/channel-message";
 import { Q_CHANNEL_MESSAGES } from "@/services/message/message.key";
 import { createChannelMessage } from "@/services/message/message.service";

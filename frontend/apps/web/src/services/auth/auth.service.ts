@@ -1,28 +1,31 @@
 import {
 	AuthChallengeSchema,
-	BeginLoginWebAuthnResponseSchema,
 	CheckUsernameResponseSchema,
-	ForgotPasswordRequestResponseSchema,
-	ForgotPasswordVerifyResponseSchema,
 	InstancePolicySchema,
-	OkSchema,
 	parsePasswordAuthStep,
 	ResendEmailCodeResponseSchema,
 	SessionSchema,
-	UserSchema,
-	VerifyLoginMfaRequestSchema,
-	type BeginLoginWebAuthnResponse,
-	type ForgotPasswordRequest,
-	type ForgotPasswordReset,
-	type ForgotPasswordVerify,
 	type LoginRequest,
 	type PasswordAuthStep,
 	type RegisterRequest,
 	type ResendEmailCode,
-	type User,
 	type VerifyEmailCode,
+} from "@wichat/contracts/auth";
+import {
+	BeginLoginWebAuthnResponseSchema,
+	VerifyLoginMfaRequestSchema,
+	type BeginLoginWebAuthnResponse,
 	type VerifyLoginMfaRequest,
-} from "@wichat/contracts";
+} from "@wichat/contracts/auth/mfa";
+import {
+	ForgotPasswordRequestResponseSchema,
+	ForgotPasswordVerifyResponseSchema,
+	type ForgotPasswordRequest,
+	type ForgotPasswordReset,
+	type ForgotPasswordVerify,
+} from "@wichat/contracts/auth/recovery";
+import { OkSchema } from "@wichat/contracts/common";
+import { UserSchema, type User } from "@wichat/contracts/user";
 import { z } from "zod";
 import { ApiError } from "@wichat/api-client/api-error";
 import { env } from "@/lib/env";

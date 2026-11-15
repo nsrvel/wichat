@@ -1,4 +1,4 @@
-import { groupNameSchema } from "@wichat/contracts";
+import { groupNameSchema } from "@wichat/contracts/common";
 import { z } from "zod";
 
 export const groupSettingsProfileSchema = z.object({

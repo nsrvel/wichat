@@ -1,5 +1,16 @@
 import { z } from "zod";
 
+export const OkSchema = z.object({
+	ok: z.boolean(),
+});
+
+/** Client-facing entity id (24 lowercase hex), used in REST and web URLs. */
+export const publicEntityIdSchema = z.string().regex(/^[0-9a-f]{24}$/);
+
+export function isPublicEntityId(value: string): boolean {
+	return publicEntityIdSchema.safeParse(value).success;
+}
+
 /** Matches backend `MinDisplayNameRunes` / `MaxDisplayNameRunes`. */
 export const MIN_DISPLAY_NAME_RUNES = 2;
 export const MAX_DISPLAY_NAME_RUNES = 50;

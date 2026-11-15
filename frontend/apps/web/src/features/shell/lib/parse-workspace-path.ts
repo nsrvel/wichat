@@ -1,4 +1,4 @@
-import { isPublicEntityId } from "@wichat/contracts";
+import { isPublicEntityId } from "@wichat/contracts/common";
 import { isQuickViewId, type QuickViewId } from "@/lib/app-routes";
 
 export type WorkspacePathTarget =

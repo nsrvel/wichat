@@ -31,7 +31,8 @@ import {
 } from "@/lib/form-field-styles";
 import { GroupIconUpload } from "@/components/group/group-icon-upload";
 import { translateError } from "@/integrations/i18n/translate-error";
-import { groupNameSchema, type Group } from "@wichat/contracts";
+import { groupNameSchema } from "@wichat/contracts/common";
+import type { Group } from "@wichat/contracts/group";
 import { cn } from "@/lib/utils";
 import { normalizeInviteToken } from "@/features/invite/lib/normalize-invite-token";
 import { channelPath } from "@/lib/app-routes";

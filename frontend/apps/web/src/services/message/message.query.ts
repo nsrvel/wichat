@@ -1,5 +1,5 @@
 import { infiniteQueryOptions } from "@tanstack/react-query";
-import { isPublicEntityId } from "@wichat/contracts";
+import { isPublicEntityId } from "@wichat/contracts/common";
 import { Q_CHANNEL_MESSAGES } from "@/services/message/message.key";
 import {
 	CHANNEL_MESSAGES_PAGE_SIZE,

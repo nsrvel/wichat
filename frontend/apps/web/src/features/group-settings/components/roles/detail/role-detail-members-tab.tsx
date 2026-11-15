@@ -1,6 +1,6 @@
 "use client";
 
-import type { GroupMember } from "@wichat/contracts";
+import type { GroupMember } from "@wichat/contracts/group/member";
 import { useQuery } from "@tanstack/react-query";
 import { Search, X } from "lucide-react";
 import { useId, useMemo, useState } from "react";

@@ -1,4 +1,4 @@
-import { GroupMemberSchema } from "@wichat/contracts";
+import { GroupMemberSchema } from "@wichat/contracts/group/member";
 import type { z } from "zod";
 import { parseUtcIso } from "@/features/group-settings/lib/group-settings-members-format";
 

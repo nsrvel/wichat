@@ -1,13 +1,17 @@
 "use client";
 
+import type { GroupMember } from "@wichat/contracts/group/member";
 import type { OnChangeFn, RowSelectionState } from "@tanstack/react-table";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { GroupSettingsMembersSelectionFooter } from "@/features/group-settings/components/members/group-settings-members-selection-footer";
 import { GroupSettingsMembersTable } from "@/features/group-settings/components/members/group-settings-members-table";
 import { GroupSettingsMembersToolbar } from "@/features/group-settings/components/members/group-settings-members-toolbar";
+import {
+	MemberBanDialog,
+	MemberKickDialog,
+} from "@/features/group-settings/components/members/member-moderation-dialogs";
 import { groupSettingsMainInnerClass, groupSettingsMainScrollClass, groupSettingsMainScrollDirtyPadClass, groupSettingsMembersWorkspaceInnerClass, groupSettingsMembersWorkspaceScrollClass, groupSettingsSectionHeaderClass, groupSettingsSectionLeadClass, groupSettingsSectionTitleClass } from "@/features/group-settings/lib/group-settings-chrome";
 import type { GroupSettingsTarget } from "@/features/group-settings/lib/group-settings-target";
 import {
@@ -15,9 +19,12 @@ import {
 	toMemberRow,
 	type MembersSortKey,
 } from "@/features/group-settings/lib/group-settings-members-view";
+import { resolveCallerBestRolePosition } from "@/features/group-settings/lib/member-moderation-policy";
 import { hasAnyGroupPermission, hasGroupPermission } from "@/lib/group-permissions";
 import { cn } from "@/lib/utils";
+import { sessionQueryOpts } from "@/services/auth/auth.query";
 import { myGroupsQueryOpts } from "@/services/group/group.query";
+import { groupRolesQueryOpts } from "@/services/group-role/group-role.query";
 import { groupMembersQueryOpts } from "@/services/invite/invite.query";
 
 type GroupSettingsMembersSectionProps = {
@@ -56,7 +63,16 @@ export function GroupSettingsMembersSection({
 		});
 	};
 
+	const { data: session } = useQuery(sessionQueryOpts());
+	const actorUserId = session?.id;
 	const { data: myGroups = [] } = useQuery(myGroupsQueryOpts());
+	const rolesQuery = useQuery({
+		...groupRolesQueryOpts(groupId),
+		enabled: Boolean(groupId),
+	});
+	const allRoles = useMemo(() => rolesQuery.data?.roles ?? [], [rolesQuery.data?.roles]);
+	const [kickTarget, setKickTarget] = useState<GroupMember | null>(null);
+	const [banTargets, setBanTargets] = useState<GroupMember[]>([]);
 
 	const currentGroup = useMemo(
 		() => myGroups.find((g) => g.id === groupId),
@@ -86,7 +102,10 @@ export function GroupSettingsMembersSection({
 	const visibleRows = useMemo(() => applyMemberView(rows, { search, sort }), [rows, search, sort]);
 
 	const emptySearch = search.trim().length > 0 && visibleRows.length === 0 && rows.length > 0;
-	const canChangeRoles = isOwner || targetIsOwner || hasGroupPermission(effectiveGroup, "manage_roles");
+	const actorBestRolePosition = useMemo(
+		() => resolveCallerBestRolePosition(actorUserId, members),
+		[actorUserId, members],
+	);
 	const canPrune = isOwner || targetIsOwner || hasGroupPermission(effectiveGroup, "kick_members");
 	const canBulk =
 		isOwner ||
@@ -95,8 +114,11 @@ export function GroupSettingsMembersSection({
 	const selectedCount = Object.keys(rowSelection).filter((id) => rowSelection[id]).length;
 
 	const onBanSelected = () => {
-		// ponytail: bulk ban RPC when group member moderation ships.
-		toast.message(t("group_settings.members.ban_coming_soon"));
+		const selectedIds = new Set(Object.keys(rowSelection).filter((id) => rowSelection[id]));
+		const selectedMembers = members.filter((m) => selectedIds.has(m.user_id));
+		if (selectedMembers.length > 0) {
+			setBanTargets(selectedMembers);
+		}
 	};
 
 	return (
@@ -128,10 +150,14 @@ export function GroupSettingsMembersSection({
 					/>
 
 					<GroupSettingsMembersTable
+						groupId={groupId}
 						rows={visibleRows}
 						loading={membersPending || membersQuery.isFetching}
 						failed={membersFailed}
-						canChangeRoles={canChangeRoles}
+						actorUserId={actorUserId}
+						actorGroup={effectiveGroup}
+						actorBestRolePosition={actorBestRolePosition}
+						allRoles={allRoles}
 						enableBulkSelect={canBulk}
 						hideRoles={hideRoles}
 						rowSelection={rowSelection}
@@ -142,6 +168,8 @@ export function GroupSettingsMembersSection({
 						hasNext={hasNext}
 						maxVisitedPage={cursorStack.length}
 						emptySearch={emptySearch}
+						onRequestKick={setKickTarget}
+						onRequestBan={(member) => setBanTargets([member])}
 						onPrev={() => setCursorStack((s) => (s.length > 1 ? s.slice(0, -1) : s))}
 						onNext={() => {
 							const next = membersQuery.data?.next_cursor;
@@ -179,6 +207,18 @@ export function GroupSettingsMembersSection({
 					onBan={onBanSelected}
 				/>
 			) : null}
+
+			<MemberKickDialog
+				groupId={groupId}
+				member={kickTarget}
+				onClose={() => setKickTarget(null)}
+			/>
+			<MemberBanDialog
+				groupId={groupId}
+				members={banTargets}
+				onClose={() => setBanTargets([])}
+				onBanned={() => setRowSelection({})}
+			/>
 		</div>
 	);
 }

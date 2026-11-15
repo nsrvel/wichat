@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ApiError } from "@wichat/api-client/api-error";
-import type { Group } from "@wichat/contracts";
+import type { Group } from "@wichat/contracts/group";
 import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -52,6 +52,7 @@ import { hasGroupPermission } from "@/lib/group-permissions";
 import { cn } from "@/lib/utils";
 import { myGroupsQueryOpts } from "@/services/group/group.query";
 import { useSaveGroupProfileMutation } from "@/services/group/group.mutation";
+import { groupMembersQueryOpts } from "@/services/invite/invite.query";
 
 export const GROUP_SETTINGS_PROFILE_FORM_ID = "group-settings-profile-form";
 
@@ -115,6 +116,15 @@ function GroupSettingsProfileForm({ target }: GroupSettingsProfileSectionProps) 
 	const { patchGroupSettingsTarget } = useGroupSettings();
 	const saveProfile = useSaveGroupProfileMutation();
 	const { data: myGroups = [] } = useQuery(myGroupsQueryOpts());
+	const membersQuery = useQuery({
+		...groupMembersQueryOpts(target.groupId, ""),
+		enabled: Boolean(target.groupId),
+	});
+	const previewMemberCount = membersQuery.data
+		? (membersQuery.data.total ?? membersQuery.data.members.length)
+		: undefined;
+	const previewOnlineCount =
+		membersQuery.data?.members.filter((member) => member.is_online).length ?? 0;
 	const currentGroup = myGroups.find((g) => g.id === target.groupId);
 	const canManageGroup =
 		target.role === "owner" ||
@@ -339,6 +349,8 @@ function GroupSettingsProfileForm({ target }: GroupSettingsProfileSectionProps) 
 									bannerColor={bannerColor}
 									logoUrl={existingLogoCleared ? "" : target.logoUrl}
 									iconFile={iconFile}
+									memberCount={previewMemberCount}
+									onlineCount={previewOnlineCount}
 								/>
 							</div>
 						</div>

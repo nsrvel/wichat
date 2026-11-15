@@ -1,19 +1,7 @@
 import {
 	AccountActionRequestSchema,
-	AuthChallengeSchema,
-	BeginTotpSetupResponseSchema,
-	BeginWebAuthnRegisterResponseSchema,
 	CompleteEmailChangeRequestSchema,
-	DeviceSessionsResponseSchema,
-	FinishWebAuthnRegisterResponseSchema,
-	MfaStatusSchema,
-	MyPresenceResponseSchema,
-	OkSchema,
-	RecoveryCodesResponseSchema,
 	RequestEmailChangeRequestSchema,
-	RevokeDeviceRequestSchema,
-	SecurityKeySchema,
-	UpdateMyPresenceRequestSchema,
 	UpdatePasswordRequestSchema,
 	UpdateUsernameRequestSchema,
 	UpdateUserProfileRequestSchema,
@@ -23,19 +11,8 @@ import {
 	VerifyEmailChangeRequestSchema,
 	VerifyEmailChangeResponseSchema,
 	type AccountActionRequest,
-	type AuthChallenge,
-	type BeginTotpSetupResponse,
-	type BeginWebAuthnRegisterResponse,
 	type CompleteEmailChangeRequest,
-	type DeviceSessionsResponse,
-	type FinishWebAuthnRegisterResponse,
-	type MfaStatus,
-	type MyPresenceResponse,
-	type RecoveryCodesResponse,
 	type RequestEmailChangeRequest,
-	type RevokeDeviceRequest,
-	type SecurityKey,
-	type UpdateMyPresenceRequest,
 	type UpdatePasswordRequest,
 	type UpdateUsernameRequest,
 	type UpdateUserProfileRequest,
@@ -44,7 +21,35 @@ import {
 	type User,
 	type VerifyEmailChangeRequest,
 	type VerifyEmailChangeResponse,
-} from "@wichat/contracts";
+} from "@wichat/contracts/user";
+import { AuthChallengeSchema, type AuthChallenge } from "@wichat/contracts/auth";
+import {
+	BeginTotpSetupResponseSchema,
+	BeginWebAuthnRegisterResponseSchema,
+	FinishWebAuthnRegisterResponseSchema,
+	MfaStatusSchema,
+	RecoveryCodesResponseSchema,
+	SecurityKeySchema,
+	type BeginTotpSetupResponse,
+	type BeginWebAuthnRegisterResponse,
+	type FinishWebAuthnRegisterResponse,
+	type MfaStatus,
+	type RecoveryCodesResponse,
+	type SecurityKey,
+} from "@wichat/contracts/auth/mfa";
+import {
+	DeviceSessionsResponseSchema,
+	RevokeDeviceRequestSchema,
+	type DeviceSessionsResponse,
+	type RevokeDeviceRequest,
+} from "@wichat/contracts/auth/device";
+import {
+	MyPresenceResponseSchema,
+	UpdateMyPresenceRequestSchema,
+	type MyPresenceResponse,
+	type UpdateMyPresenceRequest,
+} from "@wichat/contracts/user/presence";
+import { OkSchema } from "@wichat/contracts/common";
 import { api } from "@/integrations/api-client";
 
 export async function uploadMyAvatar(file: File): Promise<User> {

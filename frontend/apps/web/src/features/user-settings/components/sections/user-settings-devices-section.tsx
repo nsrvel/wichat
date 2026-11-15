@@ -2,7 +2,7 @@
 
 import { ApiError } from "@wichat/api-client/api-error";
 import { useQuery } from "@tanstack/react-query";
-import type { DeviceSession } from "@wichat/contracts";
+import type { DeviceSession } from "@wichat/contracts/auth/device";
 import { Monitor, MonitorSmartphone, Smartphone, X } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";

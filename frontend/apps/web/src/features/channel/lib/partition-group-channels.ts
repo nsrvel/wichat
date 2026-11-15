@@ -1,4 +1,4 @@
-import type { Channel } from "@wichat/contracts";
+import type { Channel } from "@wichat/contracts/chat/channel";
 
 /** Group channels by `sidebar_section` from ms-user (see channels.sidebar_section). */
 export function partitionChannelsBySidebarSection(channels: readonly Channel[]) {

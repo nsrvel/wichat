@@ -1,7 +1,4 @@
-import {
-	RealtimePresenceUpdatedSchema,
-	type RealtimePresenceUpdated,
-} from "@wichat/contracts";
+import { RealtimePresenceUpdatedSchema, type RealtimePresenceUpdated } from "@wichat/contracts/user/presence";
 import { ensureAccessToken, getAccessToken } from "@/integrations/api-client";
 import { env } from "@/lib/env";
 

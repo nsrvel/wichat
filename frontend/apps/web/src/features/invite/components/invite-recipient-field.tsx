@@ -13,7 +13,7 @@ import {
 	parseEmailChip,
 } from "@/features/invite/lib/recipient-chip";
 import { userInitials } from "@/lib/user-initials";
-import { UserSearchHitSchema } from "@wichat/contracts";
+import { UserSearchHitSchema } from "@wichat/contracts/user";
 import { cn } from "@/lib/utils";
 import type { z } from "zod";
 

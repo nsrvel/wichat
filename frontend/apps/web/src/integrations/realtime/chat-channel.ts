@@ -1,4 +1,4 @@
-import { RealtimeMessageCreatedSchema, type Message } from "@wichat/contracts";
+import { RealtimeMessageCreatedSchema, type Message } from "@wichat/contracts/chat/message";
 import { ensureAccessToken, getAccessToken } from "@/integrations/api-client";
 import { env } from "@/lib/env";
 

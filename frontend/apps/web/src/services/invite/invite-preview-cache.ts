@@ -1,5 +1,5 @@
-import type { InvitePreview } from "@wichat/contracts";
-import { InvitePreviewSchema } from "@wichat/contracts";
+import type { InvitePreview } from "@wichat/contracts/group/invite";
+import { InvitePreviewSchema } from "@wichat/contracts/group/invite";
 
 const PREFIX = "wichat:invite-preview:";
 

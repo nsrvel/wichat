@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { AuthChallenge } from "@wichat/contracts";
+import type { AuthChallenge } from "@wichat/contracts/auth";
 import Image from "next/image";
 import { useId, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";

@@ -1,4 +1,4 @@
-import { SessionSchema } from "@wichat/contracts";
+import { SessionSchema } from "@wichat/contracts/auth";
 import { ApiError } from "./api-error.ts";
 import { refreshAccessToken, type TokenStorage } from "./token-storage.ts";
 

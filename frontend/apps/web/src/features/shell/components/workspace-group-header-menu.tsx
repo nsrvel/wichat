@@ -2,7 +2,7 @@
 
 import { ContextMenu } from "@base-ui/react/context-menu";
 import { Menu } from "@base-ui/react/menu";
-import type { Group } from "@wichat/contracts";
+import type { Group } from "@wichat/contracts/group";
 import { ChevronDown, ChevronUp, MessageSquarePlus, Search } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";

@@ -1,5 +1,5 @@
 import { queryOptions } from "@tanstack/react-query";
-import { isPublicEntityId } from "@wichat/contracts";
+import { isPublicEntityId } from "@wichat/contracts/common";
 import { Q_GROUP_CHANNELS } from "@/services/channel/channel.key";
 import { listGroupChannels } from "@/services/channel/channel.service";
 

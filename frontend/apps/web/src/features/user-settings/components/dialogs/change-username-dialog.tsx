@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { usernameSchema } from "@wichat/contracts";
+import { usernameSchema } from "@wichat/contracts/common";
 import { Check, Loader2, X } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
