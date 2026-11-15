@@ -15,6 +15,7 @@ import (
 	grouprepo "github.com/wichat/wichat/backend/ms-user/internal/group/repository"
 	inviterepo "github.com/wichat/wichat/backend/ms-user/internal/invite/repository"
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
+	presencesvc "github.com/wichat/wichat/backend/ms-user/internal/presence/service"
 	activitysvc "github.com/wichat/wichat/backend/ms-user/internal/user-activity-log/service"
 	userrepo "github.com/wichat/wichat/backend/ms-user/internal/user/repository"
 	"github.com/wichat/wichat/backend/ms-user/pkg/access"
@@ -39,6 +40,7 @@ type Service interface {
 	PreviewInvite(ctx context.Context, inviteToken string) (*models.InvitePreviewResult, error)
 	RedeemInvite(ctx context.Context, accessToken, inviteToken string) (*models.RedeemInviteResult, error)
 	WithActivityLog(r activitysvc.Recorder) Service
+	WithPresence(p presencesvc.Reader) Service
 }
 
 type service struct {
@@ -51,6 +53,7 @@ type service struct {
 	sessions         authrepo.SessionRepository
 	notify           Notifier
 	activity         activitysvc.Recorder
+	presence         presencesvc.Reader
 	secret           []byte
 	webBase          string
 	objectPublicBase string
@@ -95,6 +98,11 @@ func NewService(
 
 func (s service) WithActivityLog(r activitysvc.Recorder) Service {
 	s.activity = r
+	return s
+}
+
+func (s service) WithPresence(p presencesvc.Reader) Service {
+	s.presence = p
 	return s
 }
 
@@ -361,16 +369,8 @@ func (s service) PreviewInvite(ctx context.Context, inviteToken string) (*models
 		return nil, err
 	}
 
-	if group.IsPrivate {
-		return &models.InvitePreviewResult{
-			Valid:     true,
-			IsPrivate: true,
-			ExpiresAt: row.ExpiresAt,
-		}, nil
-	}
-
 	channelName := ""
-	if row.ChannelID != nil && strings.TrimSpace(*row.ChannelID) != "" {
+	if !group.IsPrivate && row.ChannelID != nil && strings.TrimSpace(*row.ChannelID) != "" {
 		ch, err := s.channels.FindByID(ctx, *row.ChannelID)
 		if err == nil {
 			channelName = ch.Name
@@ -382,14 +382,42 @@ func (s service) PreviewInvite(ctx context.Context, inviteToken string) (*models
 		return nil, err
 	}
 
+	onlineCount := 0
+	if s.presence != nil && memberCount > 0 {
+		if memberIDs, err := s.members.ListGroupMemberIDs(ctx, group.ID); err == nil && len(memberIDs) > 0 {
+			if snapshots, err := s.presence.BatchGetEffectivePresence(ctx, memberIDs); err == nil {
+				for _, snap := range snapshots {
+					if snap.IsOnline {
+						onlineCount++
+					}
+				}
+			}
+		}
+	}
+
+	groupDescription := ""
+	groupLogoURL := ""
+	groupBannerURL := ""
+	groupBannerColor := ""
+	if !group.IsPrivate {
+		groupDescription = group.Description
+		groupLogoURL = objecturl.Public(group.LogoURL, s.objectPublicBase)
+		groupBannerURL = objecturl.Public(group.BannerURL, s.objectPublicBase)
+		groupBannerColor = group.BannerColor
+	}
+
 	return &models.InvitePreviewResult{
-		Valid:        true,
-		GroupName:    group.Name,
-		ChannelName:  channelName,
-		GroupLogoURL: objecturl.Public(group.LogoURL, s.objectPublicBase),
-		MemberCount:  memberCount,
-		OnlineCount:  0,
-		ExpiresAt:    row.ExpiresAt,
+		Valid:            true,
+		IsPrivate:        group.IsPrivate,
+		GroupName:        group.Name,
+		GroupDescription: groupDescription,
+		ChannelName:      channelName,
+		GroupLogoURL:     groupLogoURL,
+		GroupBannerURL:   groupBannerURL,
+		GroupBannerColor: groupBannerColor,
+		MemberCount:      memberCount,
+		OnlineCount:      onlineCount,
+		ExpiresAt:        row.ExpiresAt,
 	}, nil
 }
 

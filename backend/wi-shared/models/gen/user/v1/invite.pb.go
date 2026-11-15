@@ -314,18 +314,21 @@ func (x *PreviewGroupInviteRequest) GetToken() string {
 }
 
 type PreviewGroupInviteResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Valid         bool                   `protobuf:"varint,1,opt,name=valid,proto3" json:"valid,omitempty"`
-	GroupName     string                 `protobuf:"bytes,2,opt,name=group_name,json=groupName,proto3" json:"group_name,omitempty"`
-	ChannelName   string                 `protobuf:"bytes,3,opt,name=channel_name,json=channelName,proto3" json:"channel_name,omitempty"`
-	ExpiresAt     string                 `protobuf:"bytes,4,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
-	Reason        string                 `protobuf:"bytes,5,opt,name=reason,proto3" json:"reason,omitempty"`
-	GroupLogoUrl  string                 `protobuf:"bytes,6,opt,name=group_logo_url,json=groupLogoUrl,proto3" json:"group_logo_url,omitempty"`
-	MemberCount   int32                  `protobuf:"varint,7,opt,name=member_count,json=memberCount,proto3" json:"member_count,omitempty"`
-	OnlineCount   int32                  `protobuf:"varint,8,opt,name=online_count,json=onlineCount,proto3" json:"online_count,omitempty"`
-	IsPrivate     bool                   `protobuf:"varint,9,opt,name=is_private,json=isPrivate,proto3" json:"is_private,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Valid            bool                   `protobuf:"varint,1,opt,name=valid,proto3" json:"valid,omitempty"`
+	GroupName        string                 `protobuf:"bytes,2,opt,name=group_name,json=groupName,proto3" json:"group_name,omitempty"`
+	ChannelName      string                 `protobuf:"bytes,3,opt,name=channel_name,json=channelName,proto3" json:"channel_name,omitempty"`
+	ExpiresAt        string                 `protobuf:"bytes,4,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
+	Reason           string                 `protobuf:"bytes,5,opt,name=reason,proto3" json:"reason,omitempty"`
+	GroupLogoUrl     string                 `protobuf:"bytes,6,opt,name=group_logo_url,json=groupLogoUrl,proto3" json:"group_logo_url,omitempty"`
+	MemberCount      int32                  `protobuf:"varint,7,opt,name=member_count,json=memberCount,proto3" json:"member_count,omitempty"`
+	OnlineCount      int32                  `protobuf:"varint,8,opt,name=online_count,json=onlineCount,proto3" json:"online_count,omitempty"`
+	IsPrivate        bool                   `protobuf:"varint,9,opt,name=is_private,json=isPrivate,proto3" json:"is_private,omitempty"`
+	GroupBannerUrl   string                 `protobuf:"bytes,10,opt,name=group_banner_url,json=groupBannerUrl,proto3" json:"group_banner_url,omitempty"`
+	GroupBannerColor string                 `protobuf:"bytes,11,opt,name=group_banner_color,json=groupBannerColor,proto3" json:"group_banner_color,omitempty"`
+	GroupDescription string                 `protobuf:"bytes,12,opt,name=group_description,json=groupDescription,proto3" json:"group_description,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *PreviewGroupInviteResponse) Reset() {
@@ -419,6 +422,27 @@ func (x *PreviewGroupInviteResponse) GetIsPrivate() bool {
 		return x.IsPrivate
 	}
 	return false
+}
+
+func (x *PreviewGroupInviteResponse) GetGroupBannerUrl() string {
+	if x != nil {
+		return x.GroupBannerUrl
+	}
+	return ""
+}
+
+func (x *PreviewGroupInviteResponse) GetGroupBannerColor() string {
+	if x != nil {
+		return x.GroupBannerColor
+	}
+	return ""
+}
+
+func (x *PreviewGroupInviteResponse) GetGroupDescription() string {
+	if x != nil {
+		return x.GroupDescription
+	}
+	return ""
 }
 
 type RedeemGroupInviteRequest struct {
@@ -551,7 +575,7 @@ const file_user_v1_invite_proto_rawDesc = "" +
 	"\aemailed\x18\x02 \x01(\x05R\aemailed\x12\x18\n" +
 	"\askipped\x18\x03 \x01(\x05R\askipped\"1\n" +
 	"\x19PreviewGroupInviteRequest\x12\x14\n" +
-	"\x05token\x18\x01 \x01(\tR\x05token\"\xb6\x02\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\"\xbb\x03\n" +
 	"\x1aPreviewGroupInviteResponse\x12\x14\n" +
 	"\x05valid\x18\x01 \x01(\bR\x05valid\x12\x1d\n" +
 	"\n" +
@@ -564,7 +588,11 @@ const file_user_v1_invite_proto_rawDesc = "" +
 	"\fmember_count\x18\a \x01(\x05R\vmemberCount\x12!\n" +
 	"\fonline_count\x18\b \x01(\x05R\vonlineCount\x12\x1d\n" +
 	"\n" +
-	"is_private\x18\t \x01(\bR\tisPrivate\"S\n" +
+	"is_private\x18\t \x01(\bR\tisPrivate\x12(\n" +
+	"\x10group_banner_url\x18\n" +
+	" \x01(\tR\x0egroupBannerUrl\x12,\n" +
+	"\x12group_banner_color\x18\v \x01(\tR\x10groupBannerColor\x12+\n" +
+	"\x11group_description\x18\f \x01(\tR\x10groupDescription\"S\n" +
 	"\x18RedeemGroupInviteRequest\x12!\n" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x14\n" +
 	"\x05token\x18\x02 \x01(\tR\x05token\"U\n" +

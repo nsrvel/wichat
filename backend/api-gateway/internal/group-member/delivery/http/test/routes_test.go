@@ -13,14 +13,28 @@ type groupMemberRouteStub struct{}
 func (groupMemberRouteStub) JoinGroup(http.ResponseWriter, *http.Request)        {}
 func (groupMemberRouteStub) LeaveGroup(http.ResponseWriter, *http.Request)       {}
 func (groupMemberRouteStub) ListGroupMembers(http.ResponseWriter, *http.Request) {}
+func (groupMemberRouteStub) KickGroupMember(http.ResponseWriter, *http.Request)  {}
+func (groupMemberRouteStub) BanGroupMembers(http.ResponseWriter, *http.Request)  {}
 
-func TestRegisterMountsJoinGroup(t *testing.T) {
+func TestRegisterMountsGroupMemberRoutes(t *testing.T) {
 	mux := http.NewServeMux()
 	groupmemberhttp.Register(mux, groupMemberRouteStub{})
 
-	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, "/api/v1/groups/abc/join", nil)
-	_, pattern := mux.Handler(req)
-	if pattern == "" {
-		t.Fatal("join group route not registered")
+	cases := []struct {
+		method string
+		path   string
+	}{
+		{http.MethodPost, "/api/v1/groups/abc/join"},
+		{http.MethodPost, "/api/v1/groups/abc/leave"},
+		{http.MethodGet, "/api/v1/groups/abc/members"},
+		{http.MethodPost, "/api/v1/groups/abc/members/u1/kick"},
+		{http.MethodPost, "/api/v1/groups/abc/bans"},
+	}
+	for _, tc := range cases {
+		req, _ := http.NewRequestWithContext(context.Background(), tc.method, tc.path, nil)
+		_, pattern := mux.Handler(req)
+		if pattern == "" {
+			t.Fatalf("route not registered: %s %s", tc.method, tc.path)
+		}
 	}
 }

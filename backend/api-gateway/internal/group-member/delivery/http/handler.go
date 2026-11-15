@@ -19,6 +19,8 @@ type Handler interface {
 	JoinGroup(w http.ResponseWriter, r *http.Request)
 	LeaveGroup(w http.ResponseWriter, r *http.Request)
 	ListGroupMembers(w http.ResponseWriter, r *http.Request)
+	KickGroupMember(w http.ResponseWriter, r *http.Request)
+	BanGroupMembers(w http.ResponseWriter, r *http.Request)
 }
 
 type handler struct {
@@ -116,5 +118,89 @@ func (h handler) ListGroupMembers(w http.ResponseWriter, r *http.Request) {
 		Members:    authHttp.GroupMembersFromPB(out.GetMembers()),
 		NextCursor: out.GetNextCursor(),
 		Total:      int(out.GetTotal()),
+	}))
+}
+
+type banGroupMembersBody struct {
+	UserIDs              []string `json:"user_ids"`
+	Reason               string   `json:"reason"`
+	DeleteMessageSeconds int32    `json:"delete_message_seconds"`
+}
+
+type banGroupMembersResponseBody struct {
+	OK          bool `json:"ok"`
+	BannedCount int  `json:"banned_count"`
+}
+
+func (h handler) KickGroupMember(w http.ResponseWriter, r *http.Request) {
+	token := authHttp.Bearer(r)
+	if token == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.Unauthenticated(exception.MsgUnauthorized, nil))
+		return
+	}
+
+	groupID := strings.TrimSpace(r.PathValue("id"))
+	if groupID == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "id"}))
+		return
+	}
+
+	targetUserID := strings.TrimSpace(r.PathValue("userId"))
+	if targetUserID == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "userId"}))
+		return
+	}
+
+	_, err := h.ms.User.GRPC.GroupMember.KickGroupMember(r.Context(), &userv1.KickGroupMemberRequest{
+		AccessToken: token,
+		GroupId:     groupID,
+		UserId:      targetUserID,
+	})
+	if err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(authHttp.OKBody{OK: true}))
+}
+
+func (h handler) BanGroupMembers(w http.ResponseWriter, r *http.Request) {
+	token := authHttp.Bearer(r)
+	if token == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.Unauthenticated(exception.MsgUnauthorized, nil))
+		return
+	}
+
+	groupID := strings.TrimSpace(r.PathValue("id"))
+	if groupID == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "id"}))
+		return
+	}
+
+	var body banGroupMembersBody
+	if err := authHttp.DecodeJSON(w, r, &body); err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+	if len(body.UserIDs) == 0 {
+		authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "user_ids"}))
+		return
+	}
+
+	out, err := h.ms.User.GRPC.GroupMember.BanGroupMembers(r.Context(), &userv1.BanGroupMembersRequest{
+		AccessToken:          token,
+		GroupId:              groupID,
+		UserIds:              body.UserIDs,
+		Reason:               strings.TrimSpace(body.Reason),
+		DeleteMessageSeconds: body.DeleteMessageSeconds,
+	})
+	if err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(banGroupMembersResponseBody{
+		OK:          true,
+		BannedCount: int(out.GetBannedCount()),
 	}))
 }

@@ -58,14 +58,17 @@ func (s *Server) PreviewGroupInvite(ctx context.Context, req *userv1.PreviewGrou
 	}
 
 	resp := &userv1.PreviewGroupInviteResponse{
-		Valid:        out.Valid,
-		IsPrivate:    out.IsPrivate,
-		GroupName:    out.GroupName,
-		ChannelName:  out.ChannelName,
-		GroupLogoUrl: out.GroupLogoURL,
-		MemberCount:  int32(out.MemberCount), //nolint:gosec
-		OnlineCount:  int32(out.OnlineCount), //nolint:gosec
-		Reason:       out.Reason,
+		Valid:            out.Valid,
+		IsPrivate:        out.IsPrivate,
+		GroupName:        out.GroupName,
+		GroupDescription: out.GroupDescription,
+		ChannelName:      out.ChannelName,
+		GroupLogoUrl:     out.GroupLogoURL,
+		GroupBannerUrl:   out.GroupBannerURL,
+		GroupBannerColor: out.GroupBannerColor,
+		MemberCount:      int32(out.MemberCount), //nolint:gosec
+		OnlineCount:      int32(out.OnlineCount), //nolint:gosec
+		Reason:           out.Reason,
 	}
 	if !out.ExpiresAt.IsZero() {
 		resp.ExpiresAt = out.ExpiresAt.UTC().Format(time.RFC3339Nano)

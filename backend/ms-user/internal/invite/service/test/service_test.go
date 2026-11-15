@@ -675,8 +675,11 @@ func TestPreviewInvitePrivateGroupMasksDetails(t *testing.T) {
 	if err != nil || !out.Valid || !out.IsPrivate {
 		t.Fatalf("expected valid private preview, got %+v err %v", out, err)
 	}
-	if out.GroupName != "" || out.ChannelName != "" || out.GroupLogoURL != "" || out.MemberCount != 0 || out.OnlineCount != 0 {
-		t.Fatalf("expected private group details to be masked, got %+v", out)
+	if out.GroupName != created.Name || out.MemberCount != 1 {
+		t.Fatalf("expected private group name and member count to remain visible, got %+v", out)
+	}
+	if out.ChannelName != "" || out.GroupDescription != "" || out.GroupLogoURL != "" || out.GroupBannerURL != "" || out.GroupBannerColor != "" {
+		t.Fatalf("expected private group visual media, description and channel to be masked, got %+v", out)
 	}
 }
 

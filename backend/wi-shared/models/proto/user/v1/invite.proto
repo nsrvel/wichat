@@ -55,6 +55,9 @@ message PreviewGroupInviteResponse {
   int32 member_count = 7;
   int32 online_count = 8;
   bool is_private = 9;
+  string group_banner_url = 10;
+  string group_banner_color = 11;
+  string group_description = 12;
 }
 
 message RedeemGroupInviteRequest {

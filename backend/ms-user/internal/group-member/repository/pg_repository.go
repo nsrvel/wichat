@@ -18,6 +18,7 @@ type PgRepository interface {
 	InsertGroupMember(ctx context.Context, member models.GroupMember) error
 	DeleteGroupMember(ctx context.Context, groupID, userID string) error
 	CountGroupMembers(ctx context.Context, groupID string) (int, error)
+	ListGroupMemberIDs(ctx context.Context, groupID string) ([]string, error)
 	ListGroupMembersPage(ctx context.Context, groupID string, limit int, cursor *models.GroupMemberCursor) ([]models.GroupMemberProfile, *models.GroupMemberCursor, error)
 	IsMemberBanned(ctx context.Context, groupID, userID string) (bool, error)
 	BanMembers(ctx context.Context, groupID string, userIDs []string, bannedBy, reason string, deleteSeconds int) (int, error)
@@ -106,6 +107,20 @@ func (r pgRepository) CountGroupMembers(ctx context.Context, groupID string) (in
 		r.logIfInfraErr("CountGroupMembers", err)
 	}
 	return int(n), err
+}
+
+// ListGroupMemberIDs returns all user IDs belonging to a group.
+func (r pgRepository) ListGroupMemberIDs(ctx context.Context, groupID string) ([]string, error) {
+	var ids []string
+	err := r.db.NewSelect().Model((*models.GroupMemberRow)(nil)).
+		Column("user_id").
+		Where("group_id = ?", groupID).
+		Scan(ctx, &ids)
+	if err != nil {
+		r.logIfInfraErr("ListGroupMemberIDs", err)
+		return nil, err
+	}
+	return ids, nil
 }
 
 type groupMemberJoinedRow struct {

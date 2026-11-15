@@ -407,15 +407,18 @@ type SendGroupInvitesResultBody struct {
 
 // InvitePreviewBody is GET /api/v1/invites/preview.
 type InvitePreviewBody struct {
-	Valid        bool   `json:"valid"`
-	IsPrivate    bool   `json:"is_private,omitempty"`
-	GroupName    string `json:"group_name,omitempty"`
-	ChannelName  string `json:"channel_name,omitempty"`
-	GroupLogoURL string `json:"group_logo_url"`
-	MemberCount  int    `json:"member_count"`
-	OnlineCount  int    `json:"online_count"`
-	ExpiresAt    string `json:"expires_at,omitempty"`
-	Reason       string `json:"reason,omitempty"`
+	Valid            bool   `json:"valid"`
+	IsPrivate        bool   `json:"is_private,omitempty"`
+	GroupName        string `json:"group_name,omitempty"`
+	GroupDescription string `json:"group_description,omitempty"`
+	ChannelName      string `json:"channel_name,omitempty"`
+	GroupLogoURL     string `json:"group_logo_url"`
+	GroupBannerURL   string `json:"group_banner_url,omitempty"`
+	GroupBannerColor string `json:"group_banner_color,omitempty"`
+	MemberCount      int    `json:"member_count"`
+	OnlineCount      int    `json:"online_count"`
+	ExpiresAt        string `json:"expires_at,omitempty"`
+	Reason           string `json:"reason,omitempty"`
 }
 
 // RedeemInviteBody is POST /api/v1/invites/redeem.

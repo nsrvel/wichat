@@ -156,7 +156,7 @@ func (s *server) Run(ctx context.Context) error {
 	inviteSvc := inviteservice.NewService(
 		groupPg, groupMemberPg, groupRolePg, channelPg, invitePg, userPg, authSessions, notifyClient, secret,
 		s.cfg.WebOrigin, s.cfg.MinioPublicBaseURL, s.log,
-	).WithActivityLog(activitySvc)
+	).WithActivityLog(activitySvc).WithPresence(presenceSvc)
 	authSvc, err := authservice.NewService(userPg, authSessions, authRefresh, secret, s.log, googleoauth.Config{
 		ClientID:     s.cfg.GoogleClientID,
 		ClientSecret: s.cfg.GoogleClientSecret,

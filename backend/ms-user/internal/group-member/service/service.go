@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"math"
 	"strings"
 	"time"
 
@@ -297,6 +298,15 @@ func (s service) KickGroupMember(ctx context.Context, accessToken, groupPublicID
 	if !access.HasPermission(member.Role == constants.GroupRoleOwner, perms, constants.PermKickMembers) {
 		return exception.PermissionDenied(exception.MsgForbidden, nil)
 	}
+	if member.Role != constants.GroupRoleOwner {
+		allowed, err := s.filterModeratableTargets(ctx, group.ID, userID, []string{targetUserID})
+		if err != nil {
+			return err
+		}
+		if len(allowed) == 0 {
+			return exception.PermissionDenied(exception.MsgForbidden, nil)
+		}
+	}
 
 	if err := s.members.DeleteGroupMember(ctx, group.ID, targetUserID); err != nil {
 		return err
@@ -349,6 +359,16 @@ func (s service) BanGroupMembers(ctx context.Context, accessToken, groupPublicID
 	if len(validIDs) == 0 {
 		return 0, nil
 	}
+	if member.Role != constants.GroupRoleOwner {
+		filtered, err := s.filterModeratableTargets(ctx, group.ID, userID, validIDs)
+		if err != nil {
+			return 0, err
+		}
+		if len(filtered) == 0 {
+			return 0, exception.PermissionDenied(exception.MsgForbidden, nil)
+		}
+		validIDs = filtered
+	}
 
 	count, err := s.members.BanMembers(ctx, group.ID, validIDs, userID, reason, deleteSeconds)
 	if err != nil {
@@ -374,4 +394,34 @@ func (s service) BanGroupMembers(ctx context.Context, accessToken, groupPublicID
 		}
 	}
 	return count, nil
+}
+
+func bestCustomRolePosition(roles []models.GroupRoleSummary) int32 {
+	best := int32(math.MaxInt32)
+	for _, r := range roles {
+		if r.Slug == "everyone" {
+			continue
+		}
+		if r.Position < best {
+			best = r.Position
+		}
+	}
+	return best
+}
+
+func (s service) filterModeratableTargets(ctx context.Context, groupID, actorID string, targetIDs []string) ([]string, error) {
+	queryIDs := append([]string{actorID}, targetIDs...)
+	roleMap, err := s.roles.ListRolesForMembers(ctx, groupID, queryIDs)
+	if err != nil {
+		return nil, err
+	}
+	actorBest := bestCustomRolePosition(roleMap[actorID])
+	allowed := make([]string, 0, len(targetIDs))
+	for _, tid := range targetIDs {
+		targetBest := bestCustomRolePosition(roleMap[tid])
+		if targetBest == math.MaxInt32 || actorBest < targetBest {
+			allowed = append(allowed, tid)
+		}
+	}
+	return allowed, nil
 }

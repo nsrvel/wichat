@@ -126,15 +126,18 @@ func (h handler) PreviewGroupInvite(w http.ResponseWriter, r *http.Request) {
 	}
 
 	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(authHttp.InvitePreviewBody{
-		Valid:        out.GetValid(),
-		IsPrivate:    out.GetIsPrivate(),
-		GroupName:    out.GetGroupName(),
-		ChannelName:  out.GetChannelName(),
-		GroupLogoURL: out.GetGroupLogoUrl(),
-		MemberCount:  int(out.GetMemberCount()),
-		OnlineCount:  int(out.GetOnlineCount()),
-		ExpiresAt:    out.GetExpiresAt(),
-		Reason:       out.GetReason(),
+		Valid:            out.GetValid(),
+		IsPrivate:        out.GetIsPrivate(),
+		GroupName:        out.GetGroupName(),
+		GroupDescription: out.GetGroupDescription(),
+		ChannelName:      out.GetChannelName(),
+		GroupLogoURL:     out.GetGroupLogoUrl(),
+		GroupBannerURL:   out.GetGroupBannerUrl(),
+		GroupBannerColor: out.GetGroupBannerColor(),
+		MemberCount:      int(out.GetMemberCount()),
+		OnlineCount:      int(out.GetOnlineCount()),
+		ExpiresAt:        out.GetExpiresAt(),
+		Reason:           out.GetReason(),
 	}))
 }
 

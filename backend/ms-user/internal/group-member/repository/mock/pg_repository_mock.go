@@ -74,6 +74,19 @@ func (m pgRepositoryMock) CountGroupMembers(_ context.Context, groupID string) (
 	return n, nil
 }
 
+func (m pgRepositoryMock) ListGroupMemberIDs(_ context.Context, groupID string) ([]string, error) {
+	m.st.Lock()
+	defer m.st.Unlock()
+
+	var ids []string
+	for _, mem := range m.st.Members {
+		if mem.GroupID == groupID {
+			ids = append(ids, mem.UserID)
+		}
+	}
+	return ids, nil
+}
+
 func (m pgRepositoryMock) ListGroupMembersPage(
 	_ context.Context,
 	groupID string,
