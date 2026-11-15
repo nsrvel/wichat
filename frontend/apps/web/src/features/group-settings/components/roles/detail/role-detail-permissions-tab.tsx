@@ -1,31 +1,37 @@
 "use client";
 
 import { Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
-import { authInputClass } from "@/lib/form-field-styles";
 import { SettingsToggle } from "@/components/ui/settings-toggle";
-import {
-	defaultPermissionsForRole,
-	ROLE_PERMISSION_GROUPS,
-	type GroupSettingsRoleRow,
-} from "@/features/group-settings/lib/group-settings-roles-view";
+import { groupSettingsToolbarSearchInputClass } from "@/features/group-settings/lib/group-settings-chrome";
+import { ROLE_PERMISSION_GROUPS } from "@/features/group-settings/lib/group-settings-roles-view";
+import { authInputClass } from "@/lib/form-field-styles";
 import { cn } from "@/lib/utils";
 
 type RoleDetailPermissionsTabProps = {
-	role?: GroupSettingsRoleRow;
 	canManage: boolean;
+	canGrantAdministrator: boolean;
+	permissions: Record<string, boolean>;
+	onPermissionsChange: (next: Record<string, boolean>) => void;
 };
 
-export function RoleDetailPermissionsTab({ canManage }: RoleDetailPermissionsTabProps) {
+export function RoleDetailPermissionsTab({
+	canManage,
+	canGrantAdministrator,
+	permissions,
+	onPermissionsChange,
+}: RoleDetailPermissionsTabProps) {
 	const { t } = useTranslation();
+	const searchId = useId();
 	const [search, setSearch] = useState("");
-	const [permissions, setPermissions] = useState<Record<string, boolean>>(() =>
-		defaultPermissionsForRole(),
-	);
 
 	const editable = canManage;
+	const hasAnyEnabled = useMemo(
+		() => Object.values(permissions).some(Boolean),
+		[permissions],
+	);
 
 	const filteredGroups = useMemo(() => {
 		const q = search.trim().toLowerCase();
@@ -46,42 +52,29 @@ export function RoleDetailPermissionsTab({ canManage }: RoleDetailPermissionsTab
 		if (!editable) {
 			return;
 		}
-		setPermissions((prev) => {
-			const next: Record<string, boolean> = {};
-			for (const key of Object.keys(prev)) {
-				next[key] = false;
-			}
-			return next;
-		});
+		const next: Record<string, boolean> = {};
+		for (const key of Object.keys(permissions)) {
+			next[key] = false;
+		}
+		onPermissionsChange(next);
 	};
 
 	return (
 		<div className="flex flex-col gap-6 pt-5">
-			<div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-				<div className="relative min-w-0 flex-1">
-					<Search
-						className="pointer-events-none absolute top-1/2 left-3.5 z-[1] size-4 -translate-y-1/2 text-muted-foreground"
-						strokeWidth={2}
-						aria-hidden
-					/>
-					<Input
-						type="search"
-						value={search}
-						onChange={(e) => setSearch(e.target.value)}
-						placeholder={t("group_settings.roles.detail.permissions_search_placeholder")}
-						className={cn(authInputClass, "pl-9")}
-					/>
-				</div>
-
-				<button
-					type="button"
-					disabled={!editable}
-					onClick={handleClearAll}
-					className="shrink-0 self-end text-xs font-medium text-primary transition-opacity hover:underline disabled:pointer-events-none disabled:opacity-40 sm:self-center"
-				>
-					{t("group_settings.roles.detail.permissions_clear")}
-				</button>
-			</div>
+			<label className="relative block min-w-0" htmlFor={searchId}>
+				<Search
+					className="pointer-events-none absolute top-1/2 left-3.5 z-[1] size-4 -translate-y-1/2 text-muted-foreground"
+					aria-hidden
+				/>
+				<Input
+					id={searchId}
+					value={search}
+					onChange={(e) => setSearch(e.target.value)}
+					placeholder={t("group_settings.roles.detail.permissions_search_placeholder")}
+					className={cn(authInputClass, groupSettingsToolbarSearchInputClass)}
+					autoComplete="off"
+				/>
+			</label>
 
 			{filteredGroups.length === 0 ? (
 				<div className="rounded-xl border border-dashed border-border/80 bg-field/30 px-4 py-8 text-center text-sm text-muted-foreground">
@@ -92,9 +85,21 @@ export function RoleDetailPermissionsTab({ canManage }: RoleDetailPermissionsTab
 					{filteredGroups.map((group, groupIndex) => (
 						<div key={group.id} className="flex flex-col gap-4">
 							{groupIndex > 0 ? <div className="border-t border-border pb-1" /> : null}
-							<h3 className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-								{t(group.titleKey)}
-							</h3>
+							<div className="flex items-center justify-between gap-3">
+								<h3 className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+									{t(group.titleKey)}
+								</h3>
+								{groupIndex === 0 ? (
+									<button
+										type="button"
+										disabled={!editable || !hasAnyEnabled}
+										onClick={handleClearAll}
+										className="shrink-0 text-xs font-medium text-primary transition-opacity hover:underline disabled:pointer-events-none disabled:opacity-40"
+									>
+										{t("group_settings.roles.detail.permissions_clear")}
+									</button>
+								) : null}
+							</div>
 							<div className="flex flex-col divide-y divide-border/70">
 								{group.items.map((item) => {
 									const checked = Boolean(permissions[item.id]);
@@ -113,12 +118,12 @@ export function RoleDetailPermissionsTab({ canManage }: RoleDetailPermissionsTab
 											</div>
 											<SettingsToggle
 												checked={checked}
-												disabled={!editable}
+												disabled={!editable || (item.id === "administrator" && !canGrantAdministrator)}
 												onCheckedChange={(next) =>
-													setPermissions((prev) => ({
-														...prev,
+													onPermissionsChange({
+														...permissions,
 														[item.id]: next,
-													}))
+													})
 												}
 											/>
 										</div>

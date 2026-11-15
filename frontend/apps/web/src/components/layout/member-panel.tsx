@@ -1,3 +1,8 @@
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
+import { useParams } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import {
 	Calendar,
 	CheckCircle2,
@@ -12,8 +17,16 @@ import {
 	X,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import { OwnerCrownIcon } from "@/components/ui/owner-crown-icon";
 import { UserAvatar } from "@/components/ui/user-avatar";
+import {
+	groupMembersForPanel,
+	resolveMemberNameColor,
+} from "@/lib/member-role-display";
+import type { UserPresenceStatus } from "@/lib/user-status";
 import { userInitials } from "@/lib/user-initials";
+import { myGroupsQueryOpts } from "@/services/group/group.query";
+import { groupMembersQueryOpts } from "@/services/invite/invite.query";
 
 const tabs = ["Info", "Pins", "Files", "Links"];
 
@@ -78,15 +91,21 @@ const activity = [
 function Member({
 	avatar,
 	name,
+	nameColor,
 	role,
 	badge,
 	dim,
+	status,
+	isOwner,
 }: {
 	avatar: string;
 	name: string;
+	nameColor?: string;
 	role: string;
 	badge?: ReactNode;
 	dim?: boolean;
+	status?: UserPresenceStatus | "offline";
+	isOwner?: boolean;
 }) {
 	return (
 		<div className={`flex items-center gap-3 py-2 ${dim ? "opacity-50" : ""}`}>
@@ -94,18 +113,53 @@ function Member({
 				src={avatar}
 				initials={userInitials(name)}
 				size="lg"
+				status={status ?? (dim ? "invisible" : "online")}
+				statusRingClassName="ring-sidebar"
 				imgClassName={dim ? "grayscale" : undefined}
 			/>
 			<div className="min-w-0">
-				<div className="truncate text-sm font-semibold text-[#18181b]">{name}</div>
-				<div className="truncate text-[13px] text-[#a1a1aa]">{role}</div>
+				<div className="flex min-w-0 items-center gap-1.5">
+					<div
+						className="truncate text-sm font-semibold text-[#18181b]"
+						style={nameColor ? { color: nameColor } : undefined}
+					>
+						{name}
+					</div>
+					{isOwner ? <OwnerCrownIcon label="Owner" /> : null}
+				</div>
+				{role ? <div className="truncate text-[13px] text-[#a1a1aa]">{role}</div> : null}
 			</div>
 			{badge ? <span className="ml-auto shrink-0">{badge}</span> : null}
 		</div>
 	);
 }
 
-export function MemberPanel({ onClose }: { onClose?: () => void }) {
+export function MemberPanel({
+	onClose,
+	groupId: propGroupId,
+}: {
+	onClose?: () => void;
+	groupId?: string;
+}) {
+	const { t } = useTranslation();
+	const params = useParams<{ groupId?: string }>();
+	const groupId = propGroupId ?? (typeof params?.groupId === "string" ? params.groupId : "");
+	const { data: myGroups = [] } = useQuery(myGroupsQueryOpts());
+	const currentGroup = myGroups.find((g) => g.id === groupId);
+	const hideRoles = currentGroup?.hide_roles ?? false;
+	const membersQuery = useQuery({
+		...groupMembersQueryOpts(groupId, ""),
+		enabled: Boolean(groupId),
+	});
+	const realMembers = membersQuery.data?.members;
+	const groupedMembers =
+		groupId && realMembers
+			? groupMembersForPanel(realMembers, hideRoles, {
+					online: t("invite.member_online", "Online"),
+					offline: t("invite.member_offline", "Offline"),
+				})
+			: null;
+	const totalCount = membersQuery.data?.total ?? realMembers?.length ?? 9;
 	return (
 		<div className="flex h-full w-[300px] shrink-0 flex-col border-l border-sidebar-border bg-sidebar text-sidebar-foreground">
 			<div className="flex shrink-0 items-center gap-2 px-3.5 pt-2.5 pb-1">
@@ -198,7 +252,7 @@ export function MemberPanel({ onClose }: { onClose?: () => void }) {
 				</div>
 				<div className="mt-5 mb-0.5 flex items-center">
 					<h3 className="text-[15px] font-bold text-[#18181b]">
-						Members <span className="ml-1 text-[15px] font-medium text-[#a1a1aa]">9</span>
+						Members <span className="ml-1 text-[15px] font-medium text-[#a1a1aa]">{totalCount}</span>
 					</h3>
 					<div className="ml-auto flex items-center gap-0.5 text-[#52525b]">
 						<button
@@ -222,37 +276,75 @@ export function MemberPanel({ onClose }: { onClose?: () => void }) {
 					</div>
 				</div>
 				<div className="flex flex-col">
-					<Member
-						avatar="/avatars/demo/daniel.jpg"
-						name="Daniel Anderson"
-						role="Art director"
-						badge={<Badge tone="green">Design</Badge>}
-					/>
-					<Member
-						avatar="/avatars/demo/andrew.jpg"
-						name="Andrew Miller"
-						role="Product owner"
-						badge={<Badge tone="tan">Management</Badge>}
-					/>
-					<Member
-						avatar="/avatars/demo/william.jpg"
-						name="William Johnson"
-						role="UX/UI designer"
-						badge={<Badge tone="green">Design</Badge>}
-					/>
-					<Member
-						avatar="/avatars/demo/emily.jpg"
-						name="Emily Davis"
-						role="Front-end dev"
-						badge={<Badge tone="blue">Development</Badge>}
-					/>
-					<div className="mt-3 mb-1 text-[13px] text-[#a1a1aa]">Offline</div>
-					<Member
-						avatar="/avatars/demo/sophia.jpg"
-						name="Sophia Wilson"
-						role="Product designer"
-						dim
-					/>
+					{groupedMembers ? (
+						groupedMembers.map((section, sectionIndex) => (
+							<div key={section.key}>
+								{section.kind !== "online" || sectionIndex > 0 ? (
+									<div className="mt-3 mb-1 text-[13px] font-medium text-[#a1a1aa]">
+										{section.label} — {section.members.length}
+									</div>
+								) : null}
+								{section.members.map((member) => {
+									const displayName = member.display_name.trim() || `@${member.username}`;
+									const nameColor = resolveMemberNameColor(member.roles, hideRoles);
+									const primaryRole = !hideRoles
+										? member.roles.find((r) => r.slug !== "everyone")
+										: undefined;
+									const subtitle = primaryRole
+										? primaryRole.name
+										: member.username
+											? `@${member.username}`
+											: "";
+									return (
+										<Member
+											key={member.user_id}
+											avatar={member.avatar_url}
+											name={displayName}
+											nameColor={nameColor}
+											role={subtitle}
+											isOwner={member.role === "owner"}
+											status={member.presence_status}
+											dim={!member.is_online}
+										/>
+									);
+								})}
+							</div>
+						))
+					) : (
+						<>
+							<Member
+								avatar="/avatars/demo/daniel.jpg"
+								name="Daniel Anderson"
+								role="Art director"
+								badge={<Badge tone="green">Design</Badge>}
+							/>
+							<Member
+								avatar="/avatars/demo/andrew.jpg"
+								name="Andrew Miller"
+								role="Product owner"
+								badge={<Badge tone="tan">Management</Badge>}
+							/>
+							<Member
+								avatar="/avatars/demo/william.jpg"
+								name="William Johnson"
+								role="UX/UI designer"
+								badge={<Badge tone="green">Design</Badge>}
+							/>
+							<Member
+								avatar="/avatars/demo/emily.jpg"
+								name="Emily Davis"
+								role="Front-end dev"
+								badge={<Badge tone="blue">Development</Badge>}
+							/>
+							<div className="mt-3 mb-1 text-[13px] text-[#a1a1aa]">Offline</div>
+							<Member
+								avatar="/avatars/demo/sophia.jpg"
+								name="Sophia Wilson"
+								role="Product designer"
+								dim
+							/>
+						</>
+					)}
 				</div>
 			</div>
 		</div>

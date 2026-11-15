@@ -3,7 +3,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { setAccessToken } from "@/integrations/api-client";
 import { Q_INSTANCE_POLICY, Q_SESSION } from "@/services/auth/auth.key";
-import { Q_JOINABLE_GROUPS, Q_MY_GROUPS } from "@/services/group/group.key";
+import { Q_MY_GROUPS } from "@/services/group/group.key";
 import { prefetchMyGroups } from "@/services/group/prefetch-my-groups";
 import {
 	beginLoginWebAuthn,
@@ -109,7 +109,6 @@ export function useLogoutMutation() {
 			setAccessToken(null);
 			queryClient.removeQueries({ queryKey: [Q_SESSION] });
 			queryClient.removeQueries({ queryKey: [Q_MY_GROUPS] });
-			queryClient.removeQueries({ queryKey: [Q_JOINABLE_GROUPS] });
 		},
 	});
 }

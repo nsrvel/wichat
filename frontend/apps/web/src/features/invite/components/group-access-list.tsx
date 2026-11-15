@@ -1,18 +1,15 @@
 "use client";
 
 import { GroupMemberSchema } from "@wichat/contracts";
-import { ChevronLeft, ChevronRight, Crown } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useMemo } from "react";
 import type { z } from "zod";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { OwnerCrownIcon } from "@/components/ui/owner-crown-icon";
 import { UserAvatar } from "@/components/ui/user-avatar";
+import { groupMembersForPanel, resolveMemberNameColor } from "@/lib/member-role-display";
 import { userInitials } from "@/lib/user-initials";
-import {
-	menuDropdownTriggerClass,
-	menuDropdownTriggerLabelClass,
-} from "@/lib/menu-chrome";
-import { cn } from "@/lib/utils";
 
 type Member = z.infer<typeof GroupMemberSchema>;
 
@@ -21,6 +18,7 @@ type GroupAccessListProps = {
 	loading: boolean;
 	failed?: boolean;
 	filterQuery?: string;
+	hideRoles?: boolean;
 	hasPrev: boolean;
 	hasNext: boolean;
 	onPrev: () => void;
@@ -31,12 +29,14 @@ function MemberAvatar({
 	displayName,
 	username,
 	avatarUrl,
+	presenceStatus,
 	isOnline,
 	onlineLabel,
 }: {
 	displayName: string;
 	username: string;
 	avatarUrl?: string;
+	presenceStatus?: Member["presence_status"];
 	isOnline?: boolean;
 	onlineLabel: string;
 }) {
@@ -46,31 +46,10 @@ function MemberAvatar({
 				src={avatarUrl}
 				initials={userInitials(displayName, username)}
 				size="md"
-				status={isOnline ? "online" : undefined}
+				status={presenceStatus ?? (isOnline ? "online" : "offline")}
+				statusRingClassName="ring-card"
 			/>
 		</div>
-	);
-}
-
-function MemberOwnerBadge() {
-	const { t } = useTranslation();
-	const label = t("invite.role_owner");
-
-	return (
-		<span
-			className={cn(
-				menuDropdownTriggerClass,
-				"pointer-events-none shrink-0 cursor-default px-2.5 hover:bg-transparent",
-			)}
-			aria-label={t("invite.member_role_menu", { role: label })}
-		>
-			<Crown
-				className="size-3.5 shrink-0 text-amber-500 dark:text-amber-400"
-				strokeWidth={2.2}
-				aria-hidden
-			/>
-			<span className={cn(menuDropdownTriggerLabelClass, "max-w-[6.5rem]")}>{label}</span>
-		</span>
 	);
 }
 
@@ -91,6 +70,7 @@ export function GroupAccessList({
 	loading,
 	failed = false,
 	filterQuery = "",
+	hideRoles = false,
 	hasPrev,
 	hasNext,
 	onPrev,
@@ -112,6 +92,57 @@ export function GroupAccessList({
 	const filtering = filter.length > 0;
 	const showPager = !filtering && (hasPrev || hasNext);
 	const showFilterEmpty = filtering && !loading && !failed && visibleMembers.length === 0;
+	const groupedSections = useMemo(() => {
+		if (hideRoles || filtering || visibleMembers.length === 0) {
+			return null;
+		}
+		const groups = groupMembersForPanel(visibleMembers, hideRoles, {
+			online: t("invite.member_online", "Online"),
+			offline: t("invite.member_offline", "Offline"),
+		});
+		const hasHoisted = groups.some((g) => g.kind === "hoisted");
+		return hasHoisted ? groups : null;
+	}, [filtering, hideRoles, t, visibleMembers]);
+
+	const renderMemberRow = (member: Member) => {
+		const nameColor = resolveMemberNameColor(member.roles, hideRoles);
+		return (
+			<li
+				key={member.user_id}
+				className="flex items-center gap-3 px-3 py-2.5 first:rounded-t-xl last:rounded-b-xl"
+			>
+				<MemberAvatar
+					displayName={member.display_name}
+					username={member.username}
+					avatarUrl={member.avatar_url}
+					presenceStatus={member.presence_status}
+					isOnline={member.is_online}
+					onlineLabel={t("invite.member_online")}
+				/>
+				<div className="min-w-0 flex-1">
+					<div className="flex min-w-0 items-center gap-1.5">
+						<p
+							className="truncate text-sm font-medium text-foreground"
+							style={nameColor ? { color: nameColor } : undefined}
+						>
+							{member.display_name.trim() || t("invite.member_name_fallback")}
+						</p>
+						{member.role === "owner" ? (
+							<OwnerCrownIcon label={t("invite.role_owner")} />
+						) : null}
+					</div>
+					{member.username ? (
+						<p
+							className="truncate select-text text-xs text-muted-foreground"
+							data-wichat-selectable="true"
+						>
+							@{member.username}
+						</p>
+					) : null}
+				</div>
+			</li>
+		);
+	};
 
 	return (
 		<div className="space-y-2">
@@ -162,29 +193,18 @@ export function GroupAccessList({
 								</li>
 							))
 						: null}
-					{visibleMembers.map((member) => (
-						<li
-							key={member.user_id}
-							className="flex items-center gap-3 px-3 py-2.5 first:rounded-t-xl last:rounded-b-xl"
-						>
-							<MemberAvatar
-								displayName={member.display_name}
-								username={member.username}
-								avatarUrl={member.avatar_url}
-								isOnline={member.is_online === true}
-								onlineLabel={t("invite.member_online")}
-							/>
-							<div className="min-w-0 flex-1">
-								<p className="truncate text-sm font-medium text-foreground">
-									{member.display_name.trim() || t("invite.member_name_fallback")}
-								</p>
-								{member.username ? (
-									<p className="truncate text-xs text-muted-foreground">@{member.username}</p>
-								) : null}
-							</div>
-							{member.role === "owner" ? <MemberOwnerBadge /> : null}
-						</li>
-					))}
+					{groupedSections
+						? groupedSections.map((section) => (
+								<li key={section.key} className="list-none">
+									<div className="bg-muted/35 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+										{section.label} — {section.members.length}
+									</div>
+									<ul className="divide-y divide-border/80">
+										{section.members.map(renderMemberRow)}
+									</ul>
+								</li>
+							))
+						: visibleMembers.map(renderMemberRow)}
 					{failed ? (
 						<li className="px-3 py-8 text-center text-sm text-muted-foreground">
 							{t("invite.members_load_error")}

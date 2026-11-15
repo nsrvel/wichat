@@ -40,6 +40,7 @@ type UserProfilePopoverProps = {
 	onOpenEditProfile?: () => void;
 	onClearStatusNote: () => void;
 	voiceSession?: VoiceSessionSummary | null;
+	widthPx?: number;
 	trigger: ReactElement;
 };
 
@@ -59,6 +60,7 @@ export function UserProfilePopover({
 	onOpenEditProfile,
 	onClearStatusNote,
 	voiceSession,
+	widthPx = 320,
 	trigger,
 }: UserProfilePopoverProps) {
 	const { t } = useTranslation();
@@ -96,9 +98,10 @@ export function UserProfilePopover({
 			<PopoverContent
 				side="top"
 				align="start"
-				sideOffset={10}
-				className="w-[320px] overflow-visible rounded-2xl border-border bg-card p-0 text-card-foreground shadow-elevated"
+				sideOffset={14}
+				className="-ml-2 w-auto overflow-visible rounded-2xl border-border bg-card p-0 text-card-foreground shadow-elevated"
 			>
+				<div style={{ width: widthPx }}>
 				{/* WiChat profile banner: ~half above avatar, ~half behind top half of avatar */}
 				<div
 					className="h-[92px] overflow-hidden rounded-t-2xl bg-popover"
@@ -284,6 +287,7 @@ export function UserProfilePopover({
 							/>
 						</button>
 					</div>
+				</div>
 				</div>
 			</PopoverContent>
 		</Popover>

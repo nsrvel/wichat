@@ -68,3 +68,9 @@ export const groupSettingsDataTableRowClass = "transition-colors hover:bg-backgr
 
 export const groupSettingsDataTablePaginationNavClass =
 	"flex flex-col gap-2 pt-3 sm:flex-row sm:items-center sm:justify-between";
+
+/** Toolbar search input padding & action button sizing aligned with authInputClass. */
+export const groupSettingsToolbarSearchInputClass = "pl-10 pr-3 sm:pl-10 sm:pr-3.5";
+
+export const groupSettingsToolbarActionButtonClass =
+	"h-10 min-h-10 w-fit shrink-0 self-end rounded-[10px] px-4 sm:h-11 sm:min-h-11 sm:self-auto sm:rounded-xl max-h-[880px]:h-9 max-h-[880px]:min-h-9 max-h-[880px]:sm:h-10 max-h-[880px]:sm:min-h-10";

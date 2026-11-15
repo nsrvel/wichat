@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { canManageGroup, isGroupMember } from "@/features/shell/lib/group-permissions";
+import { isGroupMember } from "@/features/shell/lib/group-permissions";
+import { hasAnyGroupPermission, hasGroupPermission } from "@/lib/group-permissions";
 import { translateError } from "@/integrations/i18n/translate-error";
 import { APP_HOME_PATH, channelPath } from "@/lib/app-routes";
 import { clearLastChannelIfGroup } from "@/lib/last-channel-storage";
@@ -27,7 +28,17 @@ export function useGroupMenuController({ group, activeGroupId }: UseGroupMenuCon
 	const [hideMutedChannels, setHideMutedChannels] = useState(false);
 	const [showAllChannels, setShowAllChannels] = useState(false);
 
-	const manage = canManageGroup(group.role);
+	const canInvite = hasGroupPermission(group, "create_invite");
+	const canOpenSettings =
+		group.role === "owner" ||
+		hasAnyGroupPermission(group, [
+			"manage_group",
+			"manage_roles",
+			"kick_members",
+			"ban_members",
+		]);
+	const canManageChannels = hasGroupPermission(group, "manage_channels");
+	const manage = canOpenSettings || canManageChannels;
 	const showMemberLeave = isGroupMember(group.role);
 
 	const resetMenuState = useCallback(() => {
@@ -85,6 +96,9 @@ export function useGroupMenuController({ group, activeGroupId }: UseGroupMenuCon
 	return {
 		group,
 		manage,
+		canInvite,
+		canOpenSettings,
+		canManageChannels,
 		showMemberLeave,
 		leaveDialogOpen,
 		setLeaveDialogOpen,

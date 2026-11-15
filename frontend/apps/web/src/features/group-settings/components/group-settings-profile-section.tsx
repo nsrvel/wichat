@@ -1,12 +1,17 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useMemo, useState } from "react";
+import { ApiError } from "@wichat/api-client/api-error";
+import type { Group } from "@wichat/contracts";
+import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { FieldLabelContent } from "@/components/form/field-label";
 import { TextField } from "@/components/form/text-field";
+import { GroupIconUpload } from "@/components/group/group-icon-upload";
+import { GroupProfileCardPreview } from "@/components/group/group-profile-card-preview";
+import { HexColorField } from "@/components/ui/color-picker";
 import {
 	Form,
 	FormControl,
@@ -15,22 +20,20 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
-import { GroupSettingsFormFooter } from "@/features/group-settings/components/group-settings-form-footer";
 import { SettingsToggle } from "@/components/ui/settings-toggle";
-import { authFieldLabelClass, authInputClass } from "@/lib/form-field-styles";
-import { GroupBannerField } from "@/components/group/group-banner-field";
-import { GroupIconUpload } from "@/components/group/group-icon-upload";
-import { GroupProfileCardPreview } from "@/components/group/group-profile-card-preview";
-import {
-	GROUP_BANNER_COLOR_DEFAULT,
-	GROUP_BANNER_IMAGE_ID,
-	isGroupBannerImageId,
-	normalizeGroupBannerColor,
-	type GroupBannerColorId,
-} from "@/lib/group-banner-presets";
+import { GroupSettingsFormFooter } from "@/features/group-settings/components/group-settings-form-footer";
 import { useGroupSettings } from "@/features/group-settings/group-settings-provider";
-import { groupSettingsFormFooterFloatAlignClass, groupSettingsFormFooterFloatColumnClass, groupSettingsFormFooterFloatShellClass, groupSettingsMainInnerClass, groupSettingsMainScrollClass, groupSettingsMainScrollDirtyPadClass, groupSettingsSectionHeaderClass, groupSettingsSectionLeadClass, groupSettingsSectionTitleClass } from "@/features/group-settings/lib/group-settings-chrome";
-import { settingsSectionDividerLineClass, settingsSectionDividerWrapClass, settingsSectionGapClass } from "@/lib/settings-chrome";
+import {
+	groupSettingsFormFooterFloatAlignClass,
+	groupSettingsFormFooterFloatColumnClass,
+	groupSettingsFormFooterFloatShellClass,
+	groupSettingsMainInnerClass,
+	groupSettingsMainScrollClass,
+	groupSettingsMainScrollDirtyPadClass,
+	groupSettingsSectionHeaderClass,
+	groupSettingsSectionLeadClass,
+	groupSettingsSectionTitleClass,
+} from "@/features/group-settings/lib/group-settings-chrome";
 import {
 	groupSettingsProfileSchema,
 	type GroupSettingsProfileFormValues,
@@ -38,11 +41,43 @@ import {
 import type { GroupSettingsTarget } from "@/features/group-settings/lib/group-settings-target";
 import { useReportGroupSettingsUnsaved } from "@/features/group-settings/lib/group-settings-unsaved-guard";
 import { translateError } from "@/integrations/i18n/translate-error";
+import { authFieldLabelClass, authInputClass } from "@/lib/form-field-styles";
+import {
+	settingsSectionDividerLineClass,
+	settingsSectionDividerWrapClass,
+	settingsSectionGapClass,
+} from "@/lib/settings-chrome";
+import { useQuery } from "@tanstack/react-query";
+import { hasGroupPermission } from "@/lib/group-permissions";
 import { cn } from "@/lib/utils";
+import { myGroupsQueryOpts } from "@/services/group/group.query";
 import { useSaveGroupProfileMutation } from "@/services/group/group.mutation";
-import type { Group } from "@wichat/contracts";
 
 export const GROUP_SETTINGS_PROFILE_FORM_ID = "group-settings-profile-form";
+
+const DEFAULT_BANNER_COLOR = "#313338";
+
+const LEGACY_PRESET_TO_HEX: Record<string, string> = {
+	blossom: "#FF4CD2",
+	volcano: "#F23F43",
+	sunset: "#FF7518",
+	gold: "#FEE75C",
+	grape: "#9C84EF",
+	sky: "#00A8FC",
+	forest: "#3BA55C",
+	onyx: "#23272A",
+};
+
+function resolveGroupBannerHex(raw?: string): string {
+	const trimmed = raw?.trim() ?? "";
+	if (!trimmed || trimmed.toLowerCase() === "default") {
+		return DEFAULT_BANNER_COLOR;
+	}
+	if (/^#[0-9a-fA-F]{6}$/.test(trimmed)) {
+		return trimmed.toUpperCase();
+	}
+	return LEGACY_PRESET_TO_HEX[trimmed.toLowerCase()] ?? DEFAULT_BANNER_COLOR;
+}
 
 function groupToTargetPatch(group: Group): Partial<GroupSettingsTarget> {
 	return {
@@ -53,12 +88,6 @@ function groupToTargetPatch(group: Group): Partial<GroupSettingsTarget> {
 		bannerColor: group.banner_color,
 		bannerUrl: group.banner_url,
 	};
-}
-
-function bannerSelectionFromTarget(target: GroupSettingsTarget): GroupBannerColorId {
-	return target.bannerUrl?.trim()
-		? GROUP_BANNER_IMAGE_ID
-		: normalizeGroupBannerColor(target.bannerColor);
 }
 
 const descriptionInputClass = cn(authInputClass, "min-h-[6.5rem] resize-y py-2.5 sm:min-h-[7rem]");
@@ -85,15 +114,19 @@ function GroupSettingsProfileForm({ target }: GroupSettingsProfileSectionProps) 
 	const { t } = useTranslation();
 	const { patchGroupSettingsTarget } = useGroupSettings();
 	const saveProfile = useSaveGroupProfileMutation();
+	const { data: myGroups = [] } = useQuery(myGroupsQueryOpts());
+	const currentGroup = myGroups.find((g) => g.id === target.groupId);
+	const canManageGroup =
+		target.role === "owner" ||
+		hasGroupPermission(
+			currentGroup ?? { role: target.role ?? "member", effective_permissions: [] },
+			"manage_group",
+		);
+	const resolvedInitialBanner = resolveGroupBannerHex(target.bannerColor);
+
 	const [iconFile, setIconFile] = useState<File | null>(null);
 	const [existingLogoCleared, setExistingLogoCleared] = useState(false);
-	const [bannerSelection, setBannerSelection] = useState<GroupBannerColorId>(() =>
-		target.bannerUrl?.trim()
-			? GROUP_BANNER_IMAGE_ID
-			: normalizeGroupBannerColor(target.bannerColor),
-	);
-	const [bannerFile, setBannerFile] = useState<File | null>(null);
-	const [existingBannerCleared, setExistingBannerCleared] = useState(false);
+	const [bannerColor, setBannerColor] = useState(resolvedInitialBanner);
 
 	const form = useForm<GroupSettingsProfileFormValues>({
 		resolver: zodResolver(groupSettingsProfileSchema),
@@ -106,23 +139,12 @@ function GroupSettingsProfileForm({ target }: GroupSettingsProfileSectionProps) 
 	});
 
 	const watchedName = useWatch({ control: form.control, name: "name" });
-	const bannerPreviewUrl = useMemo(
-		() => (bannerFile ? URL.createObjectURL(bannerFile) : null),
-		[bannerFile],
-	);
-
-	useEffect(() => {
-		if (!bannerPreviewUrl) {
-			return;
-		}
-		return () => URL.revokeObjectURL(bannerPreviewUrl);
-	}, [bannerPreviewUrl]);
-	const savedBannerSelection: GroupBannerColorId = target.bannerUrl?.trim()
-		? GROUP_BANNER_IMAGE_ID
-		: normalizeGroupBannerColor(target.bannerColor);
-	const bannerDirty =
-		bannerSelection !== savedBannerSelection || bannerFile !== null || existingBannerCleared;
-	const dirty = form.formState.isDirty || iconFile !== null || existingLogoCleared || bannerDirty;
+	const watchedDescription = useWatch({ control: form.control, name: "description" });
+	const dirty =
+		form.formState.isDirty ||
+		iconFile !== null ||
+		existingLogoCleared ||
+		bannerColor !== resolvedInitialBanner;
 
 	useReportGroupSettingsUnsaved(dirty);
 
@@ -135,26 +157,12 @@ function GroupSettingsProfileForm({ target }: GroupSettingsProfileSectionProps) 
 		});
 		setIconFile(null);
 		setExistingLogoCleared(false);
-		setBannerSelection(
-			bannerSelectionFromTarget({
-				...target,
-				...groupToTargetPatch(group),
-			}),
-		);
-		setBannerFile(null);
-		setExistingBannerCleared(false);
+		setBannerColor(resolveGroupBannerHex(group.banner_color));
 	};
 
 	const onSubmit = async (values: GroupSettingsProfileFormValues) => {
-		const isImageMode = isGroupBannerImageId(bannerSelection);
-		const savedHadImage = Boolean(target.bannerUrl?.trim());
 		const clear_logo = existingLogoCleared && !iconFile;
-		const clear_banner_image = existingBannerCleared || (savedHadImage && !isImageMode);
-		const banner_color = isImageMode
-			? GROUP_BANNER_COLOR_DEFAULT
-			: bannerSelection === GROUP_BANNER_COLOR_DEFAULT
-				? GROUP_BANNER_COLOR_DEFAULT
-				: bannerSelection;
+		const banner_color = bannerColor === DEFAULT_BANNER_COLOR ? "" : bannerColor;
 
 		try {
 			const group = await saveProfile.mutateAsync({
@@ -163,14 +171,20 @@ function GroupSettingsProfileForm({ target }: GroupSettingsProfileSectionProps) 
 					...values,
 					banner_color,
 					clear_logo,
-					clear_banner_image,
+					clear_banner_image: Boolean(target.bannerUrl?.trim()),
 					iconFile,
-					bannerFile,
 				},
 			});
 			applySavedGroup(group);
 			toast.success(t("group_settings.save_success"));
 		} catch (err) {
+			if (err instanceof ApiError) {
+				const field = typeof err.params?.field === "string" ? err.params.field : "";
+				if (field === "name" || field === "description") {
+					form.setError(field, { message: translateError(t, err) });
+					return;
+				}
+			}
 			toast.error(translateError(t, err));
 		}
 	};
@@ -183,9 +197,7 @@ function GroupSettingsProfileForm({ target }: GroupSettingsProfileSectionProps) 
 		});
 		setIconFile(null);
 		setExistingLogoCleared(false);
-		setBannerSelection(savedBannerSelection);
-		setBannerFile(null);
-		setExistingBannerCleared(false);
+		setBannerColor(resolvedInitialBanner);
 	};
 
 	return (
@@ -205,125 +217,126 @@ function GroupSettingsProfileForm({ target }: GroupSettingsProfileSectionProps) 
 							<p className={groupSettingsSectionLeadClass}>{t("group_settings.profile.lead")}</p>
 						</div>
 
-						<div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_260px] xl:items-start">
+						<div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_272px] lg:items-start">
 							<form
 								id={GROUP_SETTINGS_PROFILE_FORM_ID}
 								className="flex flex-col"
 								onSubmit={form.handleSubmit(onSubmit)}
 							>
-							<GroupIconUpload
-								value={iconFile}
-								onChange={setIconFile}
-								displayName={watchedName || target.groupName}
-								logoUrl={existingLogoCleared ? "" : target.logoUrl}
-								onClearExistingLogo={() => setExistingLogoCleared(true)}
-							/>
-
-							<div className={settingsSectionGapClass}>
-								<TextField
-									control={form.control}
-									name="name"
-									label={t("group.home.name")}
-									placeholder={t("group.home.name_placeholder")}
-									autoComplete="organization"
-									required
-									labelClassName={authFieldLabelClass}
-									inputClassName={authInputClass}
+								<fieldset disabled={!canManageGroup} className="contents">
+									<GroupIconUpload
+									value={iconFile}
+									onChange={(file) => {
+										setIconFile(file);
+										if (file) {
+											setExistingLogoCleared(false);
+										}
+									}}
+									displayName={watchedName || target.groupName}
+									logoUrl={existingLogoCleared ? "" : target.logoUrl}
+									onClearExistingLogo={() => setExistingLogoCleared(true)}
 								/>
-							</div>
 
-							<div className={settingsSectionDividerWrapClass} role="presentation">
-								<div className={settingsSectionDividerLineClass} />
-							</div>
+								<div className={settingsSectionGapClass}>
+									<TextField
+										control={form.control}
+										name="name"
+										label={t("group.home.name")}
+										placeholder={t("group.home.name_placeholder")}
+										autoComplete="organization"
+										required
+										labelClassName={authFieldLabelClass}
+										inputClassName={authInputClass}
+									/>
+								</div>
 
-							<GroupBannerField
-								selection={bannerSelection}
-								onSelectionChange={setBannerSelection}
-								imageFile={bannerFile}
-								onImageFileChange={setBannerFile}
-								existingImageUrl={
-									isGroupBannerImageId(bannerSelection) && !existingBannerCleared
-										? target.bannerUrl
-										: ""
-								}
-								onClearExistingImage={() => setExistingBannerCleared(true)}
-							/>
+								<div className={settingsSectionDividerWrapClass} role="presentation">
+									<div className={settingsSectionDividerLineClass} />
+								</div>
 
-							<div className={settingsSectionDividerWrapClass} role="presentation">
-								<div className={settingsSectionDividerLineClass} />
-							</div>
+								<div className="space-y-2">
+									<label
+										htmlFor="group-settings-banner-color"
+										className={cn(authFieldLabelClass, "block")}
+									>
+										{t("group_settings.profile.banner_color")}
+									</label>
+									<HexColorField
+										id="group-settings-banner-color"
+										value={bannerColor}
+										onChange={setBannerColor}
+										defaultColor={DEFAULT_BANNER_COLOR}
+										resetLabel={t("group_settings.profile.banner_color_reset")}
+										pickerAriaLabel={t("group_settings.profile.banner_color")}
+										inputClassName={authInputClass}
+									/>
+								</div>
 
-							<FormField
-								control={form.control}
-								name="description"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel className={authFieldLabelClass}>
-											<FieldLabelContent>
-												{t("group_settings.profile.description_label")}
-											</FieldLabelContent>
-										</FormLabel>
-										<FormControl>
-											<textarea
-												{...field}
-												rows={4}
-												className={descriptionInputClass}
-												placeholder={t("group_settings.profile.description_placeholder")}
-											/>
-										</FormControl>
-										<FormMessage />
-									</FormItem>
-								)}
-							/>
+								<div className={settingsSectionDividerWrapClass} role="presentation">
+									<div className={settingsSectionDividerLineClass} />
+								</div>
 
-							<div className={settingsSectionDividerWrapClass} role="presentation">
-								<div className={settingsSectionDividerLineClass} />
-							</div>
-
-							<FormField
-								control={form.control}
-								name="is_private"
-								render={({ field }) => (
-									<FormItem className="flex-row items-center justify-between gap-8 sm:gap-10">
-										<div className="flex min-w-0 flex-1 flex-col gap-1">
-											<FormLabel className={cn(authFieldLabelClass, "cursor-default capitalize")}>
+								<FormField
+									control={form.control}
+									name="description"
+									render={({ field }) => (
+										<FormItem>
+											<FormLabel className={authFieldLabelClass}>
 												<FieldLabelContent>
-													{t("group_settings.profile.is_private_label")}
+													{t("group_settings.profile.description_label")}
 												</FieldLabelContent>
 											</FormLabel>
-											<p className="text-xs leading-relaxed text-muted-foreground">
-												{t("group_settings.profile.is_private_hint")}
-											</p>
-										</div>
-										<FormControl className="shrink-0">
-											<SettingsToggle
-												checked={field.value}
-												onCheckedChange={field.onChange}
-												aria-label={t("group_settings.profile.is_private_label")}
-											/>
-										</FormControl>
-									</FormItem>
-								)}
-							/>
+											<FormControl>
+												<textarea
+													{...field}
+													rows={4}
+													className={descriptionInputClass}
+													placeholder={t("group_settings.profile.description_placeholder")}
+												/>
+											</FormControl>
+											<FormMessage />
+										</FormItem>
+									)}
+								/>
+
+								<div className={settingsSectionDividerWrapClass} role="presentation">
+									<div className={settingsSectionDividerLineClass} />
+								</div>
+
+								<FormField
+									control={form.control}
+									name="is_private"
+									render={({ field }) => (
+										<FormItem className="flex-row items-center justify-between gap-8 sm:gap-10">
+											<div className="flex min-w-0 flex-1 flex-col gap-1">
+												<FormLabel className={cn(authFieldLabelClass, "cursor-default capitalize")}>
+													<FieldLabelContent>
+														{t("group_settings.profile.is_private_label")}
+													</FieldLabelContent>
+												</FormLabel>
+												<p className="text-xs leading-relaxed text-muted-foreground">
+													{t("group_settings.profile.is_private_hint")}
+												</p>
+											</div>
+											<FormControl className="shrink-0">
+												<SettingsToggle
+													checked={field.value}
+													onCheckedChange={field.onChange}
+													aria-label={t("group_settings.profile.is_private_label")}
+												/>
+											</FormControl>
+										</FormItem>
+									)}
+								/>
+								</fieldset>
 							</form>
 
-							<div className="space-y-2 xl:sticky xl:top-0">
+							<div className="space-y-2 lg:sticky lg:top-0">
 								<p className={authFieldLabelClass}>{t("user_settings.profiles.preview_label")}</p>
 								<GroupProfileCardPreview
 									groupName={watchedName || target.groupName}
-									bannerMode={isGroupBannerImageId(bannerSelection) ? "image" : "color"}
-									bannerColor={
-										isGroupBannerImageId(bannerSelection)
-											? GROUP_BANNER_COLOR_DEFAULT
-											: bannerSelection
-									}
-									bannerImageSrc={
-										bannerPreviewUrl ?? (existingBannerCleared ? "" : target.bannerUrl)
-									}
-									showBannerImage={
-										isGroupBannerImageId(bannerSelection) &&
-										Boolean(bannerPreviewUrl || (!existingBannerCleared && target.bannerUrl?.trim()))
-									}
+									description={watchedDescription ?? ""}
+									bannerColor={bannerColor}
 									logoUrl={existingLogoCleared ? "" : target.logoUrl}
 									iconFile={iconFile}
 								/>
@@ -332,7 +345,7 @@ function GroupSettingsProfileForm({ target }: GroupSettingsProfileSectionProps) 
 					</div>
 				</div>
 
-				{dirty ? (
+				{dirty && canManageGroup ? (
 					<div className={groupSettingsFormFooterFloatShellClass}>
 						<div className={groupSettingsFormFooterFloatAlignClass}>
 							<div className="hidden lg:block" aria-hidden />

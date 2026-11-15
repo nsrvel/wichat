@@ -23,6 +23,7 @@ import { useGroupSettings } from "@/features/group-settings/group-settings-provi
 import { DeleteGroupConfirmDialog } from "@/features/group-settings/components/delete-group-confirm-dialog";
 import { translateError } from "@/integrations/i18n/translate-error";
 import { APP_HOME_PATH, channelPath } from "@/lib/app-routes";
+import { hasAnyGroupPermission, hasGroupPermission } from "@/lib/group-permissions";
 import { clearLastChannelIfGroup } from "@/lib/last-channel-storage";
 import { SidebarPlainNavRow } from "@/components/layout/channel-sidebar/sidebar-plain-nav-row";
 import {
@@ -109,8 +110,12 @@ export function GroupSettingsSidebar({
 	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
 	const { data: myGroups = [] } = useQuery(myGroupsQueryOpts());
-	const isOwner =
-		target.role === "owner" || myGroups.some((g) => g.id === target.groupId && g.role === "owner");
+	const currentGroup = myGroups.find((g) => g.id === target.groupId);
+	const isOwner = target.role === "owner" || currentGroup?.role === "owner";
+	const canSeeRoles = isOwner || hasGroupPermission(currentGroup, "manage_roles");
+	const canSeeMembers =
+		isOwner ||
+		hasAnyGroupPermission(currentGroup, ["kick_members", "ban_members", "manage_roles"]);
 
 	const handleDeleteConfirm = () => {
 		deleteGroupMutation.mutate(target.groupId, {
@@ -161,7 +166,15 @@ export function GroupSettingsSidebar({
 									<SidebarStaticCategoryRow title={t(group.labelKey)} />
 									<div className="flex flex-col gap-0">
 										{group.items
-											.filter((item) => (item.id !== "members" && item.id !== "roles") || isOwner)
+											.filter((item) => {
+												if (item.id === "members") {
+													return canSeeMembers;
+												}
+												if (item.id === "roles") {
+													return canSeeRoles;
+												}
+												return true;
+											})
 											.map((item) => (
 												<SettingsNavItem
 													key={item.id}

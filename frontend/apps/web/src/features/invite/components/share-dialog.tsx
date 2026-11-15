@@ -19,7 +19,9 @@ import { shareDialogShellClass } from "@/features/invite/lib/share-dialog-chrome
 import { ShareDialogSection } from "@/features/invite/lib/share-dialog-section";
 import { instancePolicyQueryOpts } from "@/services/auth/auth.query";
 import { Q_MY_GROUPS } from "@/services/group/group.key";
+import { myGroupsQueryOpts } from "@/services/group/group.query";
 import { copyTextToClipboard } from "@/lib/copy-to-clipboard";
+import { hasGroupPermission } from "@/lib/group-permissions";
 import { searchUsers, sendGroupInvites } from "@/services/invite/invite.service";
 import {
 	Q_INVITE_MEMBERS,
@@ -55,8 +57,12 @@ export function ShareDialog({ open, onOpenChange, target }: ShareDialogProps) {
 	const cursor = cursorStack[cursorStack.length - 1] ?? "";
 
 	const { data: policy } = useQuery({ ...instancePolicyQueryOpts(), enabled: open });
-	// ponytail: wire from group invite settings when they exist
-	const canInviteAndCopy = true;
+	const { data: myGroups = [] } = useQuery({ ...myGroupsQueryOpts(), enabled: open });
+	const currentGroup = myGroups.find((g) => g.id === groupId);
+	const hideRoles = currentGroup?.hide_roles ?? false;
+	const canInviteAndCopy = currentGroup
+		? hasGroupPermission(currentGroup, "create_invite")
+		: false;
 
 	const membersQuery = useQuery({
 		...groupMembersQueryOpts(groupId!, cursor),
@@ -220,6 +226,7 @@ export function ShareDialog({ open, onOpenChange, target }: ShareDialogProps) {
 						loading={membersPending || membersQuery.isFetching}
 						failed={membersFailed}
 						filterQuery={membersFilterQuery}
+						hideRoles={hideRoles}
 						hasPrev={hasPrev}
 						hasNext={hasNext}
 						onPrev={() => setCursorStack((s) => (s.length > 1 ? s.slice(0, -1) : s))}

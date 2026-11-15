@@ -62,6 +62,9 @@ export function GroupHeaderDropdownContent({
 	};
 	const {
 		manage,
+		canInvite,
+		canOpenSettings,
+		canManageChannels,
 		showMemberLeave,
 		openLeaveDialog,
 		hideMutedChannels,
@@ -72,58 +75,66 @@ export function GroupHeaderDropdownContent({
 
 	return (
 		<>
-			<kit.Item
-				className={menuItemClass}
-				onClick={() => {
-					openInvite({
-						scope: "group",
-						groupId: group.id,
-						groupName: group.name,
-					});
-					closeMenu();
-				}}
-			>
-				<UserPlus className={menuIconClass} aria-hidden />
-				{t("shell.group_header_menu.invite")}
-			</kit.Item>
+			{canInvite ? (
+				<kit.Item
+					className={menuItemClass}
+					onClick={() => {
+						openInvite({
+							scope: "group",
+							groupId: group.id,
+							groupName: group.name,
+						});
+						closeMenu();
+					}}
+				>
+					<UserPlus className={menuIconClass} aria-hidden />
+					{t("shell.group_header_menu.invite")}
+				</kit.Item>
+			) : null}
 
 			{manage ? (
 				<>
-					<kit.Separator className={menuSeparatorClass} />
-					<kit.Item className={menuItemClass} onClick={openGroupSettingsForGroup}>
-						<Settings className={menuIconClass} aria-hidden />
-						{t("shell.group_header_menu.group_settings")}
-					</kit.Item>
-					<kit.Item
-						className={menuItemClass}
-						onClick={() => {
-							openCreateChannel({
-								groupId: group.id,
-								groupName: group.name,
-							});
-							closeMenu();
-						}}
-					>
-						<CirclePlus className={menuIconClass} aria-hidden />
-						{t("shell.group_header_menu.create_channel")}
-					</kit.Item>
-					<kit.Item
-						className={menuItemClass}
-						onClick={() => {
-							openCreateCategory({
-								groupId: group.id,
-								groupName: group.name,
-							});
-							closeMenu();
-						}}
-					>
-						<FolderPlus className={menuIconClass} aria-hidden />
-						{t("shell.group_header_menu.create_category")}
-					</kit.Item>
+					{canInvite ? <kit.Separator className={menuSeparatorClass} /> : null}
+					{canOpenSettings ? (
+						<kit.Item className={menuItemClass} onClick={openGroupSettingsForGroup}>
+							<Settings className={menuIconClass} aria-hidden />
+							{t("shell.group_header_menu.group_settings")}
+						</kit.Item>
+					) : null}
+					{canManageChannels ? (
+						<>
+							<kit.Item
+								className={menuItemClass}
+								onClick={() => {
+									openCreateChannel({
+										groupId: group.id,
+										groupName: group.name,
+									});
+									closeMenu();
+								}}
+							>
+								<CirclePlus className={menuIconClass} aria-hidden />
+								{t("shell.group_header_menu.create_channel")}
+							</kit.Item>
+							<kit.Item
+								className={menuItemClass}
+								onClick={() => {
+									openCreateCategory({
+										groupId: group.id,
+										groupName: group.name,
+									});
+									closeMenu();
+								}}
+							>
+								<FolderPlus className={menuIconClass} aria-hidden />
+								{t("shell.group_header_menu.create_category")}
+							</kit.Item>
+						</>
+					) : null}
 				</>
 			) : null}
 
-			<kit.Separator className={menuSeparatorClass} />
+			{canInvite || manage ? <kit.Separator className={menuSeparatorClass} /> : null}
 
 			<GroupRailNotificationSettingsSubmenu />
 

@@ -8,20 +8,36 @@ import { GroupSettingsDefaultRoleCard } from "@/features/group-settings/componen
 import { GroupSettingsRoleDetailSection } from "@/features/group-settings/components/roles/group-settings-role-detail-section";
 import { GroupSettingsRolesTable } from "@/features/group-settings/components/roles/group-settings-roles-table";
 import { GroupSettingsRolesToolbar } from "@/features/group-settings/components/roles/group-settings-roles-toolbar";
-import { groupSettingsMainInnerClass, groupSettingsMainScrollClass, groupSettingsSectionHeaderClass, groupSettingsSectionLeadClass, groupSettingsSectionTitleClass } from "@/features/group-settings/lib/group-settings-chrome";
-import type { GroupSettingsTarget } from "@/features/group-settings/lib/group-settings-target";
 import {
-	builtinRoleRows,
-	defaultEveryoneRoleRow,
+	groupSettingsMainInnerClass,
+	groupSettingsMainScrollClass,
+	groupSettingsSectionHeaderClass,
+	groupSettingsSectionLeadClass,
+	groupSettingsSectionTitleClass,
+} from "@/features/group-settings/lib/group-settings-chrome";
+import {
+	DEFAULT_ROLE_COLOR,
 	matchesRoleSearch,
+	roleDisplayTitle,
+	toGroupSettingsRoleRow,
+	type GroupSettingsRoleRow,
 } from "@/features/group-settings/lib/group-settings-roles-view";
+import type { GroupSettingsTarget } from "@/features/group-settings/lib/group-settings-target";
+import { ApiError } from "@wichat/api-client/api-error";
 import { cn } from "@/lib/utils";
 import { myGroupsQueryOpts } from "@/services/group/group.query";
+import {
+	useCreateGroupRoleMutation,
+	useUpdateGroupHideRolesMutation,
+} from "@/services/group-role/group-role.mutation";
+import { groupRolesQueryOpts } from "@/services/group-role/group-role.query";
 import { groupMembersQueryOpts } from "@/services/invite/invite.query";
 
 type GroupSettingsRolesSectionProps = {
 	target: GroupSettingsTarget;
 };
+
+const ROLE_PAGE_SIZE = 10;
 
 export function GroupSettingsRolesSection({ target }: GroupSettingsRolesSectionProps) {
 	const { t } = useTranslation();
@@ -30,30 +46,72 @@ export function GroupSettingsRolesSection({ target }: GroupSettingsRolesSectionP
 	const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
 	const [pageIndex, setPageIndex] = useState(1);
 
-	const ROLE_PAGE_SIZE = 10;
-
 	const { data: myGroups = [] } = useQuery(myGroupsQueryOpts());
-	const isOwner = useMemo(
-		() => myGroups.some((g) => g.id === groupId && g.role === "owner"),
+	const currentGroup = useMemo(
+		() => myGroups.find((g) => g.id === groupId),
 		[groupId, myGroups],
 	);
-	const targetIsOwner = target.role === "owner";
-	const canManage = isOwner || targetIsOwner;
 
+	const isOwner = currentGroup?.role === "owner" || target.role === "owner";
+	const effectivePerms = useMemo(
+		() => currentGroup?.effective_permissions ?? [],
+		[currentGroup?.effective_permissions],
+	);
+
+	const canGrantAdministrator = isOwner || effectivePerms.includes("administrator");
+	const canManage =
+		isOwner ||
+		effectivePerms.includes("administrator") ||
+		effectivePerms.includes("manage_roles");
+
+	const rolesQuery = useQuery(groupRolesQueryOpts(groupId));
 	const membersQuery = useQuery({
 		...groupMembersQueryOpts(groupId, ""),
 		enabled: Boolean(groupId),
 	});
+	const createMutation = useCreateGroupRoleMutation(groupId);
+	const hideRolesMutation = useUpdateGroupHideRolesMutation(groupId);
 
 	const memberTotal = membersQuery.data?.total ?? 0;
-	const defaultRole = useMemo(() => defaultEveryoneRoleRow(memberTotal), [memberTotal]);
-	const roleRows = useMemo(() => builtinRoleRows(memberTotal), [memberTotal]);
-	const allRoles = useMemo(() => [defaultRole, ...roleRows], [defaultRole, roleRows]);
-	const sidebarRoles = useMemo(() => [...roleRows, defaultRole], [roleRows, defaultRole]);
+	const hideRoles = rolesQuery.data?.hide_roles ?? currentGroup?.hide_roles ?? false;
+
+	const allRoles = useMemo<GroupSettingsRoleRow[]>(
+		() => (rolesQuery.data?.roles ?? []).map(toGroupSettingsRoleRow),
+		[rolesQuery.data?.roles],
+	);
+
+	const defaultRole = useMemo<GroupSettingsRoleRow>(() => {
+		const found = allRoles.find((r) => r.isDefault || r.slug === "everyone");
+		if (found) {
+			return found;
+		}
+		return {
+			id: "everyone",
+			slug: "everyone",
+			name: "@everyone",
+			memberCount: memberTotal,
+			isDefault: true,
+			isSystem: true,
+			color: DEFAULT_ROLE_COLOR,
+			hoist: false,
+			mentionable: false,
+			permissions: [],
+		};
+	}, [allRoles, memberTotal]);
+
+	const roleRows = useMemo(
+		() => allRoles.filter((r) => !(r.isDefault || r.slug === "everyone")),
+		[allRoles],
+	);
+
+	const sidebarRoles = useMemo(
+		() => (allRoles.length > 0 ? [...roleRows, defaultRole] : []),
+		[allRoles.length, defaultRole, roleRows],
+	);
 
 	const visibleRows = useMemo(() => {
 		return roleRows.filter((row) => {
-			const label = row.isSystem ? t(`invite.role_${row.name}`) : row.name;
+			const label = roleDisplayTitle(row, t);
 			return matchesRoleSearch(row, search, label);
 		});
 	}, [roleRows, search, t]);
@@ -79,22 +137,45 @@ export function GroupSettingsRolesSection({ target }: GroupSettingsRolesSectionP
 		[allRoles, selectedRoleId],
 	);
 
-	const onCreateRole = () => {
-		toast.message(t("group_settings.roles.create_coming_soon"));
+	const handleCreateRole = async () => {
+		if (!canManage || createMutation.isPending) {
+			return;
+		}
+		try {
+			const created = await createMutation.mutateAsync("new role");
+			toast.success(t("group_settings.roles.detail.created_toast", { name: created.name }));
+			setSelectedRoleId(created.id);
+		} catch (error) {
+			toast.error(error instanceof ApiError ? error.message : t("common.error_generic"));
+		}
 	};
 
-	const loading = membersQuery.isPending && !membersQuery.data;
+	const handleHideRolesChange = async (next: boolean) => {
+		if (!canManage) {
+			return;
+		}
+		try {
+			await hideRolesMutation.mutateAsync(next);
+		} catch (error) {
+			toast.error(error instanceof ApiError ? error.message : t("common.error_generic"));
+		}
+	};
+
+	const loading = rolesQuery.isPending && !rolesQuery.data;
 
 	if (selectedRole) {
 		return (
 			<GroupSettingsRoleDetailSection
+				groupId={groupId}
 				roles={sidebarRoles}
 				role={selectedRole}
 				members={membersQuery.data?.members ?? []}
 				canManage={canManage}
+				canGrantAdministrator={canGrantAdministrator}
+				hideRoles={hideRoles}
 				onSelectRole={setSelectedRoleId}
 				onBack={() => setSelectedRoleId(null)}
-				onCreateRole={onCreateRole}
+				onCreateRole={() => void handleCreateRole()}
 			/>
 		);
 	}
@@ -113,18 +194,26 @@ export function GroupSettingsRolesSection({ target }: GroupSettingsRolesSectionP
 						<p className={groupSettingsSectionLeadClass}>{t("group_settings.roles.lead")}</p>
 					</div>
 
-					<GroupSettingsDefaultRoleCard role={defaultRole} onOpenRole={setSelectedRoleId} />
+					<GroupSettingsDefaultRoleCard
+						role={defaultRole}
+						hideRoles={hideRoles}
+						canManage={canManage}
+						onHideRolesChange={(next) => void handleHideRolesChange(next)}
+						onOpenRole={setSelectedRoleId}
+					/>
 
 					<GroupSettingsRolesToolbar
 						search={search}
 						onSearchChange={handleSearchChange}
-						onCreateRole={onCreateRole}
+						onCreateRole={() => void handleCreateRole()}
 						canManage={canManage}
 					/>
 
 					<GroupSettingsRolesTable
+						groupId={groupId}
 						rows={pageRows}
 						loading={loading}
+						canManage={canManage}
 						total={roleTotal}
 						pageIndex={currentPageIndex}
 						hasPrev={hasPrev}

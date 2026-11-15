@@ -201,6 +201,12 @@ export const USER_SETTINGS_NAV_GROUPS: UserSettingsNavGroup[] = [
 						labelKey: "user_settings.language.select_label",
 						keywords: ["english", "indonesia", "locale", "bahasa"],
 					},
+					{
+						id: "time-format",
+						elementId: "user-settings-time-format",
+						labelKey: "user_settings.language.time_format_label",
+						keywords: ["time", "clock", "12", "24", "hour", "auto", "waktu", "jam"],
+					},
 				],
 			},
 		],

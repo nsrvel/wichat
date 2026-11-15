@@ -1,5 +1,6 @@
 "use client";
 
+import type { GroupMemberRoleSummary } from "@wichat/contracts";
 import { Menu } from "@base-ui/react/menu";
 import {
 	flexRender,
@@ -12,7 +13,12 @@ import {
 import { Check, EllipsisVertical, Plus } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { OwnerCrownIcon } from "@/components/ui/owner-crown-icon";
 import { UserAvatar } from "@/components/ui/user-avatar";
+import {
+	resolveMemberHoistedRole,
+	resolveMemberNameColor,
+} from "@/lib/member-role-display";
 import { GroupSettingsMemberRoleBadge } from "@/features/group-settings/components/members/group-settings-member-role-badge";
 import { GroupSettingsMembersPagination } from "@/features/group-settings/components/members/group-settings-members-pagination";
 import {
@@ -106,6 +112,7 @@ type GroupSettingsMembersTableProps = {
 	failed?: boolean;
 	canChangeRoles?: boolean;
 	enableBulkSelect?: boolean;
+	hideRoles?: boolean;
 	rowSelection: RowSelectionState;
 	onRowSelectionChange: OnChangeFn<RowSelectionState>;
 	pageIndex: number;
@@ -194,13 +201,36 @@ function MemberRolesMenu({ roles }: { roles: string[] }) {
 
 function RoleBadges({
 	roles,
+	memberRoles,
+	isOwner,
+	hideRoles,
 	canChangeRoles,
 	memberId,
 }: {
 	roles: string[];
+	memberRoles?: readonly GroupMemberRoleSummary[];
+	isOwner: boolean;
+	hideRoles: boolean;
 	canChangeRoles: boolean;
 	memberId: string;
 }) {
+	const customRoles = (memberRoles ?? []).filter((r) => r.slug !== "everyone");
+	if (customRoles.length > 0) {
+		return (
+			<div className="flex flex-wrap items-center gap-1">
+				{isOwner ? <GroupSettingsMemberRoleBadge key="owner" role="owner" /> : null}
+				{customRoles.map((r) => (
+					<GroupSettingsMemberRoleBadge
+						key={r.id}
+						role={r.name}
+						color={r.color}
+						hideColor={hideRoles}
+					/>
+				))}
+			</div>
+		);
+	}
+
 	if (canChangeRoles) {
 		return <MemberRolesMenu key={`${memberId}:${roles.join(",")}`} roles={roles} />;
 	}
@@ -212,7 +242,7 @@ function RoleBadges({
 	return (
 		<div className="flex flex-wrap items-center gap-1">
 			{roles.map((r) => (
-				<GroupSettingsMemberRoleBadge key={r} role={r} />
+				<GroupSettingsMemberRoleBadge key={r} role={r} hideColor={hideRoles} />
 			))}
 		</div>
 	);
@@ -228,6 +258,7 @@ export function GroupSettingsMembersTable({
 	failed = false,
 	canChangeRoles = false,
 	enableBulkSelect = false,
+	hideRoles = false,
 	rowSelection,
 	onRowSelectionChange,
 	pageIndex,
@@ -283,17 +314,35 @@ export function GroupSettingsMembersTable({
 				cell: ({ row }) => {
 					const { member } = row.original;
 					const name = member.display_name.trim() || t("invite.member_name_fallback");
+					const nameColor = resolveMemberNameColor(member.roles, hideRoles);
 					return (
 						<div className="flex min-w-0 items-center gap-3">
 							<UserAvatar
 								src={member.avatar_url}
 								initials={userInitials(member.display_name, member.username)}
 								size="md"
+								status={member.presence_status}
+								statusRingClassName="ring-card"
 							/>
 							<div className="min-w-0">
-								<p className="truncate font-medium">{name}</p>
+								<div className="flex min-w-0 items-center gap-1.5">
+									<p
+										className="truncate font-medium"
+										style={nameColor ? { color: nameColor } : undefined}
+									>
+										{name}
+									</p>
+									{member.role === "owner" ? (
+										<OwnerCrownIcon label={t("invite.role_owner")} />
+									) : null}
+								</div>
 								{member.username ? (
-									<p className="truncate text-xs text-muted-foreground">@{member.username}</p>
+									<p
+										className="truncate select-text text-xs text-muted-foreground"
+										data-wichat-selectable="true"
+									>
+										@{member.username}
+									</p>
 								) : null}
 							</div>
 						</div>
@@ -358,6 +407,9 @@ export function GroupSettingsMembersTable({
 					<RoleBadges
 						memberId={row.original.member.user_id}
 						roles={row.original.roles}
+						memberRoles={row.original.member.roles}
+						isOwner={row.original.member.role === "owner"}
+						hideRoles={hideRoles}
 						canChangeRoles={canChangeRoles}
 					/>
 				),
@@ -410,7 +462,7 @@ export function GroupSettingsMembersTable({
 		);
 
 		return defs;
-	}, [canChangeRoles, enableBulkSelect, locale, t]);
+	}, [canChangeRoles, enableBulkSelect, hideRoles, locale, t]);
 
 	// eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table returns unstable table instance by design.
 	const table = useReactTable({
@@ -429,6 +481,66 @@ export function GroupSettingsMembersTable({
 
 	const leafColumns = table.getVisibleLeafColumns();
 	const tableWidthStyle = dataTableMinTableStyle(leafColumns);
+	const renderedRows = table.getRowModel().rows;
+	const hoistedSections = useMemo(() => {
+		if (hideRoles || renderedRows.length === 0) {
+			return null;
+		}
+		const hoistedMap = new Map<
+			string,
+			{ label: string; position: number; rows: typeof renderedRows }
+		>();
+		const unhoisted: typeof renderedRows = [];
+		for (const row of renderedRows) {
+			const hoisted = resolveMemberHoistedRole(row.original.member.roles, hideRoles);
+			if (hoisted) {
+				const existing = hoistedMap.get(hoisted.id);
+				if (existing) {
+					existing.rows.push(row);
+				} else {
+					hoistedMap.set(hoisted.id, {
+						label: hoisted.name,
+						position: hoisted.position,
+						rows: [row],
+					});
+				}
+			} else {
+				unhoisted.push(row);
+			}
+		}
+		if (hoistedMap.size === 0) {
+			return null;
+		}
+		const sections = Array.from(hoistedMap.entries())
+			.sort(([, a], [, b]) => a.position - b.position)
+			.map(([id, entry]) => ({
+				key: `role:${id}`,
+				label: entry.label,
+				rows: entry.rows,
+			}));
+		if (unhoisted.length > 0) {
+			sections.push({
+				key: "members",
+				label: t("group_settings.nav.members"),
+				rows: unhoisted,
+			});
+		}
+		return sections;
+	}, [hideRoles, renderedRows, t]);
+
+	const renderDataRow = (row: (typeof renderedRows)[number]) => (
+		<tr key={row.id} className={groupSettingsDataTableRowClass}>
+			{row.getVisibleCells().map((cell) => (
+				<td
+					key={cell.id}
+					style={dataTableColumnPercentStyle(cell.column, leafColumns)}
+					className={cn(tdClass, dataTableEdgeCellClass(cell.column.id))}
+				>
+					{flexRender(cell.column.columnDef.cell, cell.getContext())}
+				</td>
+			))}
+		</tr>
+	);
 
 	return (
 		<div className={groupSettingsDataTableShellClass}>
@@ -463,19 +575,19 @@ export function GroupSettingsMembersTable({
 								))
 							: null}
 						{!showSkeleton && !showFailed && !showEmpty
-							? table.getRowModel().rows.map((row) => (
-									<tr key={row.id} className={groupSettingsDataTableRowClass}>
-										{row.getVisibleCells().map((cell) => (
+							? hoistedSections
+								? hoistedSections.flatMap((section) => [
+										<tr key={section.key} className="bg-muted/35">
 											<td
-												key={cell.id}
-												style={dataTableColumnPercentStyle(cell.column, leafColumns)}
-												className={cn(tdClass, dataTableEdgeCellClass(cell.column.id))}
+												colSpan={columns.length}
+												className="px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground"
 											>
-												{flexRender(cell.column.columnDef.cell, cell.getContext())}
+												{section.label} — {section.rows.length}
 											</td>
-										))}
-									</tr>
-								))
+										</tr>,
+										...section.rows.map(renderDataRow),
+									])
+								: renderedRows.map(renderDataRow)
 							: null}
 						{showFailed ? (
 							<tr>

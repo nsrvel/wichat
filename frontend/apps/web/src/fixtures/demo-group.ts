@@ -13,8 +13,8 @@ export const mockMyGroupsList: GroupsList = {
 			banner_url: "",
 			default_channel_id: "f00100000000000000000002",
 			role: "owner",
+			hide_roles: false,
+			effective_permissions: [],
 		},
 	],
 };
-
-export const mockJoinableGroupsList: GroupsList = { groups: [] };

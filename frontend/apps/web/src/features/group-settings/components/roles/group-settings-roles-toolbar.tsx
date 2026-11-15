@@ -3,9 +3,13 @@
 import { Search } from "lucide-react";
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
-import { authInputClass } from "@/lib/form-field-styles";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+	groupSettingsToolbarActionButtonClass,
+	groupSettingsToolbarSearchInputClass,
+} from "@/features/group-settings/lib/group-settings-chrome";
+import { authInputClass } from "@/lib/form-field-styles";
 import { cn } from "@/lib/utils";
 
 type GroupSettingsRolesToolbarProps = {
@@ -36,14 +40,14 @@ export function GroupSettingsRolesToolbar({
 					value={search}
 					onChange={(e) => onSearchChange(e.target.value)}
 					placeholder={t("group_settings.roles.search_placeholder")}
-					className={cn(authInputClass, "pl-10 pr-3 sm:pl-10 sm:pr-3.5")}
+					className={cn(authInputClass, groupSettingsToolbarSearchInputClass)}
 					autoComplete="off"
 				/>
 			</label>
 			{canManage ? (
 				<Button
 					type="button"
-					className="h-10 w-fit shrink-0 self-end sm:self-auto"
+					className={groupSettingsToolbarActionButtonClass}
 					onClick={onCreateRole}
 				>
 					{t("group_settings.roles.create_button")}

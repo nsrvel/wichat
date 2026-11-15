@@ -1,4 +1,6 @@
 import { memo, type ReactNode } from "react";
+import type { PresenceStatus } from "@wichat/contracts";
+import { OwnerCrownIcon } from "@/components/ui/owner-crown-icon";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { userInitials } from "@/lib/user-initials";
 import { cn } from "@/lib/utils";
@@ -6,6 +8,10 @@ import { cn } from "@/lib/utils";
 type MessageRowProps = {
 	authorAvatarUrl?: string;
 	authorDisplayName: string;
+	authorNameColor?: string;
+	authorIsOwner?: boolean;
+	authorPresenceStatus?: PresenceStatus;
+	ownerLabel?: string;
 	timeLabel?: string;
 	mine?: boolean;
 	children: ReactNode;
@@ -15,6 +21,10 @@ type MessageRowProps = {
 export const MessageRow = memo(function MessageRow({
 	authorAvatarUrl,
 	authorDisplayName,
+	authorNameColor,
+	authorIsOwner = false,
+	authorPresenceStatus,
+	ownerLabel = "Owner",
 	timeLabel,
 	mine = false,
 	children,
@@ -52,13 +62,21 @@ export const MessageRow = memo(function MessageRow({
 				alt={authorDisplayName}
 				initials={userInitials(authorDisplayName)}
 				size="sm"
+				status={authorPresenceStatus}
+				statusRingClassName="ring-chat-surface"
 				className="mt-0.5"
 			/>
 			<div className="min-w-0 max-w-[min(88%,34rem)]">
-				<div className="mb-1 flex items-baseline gap-2 px-0.5">
-					<span className="text-[13px] font-semibold text-foreground">{authorDisplayName}</span>
+				<div className="mb-1 flex items-center gap-1.5 px-0.5">
+					<span
+						className="text-[13px] font-semibold text-foreground"
+						style={authorNameColor ? { color: authorNameColor } : undefined}
+					>
+						{authorDisplayName}
+					</span>
+					{authorIsOwner ? <OwnerCrownIcon label={ownerLabel} /> : null}
 					{timeLabel ? (
-						<span className="text-[11px] text-muted-foreground">{timeLabel}</span>
+						<span className="ml-0.5 text-[11px] text-muted-foreground">{timeLabel}</span>
 					) : null}
 				</div>
 				<div className={bubbleClass}>{children}</div>

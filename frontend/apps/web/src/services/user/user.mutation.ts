@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { setAccessToken } from "@/integrations/api-client";
 import { Q_SESSION } from "@/services/auth/auth.key";
-import { Q_MY_DEVICES, Q_MY_MFA } from "@/services/user/user.key";
+import { Q_MY_DEVICES, Q_MY_MFA, Q_MY_PRESENCE } from "@/services/user/user.key";
 import {
 	beginTotpSetup,
 	beginWebAuthnRegister,
@@ -19,10 +19,18 @@ import {
 	revokeOtherDevices,
 	saveMyProfile,
 	updateMyPassword,
+	updateMyPreferences,
+	updateMyPresence,
+	updateMyStatusNote,
 	updateMyUsername,
 	verifyMyEmailChange,
 	type SaveMyProfileInput,
 } from "@/services/user/user.service";
+import type {
+	UpdateUserPreferencesRequest,
+	UpdateUserStatusNoteRequest,
+	User,
+} from "@wichat/contracts";
 
 export function useSaveMyProfileMutation() {
 	const queryClient = useQueryClient();
@@ -31,6 +39,69 @@ export function useSaveMyProfileMutation() {
 		mutationFn: (input: SaveMyProfileInput) => saveMyProfile(input),
 		onSuccess: (user) => {
 			queryClient.setQueryData([Q_SESSION], user);
+			void queryClient.invalidateQueries({ queryKey: [Q_SESSION] });
+		},
+	});
+}
+
+export function useUpdateMyStatusNoteMutation() {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: (body: UpdateUserStatusNoteRequest) => updateMyStatusNote(body),
+		onMutate: async (body) => {
+			await queryClient.cancelQueries({ queryKey: [Q_SESSION] });
+			const previous = queryClient.getQueryData<User>([Q_SESSION]);
+			if (previous) {
+				queryClient.setQueryData<User>([Q_SESSION], {
+					...previous,
+					status_note_text: body.text ?? "",
+					status_note_emoji: body.emoji ?? "",
+					status_note_expires_at: body.expires_at ?? null,
+				});
+			}
+			return { previous };
+		},
+		onError: (_err, _body, context) => {
+			if (context?.previous) {
+				queryClient.setQueryData([Q_SESSION], context.previous);
+			}
+		},
+		onSuccess: (user) => {
+			queryClient.setQueryData([Q_SESSION], user);
+		},
+		onSettled: () => {
+			void queryClient.invalidateQueries({ queryKey: [Q_SESSION] });
+		},
+	});
+}
+
+export function useUpdateMyPreferencesMutation() {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: (body: UpdateUserPreferencesRequest) => updateMyPreferences(body),
+		onMutate: async (body) => {
+			await queryClient.cancelQueries({ queryKey: [Q_SESSION] });
+			const previous = queryClient.getQueryData<User>([Q_SESSION]);
+			if (previous) {
+				queryClient.setQueryData<User>([Q_SESSION], {
+					...previous,
+					locale: body.locale,
+					time_format: body.time_format,
+				});
+			}
+			return { previous };
+		},
+		onError: (_err, _body, context) => {
+			if (context?.previous) {
+				queryClient.setQueryData([Q_SESSION], context.previous);
+			}
+		},
+		onSuccess: (user) => {
+			queryClient.setQueryData([Q_SESSION], user);
+		},
+		onSettled: () => {
 			void queryClient.invalidateQueries({ queryKey: [Q_SESSION] });
 		},
 	});
@@ -192,6 +263,16 @@ export function useRevokeOtherDevicesMutation() {
 		mutationFn: revokeOtherDevices,
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: [Q_MY_DEVICES] });
+		},
+	});
+}
+
+export function useUpdateMyPresenceMutation() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: updateMyPresence,
+		onSuccess: (res) => {
+			queryClient.setQueryData([Q_MY_PRESENCE], res);
 		},
 	});
 }

@@ -1,7 +1,13 @@
 "use client";
 
 import { ArrowLeft, Plus } from "lucide-react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import {
+	createRoleContextMenuState,
+	RoleActionMenu,
+	type RoleActionMenuState,
+} from "@/features/group-settings/components/roles/role-action-menu";
 import {
 	roleDisplayTitle,
 	type GroupSettingsRoleRow,
@@ -9,23 +15,28 @@ import {
 import { cn } from "@/lib/utils";
 
 type RoleDetailSidebarProps = {
+	groupId: string;
 	roles: GroupSettingsRoleRow[];
 	selectedRoleId: string;
 	canManage: boolean;
 	onSelectRole: (roleId: string) => void;
 	onBack: () => void;
 	onCreateRole: () => void;
+	onDeletedRole: (roleId: string) => void;
 };
 
 export function RoleDetailSidebar({
+	groupId,
 	roles,
 	selectedRoleId,
 	canManage,
 	onSelectRole,
 	onBack,
 	onCreateRole,
+	onDeletedRole,
 }: RoleDetailSidebarProps) {
 	const { t } = useTranslation();
+	const [menuState, setMenuState] = useState<RoleActionMenuState | null>(null);
 
 	return (
 		<aside
@@ -63,6 +74,11 @@ export function RoleDetailSidebar({
 							key={item.id}
 							type="button"
 							onClick={() => onSelectRole(item.id)}
+							onContextMenu={(event) => {
+								event.preventDefault();
+								event.stopPropagation();
+								setMenuState(createRoleContextMenuState(item, event.clientX, event.clientY));
+							}}
 							aria-current={active ? "true" : undefined}
 							className={cn(
 								"flex min-h-9 shrink-0 items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:w-full",
@@ -81,6 +97,15 @@ export function RoleDetailSidebar({
 					);
 				})}
 			</div>
+
+			<RoleActionMenu
+				groupId={groupId}
+				menuState={menuState}
+				onCloseMenu={() => setMenuState(null)}
+				canManage={canManage}
+				onDuplicated={onSelectRole}
+				onDeleted={onDeletedRole}
+			/>
 		</aside>
 	);
 }

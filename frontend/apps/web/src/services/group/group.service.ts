@@ -46,10 +46,6 @@ export async function listMyGroups() {
 	return { groups };
 }
 
-export async function listJoinableGroups() {
-	return api.get("/groups/joinable", GroupsListSchema);
-}
-
 export async function createGroup(payload: CreateGroupRequest) {
 	const body = CreateGroupRequestSchema.parse(payload);
 	return api.post("/groups", GroupSchema, body);

@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { GroupSettingsMembersSection } from "@/features/group-settings/components/members/group-settings-members-section";
 import type { GroupSettingsTarget } from "@/features/group-settings/lib/group-settings-target";
 import { APP_HOME_PATH, channelPath } from "@/lib/app-routes";
+import { hasAnyGroupPermission } from "@/lib/group-permissions";
 import { useMyGroupsQuery } from "@/hooks/use-my-groups-query";
 
 type GroupMembersWorkspacePageProps = {
@@ -15,7 +16,9 @@ export function GroupMembersWorkspacePage({ groupId }: GroupMembersWorkspacePage
 	const router = useRouter();
 	const myGroups = useMyGroupsQuery();
 	const group = myGroups.data?.find((g) => g.id === groupId);
-	const isOwner = group?.role === "owner";
+	const canAccessMembers =
+		group?.role === "owner" ||
+		hasAnyGroupPermission(group, ["kick_members", "ban_members", "manage_roles"]);
 
 	useEffect(() => {
 		if (myGroups.isPending) {
@@ -24,13 +27,13 @@ export function GroupMembersWorkspacePage({ groupId }: GroupMembersWorkspacePage
 		if (!group) {
 			return;
 		}
-		if (!isOwner) {
+		if (!canAccessMembers) {
 			const fallback = group.default_channel_id?.trim();
 			router.replace(fallback ? channelPath(groupId, fallback) : APP_HOME_PATH);
 		}
-	}, [group, groupId, isOwner, myGroups.isPending, router]);
+	}, [canAccessMembers, group, groupId, myGroups.isPending, router]);
 
-	if (myGroups.isPending || !group || !isOwner) {
+	if (myGroups.isPending || !group || !canAccessMembers) {
 		return null;
 	}
 

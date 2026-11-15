@@ -19,25 +19,25 @@ const SIZE_STYLES: Record<
 		px: 24,
 		avatarClass: "size-6",
 		textClass: "text-[10px]",
-		indicatorClass: "-bottom-0.5 -right-0.5 size-2.5 ring-[1.5px]",
+		indicatorClass: "bottom-0 right-0 size-2 ring-[1.5px]",
 	},
 	sm: {
 		px: 32,
 		avatarClass: "size-8",
 		textClass: "text-xs",
-		indicatorClass: "-bottom-0.5 -right-0.5 size-2.5 ring-2",
+		indicatorClass: "bottom-0 right-0 size-2.5 ring-2",
 	},
 	md: {
 		px: 36,
 		avatarClass: "size-9",
 		textClass: "text-xs",
-		indicatorClass: "-bottom-0.5 -right-0.5 size-3.5 ring-2",
+		indicatorClass: "bottom-0 right-0 size-2.5 ring-2",
 	},
 	lg: {
 		px: 40,
 		avatarClass: "size-10",
 		textClass: "text-sm",
-		indicatorClass: "-bottom-0.5 -right-0.5 size-3.5 ring-2",
+		indicatorClass: "bottom-0 right-0 size-3 ring-2",
 	},
 	xl: {
 		px: 72,
@@ -49,7 +49,7 @@ const SIZE_STYLES: Record<
 		px: 88,
 		avatarClass: "size-[88px]",
 		textClass: "text-2xl",
-		indicatorClass: "bottom-0.5 right-0.5 size-5 ring-[4px]",
+		indicatorClass: "bottom-1 right-1 size-[18px] ring-[3.5px]",
 	},
 };
 
@@ -57,10 +57,11 @@ export function UserProfileIndicator({
 	status,
 	className,
 }: {
-	status: UserPresenceStatus;
+	status: UserPresenceStatus | "offline";
 	className?: string;
 }) {
-	const meta = USER_STATUS_BY_ID[status];
+	const resolvedStatus: UserPresenceStatus = status === "offline" ? "invisible" : status;
+	const meta = USER_STATUS_BY_ID[resolvedStatus];
 	return (
 		<span
 			className={cn(
@@ -70,8 +71,10 @@ export function UserProfileIndicator({
 			)}
 			aria-hidden
 		>
-			{status === "dnd" ? <span className="h-[2px] w-1.5 rounded-full bg-card" /> : null}
-			{status === "invisible" ? <span className="size-1.5 rounded-full bg-card" /> : null}
+			{resolvedStatus === "dnd" ? <span className="h-[2px] w-1.5 rounded-full bg-card" /> : null}
+			{resolvedStatus === "invisible" ? (
+				<span className="size-1.5 rounded-full bg-card" />
+			) : null}
 		</span>
 	);
 }
@@ -81,7 +84,7 @@ type UserAvatarProps = {
 	alt?: string;
 	initials: string;
 	size?: UserAvatarSize;
-	status?: UserPresenceStatus;
+	status?: UserPresenceStatus | "offline";
 	ringClassName?: string;
 	statusRingClassName?: string;
 	className?: string;
@@ -140,7 +143,7 @@ export function UserAvatar({
 			{status ? (
 				<UserProfileIndicator
 					status={status}
-					className={cn("absolute", styles.indicatorClass, statusRingClassName)}
+					className={cn("absolute z-10", styles.indicatorClass, statusRingClassName)}
 				/>
 			) : null}
 		</div>

@@ -1,16 +1,37 @@
-/** Built-in membership roles (custom roles API deferred). */
+import type { GroupRole } from "@wichat/contracts";
+
+/** Built-in membership role slugs. */
 export type GroupSettingsBuiltinRoleId = "member" | "everyone";
 
 export type GroupSettingsRoleDetailTab = "display" | "permissions" | "members";
 
 export type GroupSettingsRoleRow = {
 	id: string;
-	/** Stable key for built-ins; display name for custom roles later. */
+	slug: string;
 	name: string;
 	memberCount: number;
+	isDefault: boolean;
 	isSystem: boolean;
 	color: string;
+	hoist: boolean;
+	mentionable: boolean;
+	permissions: string[];
 };
+
+export function toGroupSettingsRoleRow(role: GroupRole): GroupSettingsRoleRow {
+	return {
+		id: role.id,
+		slug: role.slug,
+		name: role.name,
+		memberCount: role.member_count,
+		isDefault: role.is_default,
+		isSystem: role.is_system,
+		color: role.color || DEFAULT_ROLE_COLOR,
+		hoist: role.hoist,
+		mentionable: role.mentionable,
+		permissions: role.permissions ?? [],
+	};
+}
 
 export const DEFAULT_ROLE_COLOR = "#99aab5";
 
@@ -355,7 +376,7 @@ export function defaultPermissionsForRole(): Record<string, boolean> {
 		view_audit_log: false,
 		view_group_insights: false,
 		manage_webhooks: false,
-		create_invite: true,
+		create_invite: false,
 		kick_members: false,
 		ban_members: false,
 		timeout_members: false,
@@ -392,36 +413,30 @@ export function defaultPermissionsForRole(): Record<string, boolean> {
 }
 
 export function roleDisplayTitle(role: GroupSettingsRoleRow, t: (key: string) => string): string {
-	if (role.id === "everyone" || role.name === "everyone") {
+	if (role.isDefault || role.slug === "everyone" || role.id === "everyone") {
 		return t("group_settings.roles.default_role_title");
 	}
-	if (role.isSystem) {
-		return t(`invite.role_${role.name}`);
+	if (role.isSystem && role.slug === "member") {
+		return t("invite.role_member");
 	}
 	return role.name;
 }
 
-export function defaultEveryoneRoleRow(memberTotal: number): GroupSettingsRoleRow {
-	return {
-		id: "everyone",
-		name: "everyone",
-		memberCount: memberTotal,
-		isSystem: true,
-		color: DEFAULT_ROLE_COLOR,
-	};
+export function permissionsArrayToRecord(permissions: string[]): Record<string, boolean> {
+	const set = new Set(permissions);
+	const out: Record<string, boolean> = {};
+	for (const group of ROLE_PERMISSION_GROUPS) {
+		for (const item of group.items) {
+			out[item.id] = set.has(item.id);
+		}
+	}
+	return out;
 }
 
-export function builtinRoleRows(memberTotal: number): GroupSettingsRoleRow[] {
-	const members = Math.max(0, memberTotal - 1);
-	return [
-		{
-			id: "member",
-			name: "member",
-			memberCount: members,
-			isSystem: true,
-			color: "#3b82f6",
-		},
-	];
+export function permissionsRecordToArray(record: Record<string, boolean>): string[] {
+	return Object.entries(record)
+		.filter(([, enabled]) => Boolean(enabled))
+		.map(([key]) => key);
 }
 
 export function matchesRoleSearch(
@@ -435,6 +450,7 @@ export function matchesRoleSearch(
 	}
 	return (
 		row.name.toLowerCase().includes(q) ||
+		row.slug.toLowerCase().includes(q) ||
 		row.id.toLowerCase().includes(q) ||
 		roleLabel.toLowerCase().includes(q)
 	);

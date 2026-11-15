@@ -1,6 +1,13 @@
 "use client";
 
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import {
+	createContext,
+	useCallback,
+	useContext,
+	useMemo,
+	useState,
+	type ReactNode,
+} from "react";
 import { SHELL_RAIL_WIDTH_PX } from "@/components/layout/shell-rail/shell-rail-metrics";
 import { CHANNEL_SIDEBAR_MIN_WIDTH } from "@/hooks/use-resizable-sidebar-width";
 
@@ -14,6 +21,10 @@ type ShellChromeContextValue = {
 	/** Sidebar filter chevron / extra row open — chat pinned bar uses zen column when true. */
 	sidebarFilterExpanded: boolean;
 	setSidebarFilterExpanded: (expanded: boolean) => void;
+	/** Right-hand details / member panel open on desktop workspace. */
+	memberPanelOpen: boolean;
+	setMemberPanelOpen: (open: boolean) => void;
+	toggleMemberPanel: () => void;
 };
 
 const ShellChromeContext = createContext<ShellChromeContextValue | null>(null);
@@ -26,6 +37,10 @@ type ShellChromeProviderProps = {
 export function ShellChromeProvider({ railOpen, children }: ShellChromeProviderProps) {
 	const [sidebarWidth, setSidebarWidth] = useState(CHANNEL_SIDEBAR_MIN_WIDTH);
 	const [sidebarFilterExpanded, setSidebarFilterExpanded] = useState(false);
+	const [memberPanelOpen, setMemberPanelOpen] = useState(true);
+	const toggleMemberPanel = useCallback(() => {
+		setMemberPanelOpen((prev) => !prev);
+	}, []);
 
 	const value = useMemo(
 		() => ({
@@ -34,8 +49,11 @@ export function ShellChromeProvider({ railOpen, children }: ShellChromeProviderP
 			setSidebarWidth,
 			sidebarFilterExpanded,
 			setSidebarFilterExpanded,
+			memberPanelOpen,
+			setMemberPanelOpen,
+			toggleMemberPanel,
 		}),
-		[railOpen, sidebarWidth, sidebarFilterExpanded],
+		[railOpen, sidebarWidth, sidebarFilterExpanded, memberPanelOpen, toggleMemberPanel],
 	);
 
 	return <ShellChromeContext.Provider value={value}>{children}</ShellChromeContext.Provider>;

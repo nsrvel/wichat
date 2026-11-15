@@ -1,3 +1,5 @@
+import type { User } from "@wichat/contracts";
+
 export type UserPresenceStatus = "online" | "idle" | "dnd" | "invisible";
 
 export type StatusClearDuration = "today" | "4h" | "1h" | "30m" | "never";
@@ -60,7 +62,6 @@ export const USER_STATUS_BY_ID: Record<UserPresenceStatus, UserStatusMeta> = {
 };
 
 const STATUS_STORAGE_KEY = "wichat-user-status";
-const NOTE_STORAGE_KEY = "wichat-user-status-note";
 const PRESENCE_EVENT = "wichat-user-presence";
 
 function notifyPresenceChange(): void {
@@ -74,11 +75,7 @@ export function subscribeUserPresence(onStoreChange: () => void): () => void {
 		return () => {};
 	}
 	const onStorage = (event: StorageEvent) => {
-		if (
-			event.key === null ||
-			event.key === STATUS_STORAGE_KEY ||
-			event.key === NOTE_STORAGE_KEY
-		) {
+		if (event.key === null || event.key === STATUS_STORAGE_KEY) {
 			onStoreChange();
 		}
 	};
@@ -112,40 +109,28 @@ export function writeStoredUserStatus(status: UserPresenceStatus): void {
 	}
 }
 
-export function parseStatusNoteSnapshot(raw: string): StatusNote {
-	if (!raw) {
-		return EMPTY_STATUS_NOTE;
-	}
-	try {
-		const parsed = JSON.parse(raw) as Partial<StatusNote>;
-		if (typeof parsed === "object" && parsed !== null && "text" in parsed) {
-			if (typeof parsed.expiresAt === "number" && Date.now() >= parsed.expiresAt) {
+export function statusNoteFromUser(
+	user?: Pick<
+		User,
+		"status_note_text" | "status_note_emoji" | "status_note_expires_at"
+	> | null,
+): StatusNote {
+	if (!user) return EMPTY_STATUS_NOTE;
+	const text = user.status_note_text?.trim().slice(0, 80) ?? "";
+	const emoji = user.status_note_emoji?.trim().slice(0, 16) ?? "";
+	if (!text && !emoji) return EMPTY_STATUS_NOTE;
+
+	let expiresAt: number | null = null;
+	if (user.status_note_expires_at) {
+		const parsed = Date.parse(user.status_note_expires_at);
+		if (!Number.isNaN(parsed)) {
+			if (Date.now() >= parsed) {
 				return EMPTY_STATUS_NOTE;
 			}
-			const text = typeof parsed.text === "string" ? parsed.text.slice(0, 80) : "";
-			const emoji = typeof parsed.emoji === "string" ? parsed.emoji.slice(0, 16) : "";
-			const expiresAt = typeof parsed.expiresAt === "number" ? parsed.expiresAt : null;
-			return text || emoji ? { text, emoji, expiresAt } : EMPTY_STATUS_NOTE;
+			expiresAt = parsed;
 		}
-	} catch {
-		// Fallback for legacy plain-text note values.
 	}
-	return { text: raw.slice(0, 80), emoji: "", expiresAt: null };
-}
-
-export function readStoredStatusNoteSnapshot(): string {
-	try {
-		const raw = window.localStorage.getItem(NOTE_STORAGE_KEY) ?? "";
-		if (!raw) return "";
-		const note = parseStatusNoteSnapshot(raw);
-		if (!note.text && !note.emoji) {
-			window.localStorage.removeItem(NOTE_STORAGE_KEY);
-			return "";
-		}
-		return raw;
-	} catch {
-		return "";
-	}
+	return { text, emoji, expiresAt };
 }
 
 export function computeStatusNoteExpiry(duration: StatusClearDuration): number | null {
@@ -164,24 +149,6 @@ export function computeStatusNoteExpiry(duration: StatusClearDuration): number |
 		}
 		case "never":
 			return null;
-	}
-}
-
-export function writeStoredStatusNote(note: StatusNote): void {
-	try {
-		const text = note.text.trim().slice(0, 80);
-		const emoji = note.emoji.trim().slice(0, 16);
-		if (text || emoji) {
-			window.localStorage.setItem(
-				NOTE_STORAGE_KEY,
-				JSON.stringify({ text, emoji, expiresAt: note.expiresAt }),
-			);
-		} else {
-			window.localStorage.removeItem(NOTE_STORAGE_KEY);
-		}
-		notifyPresenceChange();
-	} catch {
-		// Ignore storage failures in restricted browsing contexts.
 	}
 }
 

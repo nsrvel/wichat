@@ -7,14 +7,18 @@ import {
 	DeviceSessionsResponseSchema,
 	FinishWebAuthnRegisterResponseSchema,
 	MfaStatusSchema,
+	MyPresenceResponseSchema,
 	OkSchema,
 	RecoveryCodesResponseSchema,
 	RequestEmailChangeRequestSchema,
 	RevokeDeviceRequestSchema,
 	SecurityKeySchema,
+	UpdateMyPresenceRequestSchema,
 	UpdatePasswordRequestSchema,
 	UpdateUsernameRequestSchema,
 	UpdateUserProfileRequestSchema,
+	UpdateUserPreferencesRequestSchema,
+	UpdateUserStatusNoteRequestSchema,
 	UserSchema,
 	VerifyEmailChangeRequestSchema,
 	VerifyEmailChangeResponseSchema,
@@ -26,13 +30,17 @@ import {
 	type DeviceSessionsResponse,
 	type FinishWebAuthnRegisterResponse,
 	type MfaStatus,
+	type MyPresenceResponse,
 	type RecoveryCodesResponse,
 	type RequestEmailChangeRequest,
 	type RevokeDeviceRequest,
 	type SecurityKey,
+	type UpdateMyPresenceRequest,
 	type UpdatePasswordRequest,
 	type UpdateUsernameRequest,
 	type UpdateUserProfileRequest,
+	type UpdateUserPreferencesRequest,
+	type UpdateUserStatusNoteRequest,
 	type User,
 	type VerifyEmailChangeRequest,
 	type VerifyEmailChangeResponse,
@@ -48,6 +56,16 @@ export async function uploadMyAvatar(file: File): Promise<User> {
 export async function updateMyProfile(body: UpdateUserProfileRequest): Promise<User> {
 	const payload = UpdateUserProfileRequestSchema.parse(body);
 	return api.patch("/users/me/profile", UserSchema, payload);
+}
+
+export async function updateMyStatusNote(body: UpdateUserStatusNoteRequest): Promise<User> {
+	const payload = UpdateUserStatusNoteRequestSchema.parse(body);
+	return api.patch("/users/me/status-note", UserSchema, payload);
+}
+
+export async function updateMyPreferences(body: UpdateUserPreferencesRequest): Promise<User> {
+	const payload = UpdateUserPreferencesRequestSchema.parse(body);
+	return api.patch("/users/me/preferences", UserSchema, payload);
 }
 
 export type SaveMyProfileInput = UpdateUserProfileRequest & {
@@ -198,5 +216,16 @@ export async function revokeMyDevice(body: {
 export async function revokeOtherDevices(body: RevokeDeviceRequest): Promise<{ ok: boolean }> {
 	const payload = RevokeDeviceRequestSchema.parse(body);
 	return api.post("/users/me/devices/revoke-others", OkSchema, payload);
+}
+
+export async function getMyPresence(): Promise<MyPresenceResponse> {
+	return api.get("/users/me/presence", MyPresenceResponseSchema);
+}
+
+export async function updateMyPresence(
+	body: UpdateMyPresenceRequest,
+): Promise<MyPresenceResponse> {
+	const payload = UpdateMyPresenceRequestSchema.parse(body);
+	return api.put("/users/me/presence", MyPresenceResponseSchema, payload);
 }
 

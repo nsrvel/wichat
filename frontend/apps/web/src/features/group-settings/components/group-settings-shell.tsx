@@ -6,6 +6,7 @@ import { useEffect, useEffectEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useGroupSettings } from "@/features/group-settings/group-settings-provider";
 import { quickViewPath } from "@/lib/app-routes";
+import { hasAnyGroupPermission } from "@/lib/group-permissions";
 import { myGroupsQueryOpts } from "@/services/group/group.query";
 import { GroupSettingsCloseButton } from "@/features/group-settings/components/group-settings-close-button";
 import { GroupSettingsMainSection } from "@/features/group-settings/components/group-settings-main-section";
@@ -31,11 +32,15 @@ export function GroupSettingsShell({ target, section, onClose }: GroupSettingsSh
 	const { closeGroupSettings } = useGroupSettings();
 	const { runIfAllowed } = useGroupSettingsUnsaved();
 	const { data: myGroups = [] } = useQuery(myGroupsQueryOpts());
-	const isOwner =
-		target.role === "owner" || myGroups.some((g) => g.id === target.groupId && g.role === "owner");
+	const currentGroup = myGroups.find((g) => g.id === target.groupId);
+	const isOwner = target.role === "owner" || currentGroup?.role === "owner";
+	const canAccessMembers =
+		isOwner ||
+		hasAnyGroupPermission(currentGroup, ["kick_members", "ban_members", "manage_roles"]);
 
 	const syncKey = `${target.groupId}:${section}`;
-	const baseSection: GroupSettingsSection = section === "members" && !isOwner ? "profile" : section;
+	const baseSection: GroupSettingsSection =
+		section === "members" && !canAccessMembers ? "profile" : section;
 	const [sectionOverride, setSectionOverride] = useState<{
 		key: string;
 		section: GroupSettingsSection;
@@ -52,17 +57,17 @@ export function GroupSettingsShell({ target, section, onClose }: GroupSettingsSh
 	const triggerMembersWorkspace = useEffectEvent(openMembersWorkspace);
 
 	useEffect(() => {
-		if (section !== "members" || !isOwner) {
+		if (section !== "members" || !canAccessMembers) {
 			return;
 		}
 		triggerMembersWorkspace();
-	}, [section, isOwner, target.groupId]);
+	}, [section, canAccessMembers, target.groupId]);
 
 	const onSectionChange = (next: GroupSettingsSection) => {
 		if (next === activeSection) {
 			return;
 		}
-		if (next === "members" && isOwner) {
+		if (next === "members" && canAccessMembers) {
 			openMembersWorkspace();
 			return;
 		}

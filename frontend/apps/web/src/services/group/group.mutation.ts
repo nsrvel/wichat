@@ -2,7 +2,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Q_GROUP_CHANNELS } from "@/services/channel/channel.key";
-import { Q_JOINABLE_GROUPS, Q_MY_GROUPS } from "@/services/group/group.key";
+import { Q_MY_GROUPS } from "@/services/group/group.key";
 import type { Group } from "@wichat/contracts";
 import {
 	createGroup,
@@ -25,7 +25,6 @@ export function useCreateGroupMutation() {
 				owned,
 			]);
 			void queryClient.invalidateQueries({ queryKey: [Q_MY_GROUPS] });
-			void queryClient.invalidateQueries({ queryKey: [Q_JOINABLE_GROUPS] });
 			void queryClient.invalidateQueries({ queryKey: [Q_GROUP_CHANNELS, group.id] });
 		},
 	});
@@ -37,7 +36,6 @@ export function useJoinGroupMutation() {
 		mutationFn: joinGroup,
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: [Q_MY_GROUPS] });
-			void queryClient.invalidateQueries({ queryKey: [Q_JOINABLE_GROUPS] });
 		},
 	});
 }
@@ -51,7 +49,6 @@ export function useLeaveGroupMutation() {
 				(prev ?? []).filter((g) => g.id !== groupId),
 			);
 			void queryClient.invalidateQueries({ queryKey: [Q_MY_GROUPS] });
-			void queryClient.invalidateQueries({ queryKey: [Q_JOINABLE_GROUPS] });
 		},
 	});
 }
@@ -108,7 +105,6 @@ export function useDeleteGroupMutation() {
 				(prev ?? []).filter((g) => g.id !== groupId),
 			);
 			void queryClient.invalidateQueries({ queryKey: [Q_MY_GROUPS] });
-			void queryClient.invalidateQueries({ queryKey: [Q_JOINABLE_GROUPS] });
 		},
 	});
 }

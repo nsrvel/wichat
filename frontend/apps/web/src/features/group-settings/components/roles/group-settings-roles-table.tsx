@@ -2,9 +2,14 @@
 
 import { flexRender, getCoreRowModel, useReactTable, type ColumnDef } from "@tanstack/react-table";
 import { EllipsisVertical } from "lucide-react";
-import { useMemo } from "react";
+import { useCallback, useMemo, useState, type MouseEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { GroupSettingsMembersPagination } from "@/features/group-settings/components/members/group-settings-members-pagination";
+import {
+	createRoleContextMenuState,
+	RoleActionMenu,
+	type RoleActionMenuState,
+} from "@/features/group-settings/components/roles/role-action-menu";
 import { groupSettingsDataTableBodyClass, groupSettingsDataTableHeadRowClass, groupSettingsDataTableRowClass, groupSettingsDataTableShellClass } from "@/features/group-settings/lib/group-settings-chrome";
 import {
 	dataTableColumnPercentStyle,
@@ -14,14 +19,16 @@ import {
 	groupSettingsDataTableThClass,
 	ROLES_COLUMN_SIZE,
 } from "@/features/group-settings/lib/group-settings-data-table-column-size";
-import type { GroupSettingsRoleRow } from "@/features/group-settings/lib/group-settings-roles-view";
+import { roleDisplayTitle, type GroupSettingsRoleRow } from "@/features/group-settings/lib/group-settings-roles-view";
 import { cn } from "@/lib/utils";
 
 const ROLE_PAGE_SIZE = 10;
 
 type GroupSettingsRolesTableProps = {
+	groupId: string;
 	rows: GroupSettingsRoleRow[];
 	loading: boolean;
+	canManage: boolean;
 	total: number;
 	pageIndex: number;
 	hasPrev: boolean;
@@ -34,8 +41,10 @@ type GroupSettingsRolesTableProps = {
 };
 
 export function GroupSettingsRolesTable({
+	groupId,
 	rows,
 	loading,
+	canManage,
 	total,
 	pageIndex,
 	hasPrev,
@@ -47,6 +56,16 @@ export function GroupSettingsRolesTable({
 	onGoToPage,
 }: GroupSettingsRolesTableProps) {
 	const { t } = useTranslation();
+	const [menuState, setMenuState] = useState<RoleActionMenuState | null>(null);
+
+	const openRowContextMenu = useCallback(
+		(event: MouseEvent<HTMLElement>, role: GroupSettingsRoleRow) => {
+			event.preventDefault();
+			event.stopPropagation();
+			setMenuState(createRoleContextMenuState(role, event.clientX, event.clientY));
+		},
+		[],
+	);
 
 	const columns = useMemo<ColumnDef<GroupSettingsRoleRow>[]>(
 		() => [
@@ -63,7 +82,7 @@ export function GroupSettingsRolesTable({
 							aria-hidden
 						/>
 						<span className="block truncate font-medium text-foreground">
-							{row.original.isSystem ? t(`invite.role_${row.original.name}`) : row.original.name}
+							{roleDisplayTitle(row.original, t)}
 						</span>
 					</div>
 				),
@@ -83,9 +102,7 @@ export function GroupSettingsRolesTable({
 				header: () => null,
 				enableSorting: false,
 				cell: ({ row }) => {
-					const label = row.original.isSystem
-						? t(`invite.role_${row.original.name}`)
-						: row.original.name;
+					const label = roleDisplayTitle(row.original, t);
 					return (
 						<div className="flex justify-end">
 							<button
@@ -94,11 +111,13 @@ export function GroupSettingsRolesTable({
 								aria-label={t("group_settings.roles.row_actions_aria", { name: label })}
 								onClick={(event) => {
 									event.stopPropagation();
+									setMenuState({
+										role: row.original,
+										anchor: event.currentTarget,
+										align: "end",
+									});
 								}}
-								onContextMenu={(event) => {
-									event.preventDefault();
-									event.stopPropagation();
-								}}
+								onContextMenu={(event) => openRowContextMenu(event, row.original)}
 							>
 								<EllipsisVertical className="size-4" strokeWidth={2} aria-hidden />
 							</button>
@@ -107,7 +126,7 @@ export function GroupSettingsRolesTable({
 				},
 			},
 		],
-		[t],
+		[openRowContextMenu, t],
 	);
 
 	// eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table returns unstable table instance by design.
@@ -165,6 +184,7 @@ export function GroupSettingsRolesTable({
 										key={row.id}
 										className={cn("cursor-pointer", groupSettingsDataTableRowClass)}
 										onClick={() => onOpenRole(row.original.id)}
+										onContextMenu={(event) => openRowContextMenu(event, row.original)}
 									>
 										{row.getVisibleCells().map((cell) => (
 											<td
@@ -211,6 +231,14 @@ export function GroupSettingsRolesTable({
 					onGoToPage={onGoToPage}
 				/>
 			</div>
+
+			<RoleActionMenu
+				groupId={groupId}
+				menuState={menuState}
+				onCloseMenu={() => setMenuState(null)}
+				canManage={canManage}
+				onDuplicated={onOpenRole}
+			/>
 		</div>
 	);
 }

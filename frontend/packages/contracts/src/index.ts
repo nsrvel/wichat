@@ -28,6 +28,11 @@ export const UserSchema = z.object({
 	pronouns: z.string().optional().default(""),
 	bio: z.string().optional().default(""),
 	banner_color: z.string().optional().default(""),
+	status_note_text: z.string().optional().default(""),
+	status_note_emoji: z.string().optional().default(""),
+	status_note_expires_at: z.string().nullable().optional().default(null),
+	locale: z.string().optional().default(""),
+	time_format: z.enum(["auto", "12h", "24h"]).optional().default("auto"),
 	has_password: z.boolean().default(true),
 	created_at: z.string().optional().default(""),
 });
@@ -42,6 +47,25 @@ export const UpdateUserProfileRequestSchema = z.object({
 
 export type UpdateUserProfileRequest = z.infer<
 	typeof UpdateUserProfileRequestSchema
+>;
+
+export const UpdateUserStatusNoteRequestSchema = z.object({
+	text: z.string().max(80).optional().default(""),
+	emoji: z.string().max(16).optional().default(""),
+	expires_at: z.string().nullable().optional().default(null),
+});
+
+export type UpdateUserStatusNoteRequest = z.infer<
+	typeof UpdateUserStatusNoteRequestSchema
+>;
+
+export const UpdateUserPreferencesRequestSchema = z.object({
+	locale: z.enum(["en", "id"]),
+	time_format: z.enum(["auto", "12h", "24h"]),
+});
+
+export type UpdateUserPreferencesRequest = z.infer<
+	typeof UpdateUserPreferencesRequestSchema
 >;
 
 export const UpdateUsernameRequestSchema = z.object({
@@ -273,6 +297,48 @@ export const RealtimeMessageCreatedSchema = z.object({
 	message: MessageSchema,
 });
 
+export const PresenceStatusSchema = z.enum([
+	"online",
+	"idle",
+	"dnd",
+	"offline",
+]);
+export type PresenceStatus = z.infer<typeof PresenceStatusSchema>;
+
+export const ManualPresenceStatusSchema = z.enum([
+	"online",
+	"idle",
+	"dnd",
+	"invisible",
+]);
+export type ManualPresenceStatus = z.infer<typeof ManualPresenceStatusSchema>;
+
+export const MyPresenceResponseSchema = z.object({
+	manual_status: ManualPresenceStatusSchema,
+	effective_status: PresenceStatusSchema,
+	is_online: z.boolean(),
+	expires_at: z.string().optional().default(""),
+});
+export type MyPresenceResponse = z.infer<typeof MyPresenceResponseSchema>;
+
+export const UpdateMyPresenceRequestSchema = z.object({
+	status: ManualPresenceStatusSchema,
+	ttl_seconds: z.number().int().min(0).optional(),
+});
+export type UpdateMyPresenceRequest = z.infer<
+	typeof UpdateMyPresenceRequestSchema
+>;
+
+export const RealtimePresenceUpdatedSchema = z.object({
+	type: z.literal("presence.updated"),
+	user_id: z.string(),
+	presence_status: PresenceStatusSchema,
+	is_online: z.boolean(),
+});
+export type RealtimePresenceUpdated = z.infer<
+	typeof RealtimePresenceUpdatedSchema
+>;
+
 export const groupMembershipRoleSchema = z.enum(["owner", "member"]);
 
 export const GroupSchema = z.object({
@@ -283,11 +349,13 @@ export const GroupSchema = z.object({
 	is_private: z.boolean().default(false),
 	banner_color: z.string().default(""),
 	banner_url: z.string().default(""),
+	hide_roles: z.boolean().default(false),
 	default_channel_id: z.union([publicEntityIdSchema, z.literal("")]),
 	role: z.preprocess(
 		(v) => (v === "" || v == null ? undefined : v),
 		groupMembershipRoleSchema.or(z.enum(["admin", "guest"])).optional(),
 	),
+	effective_permissions: z.array(z.string()).default([]),
 });
 
 export const GroupsListSchema = z.object({
@@ -427,6 +495,19 @@ export type ForgotPasswordRequestResponse = z.infer<
 export type ForgotPasswordVerify = z.infer<typeof ForgotPasswordVerifySchema>;
 export type ForgotPasswordReset = z.infer<typeof ForgotPasswordResetSchema>;
 
+export const GroupMemberRoleSummarySchema = z.object({
+	id: z.string(),
+	slug: z.string(),
+	name: z.string(),
+	color: z.string(),
+	hoist: z.boolean().optional().default(false),
+	position: z.number().int().optional().default(0),
+});
+
+export type GroupMemberRoleSummary = z.infer<
+	typeof GroupMemberRoleSummarySchema
+>;
+
 export const GroupMemberSchema = z.object({
 	user_id: z.string(),
 	display_name: z.string(),
@@ -434,8 +515,9 @@ export const GroupMemberSchema = z.object({
 	avatar_url: z.string().optional().default(""),
 	role: groupMembershipRoleSchema,
 	joined_at: z.string(),
-	/** Set when presence is on ListGroupMembers; omit when unknown. */
-	is_online: z.boolean().optional(),
+	roles: z.array(GroupMemberRoleSummarySchema).optional().default([]),
+	is_online: z.boolean().optional().default(false),
+	presence_status: PresenceStatusSchema.optional().default("offline"),
 });
 
 export type GroupMember = z.infer<typeof GroupMemberSchema>;
@@ -445,6 +527,7 @@ export const GroupMembersPageSchema = z.object({
 	next_cursor: z.string().optional().default(""),
 	total: z.number().int().nonnegative(),
 });
+export type GroupMembersPage = z.infer<typeof GroupMembersPageSchema>;
 
 export const UserSearchHitSchema = z.object({
 	user_id: z.string(),
@@ -478,6 +561,7 @@ export const SendGroupInvitesResultSchema = z.object({
 export const InvitePreviewSchema = z
 	.object({
 		valid: z.boolean(),
+		is_private: z.boolean().optional(),
 		group_name: z.string().optional(),
 		channel_name: z.string().optional(),
 		group_logo_url: z.string().optional(),
@@ -529,3 +613,120 @@ export const RevokeDeviceRequestSchema = z.object({
 });
 
 export type RevokeDeviceRequest = z.infer<typeof RevokeDeviceRequestSchema>;
+
+export const ActivityFieldChangeSchema = z.object({
+	old: z.unknown().optional(),
+	new: z.unknown().optional(),
+});
+
+export type ActivityFieldChange = z.infer<typeof ActivityFieldChangeSchema>;
+
+export const UserActivityLogSchema = z.object({
+	id: z.string(),
+	user_id: z.string(),
+	actor_id: z.string(),
+	category: z.string(),
+	action: z.string(),
+	target_type: z.string(),
+	target_id: z.string(),
+	summary: z.string(),
+	changes: z.record(z.string(), ActivityFieldChangeSchema).default({}),
+	metadata: z.record(z.string(), z.unknown()).default({}),
+	created_at: z.string(),
+});
+
+export type UserActivityLog = z.infer<typeof UserActivityLogSchema>;
+
+export const ListUserActivityLogsResponseSchema = z.object({
+	logs: z.array(UserActivityLogSchema),
+	next_cursor: z.string().optional(),
+});
+
+export type ListUserActivityLogsResponse = z.infer<
+	typeof ListUserActivityLogsResponseSchema
+>;
+
+export const GroupRoleSchema = z.object({
+	id: z.string(),
+	slug: z.string(),
+	name: z.string(),
+	color: z.string().default("#99aab5"),
+	hoist: z.boolean().default(false),
+	mentionable: z.boolean().default(false),
+	is_default: z.boolean().default(false),
+	is_system: z.boolean().default(false),
+	position: z.number().int().nonnegative().default(0),
+	permissions: z.array(z.string()).default([]),
+	member_count: z.number().int().nonnegative().default(0),
+	created_at: z.string().optional().default(""),
+	updated_at: z.string().optional().default(""),
+});
+
+export type GroupRole = z.infer<typeof GroupRoleSchema>;
+
+export const GroupRolesListResponseSchema = z.object({
+	roles: z.array(GroupRoleSchema),
+	hide_roles: z.boolean().default(false),
+});
+
+export type GroupRolesListResponse = z.infer<
+	typeof GroupRolesListResponseSchema
+>;
+
+export const GroupRoleResponseSchema = z.object({
+	role: GroupRoleSchema,
+});
+
+export type GroupRoleResponse = z.infer<typeof GroupRoleResponseSchema>;
+
+export const CreateGroupRoleRequestSchema = z.object({
+	name: z.string().trim().max(48).optional().default(""),
+});
+
+export type CreateGroupRoleRequest = z.infer<
+	typeof CreateGroupRoleRequestSchema
+>;
+
+export const UpdateGroupRoleRequestSchema = z.object({
+	name: z.string().trim().min(1).max(48).optional(),
+	color: z.string().trim().optional(),
+	hoist: z.boolean().optional(),
+	mentionable: z.boolean().optional(),
+	permissions: z.array(z.string()).optional(),
+});
+
+export type UpdateGroupRoleRequest = z.infer<
+	typeof UpdateGroupRoleRequestSchema
+>;
+
+export const UpdateGroupHideRolesRequestSchema = z.object({
+	hide_roles: z.boolean(),
+});
+
+export type UpdateGroupHideRolesRequest = z.infer<
+	typeof UpdateGroupHideRolesRequestSchema
+>;
+
+export const UpdateGroupHideRolesResponseSchema = z.object({
+	hide_roles: z.boolean(),
+});
+
+export type UpdateGroupHideRolesResponse = z.infer<
+	typeof UpdateGroupHideRolesResponseSchema
+>;
+
+export const GroupRoleMembersResponseSchema = z.object({
+	members: z.array(GroupMemberSchema),
+});
+
+export type GroupRoleMembersResponse = z.infer<
+	typeof GroupRoleMembersResponseSchema
+>;
+
+export const AddGroupRoleMembersRequestSchema = z.object({
+	user_ids: z.array(z.string().min(1)).min(1),
+});
+
+export type AddGroupRoleMembersRequest = z.infer<
+	typeof AddGroupRoleMembersRequestSchema
+>;

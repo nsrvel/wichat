@@ -1,16 +1,13 @@
 "use client";
 
-import { CircleHelp, LogOut, PanelLeft } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { CircleHelp, PanelLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ShellSearchInput } from "@/components/layout/shell-search-input";
 import {
 	WorkspaceHeaderIconButton,
 	workspaceHeaderIconClass,
 } from "@/components/layout/workspace-header-icon-button";
-import { ThemeIconToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
-import { useLogoutMutation } from "@/services/auth/auth.mutation";
 
 type ShellTopBarProps = {
 	railOpen: boolean;
@@ -20,12 +17,6 @@ type ShellTopBarProps = {
 
 export function ShellTopBar({ railOpen, onRailOpenChange, className }: ShellTopBarProps) {
 	const { t } = useTranslation();
-	const router = useRouter();
-	const logout = useLogoutMutation();
-
-	const signOut = () => {
-		logout.mutate(undefined, { onSettled: () => router.replace("/sign-in") });
-	};
 
 	return (
 		<header
@@ -48,15 +39,16 @@ export function ShellTopBar({ railOpen, onRailOpenChange, className }: ShellTopB
 			<ShellSearchInput className="hidden min-w-0 justify-self-stretch sm:block md:justify-self-center" />
 
 			<div className="flex items-center justify-end gap-0.5">
-				<ThemeIconToggle />
 				<WorkspaceHeaderIconButton
-					aria-label={t("logout")}
-					disabled={logout.isPending}
-					onClick={signOut}
+					aria-label="Help"
+					onClick={() =>
+						window.open(
+							"https://www.linkedin.com/in/putra-rama-setiawan/",
+							"_blank",
+							"noopener,noreferrer",
+						)
+					}
 				>
-					<LogOut className={workspaceHeaderIconClass} strokeWidth={2} aria-hidden />
-				</WorkspaceHeaderIconButton>
-				<WorkspaceHeaderIconButton aria-label="Help">
 					<CircleHelp className={workspaceHeaderIconClass} strokeWidth={2} />
 				</WorkspaceHeaderIconButton>
 			</div>

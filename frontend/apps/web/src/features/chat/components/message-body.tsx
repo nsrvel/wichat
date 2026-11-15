@@ -12,12 +12,12 @@ export function MessageBody({ text, className }: MessageBodyProps) {
 		return null;
 	}
 	return (
-		<>
+		<div className="select-text" data-wichat-selectable="true">
 			{paragraphs.map((paragraph, index) => (
 				<p key={index} className={cn(index > 0 && "mt-[9px]", className)}>
 					{paragraph}
 				</p>
 			))}
-		</>
+		</div>
 	);
 }

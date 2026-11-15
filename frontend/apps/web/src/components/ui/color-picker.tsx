@@ -102,6 +102,7 @@ type HexColorFieldProps = {
 	defaultColor?: string;
 	resetLabel?: string;
 	pickerAriaLabel?: string;
+	disabled?: boolean;
 	inputClassName?: string;
 	className?: string;
 };
@@ -116,6 +117,7 @@ export function HexColorField({
 	defaultColor = "#313338",
 	resetLabel = "Reset",
 	pickerAriaLabel = "Pick color",
+	disabled = false,
 	inputClassName,
 	className,
 }: HexColorFieldProps) {
@@ -232,6 +234,9 @@ export function HexColorField({
 			<Popover
 				open={open}
 				onOpenChange={(nextOpen) => {
+					if (disabled) {
+						return;
+					}
 					if (nextOpen) {
 						setHsv(hexToHsv(normalized));
 					}
@@ -241,6 +246,7 @@ export function HexColorField({
 				<div
 					className={cn(
 						"flex h-10 w-full items-center gap-2.5 rounded-[10px] border border-border bg-field px-3 text-sm text-foreground transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20",
+						disabled && "cursor-not-allowed opacity-50",
 						inputClassName,
 						"px-2.5 sm:px-3",
 					)}
@@ -249,24 +255,26 @@ export function HexColorField({
 						render={
 							<button
 								type="button"
+								disabled={disabled}
 								aria-label={pickerAriaLabel}
 								style={{ backgroundColor: normalized }}
-								className="size-6 shrink-0 rounded-md shadow-xs transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+								className="size-6 shrink-0 rounded-md shadow-xs transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none"
 							/>
 						}
 					/>
 					<input
 						id={id}
 						value={displayText}
+						disabled={disabled}
 						onChange={(e) => handleTextChange(e.target.value)}
 						onBlur={handleTextBlur}
 						maxLength={7}
 						spellCheck={false}
 						autoComplete="off"
 						placeholder={defaultColor}
-						className="min-w-0 flex-1 bg-transparent font-mono uppercase text-foreground placeholder:text-placeholder-foreground focus:outline-none"
+						className="min-w-0 flex-1 bg-transparent font-mono uppercase text-foreground placeholder:text-placeholder-foreground focus:outline-none disabled:cursor-not-allowed"
 					/>
-					{!isDefault ? (
+					{!isDefault && !disabled ? (
 						<button
 							type="button"
 							aria-label={resetLabel}

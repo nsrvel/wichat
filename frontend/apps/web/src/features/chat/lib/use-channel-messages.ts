@@ -4,6 +4,7 @@ import {
 	type ChannelMessage,
 } from "@/features/chat/lib/channel-message";
 import { formatMessageTimeLabel } from "@/features/chat/lib/format-message-time";
+import { useTimeFormatPreference } from "@/lib/time-format";
 import { channelMessagesQueryOpts } from "@/services/message/message.query";
 
 export type UseChannelMessagesResult = {
@@ -18,6 +19,7 @@ export type UseChannelMessagesResult = {
 
 export function useChannelMessages(groupId: string, channelId: string): UseChannelMessagesResult {
 	const query = useInfiniteQuery(channelMessagesQueryOpts(groupId, channelId));
+	const timeFormat = useTimeFormatPreference();
 
 	const rawMessages = flattenInfiniteChannelMessages(query.data);
 	const messages: ChannelMessage[] = rawMessages.map((msg) => ({
@@ -28,7 +30,7 @@ export function useChannelMessages(groupId: string, channelId: string): UseChann
 		createdAt: msg.created_at,
 		bodyPlain: msg.body,
 		mine: msg.mine,
-		timeLabel: formatMessageTimeLabel(msg.created_at),
+		timeLabel: formatMessageTimeLabel(msg.created_at, timeFormat),
 	}));
 
 	return {

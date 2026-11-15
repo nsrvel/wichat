@@ -250,6 +250,16 @@
 	html {
 		@apply font-sans;
 	}
+	input,
+	textarea,
+	[contenteditable="true"],
+	pre,
+	code,
+	kbd,
+	[data-wichat-selectable="true"] {
+		user-select: text;
+		-webkit-user-select: text;
+	}
 }
 
 /* Shared scrollbars (shell, chat, settings) — opt-in via class, never on `*` */

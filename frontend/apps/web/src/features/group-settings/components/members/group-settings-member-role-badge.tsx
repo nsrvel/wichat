@@ -2,27 +2,35 @@
 
 import { Crown } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { hasCustomRoleColor } from "@/lib/member-role-display";
 import { cn } from "@/lib/utils";
 
-export function GroupSettingsMemberRoleBadge({ role }: { role: string }) {
+export function GroupSettingsMemberRoleBadge({
+	role,
+	color,
+	hideColor = false,
+}: {
+	role: string;
+	color?: string;
+	hideColor?: boolean;
+}) {
 	const { t } = useTranslation();
+	const isOwner = role === "owner";
 	const label = t(`invite.role_${role}`, { defaultValue: role });
+	const showDot = !isOwner && !hideColor && hasCustomRoleColor(color);
 
-	if (role === "owner") {
+	const baseClass =
+		"inline-flex h-6 max-w-[160px] items-center gap-1.5 rounded-full border px-2 text-[11px] font-medium leading-none tracking-tight transition-colors";
+
+	if (isOwner) {
 		return (
 			<span
 				className={cn(
-					"inline-flex items-center gap-1.5 rounded-full px-2.5 py-1",
-					"bg-amber-500/12 text-xs font-semibold tracking-tight text-amber-950",
-					"ring-1 ring-inset ring-amber-500/22",
-					"dark:bg-amber-400/14 dark:text-amber-50 dark:ring-amber-400/28",
+					baseClass,
+					"border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300",
 				)}
 			>
-				<Crown
-					className="size-3.5 shrink-0 text-amber-500 dark:text-amber-400"
-					strokeWidth={2.2}
-					aria-hidden
-				/>
+				<Crown className="size-3 shrink-0" strokeWidth={2} aria-hidden />
 				<span className="truncate">{label}</span>
 			</span>
 		);
@@ -31,11 +39,29 @@ export function GroupSettingsMemberRoleBadge({ role }: { role: string }) {
 	return (
 		<span
 			className={cn(
-				"inline-flex items-center rounded-full px-2.5 py-1",
-				"bg-background/90 text-xs font-medium tracking-tight text-foreground",
-				"ring-1 ring-inset ring-border/70 shadow-[0_1px_0_0_color-mix(in_oklab,var(--foreground)_6%,transparent)]",
+				baseClass,
+				!showDot && "border-border/75 bg-muted/55 text-foreground/90",
 			)}
+			style={
+				showDot && color
+					? {
+							backgroundColor: `color-mix(in oklab, ${color} 11%, var(--card))`,
+							borderColor: `color-mix(in oklab, ${color} 26%, var(--border))`,
+							color: "var(--foreground)",
+						}
+					: undefined
+			}
 		>
+			{showDot ? (
+				<span
+					className="size-1.5 shrink-0 rounded-full"
+					style={{
+						backgroundColor: color,
+						boxShadow: `0 0 0 2px color-mix(in oklab, ${color} 18%, transparent)`,
+					}}
+					aria-hidden
+				/>
+			) : null}
 			<span className="truncate">{label}</span>
 		</span>
 	);

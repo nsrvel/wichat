@@ -15,6 +15,7 @@ import {
 	toMemberRow,
 	type MembersSortKey,
 } from "@/features/group-settings/lib/group-settings-members-view";
+import { hasAnyGroupPermission, hasGroupPermission } from "@/lib/group-permissions";
 import { cn } from "@/lib/utils";
 import { myGroupsQueryOpts } from "@/services/group/group.query";
 import { groupMembersQueryOpts } from "@/services/invite/invite.query";
@@ -57,11 +58,17 @@ export function GroupSettingsMembersSection({
 
 	const { data: myGroups = [] } = useQuery(myGroupsQueryOpts());
 
-	const isOwner = useMemo(
-		() => myGroups.some((g) => g.id === groupId && g.role === "owner"),
+	const currentGroup = useMemo(
+		() => myGroups.find((g) => g.id === groupId),
 		[groupId, myGroups],
 	);
+	const isOwner = currentGroup?.role === "owner";
+	const hideRoles = currentGroup?.hide_roles ?? false;
 	const targetIsOwner = target.role === "owner";
+	const effectiveGroup = currentGroup ?? {
+		role: target.role ?? "member",
+		effective_permissions: [],
+	};
 	const membersQuery = useQuery({
 		...groupMembersQueryOpts(groupId, cursor),
 		enabled: Boolean(groupId),
@@ -79,7 +86,12 @@ export function GroupSettingsMembersSection({
 	const visibleRows = useMemo(() => applyMemberView(rows, { search, sort }), [rows, search, sort]);
 
 	const emptySearch = search.trim().length > 0 && visibleRows.length === 0 && rows.length > 0;
-	const canBulk = isOwner || targetIsOwner;
+	const canChangeRoles = isOwner || targetIsOwner || hasGroupPermission(effectiveGroup, "manage_roles");
+	const canPrune = isOwner || targetIsOwner || hasGroupPermission(effectiveGroup, "kick_members");
+	const canBulk =
+		isOwner ||
+		targetIsOwner ||
+		hasAnyGroupPermission(effectiveGroup, ["kick_members", "ban_members"]);
 	const selectedCount = Object.keys(rowSelection).filter((id) => rowSelection[id]).length;
 
 	const onBanSelected = () => {
@@ -112,15 +124,16 @@ export function GroupSettingsMembersSection({
 						onSortChange={setSort}
 						groupName={target.groupName}
 						rows={rows}
-						canPrune={isOwner || targetIsOwner}
+						canPrune={canPrune}
 					/>
 
 					<GroupSettingsMembersTable
 						rows={visibleRows}
 						loading={membersPending || membersQuery.isFetching}
 						failed={membersFailed}
-						canChangeRoles={canBulk}
+						canChangeRoles={canChangeRoles}
 						enableBulkSelect={canBulk}
+						hideRoles={hideRoles}
 						rowSelection={rowSelection}
 						onRowSelectionChange={setRowSelection}
 						pageIndex={cursorStack.length}

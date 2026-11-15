@@ -1,8 +1,9 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import type { GroupMember } from "@wichat/contracts";
 import { ChevronDown } from "lucide-react";
-import { useCallback, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useCreateMessageMutation } from "@/services/message/message.mutation";
 import { ChatComposer } from "@/features/chat/components/chat-composer";
@@ -15,8 +16,11 @@ import { MessageRow } from "@/features/chat/components/message-row";
 import { toChannelShellNavTarget } from "@/features/channel/lib/channel-shell-nav-target";
 import { useChannelMessages } from "@/features/chat/lib/use-channel-messages";
 import { useChannelRealtime } from "@/features/chat/lib/use-channel-realtime";
+import { resolveMemberNameColor } from "@/lib/member-role-display";
 import { sessionQueryOpts } from "@/services/auth/auth.query";
 import * as channelQuery from "@/services/channel/channel.query";
+import { myGroupsQueryOpts } from "@/services/group/group.query";
+import { groupMembersQueryOpts } from "@/services/invite/invite.query";
 
 type ChannelChatViewProps = {
 	groupId: string;
@@ -36,6 +40,19 @@ export function ChannelChatView({ groupId, channelId, onOpenSidebar }: ChannelCh
 	const channels = useQuery(channelQuery.groupChannelsQueryOpts(groupId));
 	const active = toChannelShellNavTarget(channelId, channels.data?.channels);
 	const { data: sessionUser } = useQuery(sessionQueryOpts());
+	const { data: myGroups = [] } = useQuery(myGroupsQueryOpts());
+	const hideRoles = myGroups.find((g) => g.id === groupId)?.hide_roles ?? false;
+	const membersQuery = useQuery({
+		...groupMembersQueryOpts(groupId, ""),
+		enabled: Boolean(groupId),
+	});
+	const memberById = useMemo(() => {
+		const map = new Map<string, GroupMember>();
+		for (const member of membersQuery.data?.members ?? []) {
+			map.set(member.user_id, member);
+		}
+		return map;
+	}, [membersQuery.data?.members]);
 	const {
 		messages,
 		isPending,
@@ -204,22 +221,33 @@ export function ChannelChatView({ groupId, channelId, onOpenSidebar }: ChannelCh
 
 					{showEmpty ? <ChannelEmptyState /> : null}
 
-					{messages.map((message) => (
-						<MessageRow
-							key={message.id}
-							authorAvatarUrl={message.authorAvatarUrl}
-							authorDisplayName={message.authorDisplayName}
-							timeLabel={message.timeLabel}
-							mine={message.mine}
-							reactions={
-								message.reactions && message.reactions.length > 0 ? (
-									<MessageReactions reactions={message.reactions} />
-								) : undefined
-							}
-						>
-							<MessageBody text={message.bodyPlain} />
-						</MessageRow>
-					))}
+					{messages.map((message) => {
+						const member = memberById.get(message.authorId);
+						const authorNameColor = member
+							? resolveMemberNameColor(member.roles, hideRoles)
+							: undefined;
+						const authorIsOwner = member?.role === "owner";
+						return (
+							<MessageRow
+								key={message.id}
+								authorAvatarUrl={message.authorAvatarUrl}
+								authorDisplayName={message.authorDisplayName}
+								authorNameColor={authorNameColor}
+								authorIsOwner={authorIsOwner}
+								authorPresenceStatus={member?.presence_status}
+								ownerLabel={t("invite.role_owner")}
+								timeLabel={message.timeLabel}
+								mine={message.mine}
+								reactions={
+									message.reactions && message.reactions.length > 0 ? (
+										<MessageReactions reactions={message.reactions} />
+									) : undefined
+								}
+							>
+								<MessageBody text={message.bodyPlain} />
+							</MessageRow>
+						);
+					})}
 
 					<div ref={bottomSentinelRef} className="h-px w-full shrink-0" aria-hidden />
 				</MessageList>

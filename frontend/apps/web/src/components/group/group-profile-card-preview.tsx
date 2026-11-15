@@ -1,43 +1,27 @@
 "use client";
 
-import type { ReactNode } from "react";
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { GroupBannerPreviewSurface } from "@/components/group/group-banner-preview-surface";
-import {
-	groupProfileCardBodyClass,
-	groupProfileCardIconClass,
-	groupProfileCardShellClass,
-	type GroupBannerMode,
-} from "@/lib/group-banner-presets";
 import { groupInitials } from "@/lib/group-initials";
 import { resolveGroupLogoUrl } from "@/lib/group-logo-url";
 import { cn } from "@/lib/utils";
 
 type GroupProfileCardPreviewProps = {
 	groupName: string;
-	bannerMode: GroupBannerMode;
+	description?: string;
 	bannerColor: string;
-	bannerImageSrc?: string;
-	showBannerImage: boolean;
 	logoUrl?: string;
 	iconFile?: File | null;
-	onBannerClick?: () => void;
-	bannerOverlay?: ReactNode;
 	className?: string;
 };
 
 export function GroupProfileCardPreview({
 	groupName,
-	bannerMode,
+	description = "",
 	bannerColor,
-	bannerImageSrc,
-	showBannerImage,
 	logoUrl = "",
 	iconFile = null,
-	onBannerClick,
-	bannerOverlay,
 	className,
 }: GroupProfileCardPreviewProps) {
 	const { t } = useTranslation();
@@ -59,44 +43,49 @@ export function GroupProfileCardPreview({
 	const showIconImage = Boolean(iconSrc);
 	const displayName = groupName.trim() || t("shell.unknown_group");
 	const initials = groupInitials(displayName);
+	const trimmedDescription = description.trim();
 
 	return (
-		<div className={cn(groupProfileCardShellClass, className)}>
-			<GroupBannerPreviewSurface
-				bannerMode={bannerMode}
-				bannerColor={bannerColor}
-				bannerImageSrc={bannerImageSrc}
-				showBannerImage={showBannerImage}
-				onBannerClick={onBannerClick}
-				bannerOverlay={bannerOverlay}
-				className="max-w-none border-0"
+		<div
+			className={cn(
+				"overflow-hidden rounded-2xl border border-border bg-card shadow-sm",
+				className,
+			)}
+		>
+			<div
+				className="h-[76px] transition-colors duration-150"
+				style={{ backgroundColor: bannerColor }}
 			/>
-
-			<div className={groupProfileCardBodyClass}>
-				<div className={groupProfileCardIconClass}>
-					{showIconImage ? (
-						<Image
-							src={iconSrc}
-							alt=""
-							width={56}
-							height={56}
-							unoptimized
-							className="size-full object-cover"
-							onError={() => setBrokenLogoKey(currentLogoKey)}
-						/>
-					) : (
-						<span className="flex size-full items-center justify-center bg-[color-mix(in_oklch,var(--primary)_12%,var(--field))] text-xs font-semibold text-foreground/80">
-							{initials || "?"}
-						</span>
-					)}
+			<div className="px-5 pb-5">
+				<div className="-mt-[40px] flex flex-col items-center text-center">
+					<div className="size-[72px] shrink-0 overflow-hidden rounded-full bg-card ring-[5px] ring-card">
+						{showIconImage ? (
+							<Image
+								src={iconSrc}
+								alt=""
+								width={72}
+								height={72}
+								unoptimized
+								className="size-full object-cover"
+								onError={() => setBrokenLogoKey(currentLogoKey)}
+							/>
+						) : (
+							<span className="flex size-full items-center justify-center bg-[color-mix(in_oklch,var(--primary)_12%,var(--field))] text-lg font-semibold text-foreground/80">
+								{initials || "?"}
+							</span>
+						)}
+					</div>
+					<div className="mt-3 w-full min-w-0">
+						<p className="truncate text-base font-bold leading-tight text-foreground">
+							{displayName}
+						</p>
+						{trimmedDescription ? (
+							<p className="mt-2 whitespace-pre-wrap break-words text-xs leading-relaxed text-muted-foreground">
+								{trimmedDescription}
+							</p>
+						) : null}
+					</div>
 				</div>
-
-				<p className="mt-2 w-full truncate text-sm font-semibold leading-snug text-foreground">
-					{displayName}
-				</p>
-				<p className="mt-1 text-[0.6875rem] leading-snug text-muted-foreground">
-					{t("group_settings.profile.card_preview_subtitle")}
-				</p>
 			</div>
 		</div>
 	);
