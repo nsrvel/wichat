@@ -12,9 +12,14 @@ import (
 // Client calls group-role domain GroupRoleService RPCs with shared timeouts, retries, and circuit breaking.
 type Client interface {
 	ListGroupRoles(ctx context.Context, in *userv1.ListGroupRolesRequest) (*userv1.ListGroupRolesResponse, error)
+	CreateGroupRole(ctx context.Context, in *userv1.CreateGroupRoleRequest) (*userv1.CreateGroupRoleResponse, error)
 	UpdateGroupRole(ctx context.Context, in *userv1.UpdateGroupRoleRequest) (*userv1.UpdateGroupRoleResponse, error)
+	DuplicateGroupRole(ctx context.Context, in *userv1.DuplicateGroupRoleRequest) (*userv1.DuplicateGroupRoleResponse, error)
+	DeleteGroupRole(ctx context.Context, in *userv1.DeleteGroupRoleRequest) (*userv1.DeleteGroupRoleResponse, error)
+	ListGroupRoleMembers(ctx context.Context, in *userv1.ListGroupRoleMembersRequest) (*userv1.ListGroupRoleMembersResponse, error)
 	AddGroupRoleMembers(ctx context.Context, in *userv1.AddGroupRoleMembersRequest) (*userv1.AddGroupRoleMembersResponse, error)
 	RemoveGroupRoleMember(ctx context.Context, in *userv1.RemoveGroupRoleMemberRequest) (*userv1.RemoveGroupRoleMemberResponse, error)
+	UpdateGroupHideRoles(ctx context.Context, in *userv1.UpdateGroupHideRolesRequest) (*userv1.UpdateGroupHideRolesResponse, error)
 }
 
 type client struct {
@@ -46,9 +51,33 @@ func (c *client) ListGroupRoles(ctx context.Context, in *userv1.ListGroupRolesRe
 	})
 }
 
+func (c *client) CreateGroupRole(ctx context.Context, in *userv1.CreateGroupRoleRequest) (*userv1.CreateGroupRoleResponse, error) {
+	return utils.CallUnaryResult(ctx, c.none, c.log, "grouprole.GroupRoleService/CreateGroupRole", func(callCtx context.Context) (*userv1.CreateGroupRoleResponse, error) {
+		return c.stub.CreateGroupRole(callCtx, in)
+	})
+}
+
 func (c *client) UpdateGroupRole(ctx context.Context, in *userv1.UpdateGroupRoleRequest) (*userv1.UpdateGroupRoleResponse, error) {
 	return utils.CallUnaryResult(ctx, c.none, c.log, "grouprole.GroupRoleService/UpdateGroupRole", func(callCtx context.Context) (*userv1.UpdateGroupRoleResponse, error) {
 		return c.stub.UpdateGroupRole(callCtx, in)
+	})
+}
+
+func (c *client) DuplicateGroupRole(ctx context.Context, in *userv1.DuplicateGroupRoleRequest) (*userv1.DuplicateGroupRoleResponse, error) {
+	return utils.CallUnaryResult(ctx, c.none, c.log, "grouprole.GroupRoleService/DuplicateGroupRole", func(callCtx context.Context) (*userv1.DuplicateGroupRoleResponse, error) {
+		return c.stub.DuplicateGroupRole(callCtx, in)
+	})
+}
+
+func (c *client) DeleteGroupRole(ctx context.Context, in *userv1.DeleteGroupRoleRequest) (*userv1.DeleteGroupRoleResponse, error) {
+	return utils.CallUnaryResult(ctx, c.none, c.log, "grouprole.GroupRoleService/DeleteGroupRole", func(callCtx context.Context) (*userv1.DeleteGroupRoleResponse, error) {
+		return c.stub.DeleteGroupRole(callCtx, in)
+	})
+}
+
+func (c *client) ListGroupRoleMembers(ctx context.Context, in *userv1.ListGroupRoleMembersRequest) (*userv1.ListGroupRoleMembersResponse, error) {
+	return utils.CallUnaryResult(ctx, c.read, c.log, "grouprole.GroupRoleService/ListGroupRoleMembers", func(callCtx context.Context) (*userv1.ListGroupRoleMembersResponse, error) {
+		return c.stub.ListGroupRoleMembers(callCtx, in)
 	})
 }
 
@@ -61,5 +90,11 @@ func (c *client) AddGroupRoleMembers(ctx context.Context, in *userv1.AddGroupRol
 func (c *client) RemoveGroupRoleMember(ctx context.Context, in *userv1.RemoveGroupRoleMemberRequest) (*userv1.RemoveGroupRoleMemberResponse, error) {
 	return utils.CallUnaryResult(ctx, c.none, c.log, "grouprole.GroupRoleService/RemoveGroupRoleMember", func(callCtx context.Context) (*userv1.RemoveGroupRoleMemberResponse, error) {
 		return c.stub.RemoveGroupRoleMember(callCtx, in)
+	})
+}
+
+func (c *client) UpdateGroupHideRoles(ctx context.Context, in *userv1.UpdateGroupHideRolesRequest) (*userv1.UpdateGroupHideRolesResponse, error) {
+	return utils.CallUnaryResult(ctx, c.none, c.log, "grouprole.GroupRoleService/UpdateGroupHideRoles", func(callCtx context.Context) (*userv1.UpdateGroupHideRolesResponse, error) {
+		return c.stub.UpdateGroupHideRoles(callCtx, in)
 	})
 }

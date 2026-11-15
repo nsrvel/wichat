@@ -64,4 +64,44 @@ func TestGroupRoleService(t *testing.T) {
 	if err != nil || len(perms) != len(constants.AllKnownPermissions) {
 		t.Fatalf("GetEffectivePermissions owner: %v, count %d", err, len(perms))
 	}
+
+	created, err := roleSvc.CreateGroupRole(ctx, owner.AccessToken, group.ID, "")
+	if err != nil || created.Name != "new role" || len(created.Permissions) != 0 {
+		t.Fatalf("CreateGroupRole default: %+v, err: %v", created, err)
+	}
+
+	if _, err := roleSvc.CreateGroupRole(ctx, member.AccessToken, group.ID, "Nope"); err == nil {
+		t.Fatal("expected permission denied for member creating role")
+	}
+
+	dup, err := roleSvc.DuplicateGroupRole(ctx, owner.AccessToken, group.ID, created.PublicID)
+	if err != nil || dup.Name != "new role Copy" {
+		t.Fatalf("DuplicateGroupRole: %+v, err: %v", dup, err)
+	}
+
+	if _, err := roleSvc.AddGroupRoleMembers(ctx, owner.AccessToken, group.ID, created.PublicID, []string{member.User.ID}); err != nil {
+		t.Fatalf("AddGroupRoleMembers custom: %v", err)
+	}
+
+	roleMembers, err := roleSvc.ListGroupRoleMembers(ctx, owner.AccessToken, group.ID, created.PublicID)
+	if err != nil || len(roleMembers) != 1 || roleMembers[0].UserID != member.User.ID {
+		t.Fatalf("ListGroupRoleMembers: %+v, err: %v", roleMembers, err)
+	}
+
+	hide, err := roleSvc.UpdateGroupHideRoles(ctx, owner.AccessToken, group.ID, true)
+	if err != nil || !hide {
+		t.Fatalf("UpdateGroupHideRoles: %v, %v", hide, err)
+	}
+
+	_, listedHide, err := roleSvc.ListGroupRolesWithSettings(ctx, member.AccessToken, group.ID)
+	if err != nil || !listedHide {
+		t.Fatalf("ListGroupRolesWithSettings: hide=%v, err=%v", listedHide, err)
+	}
+
+	if err := roleSvc.DeleteGroupRole(ctx, owner.AccessToken, group.ID, roles[0].ID); err == nil {
+		t.Fatal("expected error deleting system role")
+	}
+	if err := roleSvc.DeleteGroupRole(ctx, owner.AccessToken, group.ID, dup.PublicID); err != nil {
+		t.Fatalf("DeleteGroupRole: %v", err)
+	}
 }

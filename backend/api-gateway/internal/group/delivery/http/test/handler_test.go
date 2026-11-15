@@ -27,10 +27,6 @@ func (fakeGroup) ListMyGroups(context.Context, *userv1.ListMyGroupsRequest) (*us
 	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
 
-func (fakeGroup) ListJoinableGroups(context.Context, *userv1.ListJoinableGroupsRequest) (*userv1.ListJoinableGroupsResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "error.internal")
-}
-
 func (f fakeGroup) CreateGroup(ctx context.Context, in *userv1.CreateGroupRequest) (*userv1.CreateGroupResponse, error) {
 	if f.createGroup != nil {
 		return f.createGroup(ctx, in)

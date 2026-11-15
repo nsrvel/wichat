@@ -10,6 +10,7 @@ import (
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
 	usermock "github.com/wichat/wichat/backend/ms-user/internal/user/repository/mock"
 	"github.com/wichat/wichat/backend/ms-user/pkg/constants"
+	"github.com/wichat/wichat/backend/ms-user/pkg/token"
 )
 
 type pgRepositoryMock struct {
@@ -296,4 +297,154 @@ func (m pgRepositoryMock) SeedDefaultGroupRolesTx(_ context.Context, _ bun.Tx, g
 		CreatedAt: now,
 	})
 	return nil
+}
+
+func (m pgRepositoryMock) CreateRole(_ context.Context, groupID, name, color string, hoist, mentionable bool, permissions []string, now time.Time) (models.GroupRole, error) {
+	m.st.Lock()
+	defer m.st.Unlock()
+
+	id, err := token.NewID()
+	if err != nil {
+		return models.GroupRole{}, err
+	}
+	pubID, err := token.NewPublicID()
+	if err != nil {
+		return models.GroupRole{}, err
+	}
+
+	maxPos := 0
+	for _, r := range m.st.Roles {
+		if r.GroupID == groupID && r.Position > maxPos {
+			maxPos = r.Position
+		}
+	}
+	if color == "" {
+		color = "#99aab5"
+	}
+	perms := append([]string(nil), permissions...)
+	if perms == nil {
+		perms = []string{}
+	}
+
+	role := models.GroupRole{
+		ID:          id,
+		PublicID:    pubID,
+		GroupID:     groupID,
+		Slug:        strings.ToLower(strings.ReplaceAll(strings.TrimSpace(name), " ", "-")) + "-" + pubID[:6],
+		Name:        name,
+		Color:       color,
+		Hoist:       hoist,
+		Mentionable: mentionable,
+		IsDefault:   false,
+		IsSystem:    false,
+		Position:    maxPos + 1,
+		Permissions: perms,
+		MemberCount: 0,
+		CreatedAt:   now,
+		UpdatedAt:   now,
+	}
+	m.st.Roles = append(m.st.Roles, role)
+	return role, nil
+}
+
+func (m pgRepositoryMock) DeleteRole(_ context.Context, groupID, roleID string) error {
+	m.st.Lock()
+	defer m.st.Unlock()
+
+	for i, r := range m.st.Roles {
+		if r.GroupID == groupID && (r.ID == roleID || r.PublicID == roleID) {
+			if r.IsDefault || r.IsSystem {
+				return constants.ErrConflict
+			}
+			m.st.Roles = append(m.st.Roles[:i], m.st.Roles[i+1:]...)
+			kept := m.st.MemberRoles[:0]
+			for _, mr := range m.st.MemberRoles {
+				if mr.RoleID != r.ID {
+					kept = append(kept, mr)
+				}
+			}
+			m.st.MemberRoles = kept
+			return nil
+		}
+	}
+	return constants.ErrNotFound
+}
+
+func (m pgRepositoryMock) ListRoleMembers(_ context.Context, groupID, roleID string) ([]models.GroupMemberProfile, error) {
+	m.st.Lock()
+	defer m.st.Unlock()
+
+	var target *models.GroupRole
+	for i := range m.st.Roles {
+		r := &m.st.Roles[i]
+		if r.GroupID == groupID && (r.ID == roleID || r.PublicID == roleID) {
+			target = r
+			break
+		}
+	}
+	if target == nil {
+		return nil, constants.ErrNotFound
+	}
+
+	userSet := make(map[string]struct{})
+	if !target.IsDefault {
+		for _, mr := range m.st.MemberRoles {
+			if mr.GroupID == groupID && mr.RoleID == target.ID {
+				userSet[mr.UserID] = struct{}{}
+			}
+		}
+	}
+
+	var out []models.GroupMemberProfile
+	for _, mem := range m.st.Members {
+		if mem.GroupID != groupID {
+			continue
+		}
+		if !target.IsDefault {
+			if _, ok := userSet[mem.UserID]; !ok {
+				continue
+			}
+		}
+		profile := models.GroupMemberProfile{
+			UserID:   mem.UserID,
+			Role:     mem.Role,
+			JoinedAt: mem.CreatedAt,
+		}
+		for _, u := range m.st.Users {
+			if u.ID == mem.UserID {
+				profile.DisplayName = u.DisplayName
+				profile.Username = u.Username
+				profile.AvatarURL = u.AvatarURL
+				break
+			}
+		}
+		out = append(out, profile)
+	}
+	return out, nil
+}
+
+func (m pgRepositoryMock) GetHideRoles(_ context.Context, groupID string) (bool, error) {
+	m.st.Lock()
+	defer m.st.Unlock()
+
+	for _, g := range m.st.Groups {
+		if g.ID == groupID {
+			return g.HideRoles, nil
+		}
+	}
+	return false, constants.ErrNotFound
+}
+
+func (m pgRepositoryMock) SetHideRoles(_ context.Context, groupID string, hide bool, now time.Time) (bool, error) {
+	m.st.Lock()
+	defer m.st.Unlock()
+
+	for i := range m.st.Groups {
+		if m.st.Groups[i].ID == groupID {
+			m.st.Groups[i].HideRoles = hide
+			m.st.Groups[i].UpdatedAt = now
+			return hide, nil
+		}
+	}
+	return false, constants.ErrNotFound
 }

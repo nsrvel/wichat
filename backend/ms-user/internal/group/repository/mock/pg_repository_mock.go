@@ -39,26 +39,6 @@ func (m pgRepositoryMock) ListGroupsForUser(_ context.Context, userID string) ([
 	return groupsForUser(m.st, userID), nil
 }
 
-func (m pgRepositoryMock) ListJoinableGroups(_ context.Context, userID string) ([]models.Group, error) {
-	m.st.Lock()
-	defer m.st.Unlock()
-
-	memberOf := map[string]bool{}
-	for _, mem := range m.st.Members {
-		if mem.UserID == userID {
-			memberOf[mem.GroupID] = true
-		}
-	}
-	var out []models.Group
-	for _, g := range m.st.Groups {
-		if !memberOf[g.ID] {
-			out = append(out, g)
-		}
-	}
-
-	return out, nil
-}
-
 func (m pgRepositoryMock) FindGroupByID(_ context.Context, id string) (models.Group, error) {
 	m.st.Lock()
 	defer m.st.Unlock()

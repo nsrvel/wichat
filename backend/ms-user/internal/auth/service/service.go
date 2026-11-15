@@ -12,6 +12,7 @@ import (
 	"github.com/go-webauthn/webauthn/webauthn"
 	authrepo "github.com/wichat/wichat/backend/ms-user/internal/auth/repository"
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
+	activitysvc "github.com/wichat/wichat/backend/ms-user/internal/user-activity-log/service"
 	userrepo "github.com/wichat/wichat/backend/ms-user/internal/user/repository"
 	userservice "github.com/wichat/wichat/backend/ms-user/internal/user/service"
 	authRedis "github.com/wichat/wichat/backend/ms-user/pkg/auth-redis"
@@ -53,6 +54,7 @@ type Service interface {
 	CompletePasswordReset(ctx context.Context, resetToken, password string) error
 	BeginLoginWebAuthn(ctx context.Context, challengeID string) (string, error)
 	VerifyLoginMFA(ctx context.Context, challengeID, method, code, assertionJSON string) (*models.SessionResult, error)
+	WithActivityLog(r activitysvc.Recorder) Service
 }
 
 type service struct {
@@ -66,6 +68,7 @@ type service struct {
 	webauthn  *webauthn.WebAuthn
 	mfaKey    [32]byte
 	notify    Notifier
+	activity  activitysvc.Recorder
 	log       logger.Logger
 	secret    []byte
 	now       func() time.Time
@@ -137,6 +140,21 @@ func NewService(
 		dummy:     dummy,
 		google:    google.Prepare(googleCfg),
 	}, nil
+}
+
+func (s service) WithActivityLog(r activitysvc.Recorder) Service {
+	s.activity = r
+	return s
+}
+
+func (s service) recordActivity(ctx context.Context, entry models.UserActivityLogEntry) {
+	if s.activity == nil {
+		return
+	}
+	if entry.CreatedAt.IsZero() {
+		entry.CreatedAt = s.now()
+	}
+	s.activity.Record(ctx, entry)
 }
 
 // Setup creates the first user via the register + email OTP flow (legacy RPC).
@@ -278,10 +296,20 @@ func (s service) createUserFromPending(ctx context.Context, pending models.Regis
 		return models.User{}, err
 	}
 
+	s.recordActivity(ctx, models.UserActivityLogEntry{
+		UserID:     user.ID,
+		ActorID:    user.ID,
+		Category:   constants.ActivityCategoryAuth,
+		Action:     constants.ActivityUserRegistered,
+		TargetType: constants.ActivityTargetUser,
+		TargetID:   user.ID,
+		Summary:    "Registered account",
+		Metadata:   map[string]any{"is_instance_owner": user.IsInstanceOwner},
+		CreatedAt:  now,
+	})
 	return user, nil
 }
 
-// Login checks login/password and starts email OTP (no session until VerifyLogin).
 func (s service) Login(ctx context.Context, in models.LoginInput) (*models.PasswordAuthResult, error) {
 	login := strings.TrimSpace(in.Login)
 	if login == "" {
@@ -765,7 +793,17 @@ func (s service) CompletePasswordReset(ctx context.Context, resetToken, newPassw
 		return err
 	}
 
-	_ = email // token record carries email for auditing later
+	s.recordActivity(ctx, models.UserActivityLogEntry{
+		UserID:     userID,
+		ActorID:    userID,
+		Category:   constants.ActivityCategoryAuth,
+		Action:     constants.ActivityUserPasswordReset,
+		TargetType: constants.ActivityTargetUser,
+		TargetID:   userID,
+		Summary:    "Completed password reset",
+		Metadata:   map[string]any{"email": email},
+		CreatedAt:  now,
+	})
 
 	return nil
 }
@@ -890,15 +928,45 @@ func (s service) Logout(ctx context.Context, refreshToken string) error {
 		}
 		_ = s.refresh.RevokeForSession(ctx, sess.ID)
 
-		return s.sessions.RevokeSession(ctx, sess.ID, s.now())
+		if err := s.sessions.RevokeSession(ctx, sess.ID, s.now()); err != nil {
+			return err
+		}
+		s.recordActivity(ctx, models.UserActivityLogEntry{
+			UserID:     sess.UserID,
+			ActorID:    sess.UserID,
+			Category:   constants.ActivityCategoryAuth,
+			Action:     constants.ActivityUserLoggedOut,
+			TargetType: constants.ActivityTargetSession,
+			TargetID:   sess.ID,
+			Summary:    "Logged out",
+		})
+		return nil
 	}
 	if err != nil {
 		return err
 	}
 
+	var loggedOutUserID string
+	if sess, findErr := s.sessions.FindSession(ctx, rec.SessionID); findErr == nil {
+		loggedOutUserID = sess.UserID
+	}
 	_ = s.refresh.RevokeForSession(ctx, rec.SessionID)
 
-	return s.sessions.RevokeSession(ctx, rec.SessionID, s.now())
+	if err := s.sessions.RevokeSession(ctx, rec.SessionID, s.now()); err != nil {
+		return err
+	}
+	if loggedOutUserID != "" {
+		s.recordActivity(ctx, models.UserActivityLogEntry{
+			UserID:     loggedOutUserID,
+			ActorID:    loggedOutUserID,
+			Category:   constants.ActivityCategoryAuth,
+			Action:     constants.ActivityUserLoggedOut,
+			TargetType: constants.ActivityTargetSession,
+			TargetID:   rec.SessionID,
+			Summary:    "Logged out",
+		})
+	}
+	return nil
 }
 
 // Me loads the user for a valid access token and live session.
@@ -1086,6 +1154,21 @@ func (s service) openSession(ctx context.Context, user models.User, meta models.
 		return nil, exception.Internal(err)
 	}
 
+	s.recordActivity(ctx, models.UserActivityLogEntry{
+		UserID:     user.ID,
+		ActorID:    user.ID,
+		Category:   constants.ActivityCategoryAuth,
+		Action:     constants.ActivityUserLoggedIn,
+		TargetType: constants.ActivityTargetSession,
+		TargetID:   sessionID,
+		Summary:    "Logged in",
+		Metadata: map[string]any{
+			"platform":     meta.Platform,
+			"device_label": meta.DeviceLabel,
+			"client_ip":    meta.ClientIP,
+		},
+		CreatedAt: now,
+	})
 	return &models.SessionResult{
 		AccessToken:  access,
 		ExpiresIn:    expiresIn,

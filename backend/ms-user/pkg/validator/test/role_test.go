@@ -34,4 +34,15 @@ func TestRoleNameAndColor(t *testing.T) {
 	if _, err := validator.RoleColor("red"); err == nil {
 		t.Fatal("expected invalid hex color")
 	}
+
+	perms, err := validator.RolePermissions([]string{"view_channels", "view_channels", "send_messages"})
+	if err != nil || len(perms) != 2 {
+		t.Fatalf("valid permissions: %v %v", perms, err)
+	}
+	if empty, err := validator.RolePermissions(nil); err != nil || len(empty) != 0 {
+		t.Fatalf("empty permissions: %v %v", empty, err)
+	}
+	if _, err := validator.RolePermissions([]string{"unknown_perm"}); err == nil {
+		t.Fatal("expected invalid permission error")
+	}
 }

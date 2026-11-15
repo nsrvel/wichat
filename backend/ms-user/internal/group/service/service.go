@@ -12,6 +12,7 @@ import (
 	grouprolerepo "github.com/wichat/wichat/backend/ms-user/internal/group-role/repository"
 	grouprepo "github.com/wichat/wichat/backend/ms-user/internal/group/repository"
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
+	activitysvc "github.com/wichat/wichat/backend/ms-user/internal/user-activity-log/service"
 	userrepo "github.com/wichat/wichat/backend/ms-user/internal/user/repository"
 	"github.com/wichat/wichat/backend/ms-user/pkg/access"
 	"github.com/wichat/wichat/backend/ms-user/pkg/constants"
@@ -25,7 +26,6 @@ import (
 // Service is the group lifecycle and profile use-case API.
 type Service interface {
 	ListMyGroups(ctx context.Context, accessToken string) ([]models.PublicGroup, error)
-	ListJoinableGroups(ctx context.Context, accessToken string) ([]models.PublicGroup, error)
 	CreateGroup(ctx context.Context, accessToken, name string) (*models.PublicGroup, error)
 	ReorderMyGroups(ctx context.Context, accessToken string, groupPublicIDs []string) error
 	DeleteGroup(ctx context.Context, accessToken, groupID string) error
@@ -42,6 +42,7 @@ type Service interface {
 		clearBannerImage bool,
 	) (*models.PublicGroup, error)
 	UploadGroupBanner(ctx context.Context, accessToken, groupPublicID, contentType string, body io.Reader, size int64) (*models.PublicGroup, error)
+	WithActivityLog(r activitysvc.Recorder) Service
 }
 
 type service struct {
@@ -52,6 +53,7 @@ type service struct {
 	users    userrepo.PgRepository
 	objects  grouprepo.MinioRepository
 	sessions authrepo.SessionRepository
+	activity activitysvc.Recorder
 	secret   []byte
 	log      logger.Logger
 	now      func() time.Time
@@ -86,6 +88,21 @@ func NewService(
 	}
 }
 
+func (s service) WithActivityLog(r activitysvc.Recorder) Service {
+	s.activity = r
+	return s
+}
+
+func (s service) recordActivity(ctx context.Context, entry models.UserActivityLogEntry) {
+	if s.activity == nil {
+		return
+	}
+	if entry.CreatedAt.IsZero() {
+		entry.CreatedAt = s.now()
+	}
+	s.activity.Record(ctx, entry)
+}
+
 func (s service) ListMyGroups(ctx context.Context, accessToken string) ([]models.PublicGroup, error) {
 	userID, err := access.UserIDFromAccessToken(ctx, accessToken, s.secret, s.sessions, s.now())
 	if err != nil {
@@ -105,25 +122,6 @@ func (s service) ListMyGroups(ctx context.Context, accessToken string) ([]models
 				g.EffectivePermissions = perms
 			}
 		}
-		out[i] = g.Public()
-	}
-
-	return out, nil
-}
-
-func (s service) ListJoinableGroups(ctx context.Context, accessToken string) ([]models.PublicGroup, error) {
-	userID, err := access.UserIDFromAccessToken(ctx, accessToken, s.secret, s.sessions, s.now())
-	if err != nil {
-		return nil, err
-	}
-
-	groups, err := s.groups.ListJoinableGroups(ctx, userID)
-	if err != nil {
-		return nil, err
-	}
-
-	out := make([]models.PublicGroup, len(groups))
-	for i, g := range groups {
 		out[i] = g.Public()
 	}
 
@@ -198,6 +196,17 @@ func (s service) CreateGroup(ctx context.Context, accessToken, name string) (*mo
 	pub := saved.Public()
 	pub.Role = constants.GroupRoleOwner
 
+	s.recordActivity(ctx, models.UserActivityLogEntry{
+		UserID:     userID,
+		ActorID:    userID,
+		Category:   constants.ActivityCategoryGroup,
+		Action:     constants.ActivityGroupCreated,
+		TargetType: constants.ActivityTargetGroup,
+		TargetID:   saved.PublicID,
+		Summary:    "Created group",
+		Metadata:   map[string]any{"group_id": saved.ID, "group_name": saved.Name},
+		CreatedAt:  now,
+	})
 	return &pub, nil
 }
 

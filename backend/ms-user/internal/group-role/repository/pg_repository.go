@@ -3,7 +3,9 @@ package repository
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
+	"unicode"
 
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
@@ -19,10 +21,15 @@ type PgRepository interface {
 	GetEffectivePermissions(ctx context.Context, groupID, userID string) ([]string, error)
 	ListRolesForGroup(ctx context.Context, groupID string) ([]models.GroupRole, error)
 	FindRoleByID(ctx context.Context, groupID, roleID string) (models.GroupRole, error)
+	CreateRole(ctx context.Context, groupID, name, color string, hoist, mentionable bool, permissions []string, now time.Time) (models.GroupRole, error)
 	UpdateRole(ctx context.Context, groupID, roleID string, patch models.GroupRolePatch, now time.Time) (models.GroupRole, error)
+	DeleteRole(ctx context.Context, groupID, roleID string) error
+	ListRoleMembers(ctx context.Context, groupID, roleID string) ([]models.GroupMemberProfile, error)
 	AddMemberRoles(ctx context.Context, groupID, roleID string, userIDs []string) error
 	RemoveMemberRole(ctx context.Context, groupID, roleID, userID string) error
 	ListRolesForMembers(ctx context.Context, groupID string, userIDs []string) (map[string][]models.GroupRoleSummary, error)
+	GetHideRoles(ctx context.Context, groupID string) (bool, error)
+	SetHideRoles(ctx context.Context, groupID string, hide bool, now time.Time) (bool, error)
 	SeedDefaultGroupRolesTx(ctx context.Context, tx bun.Tx, groupID, ownerUserID string, now time.Time) error
 }
 
@@ -146,7 +153,7 @@ func (r pgRepository) FindRoleByID(ctx context.Context, groupID, roleID string) 
 		    WHERE group_id = ?
 		    GROUP BY role_id
 		) mc ON mc.role_id = gr.id
-		WHERE gr.group_id = ? AND (gr.id = ? OR gr.public_id = ?)
+		WHERE gr.group_id = ? AND (gr.id::text = ? OR gr.public_id = ?)
 		LIMIT 1
 	`
 	err := r.db.NewRaw(query, groupID, groupID, roleID, roleID).Scan(ctx, &row)
@@ -182,7 +189,7 @@ func (r pgRepository) UpdateRole(ctx context.Context, groupID, roleID string, pa
 	}
 
 	q := r.db.NewUpdate().Model((*models.GroupRoleRow)(nil)).
-		Where("group_id = ? AND (id = ? OR public_id = ?)", groupID, roleID, roleID).
+		Where("group_id = ? AND (id::text = ? OR public_id = ?)", groupID, roleID, roleID).
 		Set("updated_at = ?", now)
 
 	if patch.Permissions != nil {
@@ -274,11 +281,13 @@ func (r pgRepository) RemoveMemberRole(ctx context.Context, groupID, roleID, use
 }
 
 type memberRoleRow struct {
-	UserID string `bun:"user_id"`
-	ID     string `bun:"id"`
-	Slug   string `bun:"slug"`
-	Name   string `bun:"name"`
-	Color  string `bun:"color"`
+	UserID   string `bun:"user_id"`
+	ID       string `bun:"id"`
+	Slug     string `bun:"slug"`
+	Name     string `bun:"name"`
+	Color    string `bun:"color"`
+	Hoist    bool   `bun:"hoist"`
+	Position int32  `bun:"position"`
 }
 
 // ListRolesForMembers returns mapped roles for members in a group.
@@ -293,7 +302,7 @@ func (r pgRepository) ListRolesForMembers(ctx context.Context, groupID string, u
 
 	var rows []memberRoleRow
 	query := `
-		SELECT gmr.user_id, gr.id, gr.slug, gr.name, gr.color
+		SELECT gmr.user_id, gr.id, gr.slug, gr.name, gr.color, gr.hoist, gr.position
 		FROM group_member_roles gmr
 		JOIN group_roles gr ON gr.id = gmr.role_id AND gr.group_id = gmr.group_id
 		WHERE gmr.group_id = ? AND gmr.user_id IN (?)
@@ -307,10 +316,12 @@ func (r pgRepository) ListRolesForMembers(ctx context.Context, groupID string, u
 
 	for _, row := range rows {
 		out[row.UserID] = append(out[row.UserID], models.GroupRoleSummary{
-			ID:    row.ID,
-			Slug:  row.Slug,
-			Name:  row.Name,
-			Color: row.Color,
+			ID:       row.ID,
+			Slug:     row.Slug,
+			Name:     row.Name,
+			Color:    row.Color,
+			Hoist:    row.Hoist,
+			Position: row.Position,
 		})
 	}
 	return out, nil
@@ -385,6 +396,190 @@ func (r pgRepository) SeedDefaultGroupRolesTx(ctx context.Context, tx bun.Tx, gr
 	}
 
 	return nil
+}
+
+// CreateRole inserts a new custom role at the bottom of the group's role hierarchy.
+func (r pgRepository) CreateRole(ctx context.Context, groupID, name, color string, hoist, mentionable bool, permissions []string, now time.Time) (models.GroupRole, error) {
+	id, err := token.NewID()
+	if err != nil {
+		return models.GroupRole{}, err
+	}
+	pubID, err := token.NewPublicID()
+	if err != nil {
+		return models.GroupRole{}, err
+	}
+
+	var maxPos int
+	_ = r.db.NewSelect().Model((*models.GroupRoleRow)(nil)).
+		ColumnExpr("COALESCE(MAX(position), 0)").
+		Where("group_id = ?", groupID).
+		Scan(ctx, &maxPos)
+
+	if color == "" {
+		color = "#99aab5"
+	}
+	perms := permissions
+	if perms == nil {
+		perms = []string{}
+	}
+
+	row := models.GroupRoleRow{
+		ID:          id,
+		PublicID:    pubID,
+		GroupID:     groupID,
+		Slug:        buildRoleSlug(name, pubID),
+		Name:        name,
+		Color:       color,
+		Hoist:       hoist,
+		Mentionable: mentionable,
+		IsDefault:   false,
+		IsSystem:    false,
+		Position:    maxPos + 1,
+		Permissions: perms,
+		CreatedAt:   now,
+		UpdatedAt:   now,
+	}
+	if _, err := r.db.NewInsert().Model(&row).Exec(ctx); err != nil {
+		r.logIfInfraErr("CreateRole", err)
+		return models.GroupRole{}, err
+	}
+	return r.FindRoleByID(ctx, groupID, row.ID)
+}
+
+// DeleteRole deletes a non-default, non-system role from a group.
+func (r pgRepository) DeleteRole(ctx context.Context, groupID, roleID string) error {
+	role, err := r.FindRoleByID(ctx, groupID, roleID)
+	if err != nil {
+		return err
+	}
+	if role.IsDefault || role.IsSystem {
+		return constants.ErrConflict
+	}
+
+	res, err := r.db.NewDelete().Model((*models.GroupRoleRow)(nil)).
+		Where("group_id = ? AND id = ? AND is_default = false AND is_system = false", groupID, role.ID).
+		Exec(ctx)
+	if err != nil {
+		r.logIfInfraErr("DeleteRole", err)
+		return err
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return constants.ErrNotFound
+	}
+	return nil
+}
+
+type roleMemberQueryRow struct {
+	UserID      string    `bun:"user_id"`
+	DisplayName string    `bun:"display_name"`
+	Username    string    `bun:"username"`
+	AvatarURL   string    `bun:"avatar_url"`
+	Role        string    `bun:"role"`
+	JoinedAt    time.Time `bun:"joined_at"`
+}
+
+// ListRoleMembers returns member profiles assigned to roleID (or all members for @everyone).
+func (r pgRepository) ListRoleMembers(ctx context.Context, groupID, roleID string) ([]models.GroupMemberProfile, error) {
+	role, err := r.FindRoleByID(ctx, groupID, roleID)
+	if err != nil {
+		return nil, err
+	}
+
+	var rows []roleMemberQueryRow
+	if role.IsDefault {
+		query := `
+			SELECT gm.user_id, u.display_name, u.username, u.avatar_url, gm.role, gm.created_at AS joined_at
+			FROM group_members gm
+			JOIN users u ON u.id = gm.user_id
+			WHERE gm.group_id = ?
+			ORDER BY gm.created_at ASC, gm.user_id ASC
+		`
+		err = r.db.NewRaw(query, groupID).Scan(ctx, &rows)
+	} else {
+		query := `
+			SELECT gm.user_id, u.display_name, u.username, u.avatar_url, gm.role, gm.created_at AS joined_at
+			FROM group_member_roles gmr
+			JOIN group_members gm ON gm.group_id = gmr.group_id AND gm.user_id = gmr.user_id
+			JOIN users u ON u.id = gm.user_id
+			WHERE gmr.group_id = ? AND gmr.role_id = ?
+			ORDER BY gm.created_at ASC, gm.user_id ASC
+		`
+		err = r.db.NewRaw(query, groupID, role.ID).Scan(ctx, &rows)
+	}
+	if err != nil {
+		r.logIfInfraErr("ListRoleMembers", err)
+		return nil, err
+	}
+
+	out := make([]models.GroupMemberProfile, len(rows))
+	for i, row := range rows {
+		out[i] = models.GroupMemberProfile{
+			UserID:      row.UserID,
+			DisplayName: row.DisplayName,
+			Username:    row.Username,
+			AvatarURL:   row.AvatarURL,
+			Role:        row.Role,
+			JoinedAt:    row.JoinedAt,
+		}
+	}
+	return out, nil
+}
+
+// GetHideRoles reads group_settings.hide_roles for a group.
+func (r pgRepository) GetHideRoles(ctx context.Context, groupID string) (bool, error) {
+	var hide bool
+	err := r.db.NewSelect().Model((*models.GroupSettingsRow)(nil)).
+		Column("hide_roles").
+		Where("group_id = ?", groupID).
+		Scan(ctx, &hide)
+	if err != nil {
+		err = pgErr.MapNotFound(err)
+		r.logIfInfraErr("GetHideRoles", err)
+		return false, err
+	}
+	return hide, nil
+}
+
+// SetHideRoles updates group_settings.hide_roles for a group.
+func (r pgRepository) SetHideRoles(ctx context.Context, groupID string, hide bool, now time.Time) (bool, error) {
+	res, err := r.db.NewUpdate().Model((*models.GroupSettingsRow)(nil)).
+		Set("hide_roles = ?", hide).
+		Set("updated_at = ?", now).
+		Where("group_id = ?", groupID).
+		Exec(ctx)
+	if err != nil {
+		r.logIfInfraErr("SetHideRoles", err)
+		return false, err
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return false, constants.ErrNotFound
+	}
+	return hide, nil
+}
+
+func buildRoleSlug(name, pubID string) string {
+	var b strings.Builder
+	prevDash := false
+	for _, r := range strings.ToLower(strings.TrimSpace(name)) {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) {
+			b.WriteRune(r)
+			prevDash = false
+		} else if !prevDash && b.Len() > 0 {
+			b.WriteByte('-')
+			prevDash = true
+		}
+	}
+	base := strings.Trim(b.String(), "-")
+	if base == "" {
+		base = "role"
+	}
+	suffix := pubID
+	if len(suffix) > 6 {
+		suffix = suffix[:6]
+	}
+	return base + "-" + suffix
 }
 
 func (r pgRepository) logIfInfraErr(op string, err error) {

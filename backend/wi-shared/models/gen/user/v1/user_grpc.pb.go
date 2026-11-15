@@ -25,6 +25,9 @@ const (
 	UserService_CheckUsername_FullMethodName            = "/user.v1.UserService/CheckUsername"
 	UserService_UploadUserAvatar_FullMethodName         = "/user.v1.UserService/UploadUserAvatar"
 	UserService_UpdateUserProfile_FullMethodName        = "/user.v1.UserService/UpdateUserProfile"
+	UserService_UpdateUserStatusNote_FullMethodName     = "/user.v1.UserService/UpdateUserStatusNote"
+	UserService_UpdateUserPreferences_FullMethodName    = "/user.v1.UserService/UpdateUserPreferences"
+	UserService_ListUserActivityLogs_FullMethodName     = "/user.v1.UserService/ListUserActivityLogs"
 	UserService_UpdateUsername_FullMethodName           = "/user.v1.UserService/UpdateUsername"
 	UserService_RequestEmailChange_FullMethodName       = "/user.v1.UserService/RequestEmailChange"
 	UserService_VerifyEmailChange_FullMethodName        = "/user.v1.UserService/VerifyEmailChange"
@@ -64,6 +67,12 @@ type UserServiceClient interface {
 	UploadUserAvatar(ctx context.Context, in *UploadUserAvatarRequest, opts ...grpc.CallOption) (*UploadUserAvatarResponse, error)
 	// UpdateUserProfile replaces caller-editable user profile scalars.
 	UpdateUserProfile(ctx context.Context, in *UpdateUserProfileRequest, opts ...grpc.CallOption) (*UpdateUserProfileResponse, error)
+	// UpdateUserStatusNote replaces or clears the caller's status note.
+	UpdateUserStatusNote(ctx context.Context, in *UpdateUserStatusNoteRequest, opts ...grpc.CallOption) (*UpdateUserStatusNoteResponse, error)
+	// UpdateUserPreferences updates the caller's display locale and time format.
+	UpdateUserPreferences(ctx context.Context, in *UpdateUserPreferencesRequest, opts ...grpc.CallOption) (*UpdateUserPreferencesResponse, error)
+	// ListUserActivityLogs returns paginated universal audit log entries for the caller.
+	ListUserActivityLogs(ctx context.Context, in *ListUserActivityLogsRequest, opts ...grpc.CallOption) (*ListUserActivityLogsResponse, error)
 	// UpdateUsername changes the caller's username after verifying their current password.
 	UpdateUsername(ctx context.Context, in *UpdateUsernameRequest, opts ...grpc.CallOption) (*UpdateUsernameResponse, error)
 	// RequestEmailChange sends a verification code to the caller's current email.
@@ -166,6 +175,36 @@ func (c *userServiceClient) UpdateUserProfile(ctx context.Context, in *UpdateUse
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(UpdateUserProfileResponse)
 	err := c.cc.Invoke(ctx, UserService_UpdateUserProfile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) UpdateUserStatusNote(ctx context.Context, in *UpdateUserStatusNoteRequest, opts ...grpc.CallOption) (*UpdateUserStatusNoteResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateUserStatusNoteResponse)
+	err := c.cc.Invoke(ctx, UserService_UpdateUserStatusNote_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) UpdateUserPreferences(ctx context.Context, in *UpdateUserPreferencesRequest, opts ...grpc.CallOption) (*UpdateUserPreferencesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateUserPreferencesResponse)
+	err := c.cc.Invoke(ctx, UserService_UpdateUserPreferences_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) ListUserActivityLogs(ctx context.Context, in *ListUserActivityLogsRequest, opts ...grpc.CallOption) (*ListUserActivityLogsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListUserActivityLogsResponse)
+	err := c.cc.Invoke(ctx, UserService_ListUserActivityLogs_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -380,6 +419,12 @@ type UserServiceServer interface {
 	UploadUserAvatar(context.Context, *UploadUserAvatarRequest) (*UploadUserAvatarResponse, error)
 	// UpdateUserProfile replaces caller-editable user profile scalars.
 	UpdateUserProfile(context.Context, *UpdateUserProfileRequest) (*UpdateUserProfileResponse, error)
+	// UpdateUserStatusNote replaces or clears the caller's status note.
+	UpdateUserStatusNote(context.Context, *UpdateUserStatusNoteRequest) (*UpdateUserStatusNoteResponse, error)
+	// UpdateUserPreferences updates the caller's display locale and time format.
+	UpdateUserPreferences(context.Context, *UpdateUserPreferencesRequest) (*UpdateUserPreferencesResponse, error)
+	// ListUserActivityLogs returns paginated universal audit log entries for the caller.
+	ListUserActivityLogs(context.Context, *ListUserActivityLogsRequest) (*ListUserActivityLogsResponse, error)
 	// UpdateUsername changes the caller's username after verifying their current password.
 	UpdateUsername(context.Context, *UpdateUsernameRequest) (*UpdateUsernameResponse, error)
 	// RequestEmailChange sends a verification code to the caller's current email.
@@ -445,6 +490,15 @@ func (UnimplementedUserServiceServer) UploadUserAvatar(context.Context, *UploadU
 }
 func (UnimplementedUserServiceServer) UpdateUserProfile(context.Context, *UpdateUserProfileRequest) (*UpdateUserProfileResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateUserProfile not implemented")
+}
+func (UnimplementedUserServiceServer) UpdateUserStatusNote(context.Context, *UpdateUserStatusNoteRequest) (*UpdateUserStatusNoteResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateUserStatusNote not implemented")
+}
+func (UnimplementedUserServiceServer) UpdateUserPreferences(context.Context, *UpdateUserPreferencesRequest) (*UpdateUserPreferencesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateUserPreferences not implemented")
+}
+func (UnimplementedUserServiceServer) ListUserActivityLogs(context.Context, *ListUserActivityLogsRequest) (*ListUserActivityLogsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListUserActivityLogs not implemented")
 }
 func (UnimplementedUserServiceServer) UpdateUsername(context.Context, *UpdateUsernameRequest) (*UpdateUsernameResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateUsername not implemented")
@@ -628,6 +682,60 @@ func _UserService_UpdateUserProfile_Handler(srv interface{}, ctx context.Context
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(UserServiceServer).UpdateUserProfile(ctx, req.(*UpdateUserProfileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_UpdateUserStatusNote_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateUserStatusNoteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).UpdateUserStatusNote(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_UpdateUserStatusNote_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).UpdateUserStatusNote(ctx, req.(*UpdateUserStatusNoteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_UpdateUserPreferences_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateUserPreferencesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).UpdateUserPreferences(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_UpdateUserPreferences_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).UpdateUserPreferences(ctx, req.(*UpdateUserPreferencesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_ListUserActivityLogs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListUserActivityLogsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).ListUserActivityLogs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_ListUserActivityLogs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).ListUserActivityLogs(ctx, req.(*ListUserActivityLogsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1004,6 +1112,18 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateUserProfile",
 			Handler:    _UserService_UpdateUserProfile_Handler,
+		},
+		{
+			MethodName: "UpdateUserStatusNote",
+			Handler:    _UserService_UpdateUserStatusNote_Handler,
+		},
+		{
+			MethodName: "UpdateUserPreferences",
+			Handler:    _UserService_UpdateUserPreferences_Handler,
+		},
+		{
+			MethodName: "ListUserActivityLogs",
+			Handler:    _UserService_ListUserActivityLogs_Handler,
 		},
 		{
 			MethodName: "UpdateUsername",

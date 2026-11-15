@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	authrepo "github.com/wichat/wichat/backend/ms-user/internal/auth/repository"
@@ -10,6 +11,8 @@ import (
 	grouprolerepo "github.com/wichat/wichat/backend/ms-user/internal/group-role/repository"
 	grouprepo "github.com/wichat/wichat/backend/ms-user/internal/group/repository"
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
+	presencesvc "github.com/wichat/wichat/backend/ms-user/internal/presence/service"
+	activitysvc "github.com/wichat/wichat/backend/ms-user/internal/user-activity-log/service"
 	"github.com/wichat/wichat/backend/ms-user/pkg/access"
 	"github.com/wichat/wichat/backend/ms-user/pkg/constants"
 	"github.com/wichat/wichat/backend/ms-user/pkg/validator"
@@ -24,6 +27,8 @@ type Service interface {
 	ListGroupMembers(ctx context.Context, accessToken, groupPublicID string, limit int, cursor *models.GroupMemberCursor) (*models.GroupMemberPage, error)
 	KickGroupMember(ctx context.Context, accessToken, groupPublicID, targetUserID string) error
 	BanGroupMembers(ctx context.Context, accessToken, groupPublicID string, targetUserIDs []string, reason string, deleteSeconds int) (int, error)
+	WithActivityLog(r activitysvc.Recorder) Service
+	WithPresence(p presencesvc.Reader) Service
 }
 
 type service struct {
@@ -31,6 +36,8 @@ type service struct {
 	groups   grouprepo.PgRepository
 	roles    grouprolerepo.PgRepository
 	sessions authrepo.SessionRepository
+	activity activitysvc.Recorder
+	presence presencesvc.Reader
 	secret   []byte
 	log      logger.Logger
 	now      func() time.Time
@@ -57,6 +64,26 @@ func NewService(
 		log:      log,
 		now:      func() time.Time { return time.Now().UTC() },
 	}
+}
+
+func (s service) WithActivityLog(r activitysvc.Recorder) Service {
+	s.activity = r
+	return s
+}
+
+func (s service) WithPresence(p presencesvc.Reader) Service {
+	s.presence = p
+	return s
+}
+
+func (s service) recordActivity(ctx context.Context, entry models.UserActivityLogEntry) {
+	if s.activity == nil {
+		return
+	}
+	if entry.CreatedAt.IsZero() {
+		entry.CreatedAt = s.now()
+	}
+	s.activity.Record(ctx, entry)
 }
 
 func (s service) JoinGroup(ctx context.Context, accessToken, groupPublicID string) error {
@@ -93,12 +120,26 @@ func (s service) JoinGroup(ctx context.Context, accessToken, groupPublicID strin
 	}
 
 	now := s.now()
-	return s.members.InsertGroupMember(ctx, models.GroupMember{
+	if err := s.members.InsertGroupMember(ctx, models.GroupMember{
 		GroupID:   group.ID,
 		UserID:    userID,
 		Role:      constants.GroupRoleMember,
 		CreatedAt: now,
+	}); err != nil {
+		return err
+	}
+	s.recordActivity(ctx, models.UserActivityLogEntry{
+		UserID:     userID,
+		ActorID:    userID,
+		Category:   constants.ActivityCategoryGroup,
+		Action:     constants.ActivityGroupJoined,
+		TargetType: constants.ActivityTargetGroup,
+		TargetID:   group.PublicID,
+		Summary:    "Joined group",
+		Metadata:   map[string]any{"group_id": group.ID, "group_name": group.Name, "via": "direct"},
+		CreatedAt:  now,
 	})
+	return nil
 }
 
 func (s service) LeaveGroup(ctx context.Context, accessToken, groupPublicID string) error {
@@ -138,6 +179,16 @@ func (s service) LeaveGroup(ctx context.Context, accessToken, groupPublicID stri
 		return err
 	}
 
+	s.recordActivity(ctx, models.UserActivityLogEntry{
+		UserID:     userID,
+		ActorID:    userID,
+		Category:   constants.ActivityCategoryGroup,
+		Action:     constants.ActivityGroupLeft,
+		TargetType: constants.ActivityTargetGroup,
+		TargetID:   group.PublicID,
+		Summary:    "Left group",
+		Metadata:   map[string]any{"group_id": group.ID, "group_name": group.Name},
+	})
 	return nil
 }
 
@@ -182,14 +233,26 @@ func (s service) ListGroupMembers(
 		return nil, err
 	}
 
-	if len(members) > 0 && s.roles != nil {
+	if len(members) > 0 {
 		userIDs := make([]string, len(members))
 		for i, m := range members {
 			userIDs[i] = m.UserID
 		}
-		if rolesMap, err := s.roles.ListRolesForMembers(ctx, group.ID, userIDs); err == nil {
-			for i := range members {
-				members[i].Roles = rolesMap[members[i].UserID]
+		if s.roles != nil {
+			if rolesMap, err := s.roles.ListRolesForMembers(ctx, group.ID, userIDs); err == nil {
+				for i := range members {
+					members[i].Roles = rolesMap[members[i].UserID]
+				}
+			}
+		}
+		if s.presence != nil {
+			if presenceMap, err := s.presence.BatchGetEffectivePresence(ctx, userIDs); err == nil {
+				for i := range members {
+					if snap, ok := presenceMap[members[i].UserID]; ok {
+						members[i].IsOnline = snap.IsOnline
+						members[i].PresenceStatus = snap.PresenceStatus
+					}
+				}
 			}
 		}
 	}
@@ -235,7 +298,20 @@ func (s service) KickGroupMember(ctx context.Context, accessToken, groupPublicID
 		return exception.PermissionDenied(exception.MsgForbidden, nil)
 	}
 
-	return s.members.DeleteGroupMember(ctx, group.ID, targetUserID)
+	if err := s.members.DeleteGroupMember(ctx, group.ID, targetUserID); err != nil {
+		return err
+	}
+	s.recordActivity(ctx, models.UserActivityLogEntry{
+		UserID:     targetUserID,
+		ActorID:    userID,
+		Category:   constants.ActivityCategoryGroup,
+		Action:     constants.ActivityGroupKicked,
+		TargetType: constants.ActivityTargetGroup,
+		TargetID:   group.PublicID,
+		Summary:    "Removed from group",
+		Metadata:   map[string]any{"group_id": group.ID, "group_name": group.Name},
+	})
+	return nil
 }
 
 func (s service) BanGroupMembers(ctx context.Context, accessToken, groupPublicID string, targetUserIDs []string, reason string, deleteSeconds int) (int, error) {
@@ -274,5 +350,28 @@ func (s service) BanGroupMembers(ctx context.Context, accessToken, groupPublicID
 		return 0, nil
 	}
 
-	return s.members.BanMembers(ctx, group.ID, validIDs, userID, reason, deleteSeconds)
+	count, err := s.members.BanMembers(ctx, group.ID, validIDs, userID, reason, deleteSeconds)
+	if err != nil {
+		return 0, err
+	}
+	if count > 0 {
+		trimmedReason := strings.TrimSpace(reason)
+		for _, targetID := range validIDs {
+			meta := map[string]any{"group_id": group.ID, "group_name": group.Name}
+			if trimmedReason != "" {
+				meta["reason"] = trimmedReason
+			}
+			s.recordActivity(ctx, models.UserActivityLogEntry{
+				UserID:     targetID,
+				ActorID:    userID,
+				Category:   constants.ActivityCategoryGroup,
+				Action:     constants.ActivityGroupBanned,
+				TargetType: constants.ActivityTargetGroup,
+				TargetID:   group.PublicID,
+				Summary:    "Banned from group",
+				Metadata:   meta,
+			})
+		}
+	}
+	return count, nil
 }

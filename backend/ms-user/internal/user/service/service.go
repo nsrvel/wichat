@@ -15,6 +15,7 @@ import (
 	groupmemberrepo "github.com/wichat/wichat/backend/ms-user/internal/group-member/repository"
 	grouprepo "github.com/wichat/wichat/backend/ms-user/internal/group/repository"
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
+	activitysvc "github.com/wichat/wichat/backend/ms-user/internal/user-activity-log/service"
 	userrepo "github.com/wichat/wichat/backend/ms-user/internal/user/repository"
 	"github.com/wichat/wichat/backend/ms-user/pkg/access"
 	authRedis "github.com/wichat/wichat/backend/ms-user/pkg/auth-redis"
@@ -44,6 +45,8 @@ type Service interface {
 	SearchUsers(ctx context.Context, accessToken, query string, limit int, groupPublicID string) ([]models.UserSearchHit, error)
 	UploadUserAvatar(ctx context.Context, accessToken, contentType string, body io.Reader, size int64) (*models.PublicUser, error)
 	UpdateUserProfile(ctx context.Context, accessToken, displayName, pronouns, bio, bannerColor string, clearAvatar bool) (*models.PublicUser, error)
+	UpdateUserStatusNote(ctx context.Context, accessToken, text, emoji, expiresAt string) (*models.PublicUser, error)
+	UpdateUserPreferences(ctx context.Context, accessToken, locale, timeFormat string) (*models.PublicUser, error)
 	UpdateUsername(ctx context.Context, accessToken, newUsername, currentPassword string) (*models.PublicUser, error)
 	RequestEmailChange(ctx context.Context, accessToken, locale string) (*models.AuthChallenge, error)
 	VerifyEmailChange(ctx context.Context, accessToken, challengeID, code string) (string, error)
@@ -63,6 +66,7 @@ type Service interface {
 	ListSessions(ctx context.Context, accessToken string) ([]models.Session, string, error)
 	RevokeSession(ctx context.Context, accessToken, sessionID, currentPassword string) error
 	RevokeOtherSessions(ctx context.Context, accessToken, currentPassword string) error
+	WithActivityLog(r activitysvc.Recorder) Service
 }
 
 type service struct {
@@ -78,6 +82,7 @@ type service struct {
 	webauthn    *webauthn.WebAuthn
 	mfaKey      [32]byte
 	notify      Notifier
+	activity    activitysvc.Recorder
 	secret      []byte
 	log         logger.Logger
 	now         func() time.Time
@@ -136,6 +141,21 @@ func NewServiceWithMFA(
 		log:         log,
 		now:         func() time.Time { return time.Now().UTC() },
 	}
+}
+
+func (s service) WithActivityLog(r activitysvc.Recorder) Service {
+	s.activity = r
+	return s
+}
+
+func (s service) recordActivity(ctx context.Context, entry models.UserActivityLogEntry) {
+	if s.activity == nil {
+		return
+	}
+	if entry.CreatedAt.IsZero() {
+		entry.CreatedAt = s.now()
+	}
+	s.activity.Record(ctx, entry)
 }
 
 func (s service) SetupStatus(ctx context.Context) (*models.SetupStatus, error) {
@@ -296,6 +316,17 @@ func (s service) UploadUserAvatar(
 	}
 
 	pub := saved.Public()
+	s.recordActivity(ctx, models.UserActivityLogEntry{
+		UserID:     userID,
+		ActorID:    userID,
+		Category:   constants.ActivityCategoryProfile,
+		Action:     constants.ActivityUserAvatarUpdated,
+		TargetType: constants.ActivityTargetUser,
+		TargetID:   userID,
+		Summary:    "Updated avatar",
+		Changes:    map[string]models.ActivityFieldChange{"avatar_url": {New: saved.AvatarURL}},
+		CreatedAt:  now,
+	})
 	return &pub, nil
 }
 
@@ -342,6 +373,119 @@ func (s service) UpdateUserProfile(
 	}
 
 	pub := saved.Public()
+	s.recordActivity(ctx, models.UserActivityLogEntry{
+		UserID:     userID,
+		ActorID:    userID,
+		Category:   constants.ActivityCategoryProfile,
+		Action:     constants.ActivityUserProfileUpdated,
+		TargetType: constants.ActivityTargetUser,
+		TargetID:   userID,
+		Summary:    "Updated profile",
+		Changes: map[string]models.ActivityFieldChange{
+			"display_name": {New: saved.DisplayName},
+			"pronouns":     {New: saved.Pronouns},
+			"bio":          {New: saved.Bio},
+			"banner_color": {New: saved.BannerColor},
+			"clear_avatar": {New: clearAvatar},
+		},
+		CreatedAt: now,
+	})
+	return &pub, nil
+}
+
+func (s service) UpdateUserStatusNote(
+	ctx context.Context,
+	accessToken,
+	text,
+	emoji,
+	expiresAt string,
+) (*models.PublicUser, error) {
+	now := s.now()
+	userID, err := access.UserIDFromAccessToken(ctx, accessToken, s.secret, s.sessions, now)
+	if err != nil {
+		return nil, err
+	}
+
+	patch, err := validator.UserStatusNoteInput(text, emoji, expiresAt, now)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.users.UpdateUserStatusNote(ctx, userID, patch, now); err != nil {
+		return nil, err
+	}
+
+	saved, err := s.users.FindUserByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	pub := saved.Public()
+	action := constants.ActivityUserStatusNoteUpdated
+	summary := "Updated status note"
+	if patch.Text == "" && patch.Emoji == "" {
+		action = constants.ActivityUserStatusNoteCleared
+		summary = "Cleared status note"
+	}
+	s.recordActivity(ctx, models.UserActivityLogEntry{
+		UserID:     userID,
+		ActorID:    userID,
+		Category:   constants.ActivityCategoryProfile,
+		Action:     action,
+		TargetType: constants.ActivityTargetUser,
+		TargetID:   userID,
+		Summary:    summary,
+		Changes: map[string]models.ActivityFieldChange{
+			"status_note_text":       {New: patch.Text},
+			"status_note_emoji":      {New: patch.Emoji},
+			"status_note_expires_at": {New: patch.ExpiresAt},
+		},
+		CreatedAt: now,
+	})
+	return &pub, nil
+}
+
+func (s service) UpdateUserPreferences(
+	ctx context.Context,
+	accessToken,
+	locale,
+	timeFormat string,
+) (*models.PublicUser, error) {
+	now := s.now()
+	userID, err := access.UserIDFromAccessToken(ctx, accessToken, s.secret, s.sessions, now)
+	if err != nil {
+		return nil, err
+	}
+
+	patch, err := validator.UserPreferencesInput(locale, timeFormat)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.users.UpdateUserPreferences(ctx, userID, patch, now); err != nil {
+		return nil, err
+	}
+
+	saved, err := s.users.FindUserByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	pub := saved.Public()
+	s.recordActivity(ctx, models.UserActivityLogEntry{
+		UserID:     userID,
+		ActorID:    userID,
+		Category:   constants.ActivityCategoryPreferences,
+		Action:     constants.ActivityUserPreferencesUpdated,
+		TargetType: constants.ActivityTargetUser,
+		TargetID:   userID,
+		Summary:    "Updated preferences",
+		Changes: map[string]models.ActivityFieldChange{
+			"locale":      {New: saved.Locale},
+			"time_format": {New: saved.TimeFormat},
+		},
+		CreatedAt: now,
+	})
 	return &pub, nil
 }
 
@@ -396,6 +540,17 @@ func (s service) UpdateUsername(
 	}
 
 	pub := saved.Public()
+	s.recordActivity(ctx, models.UserActivityLogEntry{
+		UserID:     userID,
+		ActorID:    userID,
+		Category:   constants.ActivityCategoryAccount,
+		Action:     constants.ActivityUserUsernameUpdated,
+		TargetType: constants.ActivityTargetUser,
+		TargetID:   userID,
+		Summary:    "Updated username",
+		Changes:    map[string]models.ActivityFieldChange{"username": {Old: user.Username, New: saved.Username}},
+		CreatedAt:  now,
+	})
 	return &pub, nil
 }
 
@@ -633,6 +788,22 @@ func (s service) CompleteEmailChange(
 	}
 
 	pub := saved.Public()
+	meta := map[string]any(nil)
+	if trimmedReason := strings.TrimSpace(reason); trimmedReason != "" {
+		meta = map[string]any{"reason": trimmedReason}
+	}
+	s.recordActivity(ctx, models.UserActivityLogEntry{
+		UserID:     userID,
+		ActorID:    userID,
+		Category:   constants.ActivityCategoryAccount,
+		Action:     constants.ActivityUserEmailUpdated,
+		TargetType: constants.ActivityTargetUser,
+		TargetID:   userID,
+		Summary:    "Updated email address",
+		Changes:    map[string]models.ActivityFieldChange{"email": {Old: user.Email, New: saved.Email}},
+		Metadata:   meta,
+		CreatedAt:  now,
+	})
 	return &pub, nil
 }
 
@@ -666,7 +837,20 @@ func (s service) UpdatePassword(ctx context.Context, accessToken, currentPasswor
 		return err
 	}
 
-	return s.users.UpdateUserPasswordHash(ctx, userID, hash, now)
+	if err := s.users.UpdateUserPasswordHash(ctx, userID, hash, now); err != nil {
+		return err
+	}
+	s.recordActivity(ctx, models.UserActivityLogEntry{
+		UserID:     userID,
+		ActorID:    userID,
+		Category:   constants.ActivityCategorySecurity,
+		Action:     constants.ActivityUserPasswordUpdated,
+		TargetType: constants.ActivityTargetUser,
+		TargetID:   userID,
+		Summary:    "Updated password",
+		CreatedAt:  now,
+	})
+	return nil
 }
 
 func (s service) verifyCallerPassword(ctx context.Context, accessToken, currentPassword string) (models.User, time.Time, error) {
@@ -843,7 +1027,22 @@ func (s service) ConfirmTOTPSetup(ctx context.Context, accessToken, setupToken, 
 		return nil, err
 	}
 
-	return s.ensureRecoveryCodes(ctx, userID, now)
+	codes, err := s.ensureRecoveryCodes(ctx, userID, now)
+	if err != nil {
+		return nil, err
+	}
+	s.recordActivity(ctx, models.UserActivityLogEntry{
+		UserID:     userID,
+		ActorID:    userID,
+		Category:   constants.ActivityCategorySecurity,
+		Action:     constants.ActivityUserMFATOTPEnabled,
+		TargetType: constants.ActivityTargetUser,
+		TargetID:   userID,
+		Summary:    "Enabled authenticator app MFA",
+		Metadata:   map[string]any{"recovery_codes_generated": len(codes)},
+		CreatedAt:  now,
+	})
+	return codes, nil
 }
 
 func (s service) DisableTOTP(ctx context.Context, accessToken, currentPassword string) error {
@@ -857,7 +1056,20 @@ func (s service) DisableTOTP(ctx context.Context, accessToken, currentPassword s
 		}
 		return err
 	}
-	return s.cleanupRecoveryCodesIfNoMFA(ctx, user.ID, now)
+	if err := s.cleanupRecoveryCodesIfNoMFA(ctx, user.ID, now); err != nil {
+		return err
+	}
+	s.recordActivity(ctx, models.UserActivityLogEntry{
+		UserID:     user.ID,
+		ActorID:    user.ID,
+		Category:   constants.ActivityCategorySecurity,
+		Action:     constants.ActivityUserMFATOTPDisabled,
+		TargetType: constants.ActivityTargetUser,
+		TargetID:   user.ID,
+		Summary:    "Disabled authenticator app MFA",
+		CreatedAt:  now,
+	})
+	return nil
 }
 
 func (s service) BeginWebAuthnRegister(ctx context.Context, accessToken, currentPassword, name string) (*models.WebAuthnRegisterBegin, error) {
@@ -1015,6 +1227,17 @@ func (s service) FinishWebAuthnRegister(ctx context.Context, accessToken, challe
 		return nil, nil, err
 	}
 
+	s.recordActivity(ctx, models.UserActivityLogEntry{
+		UserID:     userID,
+		ActorID:    userID,
+		Category:   constants.ActivityCategorySecurity,
+		Action:     constants.ActivityUserMFAWebAuthnRegistered,
+		TargetType: constants.ActivityTargetSecurityKey,
+		TargetID:   saved.ID,
+		Summary:    "Registered security key",
+		Metadata:   map[string]any{"name": saved.Name},
+		CreatedAt:  now,
+	})
 	return &saved, codes, nil
 }
 
@@ -1035,6 +1258,17 @@ func (s service) RenameWebAuthnCredential(ctx context.Context, accessToken, cred
 	if err != nil {
 		return nil, err
 	}
+	s.recordActivity(ctx, models.UserActivityLogEntry{
+		UserID:     userID,
+		ActorID:    userID,
+		Category:   constants.ActivityCategorySecurity,
+		Action:     constants.ActivityUserMFAWebAuthnRenamed,
+		TargetType: constants.ActivityTargetSecurityKey,
+		TargetID:   updated.ID,
+		Summary:    "Renamed security key",
+		Changes:    map[string]models.ActivityFieldChange{"name": {New: updated.Name}},
+		CreatedAt:  now,
+	})
 	return &updated, nil
 }
 
@@ -1052,7 +1286,20 @@ func (s service) DeleteWebAuthnCredential(ctx context.Context, accessToken, cred
 		}
 		return err
 	}
-	return s.cleanupRecoveryCodesIfNoMFA(ctx, user.ID, now)
+	if err := s.cleanupRecoveryCodesIfNoMFA(ctx, user.ID, now); err != nil {
+		return err
+	}
+	s.recordActivity(ctx, models.UserActivityLogEntry{
+		UserID:     user.ID,
+		ActorID:    user.ID,
+		Category:   constants.ActivityCategorySecurity,
+		Action:     constants.ActivityUserMFAWebAuthnDeleted,
+		TargetType: constants.ActivityTargetSecurityKey,
+		TargetID:   credentialID,
+		Summary:    "Removed security key",
+		CreatedAt:  now,
+	})
+	return nil
 }
 
 func (s service) RegenerateRecoveryCodes(ctx context.Context, accessToken, currentPassword string) ([]string, error) {
@@ -1060,7 +1307,22 @@ func (s service) RegenerateRecoveryCodes(ctx context.Context, accessToken, curre
 	if err != nil {
 		return nil, err
 	}
-	return s.rotateRecoveryCodes(ctx, user.ID, now)
+	codes, err := s.rotateRecoveryCodes(ctx, user.ID, now)
+	if err != nil {
+		return nil, err
+	}
+	s.recordActivity(ctx, models.UserActivityLogEntry{
+		UserID:     user.ID,
+		ActorID:    user.ID,
+		Category:   constants.ActivityCategorySecurity,
+		Action:     constants.ActivityUserMFARecoveryRegenerated,
+		TargetType: constants.ActivityTargetUser,
+		TargetID:   user.ID,
+		Summary:    "Regenerated MFA recovery codes",
+		Metadata:   map[string]any{"count": len(codes)},
+		CreatedAt:  now,
+	})
+	return codes, nil
 }
 
 func (s service) DisableAccount(ctx context.Context, accessToken, currentPassword string) error {
@@ -1075,6 +1337,16 @@ func (s service) DisableAccount(ctx context.Context, accessToken, currentPasswor
 		return err
 	}
 	s.log.Info("user account disabled", "user_id", user.ID)
+	s.recordActivity(ctx, models.UserActivityLogEntry{
+		UserID:     user.ID,
+		ActorID:    user.ID,
+		Category:   constants.ActivityCategoryAccount,
+		Action:     constants.ActivityUserAccountDisabled,
+		TargetType: constants.ActivityTargetUser,
+		TargetID:   user.ID,
+		Summary:    "Disabled account",
+		CreatedAt:  now,
+	})
 	return nil
 }
 
@@ -1100,6 +1372,16 @@ func (s service) DeleteAccount(ctx context.Context, accessToken, currentPassword
 		}
 	}
 	s.log.Info("user account soft-deleted", "user_id", user.ID)
+	s.recordActivity(ctx, models.UserActivityLogEntry{
+		UserID:     user.ID,
+		ActorID:    user.ID,
+		Category:   constants.ActivityCategoryAccount,
+		Action:     constants.ActivityUserAccountDeleted,
+		TargetType: constants.ActivityTargetUser,
+		TargetID:   user.ID,
+		Summary:    "Deleted account",
+		CreatedAt:  now,
+	})
 	return nil
 }
 
@@ -1148,6 +1430,16 @@ func (s service) RevokeSession(ctx context.Context, accessToken, sessionID, curr
 		_ = s.refresh.RevokeForSession(ctx, sessionID)
 	}
 
+	s.recordActivity(ctx, models.UserActivityLogEntry{
+		UserID:     userID,
+		ActorID:    userID,
+		Category:   constants.ActivityCategorySession,
+		Action:     constants.ActivityUserSessionRevoked,
+		TargetType: constants.ActivityTargetSession,
+		TargetID:   sessionID,
+		Summary:    "Revoked session",
+		CreatedAt:  now,
+	})
 	return nil
 }
 
@@ -1167,6 +1459,17 @@ func (s service) RevokeOtherSessions(ctx context.Context, accessToken, currentPa
 		}
 	}
 
+	s.recordActivity(ctx, models.UserActivityLogEntry{
+		UserID:     userID,
+		ActorID:    userID,
+		Category:   constants.ActivityCategorySession,
+		Action:     constants.ActivityUserSessionsRevokedOthers,
+		TargetType: constants.ActivityTargetUser,
+		TargetID:   userID,
+		Summary:    "Revoked other sessions",
+		Metadata:   map[string]any{"revoked_count": len(ids)},
+		CreatedAt:  now,
+	})
 	return nil
 }
 

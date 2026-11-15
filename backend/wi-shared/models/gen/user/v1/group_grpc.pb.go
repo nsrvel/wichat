@@ -20,7 +20,6 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	GroupService_ListMyGroups_FullMethodName       = "/user.v1.GroupService/ListMyGroups"
-	GroupService_ListJoinableGroups_FullMethodName = "/user.v1.GroupService/ListJoinableGroups"
 	GroupService_CreateGroup_FullMethodName        = "/user.v1.GroupService/CreateGroup"
 	GroupService_ReorderMyGroups_FullMethodName    = "/user.v1.GroupService/ReorderMyGroups"
 	GroupService_DeleteGroup_FullMethodName        = "/user.v1.GroupService/DeleteGroup"
@@ -37,8 +36,6 @@ const (
 type GroupServiceClient interface {
 	// ListMyGroups returns groups the caller belongs to.
 	ListMyGroups(ctx context.Context, in *ListMyGroupsRequest, opts ...grpc.CallOption) (*ListMyGroupsResponse, error)
-	// ListJoinableGroups returns instance groups the caller is not in.
-	ListJoinableGroups(ctx context.Context, in *ListJoinableGroupsRequest, opts ...grpc.CallOption) (*ListJoinableGroupsResponse, error)
 	// CreateGroup creates a group; caller becomes owner.
 	CreateGroup(ctx context.Context, in *CreateGroupRequest, opts ...grpc.CallOption) (*CreateGroupResponse, error)
 	// ReorderMyGroups persists the caller's workspace rail order.
@@ -65,16 +62,6 @@ func (c *groupServiceClient) ListMyGroups(ctx context.Context, in *ListMyGroupsR
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListMyGroupsResponse)
 	err := c.cc.Invoke(ctx, GroupService_ListMyGroups_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *groupServiceClient) ListJoinableGroups(ctx context.Context, in *ListJoinableGroupsRequest, opts ...grpc.CallOption) (*ListJoinableGroupsResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListJoinableGroupsResponse)
-	err := c.cc.Invoke(ctx, GroupService_ListJoinableGroups_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -149,8 +136,6 @@ func (c *groupServiceClient) UploadGroupBanner(ctx context.Context, in *UploadGr
 type GroupServiceServer interface {
 	// ListMyGroups returns groups the caller belongs to.
 	ListMyGroups(context.Context, *ListMyGroupsRequest) (*ListMyGroupsResponse, error)
-	// ListJoinableGroups returns instance groups the caller is not in.
-	ListJoinableGroups(context.Context, *ListJoinableGroupsRequest) (*ListJoinableGroupsResponse, error)
 	// CreateGroup creates a group; caller becomes owner.
 	CreateGroup(context.Context, *CreateGroupRequest) (*CreateGroupResponse, error)
 	// ReorderMyGroups persists the caller's workspace rail order.
@@ -175,9 +160,6 @@ type UnimplementedGroupServiceServer struct{}
 
 func (UnimplementedGroupServiceServer) ListMyGroups(context.Context, *ListMyGroupsRequest) (*ListMyGroupsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListMyGroups not implemented")
-}
-func (UnimplementedGroupServiceServer) ListJoinableGroups(context.Context, *ListJoinableGroupsRequest) (*ListJoinableGroupsResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method ListJoinableGroups not implemented")
 }
 func (UnimplementedGroupServiceServer) CreateGroup(context.Context, *CreateGroupRequest) (*CreateGroupResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateGroup not implemented")
@@ -232,24 +214,6 @@ func _GroupService_ListMyGroups_Handler(srv interface{}, ctx context.Context, de
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(GroupServiceServer).ListMyGroups(ctx, req.(*ListMyGroupsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _GroupService_ListJoinableGroups_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListJoinableGroupsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(GroupServiceServer).ListJoinableGroups(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: GroupService_ListJoinableGroups_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GroupServiceServer).ListJoinableGroups(ctx, req.(*ListJoinableGroupsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -372,10 +336,6 @@ var GroupService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListMyGroups",
 			Handler:    _GroupService_ListMyGroups_Handler,
-		},
-		{
-			MethodName: "ListJoinableGroups",
-			Handler:    _GroupService_ListJoinableGroups_Handler,
 		},
 		{
 			MethodName: "CreateGroup",

@@ -554,6 +554,37 @@ func (m *pgRepositoryMock) UpdateUserProfile(_ context.Context, userID string, p
 	return constants.ErrNotFound
 }
 
+func (m *pgRepositoryMock) UpdateUserStatusNote(_ context.Context, userID string, patch models.UserStatusNotePatch, now time.Time) error {
+	m.st.mu.Lock()
+	defer m.st.mu.Unlock()
+
+	for i := range m.st.Users {
+		if m.st.Users[i].ID == userID {
+			m.st.Users[i].StatusNoteText = patch.Text
+			m.st.Users[i].StatusNoteEmoji = patch.Emoji
+			m.st.Users[i].StatusNoteExpiresAt = patch.ExpiresAt
+			m.st.Users[i].UpdatedAt = now
+			return nil
+		}
+	}
+	return constants.ErrNotFound
+}
+
+func (m *pgRepositoryMock) UpdateUserPreferences(_ context.Context, userID string, patch models.UserPreferencesPatch, now time.Time) error {
+	m.st.mu.Lock()
+	defer m.st.mu.Unlock()
+
+	for i := range m.st.Users {
+		if m.st.Users[i].ID == userID {
+			m.st.Users[i].Locale = patch.Locale
+			m.st.Users[i].TimeFormat = patch.TimeFormat
+			m.st.Users[i].UpdatedAt = now
+			return nil
+		}
+	}
+	return constants.ErrNotFound
+}
+
 func (m *pgRepositoryMock) UpdateUsername(_ context.Context, userID, username string, now time.Time) error {
 	m.st.mu.Lock()
 	defer m.st.mu.Unlock()

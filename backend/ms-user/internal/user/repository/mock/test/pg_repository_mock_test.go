@@ -253,6 +253,19 @@ func TestUserMockProfileAndMFA(t *testing.T) {
 	_, _ = repo.FindUserByLogin(ctx, "mfamock2")
 	_, _ = repo.FindUserByID(ctx, "u-mfa-1")
 	_ = repo.UpdateUserProfile(ctx, "u-mfa-1", models.UserProfilePatch{ClearAvatar: true}, now)
+	exp := now.Add(time.Hour)
+	if err := repo.UpdateUserStatusNote(ctx, "u-mfa-1", models.UserStatusNotePatch{Text: "Busy", Emoji: "🔥", ExpiresAt: &exp}, now); err != nil {
+		t.Fatalf("UpdateUserStatusNote: %v", err)
+	}
+	if err := repo.UpdateUserStatusNote(ctx, "missing", models.UserStatusNotePatch{}, now); err == nil {
+		t.Fatal("expected not found for missing user")
+	}
+	if err := repo.UpdateUserPreferences(ctx, "u-mfa-1", models.UserPreferencesPatch{Locale: "id", TimeFormat: "24h"}, now); err != nil {
+		t.Fatalf("UpdateUserPreferences: %v", err)
+	}
+	if err := repo.UpdateUserPreferences(ctx, "missing", models.UserPreferencesPatch{Locale: "en", TimeFormat: "auto"}, now); err == nil {
+		t.Fatal("expected not found for missing user")
+	}
 	_ = repo.DeleteMFATOTP(ctx, "u-mfa-1")
 	_, _ = repo.RenameWebAuthnCredential(ctx, "u-mfa-1", "missing", "x")
 	_ = repo.DeleteWebAuthnCredential(ctx, "u-mfa-1", "missing")

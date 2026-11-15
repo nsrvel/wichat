@@ -32,6 +32,11 @@ import (
 	invitegrpc "github.com/wichat/wichat/backend/ms-user/internal/invite/delivery/grpc"
 	inviterepo "github.com/wichat/wichat/backend/ms-user/internal/invite/repository"
 	inviteservice "github.com/wichat/wichat/backend/ms-user/internal/invite/service"
+	presencegrpc "github.com/wichat/wichat/backend/ms-user/internal/presence/delivery/grpc"
+	presencerepo "github.com/wichat/wichat/backend/ms-user/internal/presence/repository"
+	presenceservice "github.com/wichat/wichat/backend/ms-user/internal/presence/service"
+	activityrepo "github.com/wichat/wichat/backend/ms-user/internal/user-activity-log/repository"
+	activityservice "github.com/wichat/wichat/backend/ms-user/internal/user-activity-log/service"
 	usergrpc "github.com/wichat/wichat/backend/ms-user/internal/user/delivery/grpc"
 	userrepo "github.com/wichat/wichat/backend/ms-user/internal/user/repository"
 	userservice "github.com/wichat/wichat/backend/ms-user/internal/user/service"
@@ -139,15 +144,19 @@ func (s *server) Run(ctx context.Context) error {
 	}
 
 	// Services
-	userSvc := userservice.NewServiceWithMFA(userPg, groupPg, groupMemberPg, userMinio, authSessions, authRefresh, emailAuthStore, emailChangeStore, userMFAStore, wa, mfaKey, notifyClient, secret, s.log)
+	presenceRepo := presencerepo.NewRedisRepository(rdb)
+	presenceSvc := presenceservice.NewService(presenceRepo, groupPg, authSessions, secret, s.log)
+	activityRepo := activityrepo.NewPgRepository(db)
+	activitySvc := activityservice.NewService(activityRepo, authSessions, secret, s.log)
+	userSvc := userservice.NewServiceWithMFA(userPg, groupPg, groupMemberPg, userMinio, authSessions, authRefresh, emailAuthStore, emailChangeStore, userMFAStore, wa, mfaKey, notifyClient, secret, s.log).WithActivityLog(activitySvc)
 	channelSvc := channelservice.NewService(channelPg, groupPg, groupMemberPg, groupRolePg, authSessions, secret, s.log)
-	groupSvc := groupservice.NewService(groupPg, groupMemberPg, groupRolePg, channelSvc, userPg, groupMinio, authSessions, secret, s.log)
-	groupMemberSvc := groupmemberservice.NewService(groupMemberPg, groupPg, groupRolePg, authSessions, secret, s.log)
+	groupSvc := groupservice.NewService(groupPg, groupMemberPg, groupRolePg, channelSvc, userPg, groupMinio, authSessions, secret, s.log).WithActivityLog(activitySvc)
+	groupMemberSvc := groupmemberservice.NewService(groupMemberPg, groupPg, groupRolePg, authSessions, secret, s.log).WithActivityLog(activitySvc).WithPresence(presenceSvc)
 	groupRoleSvc := grouproleservice.NewService(groupRolePg, groupPg, groupMemberPg, authSessions, secret, s.log)
 	inviteSvc := inviteservice.NewService(
 		groupPg, groupMemberPg, groupRolePg, channelPg, invitePg, userPg, authSessions, notifyClient, secret,
 		s.cfg.WebOrigin, s.cfg.MinioPublicBaseURL, s.log,
-	)
+	).WithActivityLog(activitySvc)
 	authSvc, err := authservice.NewService(userPg, authSessions, authRefresh, secret, s.log, googleoauth.Config{
 		ClientID:     s.cfg.GoogleClientID,
 		ClientSecret: s.cfg.GoogleClientSecret,
@@ -160,6 +169,7 @@ func (s *server) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	authSvc = authSvc.WithActivityLog(activitySvc)
 
 	// gRPC
 	addr := s.cfg.ListenAddr()
@@ -170,12 +180,13 @@ func (s *server) Run(ctx context.Context) error {
 
 	grpcSrv := newGRPCServer(s.log)
 	userv1.RegisterAuthServiceServer(grpcSrv, authgrpc.NewServer(authSvc))
-	userv1.RegisterUserServiceServer(grpcSrv, usergrpc.NewServer(userSvc))
+	userv1.RegisterUserServiceServer(grpcSrv, usergrpc.NewServer(userSvc).WithActivityLog(activitySvc))
 	userv1.RegisterGroupServiceServer(grpcSrv, groupgrpc.NewServer(groupSvc))
 	userv1.RegisterGroupMemberServiceServer(grpcSrv, groupmembergrpc.NewServer(groupMemberSvc))
 	userv1.RegisterGroupRoleServiceServer(grpcSrv, grouprolegrpc.NewServer(groupRoleSvc))
 	userv1.RegisterInviteServiceServer(grpcSrv, invitegrpc.NewServer(inviteSvc))
 	userv1.RegisterChannelServiceServer(grpcSrv, channelgrpc.NewServer(channelSvc))
+	userv1.RegisterPresenceServiceServer(grpcSrv, presencegrpc.NewServer(presenceSvc))
 	userv1.RegisterGeneralServiceServer(grpcSrv, generalgrpc.NewServer("ms-user"))
 
 	// Listen

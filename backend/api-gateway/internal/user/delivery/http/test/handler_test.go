@@ -24,6 +24,8 @@ type fakeUser struct {
 	checkUsername            func(context.Context, *userv1.CheckUsernameRequest) (*userv1.CheckUsernameResponse, error)
 	uploadAvatar             func(context.Context, *userv1.UploadUserAvatarRequest) (*userv1.UploadUserAvatarResponse, error)
 	updateProfile            func(context.Context, *userv1.UpdateUserProfileRequest) (*userv1.UpdateUserProfileResponse, error)
+	updateStatusNote         func(context.Context, *userv1.UpdateUserStatusNoteRequest) (*userv1.UpdateUserStatusNoteResponse, error)
+	updatePreferences        func(context.Context, *userv1.UpdateUserPreferencesRequest) (*userv1.UpdateUserPreferencesResponse, error)
 	updateUsername           func(context.Context, *userv1.UpdateUsernameRequest) (*userv1.UpdateUsernameResponse, error)
 	requestEmailChange       func(context.Context, *userv1.RequestEmailChangeRequest) (*userv1.RequestEmailChangeResponse, error)
 	verifyEmailChange        func(context.Context, *userv1.VerifyEmailChangeRequest) (*userv1.VerifyEmailChangeResponse, error)
@@ -43,6 +45,7 @@ type fakeUser struct {
 	listSessions             func(context.Context, *userv1.ListSessionsRequest) (*userv1.ListSessionsResponse, error)
 	revokeSession            func(context.Context, *userv1.RevokeSessionRequest) (*userv1.RevokeSessionResponse, error)
 	revokeOtherSessions      func(context.Context, *userv1.RevokeOtherSessionsRequest) (*userv1.RevokeOtherSessionsResponse, error)
+	listUserActivityLogs     func(context.Context, *userv1.ListUserActivityLogsRequest) (*userv1.ListUserActivityLogsResponse, error)
 }
 
 func (f fakeUser) SetupStatus(ctx context.Context, in *userv1.SetupStatusRequest) (*userv1.SetupStatusResponse, error) {
@@ -80,6 +83,22 @@ func (f fakeUser) UploadUserAvatar(ctx context.Context, in *userv1.UploadUserAva
 func (f fakeUser) UpdateUserProfile(ctx context.Context, in *userv1.UpdateUserProfileRequest) (*userv1.UpdateUserProfileResponse, error) {
 	if f.updateProfile != nil {
 		return f.updateProfile(ctx, in)
+	}
+
+	return nil, status.Error(codes.Unimplemented, "error.internal")
+}
+
+func (f fakeUser) UpdateUserStatusNote(ctx context.Context, in *userv1.UpdateUserStatusNoteRequest) (*userv1.UpdateUserStatusNoteResponse, error) {
+	if f.updateStatusNote != nil {
+		return f.updateStatusNote(ctx, in)
+	}
+
+	return nil, status.Error(codes.Unimplemented, "error.internal")
+}
+
+func (f fakeUser) UpdateUserPreferences(ctx context.Context, in *userv1.UpdateUserPreferencesRequest) (*userv1.UpdateUserPreferencesResponse, error) {
+	if f.updatePreferences != nil {
+		return f.updatePreferences(ctx, in)
 	}
 
 	return nil, status.Error(codes.Unimplemented, "error.internal")
@@ -219,6 +238,13 @@ func (f fakeUser) RevokeSession(ctx context.Context, in *userv1.RevokeSessionReq
 func (f fakeUser) RevokeOtherSessions(ctx context.Context, in *userv1.RevokeOtherSessionsRequest) (*userv1.RevokeOtherSessionsResponse, error) {
 	if f.revokeOtherSessions != nil {
 		return f.revokeOtherSessions(ctx, in)
+	}
+	return nil, status.Error(codes.Unimplemented, "error.internal")
+}
+
+func (f fakeUser) ListUserActivityLogs(ctx context.Context, in *userv1.ListUserActivityLogsRequest) (*userv1.ListUserActivityLogsResponse, error) {
+	if f.listUserActivityLogs != nil {
+		return f.listUserActivityLogs(ctx, in)
 	}
 	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
@@ -370,6 +396,90 @@ func TestUpdateProfileForwardsFields(t *testing.T) {
 		t.Fatalf("status %d body %s", rec.Code, rec.Body.String())
 	}
 	if got == nil || got.GetAccessToken() != "tok-2" || got.GetPronouns() != "she/her" || got.GetBannerColor() != "#336699" {
+		t.Fatalf("unexpected grpc payload: %+v", got)
+	}
+}
+
+func TestUpdateStatusNoteForwardsFields(t *testing.T) {
+	var got *userv1.UpdateUserStatusNoteRequest
+	clients := &microservices.Clients{User: msUser.Service{GRPC: msUser.GRPC{
+		User: fakeUser{
+			updateStatusNote: func(_ context.Context, in *userv1.UpdateUserStatusNoteRequest) (*userv1.UpdateUserStatusNoteResponse, error) {
+				got = in
+				return &userv1.UpdateUserStatusNoteResponse{
+					User: &userv1.User{
+						Id:                  "u-1",
+						Email:               "ada@example.com",
+						DisplayName:         "Ada Lovelace",
+						Username:            "ada",
+						StatusNoteText:      in.GetText(),
+						StatusNoteEmoji:     in.GetEmoji(),
+						StatusNoteExpiresAt: in.GetExpiresAt(),
+					},
+				}, nil
+			},
+		},
+	}}}
+	handler := userdelivery.NewHandler(clients, logger.New(logger.Options{Service: "gateway-test", Env: "test", Level: "error"}))
+
+	unauthReq := httptest.NewRequest(http.MethodPatch, "/api/v1/users/me/status-note", strings.NewReader(`{}`))
+	unauthRec := httptest.NewRecorder()
+	handler.UpdateStatusNote(unauthRec, unauthReq)
+	if unauthRec.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401, got %d", unauthRec.Code)
+	}
+
+	req := httptest.NewRequest(http.MethodPatch, "/api/v1/users/me/status-note", strings.NewReader(`{"text":"Deep work","emoji":"🎧","expires_at":"2026-11-15T12:00:00Z"}`))
+	req.Header.Set("Authorization", "Bearer tok-note")
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	handler.UpdateStatusNote(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status %d body %s", rec.Code, rec.Body.String())
+	}
+	if got == nil || got.GetAccessToken() != "tok-note" || got.GetText() != "Deep work" || got.GetEmoji() != "🎧" || got.GetExpiresAt() != "2026-11-15T12:00:00Z" {
+		t.Fatalf("unexpected grpc payload: %+v", got)
+	}
+}
+
+func TestUpdatePreferencesForwardsFields(t *testing.T) {
+	var got *userv1.UpdateUserPreferencesRequest
+	clients := &microservices.Clients{User: msUser.Service{GRPC: msUser.GRPC{
+		User: fakeUser{
+			updatePreferences: func(_ context.Context, in *userv1.UpdateUserPreferencesRequest) (*userv1.UpdateUserPreferencesResponse, error) {
+				got = in
+				return &userv1.UpdateUserPreferencesResponse{
+					User: &userv1.User{
+						Id:         "u-1",
+						Email:      "ada@example.com",
+						Username:   "ada",
+						Locale:     in.GetLocale(),
+						TimeFormat: in.GetTimeFormat(),
+					},
+				}, nil
+			},
+		},
+	}}}
+	handler := userdelivery.NewHandler(clients, logger.New(logger.Options{Service: "gateway-test", Env: "test", Level: "error"}))
+
+	unauthReq := httptest.NewRequest(http.MethodPatch, "/api/v1/users/me/preferences", strings.NewReader(`{}`))
+	unauthRec := httptest.NewRecorder()
+	handler.UpdatePreferences(unauthRec, unauthReq)
+	if unauthRec.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401, got %d", unauthRec.Code)
+	}
+
+	req := httptest.NewRequest(http.MethodPatch, "/api/v1/users/me/preferences", strings.NewReader(`{"locale":"id","time_format":"24h"}`))
+	req.Header.Set("Authorization", "Bearer tok-prefs")
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	handler.UpdatePreferences(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status %d body %s", rec.Code, rec.Body.String())
+	}
+	if got == nil || got.GetAccessToken() != "tok-prefs" || got.GetLocale() != "id" || got.GetTimeFormat() != "24h" {
 		t.Fatalf("unexpected grpc payload: %+v", got)
 	}
 }
@@ -572,4 +682,55 @@ func TestMFAHandlersForwardFields(t *testing.T) {
 	doReq(handler.ListDevices, http.MethodGet, "/api/v1/users/me/devices", "", "")
 	doReq(handler.RevokeDevice, http.MethodDelete, "/api/v1/users/me/devices/s-2", `{"current_password":"pw"}`, "s-2")
 	doReq(handler.RevokeOtherDevices, http.MethodPost, "/api/v1/users/me/devices/revoke-others", `{"current_password":"pw"}`, "")
+}
+
+func TestListActivityLogsForwardsQueryAndMapsEnvelope(t *testing.T) {
+	var got *userv1.ListUserActivityLogsRequest
+	clients := &microservices.Clients{User: msUser.Service{GRPC: msUser.GRPC{
+		User: fakeUser{
+			listUserActivityLogs: func(_ context.Context, in *userv1.ListUserActivityLogsRequest) (*userv1.ListUserActivityLogsResponse, error) {
+				got = in
+				return &userv1.ListUserActivityLogsResponse{
+					Logs: []*userv1.UserActivityLog{
+						{
+							Id:           "log-1",
+							UserId:       "u-1",
+							ActorId:      "u-1",
+							Category:     "profile",
+							Action:       "user.status_note.updated",
+							TargetType:   "user",
+							TargetId:     "u-1",
+							Summary:      "Updated status note",
+							ChangesJson:  `{"status_note_text":{"new":"Focus"}}`,
+							MetadataJson: `{}`,
+							CreatedAt:    "2026-11-15T01:00:00Z",
+						},
+					},
+					NextCursor: "cur-2",
+				}, nil
+			},
+		},
+	}}}
+	h := userdelivery.NewHandler(clients, logger.New(logger.Options{Service: "gateway-test", Env: "test", Level: "error"}))
+
+	unauthReq := httptest.NewRequest(http.MethodGet, "/api/v1/users/me/activity-logs", nil)
+	unauthRec := httptest.NewRecorder()
+	h.ListActivityLogs(unauthRec, unauthReq)
+	if unauthRec.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401 without bearer token, got %d", unauthRec.Code)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/users/me/activity-logs?category=profile&action=user.status_note.updated&limit=15&cursor=cur-1", nil)
+	req.Header.Set("Authorization", "Bearer tok-act")
+	rec := httptest.NewRecorder()
+	h.ListActivityLogs(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d body %s", rec.Code, rec.Body.String())
+	}
+	if got == nil || got.GetAccessToken() != "tok-act" || got.GetCategory() != "profile" || got.GetAction() != "user.status_note.updated" || got.GetLimit() != 15 || got.GetCursor() != "cur-1" {
+		t.Fatalf("unexpected grpc query: %+v", got)
+	}
+	if !strings.Contains(rec.Body.String(), `"user.status_note.updated"`) || !strings.Contains(rec.Body.String(), `"next_cursor":"cur-2"`) {
+		t.Fatalf("unexpected json body: %s", rec.Body.String())
+	}
 }

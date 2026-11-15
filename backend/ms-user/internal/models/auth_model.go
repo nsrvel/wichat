@@ -9,22 +9,27 @@ import (
 
 // User is a stored account, including the password hash.
 type User struct {
-	ID              string
-	Email           string
-	Username        string
-	PasswordHash    string
-	DisplayName     string
-	AvatarURL       string
-	Pronouns        string
-	Bio             string
-	BannerColor     string
-	BirthDate       *time.Time
-	IsGuest         bool
-	IsInstanceOwner bool
-	DisabledAt      *time.Time
-	DeletedAt       *time.Time
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
+	ID                  string
+	Email               string
+	Username            string
+	PasswordHash        string
+	DisplayName         string
+	AvatarURL           string
+	Pronouns            string
+	Bio                 string
+	BannerColor         string
+	StatusNoteText      string
+	StatusNoteEmoji     string
+	StatusNoteExpiresAt *time.Time
+	Locale              string
+	TimeFormat          string
+	BirthDate           *time.Time
+	IsGuest             bool
+	IsInstanceOwner     bool
+	DisabledAt          *time.Time
+	DeletedAt           *time.Time
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
 }
 
 // InstanceSettings is the singleton instance policy row.
@@ -63,32 +68,69 @@ type CheckUsernameResult struct {
 
 // Public returns the account fields safe to send to clients.
 func (u User) Public() PublicUser {
+	noteText := u.StatusNoteText
+	noteEmoji := u.StatusNoteEmoji
+	noteExpiresAt := u.StatusNoteExpiresAt
+	if noteExpiresAt != nil && !noteExpiresAt.After(time.Now().UTC()) {
+		noteText = ""
+		noteEmoji = ""
+		noteExpiresAt = nil
+	}
+
+	timeFormat := u.TimeFormat
+	if timeFormat == "" {
+		timeFormat = "auto"
+	}
+
 	return PublicUser{
-		ID:          u.ID,
-		Email:       u.Email,
-		Username:    u.Username,
-		DisplayName: u.DisplayName,
-		AvatarURL:   u.AvatarURL,
-		Pronouns:    u.Pronouns,
-		Bio:         u.Bio,
-		BannerColor: u.BannerColor,
-		CreatedAt:   u.CreatedAt,
-		HasPassword: u.PasswordHash != "",
+		ID:                  u.ID,
+		Email:               u.Email,
+		Username:            u.Username,
+		DisplayName:         u.DisplayName,
+		AvatarURL:           u.AvatarURL,
+		Pronouns:            u.Pronouns,
+		Bio:                 u.Bio,
+		BannerColor:         u.BannerColor,
+		StatusNoteText:      noteText,
+		StatusNoteEmoji:     noteEmoji,
+		StatusNoteExpiresAt: noteExpiresAt,
+		Locale:              u.Locale,
+		TimeFormat:          timeFormat,
+		CreatedAt:           u.CreatedAt,
+		HasPassword:         u.PasswordHash != "",
 	}
 }
 
 // PublicUser is the account view returned to clients.
 type PublicUser struct {
-	ID          string
-	Email       string
-	Username    string
-	DisplayName string
-	AvatarURL   string
-	Pronouns    string
-	Bio         string
-	BannerColor string
-	CreatedAt   time.Time
-	HasPassword bool
+	ID                  string
+	Email               string
+	Username            string
+	DisplayName         string
+	AvatarURL           string
+	Pronouns            string
+	Bio                 string
+	BannerColor         string
+	StatusNoteText      string
+	StatusNoteEmoji     string
+	StatusNoteExpiresAt *time.Time
+	Locale              string
+	TimeFormat          string
+	CreatedAt           time.Time
+	HasPassword         bool
+}
+
+// UserStatusNotePatch updates or clears the user's status note on users.
+type UserStatusNotePatch struct {
+	Text      string
+	Emoji     string
+	ExpiresAt *time.Time
+}
+
+// UserPreferencesPatch updates the user's display locale and time format on users.
+type UserPreferencesPatch struct {
+	Locale     string
+	TimeFormat string
 }
 
 // UserProfilePatch updates user-editable profile fields on users.

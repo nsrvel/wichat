@@ -2,6 +2,7 @@
 package authPb
 
 import (
+	"encoding/json"
 	"net"
 	"strings"
 	"time"
@@ -142,17 +143,27 @@ func User(user models.PublicUser) *userv1.User {
 		createdAt = user.CreatedAt.UTC().Format(time.RFC3339Nano)
 	}
 
+	statusNoteExpiresAt := ""
+	if user.StatusNoteExpiresAt != nil && !user.StatusNoteExpiresAt.IsZero() {
+		statusNoteExpiresAt = user.StatusNoteExpiresAt.UTC().Format(time.RFC3339Nano)
+	}
+
 	return &userv1.User{
-		Id:          user.ID,
-		Email:       user.Email,
-		DisplayName: user.DisplayName,
-		Username:    user.Username,
-		AvatarUrl:   user.AvatarURL,
-		Pronouns:    user.Pronouns,
-		Bio:         user.Bio,
-		BannerColor: user.BannerColor,
-		CreatedAt:   createdAt,
-		HasPassword: user.HasPassword,
+		Id:                  user.ID,
+		Email:               user.Email,
+		DisplayName:         user.DisplayName,
+		Username:            user.Username,
+		AvatarUrl:           user.AvatarURL,
+		Pronouns:            user.Pronouns,
+		Bio:                 user.Bio,
+		BannerColor:         user.BannerColor,
+		CreatedAt:           createdAt,
+		HasPassword:         user.HasPassword,
+		StatusNoteText:      user.StatusNoteText,
+		StatusNoteEmoji:     user.StatusNoteEmoji,
+		StatusNoteExpiresAt: statusNoteExpiresAt,
+		Locale:              user.Locale,
+		TimeFormat:          user.TimeFormat,
 	}
 }
 
@@ -169,6 +180,7 @@ func GroupSummary(g models.PublicGroup) *userv1.GroupSummary {
 		BannerColor:          g.BannerColor,
 		BannerUrl:            g.BannerURL,
 		EffectivePermissions: g.EffectivePermissions,
+		HideRoles:            g.HideRoles,
 	}
 }
 
@@ -211,20 +223,32 @@ func GroupMemberEntries(members []models.GroupMemberProfile) []*userv1.GroupMemb
 		roles := make([]*userv1.GroupMemberRoleSummary, len(m.Roles))
 		for j, r := range m.Roles {
 			roles[j] = &userv1.GroupMemberRoleSummary{
-				Id:    r.ID,
-				Slug:  r.Slug,
-				Name:  r.Name,
-				Color: r.Color,
+				Id:       r.ID,
+				Slug:     r.Slug,
+				Name:     r.Name,
+				Color:    r.Color,
+				Hoist:    r.Hoist,
+				Position: r.Position,
+			}
+		}
+		presenceStatus := m.PresenceStatus
+		if presenceStatus == "" {
+			if m.IsOnline {
+				presenceStatus = models.PresenceStatusOnline
+			} else {
+				presenceStatus = models.PresenceStatusOffline
 			}
 		}
 		out[i] = &userv1.GroupMemberEntry{
-			UserId:      m.UserID,
-			DisplayName: m.DisplayName,
-			Username:    m.Username,
-			AvatarUrl:   m.AvatarURL,
-			Role:        m.Role,
-			JoinedAt:    m.JoinedAt.UTC().Format(time.RFC3339Nano),
-			Roles:       roles,
+			UserId:         m.UserID,
+			DisplayName:    m.DisplayName,
+			Username:       m.Username,
+			AvatarUrl:      m.AvatarURL,
+			Role:           m.Role,
+			JoinedAt:       m.JoinedAt.UTC().Format(time.RFC3339Nano),
+			Roles:          roles,
+			IsOnline:       m.IsOnline,
+			PresenceStatus: presenceStatus,
 		}
 	}
 
@@ -295,6 +319,35 @@ func SecurityKeys(keys []models.WebAuthnCredential) []*userv1.SecurityKey {
 	out := make([]*userv1.SecurityKey, len(keys))
 	for i, k := range keys {
 		out[i] = SecurityKey(k)
+	}
+	return out
+}
+
+// UserActivityLogs maps domain user activity logs to protobuf.
+func UserActivityLogs(logs []models.UserActivityLog) []*userv1.UserActivityLog {
+	out := make([]*userv1.UserActivityLog, len(logs))
+	for i, entry := range logs {
+		changesBytes, _ := json.Marshal(entry.Changes)
+		if len(changesBytes) == 0 || string(changesBytes) == "null" {
+			changesBytes = []byte("{}")
+		}
+		metaBytes, _ := json.Marshal(entry.Metadata)
+		if len(metaBytes) == 0 || string(metaBytes) == "null" {
+			metaBytes = []byte("{}")
+		}
+		out[i] = &userv1.UserActivityLog{
+			Id:           entry.ID,
+			UserId:       entry.UserID,
+			ActorId:      entry.ActorID,
+			Category:     entry.Category,
+			Action:       entry.Action,
+			TargetType:   entry.TargetType,
+			TargetId:     entry.TargetID,
+			Summary:      entry.Summary,
+			ChangesJson:  string(changesBytes),
+			MetadataJson: string(metaBytes),
+			CreatedAt:    entry.CreatedAt.UTC().Format(time.RFC3339Nano),
+		}
 	}
 	return out
 }

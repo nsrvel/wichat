@@ -12,6 +12,7 @@ type Group struct {
 	IsPrivate              bool
 	BannerColor            string
 	BannerURL              string
+	HideRoles              bool
 	DefaultChannelPublicID string
 	CallerRole             string
 	EffectivePermissions   []string
@@ -39,6 +40,7 @@ type PublicGroup struct {
 	IsPrivate            bool
 	BannerColor          string
 	BannerURL            string
+	HideRoles            bool
 	DefaultChannelID     string
 	Role                 string
 	EffectivePermissions []string
@@ -54,6 +56,7 @@ func (g Group) Public() PublicGroup {
 		IsPrivate:            g.IsPrivate,
 		BannerColor:          g.BannerColor,
 		BannerURL:            g.BannerURL,
+		HideRoles:            g.HideRoles,
 		DefaultChannelID:     g.DefaultChannelPublicID,
 		Role:                 g.CallerRole,
 		EffectivePermissions: g.EffectivePermissions,

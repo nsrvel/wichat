@@ -12,7 +12,6 @@ type groupRouteStub struct{}
 
 func (groupRouteStub) ListMyGroups(http.ResponseWriter, *http.Request)       {}
 func (groupRouteStub) ReorderMyGroups(http.ResponseWriter, *http.Request)    {}
-func (groupRouteStub) ListJoinableGroups(http.ResponseWriter, *http.Request) {}
 func (groupRouteStub) CreateGroup(http.ResponseWriter, *http.Request)        {}
 func (groupRouteStub) DeleteGroup(http.ResponseWriter, *http.Request)        {}
 func (groupRouteStub) UploadGroupIcon(http.ResponseWriter, *http.Request)    {}

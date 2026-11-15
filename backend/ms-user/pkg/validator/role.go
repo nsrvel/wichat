@@ -34,3 +34,33 @@ func RoleColor(raw string) (string, error) {
 
 	return trimmed, nil
 }
+
+var knownPermissionSet = func() map[string]struct{} {
+	m := make(map[string]struct{}, len(constants.AllKnownPermissions))
+	for _, p := range constants.AllKnownPermissions {
+		m[p] = struct{}{}
+	}
+	return m
+}()
+
+// RolePermissions validates and deduplicates a list of permission keys.
+func RolePermissions(perms []string) ([]string, error) {
+	if len(perms) == 0 {
+		return []string{}, nil
+	}
+
+	seen := make(map[string]struct{}, len(perms))
+	out := make([]string, 0, len(perms))
+	for _, raw := range perms {
+		p := strings.TrimSpace(raw)
+		if _, ok := knownPermissionSet[p]; !ok {
+			return nil, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "permissions"})
+		}
+		if _, dup := seen[p]; dup {
+			continue
+		}
+		seen[p] = struct{}{}
+		out = append(out, p)
+	}
+	return out, nil
+}

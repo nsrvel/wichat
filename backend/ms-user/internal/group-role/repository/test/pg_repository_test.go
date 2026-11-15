@@ -76,6 +76,30 @@ func TestGroupRolePgRepository(t *testing.T) {
 
 	_ = roles.AddMemberRoles(ctx, groupID, role.ID, []string{memberID})
 	_ = roles.RemoveMemberRole(ctx, groupID, role.ID, memberID)
+
+	created, err := roles.CreateRole(ctx, groupID, "new role", "#99aab5", false, false, []string{}, now)
+	if err != nil || created.Name != "new role" {
+		t.Fatalf("CreateRole: %v, %+v", err, created)
+	}
+	if _, err := roles.FindRoleByID(ctx, groupID, created.PublicID); err != nil {
+		t.Fatalf("FindRoleByID by public_id: %v", err)
+	}
+	if err := roles.AddMemberRoles(ctx, groupID, created.PublicID, []string{ownerID}); err != nil {
+		t.Fatalf("AddMemberRoles by public_id: %v", err)
+	}
+	roleMembers, err := roles.ListRoleMembers(ctx, groupID, created.PublicID)
+	if err != nil || len(roleMembers) != 1 || roleMembers[0].UserID != ownerID {
+		t.Fatalf("ListRoleMembers: %v, %+v", err, roleMembers)
+	}
+	if hide, err := roles.SetHideRoles(ctx, groupID, true, now); err != nil || !hide {
+		t.Fatalf("SetHideRoles: %v, %v", err, hide)
+	}
+	if hide, err := roles.GetHideRoles(ctx, groupID); err != nil || !hide {
+		t.Fatalf("GetHideRoles: %v, %v", err, hide)
+	}
+	if err := roles.DeleteRole(ctx, groupID, created.PublicID); err != nil {
+		t.Fatalf("DeleteRole: %v", err)
+	}
 }
 
 func newGroupRolePgRepositories(t *testing.T) (userrepo.PgRepository, grouprepo.PgRepository, grouprolerepo.PgRepository, func()) {

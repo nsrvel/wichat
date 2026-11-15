@@ -43,4 +43,46 @@ func TestGroupRoleGRPCServer(t *testing.T) {
 	if err != nil || upResp.GetRole().GetName() != "SuperMember" {
 		t.Fatalf("UpdateGroupRole: %v, resp: %+v", err, upResp)
 	}
+
+	created, err := srv.CreateGroupRole(ctx, &userv1.CreateGroupRoleRequest{
+		AccessToken: owner.AccessToken,
+		GroupId:     group.ID,
+	})
+	if err != nil || created.GetRole().GetName() != "new role" {
+		t.Fatalf("CreateGroupRole: %v, resp: %+v", err, created)
+	}
+
+	dup, err := srv.DuplicateGroupRole(ctx, &userv1.DuplicateGroupRoleRequest{
+		AccessToken: owner.AccessToken,
+		GroupId:     group.ID,
+		RoleId:      created.GetRole().GetId(),
+	})
+	if err != nil || dup.GetRole().GetName() != "new role Copy" {
+		t.Fatalf("DuplicateGroupRole: %v, resp: %+v", err, dup)
+	}
+
+	if _, err := srv.ListGroupRoleMembers(ctx, &userv1.ListGroupRoleMembersRequest{
+		AccessToken: owner.AccessToken,
+		GroupId:     group.ID,
+		RoleId:      created.GetRole().GetId(),
+	}); err != nil {
+		t.Fatalf("ListGroupRoleMembers: %v", err)
+	}
+
+	hideResp, err := srv.UpdateGroupHideRoles(ctx, &userv1.UpdateGroupHideRolesRequest{
+		AccessToken: owner.AccessToken,
+		GroupId:     group.ID,
+		HideRoles:   true,
+	})
+	if err != nil || !hideResp.GetHideRoles() {
+		t.Fatalf("UpdateGroupHideRoles: %v, resp: %+v", err, hideResp)
+	}
+
+	if _, err := srv.DeleteGroupRole(ctx, &userv1.DeleteGroupRoleRequest{
+		AccessToken: owner.AccessToken,
+		GroupId:     group.ID,
+		RoleId:      dup.GetRole().GetId(),
+	}); err != nil {
+		t.Fatalf("DeleteGroupRole: %v", err)
+	}
 }

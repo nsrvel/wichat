@@ -42,6 +42,18 @@ func (s *setupStatusServer) UpdateUserProfile(_ context.Context, in *userv1.Upda
 	return &userv1.UpdateUserProfileResponse{User: &userv1.User{Id: "u-1", DisplayName: in.GetDisplayName()}}, nil
 }
 
+func (s *setupStatusServer) UpdateUserStatusNote(_ context.Context, in *userv1.UpdateUserStatusNoteRequest) (*userv1.UpdateUserStatusNoteResponse, error) {
+	return &userv1.UpdateUserStatusNoteResponse{User: &userv1.User{Id: "u-1", StatusNoteText: in.GetText(), StatusNoteEmoji: in.GetEmoji(), StatusNoteExpiresAt: in.GetExpiresAt()}}, nil
+}
+
+func (s *setupStatusServer) UpdateUserPreferences(_ context.Context, in *userv1.UpdateUserPreferencesRequest) (*userv1.UpdateUserPreferencesResponse, error) {
+	return &userv1.UpdateUserPreferencesResponse{User: &userv1.User{Id: "u-1", Locale: in.GetLocale(), TimeFormat: in.GetTimeFormat()}}, nil
+}
+
+func (s *setupStatusServer) ListUserActivityLogs(_ context.Context, _ *userv1.ListUserActivityLogsRequest) (*userv1.ListUserActivityLogsResponse, error) {
+	return &userv1.ListUserActivityLogsResponse{Logs: []*userv1.UserActivityLog{{Id: "log-1", Action: "user.profile.updated"}}}, nil
+}
+
 func (s *setupStatusServer) UpdateUsername(_ context.Context, in *userv1.UpdateUsernameRequest) (*userv1.UpdateUsernameResponse, error) {
 	return &userv1.UpdateUsernameResponse{User: &userv1.User{Id: "u-1", Username: in.GetUsername()}}, nil
 }
@@ -170,6 +182,21 @@ func TestSetupStatusRetriesIdempotent(t *testing.T) {
 	prof, err := grpcClient.UpdateUserProfile(ctx, &userv1.UpdateUserProfileRequest{AccessToken: "tok", DisplayName: "Alice"})
 	if err != nil || prof.GetUser().GetDisplayName() != "Alice" {
 		t.Fatalf("unexpected update profile: %+v %v", prof, err)
+	}
+
+	note, err := grpcClient.UpdateUserStatusNote(ctx, &userv1.UpdateUserStatusNoteRequest{AccessToken: "tok", Text: "In a meeting", Emoji: "🎧"})
+	if err != nil || note.GetUser().GetStatusNoteText() != "In a meeting" {
+		t.Fatalf("unexpected update status note: %+v %v", note, err)
+	}
+
+	prefs, err := grpcClient.UpdateUserPreferences(ctx, &userv1.UpdateUserPreferencesRequest{AccessToken: "tok", Locale: "id", TimeFormat: "24h"})
+	if err != nil || prefs.GetUser().GetLocale() != "id" || prefs.GetUser().GetTimeFormat() != "24h" {
+		t.Fatalf("unexpected update preferences: %+v %v", prefs, err)
+	}
+
+	logs, err := grpcClient.ListUserActivityLogs(ctx, &userv1.ListUserActivityLogsRequest{AccessToken: "tok"})
+	if err != nil || len(logs.GetLogs()) != 1 || logs.GetLogs()[0].GetAction() != "user.profile.updated" {
+		t.Fatalf("unexpected list activity logs: %+v %v", logs, err)
 	}
 
 	un, err := grpcClient.UpdateUsername(ctx, &userv1.UpdateUsernameRequest{AccessToken: "tok", Username: "alice.new"})

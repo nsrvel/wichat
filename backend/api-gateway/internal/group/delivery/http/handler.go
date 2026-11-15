@@ -18,7 +18,6 @@ import (
 type Handler interface {
 	ListMyGroups(w http.ResponseWriter, r *http.Request)
 	ReorderMyGroups(w http.ResponseWriter, r *http.Request)
-	ListJoinableGroups(w http.ResponseWriter, r *http.Request)
 	CreateGroup(w http.ResponseWriter, r *http.Request)
 	DeleteGroup(w http.ResponseWriter, r *http.Request)
 	UploadGroupIcon(w http.ResponseWriter, r *http.Request)
@@ -81,24 +80,6 @@ func (h handler) ReorderMyGroups(w http.ResponseWriter, r *http.Request) {
 	}
 
 	responsehttp.WriteJSON(w, http.StatusOK, map[string]any{"data": authHttp.OKBody{OK: true}})
-}
-
-func (h handler) ListJoinableGroups(w http.ResponseWriter, r *http.Request) {
-	token := authHttp.Bearer(r)
-	if token == "" {
-		authHttp.WriteOutbound(w, r, h.log, exception.Unauthenticated(exception.MsgUnauthorized, nil))
-		return
-	}
-
-	out, err := h.ms.User.GRPC.Group.ListJoinableGroups(r.Context(), &userv1.ListJoinableGroupsRequest{AccessToken: token})
-	if err != nil {
-		authHttp.WriteOutbound(w, r, h.log, err)
-		return
-	}
-
-	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(authHttp.GroupsListBody{
-		Groups: authHttp.GroupsFromPB(out.GetGroups()),
-	}))
 }
 
 func (h handler) CreateGroup(w http.ResponseWriter, r *http.Request) {

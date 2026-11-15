@@ -23,10 +23,12 @@ type GroupRole struct {
 
 // GroupRoleSummary is a light role summary used in member cards and responses.
 type GroupRoleSummary struct {
-	ID    string
-	Slug  string
-	Name  string
-	Color string
+	ID       string
+	Slug     string
+	Name     string
+	Color    string
+	Hoist    bool
+	Position int32
 }
 
 // GroupRolePatch represents editable role properties.

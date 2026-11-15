@@ -22,12 +22,24 @@ func NewServer(svc grouprolesvc.Service) *Server {
 }
 
 func (s *Server) ListGroupRoles(ctx context.Context, req *userv1.ListGroupRolesRequest) (*userv1.ListGroupRolesResponse, error) {
-	roles, err := s.svc.ListGroupRoles(ctx, req.GetAccessToken(), req.GetGroupId())
+	roles, hideRoles, err := s.svc.ListGroupRolesWithSettings(ctx, req.GetAccessToken(), req.GetGroupId())
 	if err != nil {
 		return nil, responsegrpc.ToStatus(err)
 	}
 
-	return &userv1.ListGroupRolesResponse{Roles: authPb.GroupRolesPb(roles)}, nil
+	return &userv1.ListGroupRolesResponse{
+		Roles:     authPb.GroupRolesPb(roles),
+		HideRoles: hideRoles,
+	}, nil
+}
+
+func (s *Server) CreateGroupRole(ctx context.Context, req *userv1.CreateGroupRoleRequest) (*userv1.CreateGroupRoleResponse, error) {
+	role, err := s.svc.CreateGroupRole(ctx, req.GetAccessToken(), req.GetGroupId(), req.GetName())
+	if err != nil {
+		return nil, responsegrpc.ToStatus(err)
+	}
+
+	return &userv1.CreateGroupRoleResponse{Role: authPb.GroupRolePb(*role)}, nil
 }
 
 func (s *Server) UpdateGroupRole(ctx context.Context, req *userv1.UpdateGroupRoleRequest) (*userv1.UpdateGroupRoleResponse, error) {
@@ -43,12 +55,16 @@ func (s *Server) UpdateGroupRole(ctx context.Context, req *userv1.UpdateGroupRol
 	}
 	h := req.GetHoist()
 	m := req.GetMentionable()
+	perms := req.GetPermissions()
+	if req.GetClearPermissions() && perms == nil {
+		perms = []string{}
+	}
 	patch := models.GroupRolePatch{
 		Name:        namePtr,
 		Color:       colorPtr,
 		Hoist:       &h,
 		Mentionable: &m,
-		Permissions: req.GetPermissions(),
+		Permissions: perms,
 	}
 
 	role, err := s.svc.UpdateGroupRole(ctx, req.GetAccessToken(), req.GetGroupId(), req.GetRoleId(), patch)
@@ -57,6 +73,34 @@ func (s *Server) UpdateGroupRole(ctx context.Context, req *userv1.UpdateGroupRol
 	}
 
 	return &userv1.UpdateGroupRoleResponse{Role: authPb.GroupRolePb(*role)}, nil
+}
+
+func (s *Server) DuplicateGroupRole(ctx context.Context, req *userv1.DuplicateGroupRoleRequest) (*userv1.DuplicateGroupRoleResponse, error) {
+	role, err := s.svc.DuplicateGroupRole(ctx, req.GetAccessToken(), req.GetGroupId(), req.GetRoleId())
+	if err != nil {
+		return nil, responsegrpc.ToStatus(err)
+	}
+
+	return &userv1.DuplicateGroupRoleResponse{Role: authPb.GroupRolePb(*role)}, nil
+}
+
+func (s *Server) DeleteGroupRole(ctx context.Context, req *userv1.DeleteGroupRoleRequest) (*userv1.DeleteGroupRoleResponse, error) {
+	if err := s.svc.DeleteGroupRole(ctx, req.GetAccessToken(), req.GetGroupId(), req.GetRoleId()); err != nil {
+		return nil, responsegrpc.ToStatus(err)
+	}
+
+	return &userv1.DeleteGroupRoleResponse{Ok: true}, nil
+}
+
+func (s *Server) ListGroupRoleMembers(ctx context.Context, req *userv1.ListGroupRoleMembersRequest) (*userv1.ListGroupRoleMembersResponse, error) {
+	members, err := s.svc.ListGroupRoleMembers(ctx, req.GetAccessToken(), req.GetGroupId(), req.GetRoleId())
+	if err != nil {
+		return nil, responsegrpc.ToStatus(err)
+	}
+
+	return &userv1.ListGroupRoleMembersResponse{
+		Members: authPb.GroupMemberEntries(members),
+	}, nil
 }
 
 func (s *Server) AddGroupRoleMembers(ctx context.Context, req *userv1.AddGroupRoleMembersRequest) (*userv1.AddGroupRoleMembersResponse, error) {
@@ -75,4 +119,13 @@ func (s *Server) RemoveGroupRoleMember(ctx context.Context, req *userv1.RemoveGr
 	}
 
 	return &userv1.RemoveGroupRoleMemberResponse{Role: authPb.GroupRolePb(*role)}, nil
+}
+
+func (s *Server) UpdateGroupHideRoles(ctx context.Context, req *userv1.UpdateGroupHideRolesRequest) (*userv1.UpdateGroupHideRolesResponse, error) {
+	hideRoles, err := s.svc.UpdateGroupHideRoles(ctx, req.GetAccessToken(), req.GetGroupId(), req.GetHideRoles())
+	if err != nil {
+		return nil, responsegrpc.ToStatus(err)
+	}
+
+	return &userv1.UpdateGroupHideRolesResponse{HideRoles: hideRoles}, nil
 }

@@ -30,15 +30,6 @@ func (s *Server) ListMyGroups(ctx context.Context, req *userv1.ListMyGroupsReque
 	return &userv1.ListMyGroupsResponse{Groups: authPb.GroupSummaries(groups)}, nil
 }
 
-func (s *Server) ListJoinableGroups(ctx context.Context, req *userv1.ListJoinableGroupsRequest) (*userv1.ListJoinableGroupsResponse, error) {
-	groups, err := s.svc.ListJoinableGroups(ctx, req.GetAccessToken())
-	if err != nil {
-		return nil, responsegrpc.ToStatus(err)
-	}
-
-	return &userv1.ListJoinableGroupsResponse{Groups: authPb.GroupSummaries(groups)}, nil
-}
-
 func (s *Server) CreateGroup(ctx context.Context, req *userv1.CreateGroupRequest) (*userv1.CreateGroupResponse, error) {
 	group, err := s.svc.CreateGroup(ctx, req.GetAccessToken(), req.GetName())
 	if err != nil {

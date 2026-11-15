@@ -651,6 +651,35 @@ func TestPreviewInviteExpiredShareLink(t *testing.T) {
 	}
 }
 
+func TestPreviewInvitePrivateGroupMasksDetails(t *testing.T) {
+	st := usermock.NewState()
+	authSvc, notify, _, _, groupSvc, _ := testSupport.NewAuthService(t, st, nil)
+	ctx := context.Background()
+
+	owner := testSupport.RegisterSession(t, authSvc, notify, testSupportRegisterInput("priv-preview@example.com"))
+	created, err := groupSvc.CreateGroup(ctx, owner.AccessToken, "Secret Group")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := groupSvc.UpdateGroupProfile(ctx, owner.AccessToken, created.ID, "Secret Group", "Top secret", true, "#5865F2", false, false); err != nil {
+		t.Fatal(err)
+	}
+
+	svc := newInviteService(t, st)
+	link, err := svc.GetInviteLink(ctx, owner.AccessToken, created.ID, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	out, err := svc.PreviewInvite(ctx, link.Token)
+	if err != nil || !out.Valid || !out.IsPrivate {
+		t.Fatalf("expected valid private preview, got %+v err %v", out, err)
+	}
+	if out.GroupName != "" || out.ChannelName != "" || out.GroupLogoURL != "" || out.MemberCount != 0 || out.OnlineCount != 0 {
+		t.Fatalf("expected private group details to be masked, got %+v", out)
+	}
+}
+
 func TestRedeemShareLinkAddsMember(t *testing.T) {
 	st := usermock.NewState()
 	authSvc, notify, _, _, groupSvc, _ := testSupport.NewAuthService(t, st, nil)

@@ -23,19 +23,24 @@ const (
 
 // User is the public account view.
 type User struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Email         string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
-	DisplayName   string                 `protobuf:"bytes,3,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
-	Username      string                 `protobuf:"bytes,4,opt,name=username,proto3" json:"username,omitempty"`
-	AvatarUrl     string                 `protobuf:"bytes,6,opt,name=avatar_url,json=avatarUrl,proto3" json:"avatar_url,omitempty"`
-	Pronouns      string                 `protobuf:"bytes,7,opt,name=pronouns,proto3" json:"pronouns,omitempty"`
-	Bio           string                 `protobuf:"bytes,8,opt,name=bio,proto3" json:"bio,omitempty"`
-	BannerColor   string                 `protobuf:"bytes,9,opt,name=banner_color,json=bannerColor,proto3" json:"banner_color,omitempty"`
-	CreatedAt     string                 `protobuf:"bytes,10,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	HasPassword   bool                   `protobuf:"varint,11,opt,name=has_password,json=hasPassword,proto3" json:"has_password,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	Id                  string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Email               string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
+	DisplayName         string                 `protobuf:"bytes,3,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	Username            string                 `protobuf:"bytes,4,opt,name=username,proto3" json:"username,omitempty"`
+	AvatarUrl           string                 `protobuf:"bytes,6,opt,name=avatar_url,json=avatarUrl,proto3" json:"avatar_url,omitempty"`
+	Pronouns            string                 `protobuf:"bytes,7,opt,name=pronouns,proto3" json:"pronouns,omitempty"`
+	Bio                 string                 `protobuf:"bytes,8,opt,name=bio,proto3" json:"bio,omitempty"`
+	BannerColor         string                 `protobuf:"bytes,9,opt,name=banner_color,json=bannerColor,proto3" json:"banner_color,omitempty"`
+	CreatedAt           string                 `protobuf:"bytes,10,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	HasPassword         bool                   `protobuf:"varint,11,opt,name=has_password,json=hasPassword,proto3" json:"has_password,omitempty"`
+	StatusNoteText      string                 `protobuf:"bytes,12,opt,name=status_note_text,json=statusNoteText,proto3" json:"status_note_text,omitempty"`
+	StatusNoteEmoji     string                 `protobuf:"bytes,13,opt,name=status_note_emoji,json=statusNoteEmoji,proto3" json:"status_note_emoji,omitempty"`
+	StatusNoteExpiresAt string                 `protobuf:"bytes,14,opt,name=status_note_expires_at,json=statusNoteExpiresAt,proto3" json:"status_note_expires_at,omitempty"`
+	Locale              string                 `protobuf:"bytes,15,opt,name=locale,proto3" json:"locale,omitempty"`
+	TimeFormat          string                 `protobuf:"bytes,16,opt,name=time_format,json=timeFormat,proto3" json:"time_format,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *User) Reset() {
@@ -136,6 +141,41 @@ func (x *User) GetHasPassword() bool {
 		return x.HasPassword
 	}
 	return false
+}
+
+func (x *User) GetStatusNoteText() string {
+	if x != nil {
+		return x.StatusNoteText
+	}
+	return ""
+}
+
+func (x *User) GetStatusNoteEmoji() string {
+	if x != nil {
+		return x.StatusNoteEmoji
+	}
+	return ""
+}
+
+func (x *User) GetStatusNoteExpiresAt() string {
+	if x != nil {
+		return x.StatusNoteExpiresAt
+	}
+	return ""
+}
+
+func (x *User) GetLocale() string {
+	if x != nil {
+		return x.Locale
+	}
+	return ""
+}
+
+func (x *User) GetTimeFormat() string {
+	if x != nil {
+		return x.TimeFormat
+	}
+	return ""
 }
 
 // SetupStatusRequest is empty.
@@ -2970,11 +3010,479 @@ func (x *RevokeOtherSessionsResponse) GetOk() bool {
 	return false
 }
 
+type UpdateUserStatusNoteRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	Text          string                 `protobuf:"bytes,2,opt,name=text,proto3" json:"text,omitempty"`
+	Emoji         string                 `protobuf:"bytes,3,opt,name=emoji,proto3" json:"emoji,omitempty"`
+	ExpiresAt     string                 `protobuf:"bytes,4,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateUserStatusNoteRequest) Reset() {
+	*x = UpdateUserStatusNoteRequest{}
+	mi := &file_user_v1_user_proto_msgTypes[54]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateUserStatusNoteRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateUserStatusNoteRequest) ProtoMessage() {}
+
+func (x *UpdateUserStatusNoteRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[54]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateUserStatusNoteRequest.ProtoReflect.Descriptor instead.
+func (*UpdateUserStatusNoteRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{54}
+}
+
+func (x *UpdateUserStatusNoteRequest) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
+func (x *UpdateUserStatusNoteRequest) GetText() string {
+	if x != nil {
+		return x.Text
+	}
+	return ""
+}
+
+func (x *UpdateUserStatusNoteRequest) GetEmoji() string {
+	if x != nil {
+		return x.Emoji
+	}
+	return ""
+}
+
+func (x *UpdateUserStatusNoteRequest) GetExpiresAt() string {
+	if x != nil {
+		return x.ExpiresAt
+	}
+	return ""
+}
+
+type UpdateUserStatusNoteResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	User          *User                  `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateUserStatusNoteResponse) Reset() {
+	*x = UpdateUserStatusNoteResponse{}
+	mi := &file_user_v1_user_proto_msgTypes[55]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateUserStatusNoteResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateUserStatusNoteResponse) ProtoMessage() {}
+
+func (x *UpdateUserStatusNoteResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[55]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateUserStatusNoteResponse.ProtoReflect.Descriptor instead.
+func (*UpdateUserStatusNoteResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{55}
+}
+
+func (x *UpdateUserStatusNoteResponse) GetUser() *User {
+	if x != nil {
+		return x.User
+	}
+	return nil
+}
+
+type UpdateUserPreferencesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	Locale        string                 `protobuf:"bytes,2,opt,name=locale,proto3" json:"locale,omitempty"`
+	TimeFormat    string                 `protobuf:"bytes,3,opt,name=time_format,json=timeFormat,proto3" json:"time_format,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateUserPreferencesRequest) Reset() {
+	*x = UpdateUserPreferencesRequest{}
+	mi := &file_user_v1_user_proto_msgTypes[56]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateUserPreferencesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateUserPreferencesRequest) ProtoMessage() {}
+
+func (x *UpdateUserPreferencesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[56]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateUserPreferencesRequest.ProtoReflect.Descriptor instead.
+func (*UpdateUserPreferencesRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{56}
+}
+
+func (x *UpdateUserPreferencesRequest) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
+func (x *UpdateUserPreferencesRequest) GetLocale() string {
+	if x != nil {
+		return x.Locale
+	}
+	return ""
+}
+
+func (x *UpdateUserPreferencesRequest) GetTimeFormat() string {
+	if x != nil {
+		return x.TimeFormat
+	}
+	return ""
+}
+
+type UpdateUserPreferencesResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	User          *User                  `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateUserPreferencesResponse) Reset() {
+	*x = UpdateUserPreferencesResponse{}
+	mi := &file_user_v1_user_proto_msgTypes[57]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateUserPreferencesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateUserPreferencesResponse) ProtoMessage() {}
+
+func (x *UpdateUserPreferencesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[57]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateUserPreferencesResponse.ProtoReflect.Descriptor instead.
+func (*UpdateUserPreferencesResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{57}
+}
+
+func (x *UpdateUserPreferencesResponse) GetUser() *User {
+	if x != nil {
+		return x.User
+	}
+	return nil
+}
+
+type UserActivityLog struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	ActorId       string                 `protobuf:"bytes,3,opt,name=actor_id,json=actorId,proto3" json:"actor_id,omitempty"`
+	Category      string                 `protobuf:"bytes,4,opt,name=category,proto3" json:"category,omitempty"`
+	Action        string                 `protobuf:"bytes,5,opt,name=action,proto3" json:"action,omitempty"`
+	TargetType    string                 `protobuf:"bytes,6,opt,name=target_type,json=targetType,proto3" json:"target_type,omitempty"`
+	TargetId      string                 `protobuf:"bytes,7,opt,name=target_id,json=targetId,proto3" json:"target_id,omitempty"`
+	Summary       string                 `protobuf:"bytes,8,opt,name=summary,proto3" json:"summary,omitempty"`
+	ChangesJson   string                 `protobuf:"bytes,9,opt,name=changes_json,json=changesJson,proto3" json:"changes_json,omitempty"`
+	MetadataJson  string                 `protobuf:"bytes,10,opt,name=metadata_json,json=metadataJson,proto3" json:"metadata_json,omitempty"`
+	CreatedAt     string                 `protobuf:"bytes,11,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UserActivityLog) Reset() {
+	*x = UserActivityLog{}
+	mi := &file_user_v1_user_proto_msgTypes[58]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UserActivityLog) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UserActivityLog) ProtoMessage() {}
+
+func (x *UserActivityLog) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[58]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UserActivityLog.ProtoReflect.Descriptor instead.
+func (*UserActivityLog) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{58}
+}
+
+func (x *UserActivityLog) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *UserActivityLog) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *UserActivityLog) GetActorId() string {
+	if x != nil {
+		return x.ActorId
+	}
+	return ""
+}
+
+func (x *UserActivityLog) GetCategory() string {
+	if x != nil {
+		return x.Category
+	}
+	return ""
+}
+
+func (x *UserActivityLog) GetAction() string {
+	if x != nil {
+		return x.Action
+	}
+	return ""
+}
+
+func (x *UserActivityLog) GetTargetType() string {
+	if x != nil {
+		return x.TargetType
+	}
+	return ""
+}
+
+func (x *UserActivityLog) GetTargetId() string {
+	if x != nil {
+		return x.TargetId
+	}
+	return ""
+}
+
+func (x *UserActivityLog) GetSummary() string {
+	if x != nil {
+		return x.Summary
+	}
+	return ""
+}
+
+func (x *UserActivityLog) GetChangesJson() string {
+	if x != nil {
+		return x.ChangesJson
+	}
+	return ""
+}
+
+func (x *UserActivityLog) GetMetadataJson() string {
+	if x != nil {
+		return x.MetadataJson
+	}
+	return ""
+}
+
+func (x *UserActivityLog) GetCreatedAt() string {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return ""
+}
+
+type ListUserActivityLogsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	Category      string                 `protobuf:"bytes,2,opt,name=category,proto3" json:"category,omitempty"`
+	Action        string                 `protobuf:"bytes,3,opt,name=action,proto3" json:"action,omitempty"`
+	Limit         int32                  `protobuf:"varint,4,opt,name=limit,proto3" json:"limit,omitempty"`
+	Cursor        string                 `protobuf:"bytes,5,opt,name=cursor,proto3" json:"cursor,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListUserActivityLogsRequest) Reset() {
+	*x = ListUserActivityLogsRequest{}
+	mi := &file_user_v1_user_proto_msgTypes[59]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListUserActivityLogsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListUserActivityLogsRequest) ProtoMessage() {}
+
+func (x *ListUserActivityLogsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[59]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListUserActivityLogsRequest.ProtoReflect.Descriptor instead.
+func (*ListUserActivityLogsRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{59}
+}
+
+func (x *ListUserActivityLogsRequest) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
+func (x *ListUserActivityLogsRequest) GetCategory() string {
+	if x != nil {
+		return x.Category
+	}
+	return ""
+}
+
+func (x *ListUserActivityLogsRequest) GetAction() string {
+	if x != nil {
+		return x.Action
+	}
+	return ""
+}
+
+func (x *ListUserActivityLogsRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+func (x *ListUserActivityLogsRequest) GetCursor() string {
+	if x != nil {
+		return x.Cursor
+	}
+	return ""
+}
+
+type ListUserActivityLogsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Logs          []*UserActivityLog     `protobuf:"bytes,1,rep,name=logs,proto3" json:"logs,omitempty"`
+	NextCursor    string                 `protobuf:"bytes,2,opt,name=next_cursor,json=nextCursor,proto3" json:"next_cursor,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListUserActivityLogsResponse) Reset() {
+	*x = ListUserActivityLogsResponse{}
+	mi := &file_user_v1_user_proto_msgTypes[60]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListUserActivityLogsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListUserActivityLogsResponse) ProtoMessage() {}
+
+func (x *ListUserActivityLogsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[60]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListUserActivityLogsResponse.ProtoReflect.Descriptor instead.
+func (*ListUserActivityLogsResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{60}
+}
+
+func (x *ListUserActivityLogsResponse) GetLogs() []*UserActivityLog {
+	if x != nil {
+		return x.Logs
+	}
+	return nil
+}
+
+func (x *ListUserActivityLogsResponse) GetNextCursor() string {
+	if x != nil {
+		return x.NextCursor
+	}
+	return ""
+}
+
 var File_user_v1_user_proto protoreflect.FileDescriptor
 
 const file_user_v1_user_proto_rawDesc = "" +
 	"\n" +
-	"\x12user/v1/user.proto\x12\auser.v1\"\xad\x02\n" +
+	"\x12user/v1/user.proto\x12\auser.v1\"\xf1\x03\n" +
 	"\x04User\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05email\x18\x02 \x01(\tR\x05email\x12!\n" +
@@ -2988,7 +3496,13 @@ const file_user_v1_user_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\n" +
 	" \x01(\tR\tcreatedAt\x12!\n" +
-	"\fhas_password\x18\v \x01(\bR\vhasPasswordJ\x04\b\x05\x10\x06R\bis_guest\"\x14\n" +
+	"\fhas_password\x18\v \x01(\bR\vhasPassword\x12(\n" +
+	"\x10status_note_text\x18\f \x01(\tR\x0estatusNoteText\x12*\n" +
+	"\x11status_note_emoji\x18\r \x01(\tR\x0fstatusNoteEmoji\x123\n" +
+	"\x16status_note_expires_at\x18\x0e \x01(\tR\x13statusNoteExpiresAt\x12\x16\n" +
+	"\x06locale\x18\x0f \x01(\tR\x06locale\x12\x1f\n" +
+	"\vtime_format\x18\x10 \x01(\tR\n" +
+	"timeFormatJ\x04\b\x05\x10\x06R\bis_guest\"\x14\n" +
 	"\x12SetupStatusRequest\"\xb2\x01\n" +
 	"\x13SetupStatusResponse\x12+\n" +
 	"\x11registration_mode\x18\x03 \x01(\tR\x10registrationModeJ\x04\b\x01\x10\x02J\x04\b\x02\x10\x03J\x04\b\x04\x10\x05J\x04\b\x05\x10\x06J\x04\b\x06\x10\aR\rneeds_accountR\x14needs_instance_setupR\n" +
@@ -3173,14 +3687,57 @@ const file_user_v1_user_proto_rawDesc = "" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12)\n" +
 	"\x10current_password\x18\x02 \x01(\tR\x0fcurrentPassword\"-\n" +
 	"\x1bRevokeOtherSessionsResponse\x12\x0e\n" +
-	"\x02ok\x18\x01 \x01(\bR\x02ok2\xd9\x11\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok\"\x89\x01\n" +
+	"\x1bUpdateUserStatusNoteRequest\x12!\n" +
+	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x12\n" +
+	"\x04text\x18\x02 \x01(\tR\x04text\x12\x14\n" +
+	"\x05emoji\x18\x03 \x01(\tR\x05emoji\x12\x1d\n" +
+	"\n" +
+	"expires_at\x18\x04 \x01(\tR\texpiresAt\"A\n" +
+	"\x1cUpdateUserStatusNoteResponse\x12!\n" +
+	"\x04user\x18\x01 \x01(\v2\r.user.v1.UserR\x04user\"z\n" +
+	"\x1cUpdateUserPreferencesRequest\x12!\n" +
+	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x16\n" +
+	"\x06locale\x18\x02 \x01(\tR\x06locale\x12\x1f\n" +
+	"\vtime_format\x18\x03 \x01(\tR\n" +
+	"timeFormat\"B\n" +
+	"\x1dUpdateUserPreferencesResponse\x12!\n" +
+	"\x04user\x18\x01 \x01(\v2\r.user.v1.UserR\x04user\"\xc8\x02\n" +
+	"\x0fUserActivityLog\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x19\n" +
+	"\bactor_id\x18\x03 \x01(\tR\aactorId\x12\x1a\n" +
+	"\bcategory\x18\x04 \x01(\tR\bcategory\x12\x16\n" +
+	"\x06action\x18\x05 \x01(\tR\x06action\x12\x1f\n" +
+	"\vtarget_type\x18\x06 \x01(\tR\n" +
+	"targetType\x12\x1b\n" +
+	"\ttarget_id\x18\a \x01(\tR\btargetId\x12\x18\n" +
+	"\asummary\x18\b \x01(\tR\asummary\x12!\n" +
+	"\fchanges_json\x18\t \x01(\tR\vchangesJson\x12#\n" +
+	"\rmetadata_json\x18\n" +
+	" \x01(\tR\fmetadataJson\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\v \x01(\tR\tcreatedAt\"\xa2\x01\n" +
+	"\x1bListUserActivityLogsRequest\x12!\n" +
+	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x1a\n" +
+	"\bcategory\x18\x02 \x01(\tR\bcategory\x12\x16\n" +
+	"\x06action\x18\x03 \x01(\tR\x06action\x12\x14\n" +
+	"\x05limit\x18\x04 \x01(\x05R\x05limit\x12\x16\n" +
+	"\x06cursor\x18\x05 \x01(\tR\x06cursor\"m\n" +
+	"\x1cListUserActivityLogsResponse\x12,\n" +
+	"\x04logs\x18\x01 \x03(\v2\x18.user.v1.UserActivityLogR\x04logs\x12\x1f\n" +
+	"\vnext_cursor\x18\x02 \x01(\tR\n" +
+	"nextCursor2\x8b\x14\n" +
 	"\vUserService\x12H\n" +
 	"\vSetupStatus\x12\x1b.user.v1.SetupStatusRequest\x1a\x1c.user.v1.SetupStatusResponse\x12f\n" +
 	"\x15CompleteInstanceSetup\x12%.user.v1.CompleteInstanceSetupRequest\x1a&.user.v1.CompleteInstanceSetupResponse\x12H\n" +
 	"\vSearchUsers\x12\x1b.user.v1.SearchUsersRequest\x1a\x1c.user.v1.SearchUsersResponse\x12N\n" +
 	"\rCheckUsername\x12\x1d.user.v1.CheckUsernameRequest\x1a\x1e.user.v1.CheckUsernameResponse\x12W\n" +
 	"\x10UploadUserAvatar\x12 .user.v1.UploadUserAvatarRequest\x1a!.user.v1.UploadUserAvatarResponse\x12Z\n" +
-	"\x11UpdateUserProfile\x12!.user.v1.UpdateUserProfileRequest\x1a\".user.v1.UpdateUserProfileResponse\x12Q\n" +
+	"\x11UpdateUserProfile\x12!.user.v1.UpdateUserProfileRequest\x1a\".user.v1.UpdateUserProfileResponse\x12c\n" +
+	"\x14UpdateUserStatusNote\x12$.user.v1.UpdateUserStatusNoteRequest\x1a%.user.v1.UpdateUserStatusNoteResponse\x12f\n" +
+	"\x15UpdateUserPreferences\x12%.user.v1.UpdateUserPreferencesRequest\x1a&.user.v1.UpdateUserPreferencesResponse\x12c\n" +
+	"\x14ListUserActivityLogs\x12$.user.v1.ListUserActivityLogsRequest\x1a%.user.v1.ListUserActivityLogsResponse\x12Q\n" +
 	"\x0eUpdateUsername\x12\x1e.user.v1.UpdateUsernameRequest\x1a\x1f.user.v1.UpdateUsernameResponse\x12]\n" +
 	"\x12RequestEmailChange\x12\".user.v1.RequestEmailChangeRequest\x1a#.user.v1.RequestEmailChangeResponse\x12Z\n" +
 	"\x11VerifyEmailChange\x12!.user.v1.VerifyEmailChangeRequest\x1a\".user.v1.VerifyEmailChangeResponse\x12`\n" +
@@ -3214,7 +3771,7 @@ func file_user_v1_user_proto_rawDescGZIP() []byte {
 	return file_user_v1_user_proto_rawDescData
 }
 
-var file_user_v1_user_proto_msgTypes = make([]protoimpl.MessageInfo, 54)
+var file_user_v1_user_proto_msgTypes = make([]protoimpl.MessageInfo, 61)
 var file_user_v1_user_proto_goTypes = []any{
 	(*User)(nil),                             // 0: user.v1.User
 	(*SetupStatusRequest)(nil),               // 1: user.v1.SetupStatusRequest
@@ -3270,6 +3827,13 @@ var file_user_v1_user_proto_goTypes = []any{
 	(*RevokeSessionResponse)(nil),            // 51: user.v1.RevokeSessionResponse
 	(*RevokeOtherSessionsRequest)(nil),       // 52: user.v1.RevokeOtherSessionsRequest
 	(*RevokeOtherSessionsResponse)(nil),      // 53: user.v1.RevokeOtherSessionsResponse
+	(*UpdateUserStatusNoteRequest)(nil),      // 54: user.v1.UpdateUserStatusNoteRequest
+	(*UpdateUserStatusNoteResponse)(nil),     // 55: user.v1.UpdateUserStatusNoteResponse
+	(*UpdateUserPreferencesRequest)(nil),     // 56: user.v1.UpdateUserPreferencesRequest
+	(*UpdateUserPreferencesResponse)(nil),    // 57: user.v1.UpdateUserPreferencesResponse
+	(*UserActivityLog)(nil),                  // 58: user.v1.UserActivityLog
+	(*ListUserActivityLogsRequest)(nil),      // 59: user.v1.ListUserActivityLogsRequest
+	(*ListUserActivityLogsResponse)(nil),     // 60: user.v1.ListUserActivityLogsResponse
 }
 var file_user_v1_user_proto_depIdxs = []int32{
 	5,  // 0: user.v1.SearchUsersResponse.users:type_name -> user.v1.UserSearchHit
@@ -3281,61 +3845,70 @@ var file_user_v1_user_proto_depIdxs = []int32{
 	24, // 6: user.v1.FinishWebAuthnRegisterResponse.security_key:type_name -> user.v1.SecurityKey
 	24, // 7: user.v1.RenameWebAuthnCredentialResponse.security_key:type_name -> user.v1.SecurityKey
 	47, // 8: user.v1.ListSessionsResponse.sessions:type_name -> user.v1.UserSession
-	1,  // 9: user.v1.UserService.SetupStatus:input_type -> user.v1.SetupStatusRequest
-	3,  // 10: user.v1.UserService.CompleteInstanceSetup:input_type -> user.v1.CompleteInstanceSetupRequest
-	8,  // 11: user.v1.UserService.SearchUsers:input_type -> user.v1.SearchUsersRequest
-	6,  // 12: user.v1.UserService.CheckUsername:input_type -> user.v1.CheckUsernameRequest
-	10, // 13: user.v1.UserService.UploadUserAvatar:input_type -> user.v1.UploadUserAvatarRequest
-	12, // 14: user.v1.UserService.UpdateUserProfile:input_type -> user.v1.UpdateUserProfileRequest
-	14, // 15: user.v1.UserService.UpdateUsername:input_type -> user.v1.UpdateUsernameRequest
-	16, // 16: user.v1.UserService.RequestEmailChange:input_type -> user.v1.RequestEmailChangeRequest
-	18, // 17: user.v1.UserService.VerifyEmailChange:input_type -> user.v1.VerifyEmailChangeRequest
-	20, // 18: user.v1.UserService.CompleteEmailChange:input_type -> user.v1.CompleteEmailChangeRequest
-	22, // 19: user.v1.UserService.UpdatePassword:input_type -> user.v1.UpdatePasswordRequest
-	25, // 20: user.v1.UserService.GetMFAStatus:input_type -> user.v1.GetMFAStatusRequest
-	27, // 21: user.v1.UserService.BeginTOTPSetup:input_type -> user.v1.BeginTOTPSetupRequest
-	29, // 22: user.v1.UserService.ConfirmTOTPSetup:input_type -> user.v1.ConfirmTOTPSetupRequest
-	31, // 23: user.v1.UserService.DisableTOTP:input_type -> user.v1.DisableTOTPRequest
-	33, // 24: user.v1.UserService.BeginWebAuthnRegister:input_type -> user.v1.BeginWebAuthnRegisterRequest
-	35, // 25: user.v1.UserService.FinishWebAuthnRegister:input_type -> user.v1.FinishWebAuthnRegisterRequest
-	37, // 26: user.v1.UserService.RenameWebAuthnCredential:input_type -> user.v1.RenameWebAuthnCredentialRequest
-	39, // 27: user.v1.UserService.DeleteWebAuthnCredential:input_type -> user.v1.DeleteWebAuthnCredentialRequest
-	41, // 28: user.v1.UserService.RegenerateRecoveryCodes:input_type -> user.v1.RegenerateRecoveryCodesRequest
-	43, // 29: user.v1.UserService.DisableAccount:input_type -> user.v1.DisableAccountRequest
-	45, // 30: user.v1.UserService.DeleteAccount:input_type -> user.v1.DeleteAccountRequest
-	48, // 31: user.v1.UserService.ListSessions:input_type -> user.v1.ListSessionsRequest
-	50, // 32: user.v1.UserService.RevokeSession:input_type -> user.v1.RevokeSessionRequest
-	52, // 33: user.v1.UserService.RevokeOtherSessions:input_type -> user.v1.RevokeOtherSessionsRequest
-	2,  // 34: user.v1.UserService.SetupStatus:output_type -> user.v1.SetupStatusResponse
-	4,  // 35: user.v1.UserService.CompleteInstanceSetup:output_type -> user.v1.CompleteInstanceSetupResponse
-	9,  // 36: user.v1.UserService.SearchUsers:output_type -> user.v1.SearchUsersResponse
-	7,  // 37: user.v1.UserService.CheckUsername:output_type -> user.v1.CheckUsernameResponse
-	11, // 38: user.v1.UserService.UploadUserAvatar:output_type -> user.v1.UploadUserAvatarResponse
-	13, // 39: user.v1.UserService.UpdateUserProfile:output_type -> user.v1.UpdateUserProfileResponse
-	15, // 40: user.v1.UserService.UpdateUsername:output_type -> user.v1.UpdateUsernameResponse
-	17, // 41: user.v1.UserService.RequestEmailChange:output_type -> user.v1.RequestEmailChangeResponse
-	19, // 42: user.v1.UserService.VerifyEmailChange:output_type -> user.v1.VerifyEmailChangeResponse
-	21, // 43: user.v1.UserService.CompleteEmailChange:output_type -> user.v1.CompleteEmailChangeResponse
-	23, // 44: user.v1.UserService.UpdatePassword:output_type -> user.v1.UpdatePasswordResponse
-	26, // 45: user.v1.UserService.GetMFAStatus:output_type -> user.v1.GetMFAStatusResponse
-	28, // 46: user.v1.UserService.BeginTOTPSetup:output_type -> user.v1.BeginTOTPSetupResponse
-	30, // 47: user.v1.UserService.ConfirmTOTPSetup:output_type -> user.v1.ConfirmTOTPSetupResponse
-	32, // 48: user.v1.UserService.DisableTOTP:output_type -> user.v1.DisableTOTPResponse
-	34, // 49: user.v1.UserService.BeginWebAuthnRegister:output_type -> user.v1.BeginWebAuthnRegisterResponse
-	36, // 50: user.v1.UserService.FinishWebAuthnRegister:output_type -> user.v1.FinishWebAuthnRegisterResponse
-	38, // 51: user.v1.UserService.RenameWebAuthnCredential:output_type -> user.v1.RenameWebAuthnCredentialResponse
-	40, // 52: user.v1.UserService.DeleteWebAuthnCredential:output_type -> user.v1.DeleteWebAuthnCredentialResponse
-	42, // 53: user.v1.UserService.RegenerateRecoveryCodes:output_type -> user.v1.RegenerateRecoveryCodesResponse
-	44, // 54: user.v1.UserService.DisableAccount:output_type -> user.v1.DisableAccountResponse
-	46, // 55: user.v1.UserService.DeleteAccount:output_type -> user.v1.DeleteAccountResponse
-	49, // 56: user.v1.UserService.ListSessions:output_type -> user.v1.ListSessionsResponse
-	51, // 57: user.v1.UserService.RevokeSession:output_type -> user.v1.RevokeSessionResponse
-	53, // 58: user.v1.UserService.RevokeOtherSessions:output_type -> user.v1.RevokeOtherSessionsResponse
-	34, // [34:59] is the sub-list for method output_type
-	9,  // [9:34] is the sub-list for method input_type
-	9,  // [9:9] is the sub-list for extension type_name
-	9,  // [9:9] is the sub-list for extension extendee
-	0,  // [0:9] is the sub-list for field type_name
+	0,  // 9: user.v1.UpdateUserStatusNoteResponse.user:type_name -> user.v1.User
+	0,  // 10: user.v1.UpdateUserPreferencesResponse.user:type_name -> user.v1.User
+	58, // 11: user.v1.ListUserActivityLogsResponse.logs:type_name -> user.v1.UserActivityLog
+	1,  // 12: user.v1.UserService.SetupStatus:input_type -> user.v1.SetupStatusRequest
+	3,  // 13: user.v1.UserService.CompleteInstanceSetup:input_type -> user.v1.CompleteInstanceSetupRequest
+	8,  // 14: user.v1.UserService.SearchUsers:input_type -> user.v1.SearchUsersRequest
+	6,  // 15: user.v1.UserService.CheckUsername:input_type -> user.v1.CheckUsernameRequest
+	10, // 16: user.v1.UserService.UploadUserAvatar:input_type -> user.v1.UploadUserAvatarRequest
+	12, // 17: user.v1.UserService.UpdateUserProfile:input_type -> user.v1.UpdateUserProfileRequest
+	54, // 18: user.v1.UserService.UpdateUserStatusNote:input_type -> user.v1.UpdateUserStatusNoteRequest
+	56, // 19: user.v1.UserService.UpdateUserPreferences:input_type -> user.v1.UpdateUserPreferencesRequest
+	59, // 20: user.v1.UserService.ListUserActivityLogs:input_type -> user.v1.ListUserActivityLogsRequest
+	14, // 21: user.v1.UserService.UpdateUsername:input_type -> user.v1.UpdateUsernameRequest
+	16, // 22: user.v1.UserService.RequestEmailChange:input_type -> user.v1.RequestEmailChangeRequest
+	18, // 23: user.v1.UserService.VerifyEmailChange:input_type -> user.v1.VerifyEmailChangeRequest
+	20, // 24: user.v1.UserService.CompleteEmailChange:input_type -> user.v1.CompleteEmailChangeRequest
+	22, // 25: user.v1.UserService.UpdatePassword:input_type -> user.v1.UpdatePasswordRequest
+	25, // 26: user.v1.UserService.GetMFAStatus:input_type -> user.v1.GetMFAStatusRequest
+	27, // 27: user.v1.UserService.BeginTOTPSetup:input_type -> user.v1.BeginTOTPSetupRequest
+	29, // 28: user.v1.UserService.ConfirmTOTPSetup:input_type -> user.v1.ConfirmTOTPSetupRequest
+	31, // 29: user.v1.UserService.DisableTOTP:input_type -> user.v1.DisableTOTPRequest
+	33, // 30: user.v1.UserService.BeginWebAuthnRegister:input_type -> user.v1.BeginWebAuthnRegisterRequest
+	35, // 31: user.v1.UserService.FinishWebAuthnRegister:input_type -> user.v1.FinishWebAuthnRegisterRequest
+	37, // 32: user.v1.UserService.RenameWebAuthnCredential:input_type -> user.v1.RenameWebAuthnCredentialRequest
+	39, // 33: user.v1.UserService.DeleteWebAuthnCredential:input_type -> user.v1.DeleteWebAuthnCredentialRequest
+	41, // 34: user.v1.UserService.RegenerateRecoveryCodes:input_type -> user.v1.RegenerateRecoveryCodesRequest
+	43, // 35: user.v1.UserService.DisableAccount:input_type -> user.v1.DisableAccountRequest
+	45, // 36: user.v1.UserService.DeleteAccount:input_type -> user.v1.DeleteAccountRequest
+	48, // 37: user.v1.UserService.ListSessions:input_type -> user.v1.ListSessionsRequest
+	50, // 38: user.v1.UserService.RevokeSession:input_type -> user.v1.RevokeSessionRequest
+	52, // 39: user.v1.UserService.RevokeOtherSessions:input_type -> user.v1.RevokeOtherSessionsRequest
+	2,  // 40: user.v1.UserService.SetupStatus:output_type -> user.v1.SetupStatusResponse
+	4,  // 41: user.v1.UserService.CompleteInstanceSetup:output_type -> user.v1.CompleteInstanceSetupResponse
+	9,  // 42: user.v1.UserService.SearchUsers:output_type -> user.v1.SearchUsersResponse
+	7,  // 43: user.v1.UserService.CheckUsername:output_type -> user.v1.CheckUsernameResponse
+	11, // 44: user.v1.UserService.UploadUserAvatar:output_type -> user.v1.UploadUserAvatarResponse
+	13, // 45: user.v1.UserService.UpdateUserProfile:output_type -> user.v1.UpdateUserProfileResponse
+	55, // 46: user.v1.UserService.UpdateUserStatusNote:output_type -> user.v1.UpdateUserStatusNoteResponse
+	57, // 47: user.v1.UserService.UpdateUserPreferences:output_type -> user.v1.UpdateUserPreferencesResponse
+	60, // 48: user.v1.UserService.ListUserActivityLogs:output_type -> user.v1.ListUserActivityLogsResponse
+	15, // 49: user.v1.UserService.UpdateUsername:output_type -> user.v1.UpdateUsernameResponse
+	17, // 50: user.v1.UserService.RequestEmailChange:output_type -> user.v1.RequestEmailChangeResponse
+	19, // 51: user.v1.UserService.VerifyEmailChange:output_type -> user.v1.VerifyEmailChangeResponse
+	21, // 52: user.v1.UserService.CompleteEmailChange:output_type -> user.v1.CompleteEmailChangeResponse
+	23, // 53: user.v1.UserService.UpdatePassword:output_type -> user.v1.UpdatePasswordResponse
+	26, // 54: user.v1.UserService.GetMFAStatus:output_type -> user.v1.GetMFAStatusResponse
+	28, // 55: user.v1.UserService.BeginTOTPSetup:output_type -> user.v1.BeginTOTPSetupResponse
+	30, // 56: user.v1.UserService.ConfirmTOTPSetup:output_type -> user.v1.ConfirmTOTPSetupResponse
+	32, // 57: user.v1.UserService.DisableTOTP:output_type -> user.v1.DisableTOTPResponse
+	34, // 58: user.v1.UserService.BeginWebAuthnRegister:output_type -> user.v1.BeginWebAuthnRegisterResponse
+	36, // 59: user.v1.UserService.FinishWebAuthnRegister:output_type -> user.v1.FinishWebAuthnRegisterResponse
+	38, // 60: user.v1.UserService.RenameWebAuthnCredential:output_type -> user.v1.RenameWebAuthnCredentialResponse
+	40, // 61: user.v1.UserService.DeleteWebAuthnCredential:output_type -> user.v1.DeleteWebAuthnCredentialResponse
+	42, // 62: user.v1.UserService.RegenerateRecoveryCodes:output_type -> user.v1.RegenerateRecoveryCodesResponse
+	44, // 63: user.v1.UserService.DisableAccount:output_type -> user.v1.DisableAccountResponse
+	46, // 64: user.v1.UserService.DeleteAccount:output_type -> user.v1.DeleteAccountResponse
+	49, // 65: user.v1.UserService.ListSessions:output_type -> user.v1.ListSessionsResponse
+	51, // 66: user.v1.UserService.RevokeSession:output_type -> user.v1.RevokeSessionResponse
+	53, // 67: user.v1.UserService.RevokeOtherSessions:output_type -> user.v1.RevokeOtherSessionsResponse
+	40, // [40:68] is the sub-list for method output_type
+	12, // [12:40] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_user_v1_user_proto_init() }
@@ -3349,7 +3922,7 @@ func file_user_v1_user_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_user_v1_user_proto_rawDesc), len(file_user_v1_user_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   54,
+			NumMessages:   61,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

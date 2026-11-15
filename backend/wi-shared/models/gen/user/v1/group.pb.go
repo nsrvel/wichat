@@ -30,13 +30,14 @@ type GroupSummary struct {
 	LogoUrl string                 `protobuf:"bytes,3,opt,name=logo_url,json=logoUrl,proto3" json:"logo_url,omitempty"`
 	// default_channel_id is the public id of the #general channel (24-char hex).
 	DefaultChannelId string `protobuf:"bytes,4,opt,name=default_channel_id,json=defaultChannelId,proto3" json:"default_channel_id,omitempty"`
-	// role is the caller's membership role (ListMyGroups / CreateGroup); empty for joinable list.
+	// role is the caller's membership role (ListMyGroups / CreateGroup).
 	Role                 string   `protobuf:"bytes,5,opt,name=role,proto3" json:"role,omitempty"`
 	Description          string   `protobuf:"bytes,6,opt,name=description,proto3" json:"description,omitempty"`
 	IsPrivate            bool     `protobuf:"varint,7,opt,name=is_private,json=isPrivate,proto3" json:"is_private,omitempty"`
 	BannerColor          string   `protobuf:"bytes,8,opt,name=banner_color,json=bannerColor,proto3" json:"banner_color,omitempty"`
 	BannerUrl            string   `protobuf:"bytes,9,opt,name=banner_url,json=bannerUrl,proto3" json:"banner_url,omitempty"`
 	EffectivePermissions []string `protobuf:"bytes,10,rep,name=effective_permissions,json=effectivePermissions,proto3" json:"effective_permissions,omitempty"`
+	HideRoles            bool     `protobuf:"varint,11,opt,name=hide_roles,json=hideRoles,proto3" json:"hide_roles,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -141,6 +142,13 @@ func (x *GroupSummary) GetEffectivePermissions() []string {
 	return nil
 }
 
+func (x *GroupSummary) GetHideRoles() bool {
+	if x != nil {
+		return x.HideRoles
+	}
+	return false
+}
+
 type ListMyGroupsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
@@ -229,94 +237,6 @@ func (x *ListMyGroupsResponse) GetGroups() []*GroupSummary {
 	return nil
 }
 
-type ListJoinableGroupsRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ListJoinableGroupsRequest) Reset() {
-	*x = ListJoinableGroupsRequest{}
-	mi := &file_user_v1_group_proto_msgTypes[3]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ListJoinableGroupsRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ListJoinableGroupsRequest) ProtoMessage() {}
-
-func (x *ListJoinableGroupsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_group_proto_msgTypes[3]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ListJoinableGroupsRequest.ProtoReflect.Descriptor instead.
-func (*ListJoinableGroupsRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_group_proto_rawDescGZIP(), []int{3}
-}
-
-func (x *ListJoinableGroupsRequest) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-type ListJoinableGroupsResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Groups        []*GroupSummary        `protobuf:"bytes,1,rep,name=groups,proto3" json:"groups,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ListJoinableGroupsResponse) Reset() {
-	*x = ListJoinableGroupsResponse{}
-	mi := &file_user_v1_group_proto_msgTypes[4]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ListJoinableGroupsResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ListJoinableGroupsResponse) ProtoMessage() {}
-
-func (x *ListJoinableGroupsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_group_proto_msgTypes[4]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ListJoinableGroupsResponse.ProtoReflect.Descriptor instead.
-func (*ListJoinableGroupsResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_group_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *ListJoinableGroupsResponse) GetGroups() []*GroupSummary {
-	if x != nil {
-		return x.Groups
-	}
-	return nil
-}
-
 type CreateGroupRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
@@ -327,7 +247,7 @@ type CreateGroupRequest struct {
 
 func (x *CreateGroupRequest) Reset() {
 	*x = CreateGroupRequest{}
-	mi := &file_user_v1_group_proto_msgTypes[5]
+	mi := &file_user_v1_group_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -339,7 +259,7 @@ func (x *CreateGroupRequest) String() string {
 func (*CreateGroupRequest) ProtoMessage() {}
 
 func (x *CreateGroupRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_group_proto_msgTypes[5]
+	mi := &file_user_v1_group_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -352,7 +272,7 @@ func (x *CreateGroupRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateGroupRequest.ProtoReflect.Descriptor instead.
 func (*CreateGroupRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_group_proto_rawDescGZIP(), []int{5}
+	return file_user_v1_group_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *CreateGroupRequest) GetAccessToken() string {
@@ -378,7 +298,7 @@ type CreateGroupResponse struct {
 
 func (x *CreateGroupResponse) Reset() {
 	*x = CreateGroupResponse{}
-	mi := &file_user_v1_group_proto_msgTypes[6]
+	mi := &file_user_v1_group_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -390,7 +310,7 @@ func (x *CreateGroupResponse) String() string {
 func (*CreateGroupResponse) ProtoMessage() {}
 
 func (x *CreateGroupResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_group_proto_msgTypes[6]
+	mi := &file_user_v1_group_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -403,7 +323,7 @@ func (x *CreateGroupResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateGroupResponse.ProtoReflect.Descriptor instead.
 func (*CreateGroupResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_group_proto_rawDescGZIP(), []int{6}
+	return file_user_v1_group_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *CreateGroupResponse) GetGroup() *GroupSummary {
@@ -423,7 +343,7 @@ type ReorderMyGroupsRequest struct {
 
 func (x *ReorderMyGroupsRequest) Reset() {
 	*x = ReorderMyGroupsRequest{}
-	mi := &file_user_v1_group_proto_msgTypes[7]
+	mi := &file_user_v1_group_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -435,7 +355,7 @@ func (x *ReorderMyGroupsRequest) String() string {
 func (*ReorderMyGroupsRequest) ProtoMessage() {}
 
 func (x *ReorderMyGroupsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_group_proto_msgTypes[7]
+	mi := &file_user_v1_group_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -448,7 +368,7 @@ func (x *ReorderMyGroupsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReorderMyGroupsRequest.ProtoReflect.Descriptor instead.
 func (*ReorderMyGroupsRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_group_proto_rawDescGZIP(), []int{7}
+	return file_user_v1_group_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ReorderMyGroupsRequest) GetAccessToken() string {
@@ -474,7 +394,7 @@ type ReorderMyGroupsResponse struct {
 
 func (x *ReorderMyGroupsResponse) Reset() {
 	*x = ReorderMyGroupsResponse{}
-	mi := &file_user_v1_group_proto_msgTypes[8]
+	mi := &file_user_v1_group_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -486,7 +406,7 @@ func (x *ReorderMyGroupsResponse) String() string {
 func (*ReorderMyGroupsResponse) ProtoMessage() {}
 
 func (x *ReorderMyGroupsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_group_proto_msgTypes[8]
+	mi := &file_user_v1_group_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -499,7 +419,7 @@ func (x *ReorderMyGroupsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReorderMyGroupsResponse.ProtoReflect.Descriptor instead.
 func (*ReorderMyGroupsResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_group_proto_rawDescGZIP(), []int{8}
+	return file_user_v1_group_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *ReorderMyGroupsResponse) GetOk() bool {
@@ -519,7 +439,7 @@ type DeleteGroupRequest struct {
 
 func (x *DeleteGroupRequest) Reset() {
 	*x = DeleteGroupRequest{}
-	mi := &file_user_v1_group_proto_msgTypes[9]
+	mi := &file_user_v1_group_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -531,7 +451,7 @@ func (x *DeleteGroupRequest) String() string {
 func (*DeleteGroupRequest) ProtoMessage() {}
 
 func (x *DeleteGroupRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_group_proto_msgTypes[9]
+	mi := &file_user_v1_group_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -544,7 +464,7 @@ func (x *DeleteGroupRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteGroupRequest.ProtoReflect.Descriptor instead.
 func (*DeleteGroupRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_group_proto_rawDescGZIP(), []int{9}
+	return file_user_v1_group_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *DeleteGroupRequest) GetAccessToken() string {
@@ -570,7 +490,7 @@ type DeleteGroupResponse struct {
 
 func (x *DeleteGroupResponse) Reset() {
 	*x = DeleteGroupResponse{}
-	mi := &file_user_v1_group_proto_msgTypes[10]
+	mi := &file_user_v1_group_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -582,7 +502,7 @@ func (x *DeleteGroupResponse) String() string {
 func (*DeleteGroupResponse) ProtoMessage() {}
 
 func (x *DeleteGroupResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_group_proto_msgTypes[10]
+	mi := &file_user_v1_group_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -595,7 +515,7 @@ func (x *DeleteGroupResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteGroupResponse.ProtoReflect.Descriptor instead.
 func (*DeleteGroupResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_group_proto_rawDescGZIP(), []int{10}
+	return file_user_v1_group_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *DeleteGroupResponse) GetOk() bool {
@@ -617,7 +537,7 @@ type UploadGroupIconRequest struct {
 
 func (x *UploadGroupIconRequest) Reset() {
 	*x = UploadGroupIconRequest{}
-	mi := &file_user_v1_group_proto_msgTypes[11]
+	mi := &file_user_v1_group_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -629,7 +549,7 @@ func (x *UploadGroupIconRequest) String() string {
 func (*UploadGroupIconRequest) ProtoMessage() {}
 
 func (x *UploadGroupIconRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_group_proto_msgTypes[11]
+	mi := &file_user_v1_group_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -642,7 +562,7 @@ func (x *UploadGroupIconRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UploadGroupIconRequest.ProtoReflect.Descriptor instead.
 func (*UploadGroupIconRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_group_proto_rawDescGZIP(), []int{11}
+	return file_user_v1_group_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *UploadGroupIconRequest) GetAccessToken() string {
@@ -682,7 +602,7 @@ type UploadGroupIconResponse struct {
 
 func (x *UploadGroupIconResponse) Reset() {
 	*x = UploadGroupIconResponse{}
-	mi := &file_user_v1_group_proto_msgTypes[12]
+	mi := &file_user_v1_group_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -694,7 +614,7 @@ func (x *UploadGroupIconResponse) String() string {
 func (*UploadGroupIconResponse) ProtoMessage() {}
 
 func (x *UploadGroupIconResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_group_proto_msgTypes[12]
+	mi := &file_user_v1_group_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -707,7 +627,7 @@ func (x *UploadGroupIconResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UploadGroupIconResponse.ProtoReflect.Descriptor instead.
 func (*UploadGroupIconResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_group_proto_rawDescGZIP(), []int{12}
+	return file_user_v1_group_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *UploadGroupIconResponse) GetGroup() *GroupSummary {
@@ -733,7 +653,7 @@ type UpdateGroupProfileRequest struct {
 
 func (x *UpdateGroupProfileRequest) Reset() {
 	*x = UpdateGroupProfileRequest{}
-	mi := &file_user_v1_group_proto_msgTypes[13]
+	mi := &file_user_v1_group_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -745,7 +665,7 @@ func (x *UpdateGroupProfileRequest) String() string {
 func (*UpdateGroupProfileRequest) ProtoMessage() {}
 
 func (x *UpdateGroupProfileRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_group_proto_msgTypes[13]
+	mi := &file_user_v1_group_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -758,7 +678,7 @@ func (x *UpdateGroupProfileRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateGroupProfileRequest.ProtoReflect.Descriptor instead.
 func (*UpdateGroupProfileRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_group_proto_rawDescGZIP(), []int{13}
+	return file_user_v1_group_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *UpdateGroupProfileRequest) GetAccessToken() string {
@@ -826,7 +746,7 @@ type UpdateGroupProfileResponse struct {
 
 func (x *UpdateGroupProfileResponse) Reset() {
 	*x = UpdateGroupProfileResponse{}
-	mi := &file_user_v1_group_proto_msgTypes[14]
+	mi := &file_user_v1_group_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -838,7 +758,7 @@ func (x *UpdateGroupProfileResponse) String() string {
 func (*UpdateGroupProfileResponse) ProtoMessage() {}
 
 func (x *UpdateGroupProfileResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_group_proto_msgTypes[14]
+	mi := &file_user_v1_group_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -851,7 +771,7 @@ func (x *UpdateGroupProfileResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateGroupProfileResponse.ProtoReflect.Descriptor instead.
 func (*UpdateGroupProfileResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_group_proto_rawDescGZIP(), []int{14}
+	return file_user_v1_group_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *UpdateGroupProfileResponse) GetGroup() *GroupSummary {
@@ -873,7 +793,7 @@ type UploadGroupBannerRequest struct {
 
 func (x *UploadGroupBannerRequest) Reset() {
 	*x = UploadGroupBannerRequest{}
-	mi := &file_user_v1_group_proto_msgTypes[15]
+	mi := &file_user_v1_group_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -885,7 +805,7 @@ func (x *UploadGroupBannerRequest) String() string {
 func (*UploadGroupBannerRequest) ProtoMessage() {}
 
 func (x *UploadGroupBannerRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_group_proto_msgTypes[15]
+	mi := &file_user_v1_group_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -898,7 +818,7 @@ func (x *UploadGroupBannerRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UploadGroupBannerRequest.ProtoReflect.Descriptor instead.
 func (*UploadGroupBannerRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_group_proto_rawDescGZIP(), []int{15}
+	return file_user_v1_group_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *UploadGroupBannerRequest) GetAccessToken() string {
@@ -938,7 +858,7 @@ type UploadGroupBannerResponse struct {
 
 func (x *UploadGroupBannerResponse) Reset() {
 	*x = UploadGroupBannerResponse{}
-	mi := &file_user_v1_group_proto_msgTypes[16]
+	mi := &file_user_v1_group_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -950,7 +870,7 @@ func (x *UploadGroupBannerResponse) String() string {
 func (*UploadGroupBannerResponse) ProtoMessage() {}
 
 func (x *UploadGroupBannerResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_group_proto_msgTypes[16]
+	mi := &file_user_v1_group_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -963,7 +883,7 @@ func (x *UploadGroupBannerResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UploadGroupBannerResponse.ProtoReflect.Descriptor instead.
 func (*UploadGroupBannerResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_group_proto_rawDescGZIP(), []int{16}
+	return file_user_v1_group_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *UploadGroupBannerResponse) GetGroup() *GroupSummary {
@@ -977,7 +897,7 @@ var File_user_v1_group_proto protoreflect.FileDescriptor
 
 const file_user_v1_group_proto_rawDesc = "" +
 	"\n" +
-	"\x13user/v1/group.proto\x12\auser.v1\"\xc7\x02\n" +
+	"\x13user/v1/group.proto\x12\auser.v1\"\xe6\x02\n" +
 	"\fGroupSummary\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x19\n" +
@@ -991,14 +911,12 @@ const file_user_v1_group_proto_rawDesc = "" +
 	"\n" +
 	"banner_url\x18\t \x01(\tR\tbannerUrl\x123\n" +
 	"\x15effective_permissions\x18\n" +
-	" \x03(\tR\x14effectivePermissions\"8\n" +
+	" \x03(\tR\x14effectivePermissions\x12\x1d\n" +
+	"\n" +
+	"hide_roles\x18\v \x01(\bR\thideRoles\"8\n" +
 	"\x13ListMyGroupsRequest\x12!\n" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\"E\n" +
 	"\x14ListMyGroupsResponse\x12-\n" +
-	"\x06groups\x18\x01 \x03(\v2\x15.user.v1.GroupSummaryR\x06groups\">\n" +
-	"\x19ListJoinableGroupsRequest\x12!\n" +
-	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\"K\n" +
-	"\x1aListJoinableGroupsResponse\x12-\n" +
 	"\x06groups\x18\x01 \x03(\v2\x15.user.v1.GroupSummaryR\x06groups\"K\n" +
 	"\x12CreateGroupRequest\x12!\n" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x12\n" +
@@ -1041,10 +959,9 @@ const file_user_v1_group_proto_rawDesc = "" +
 	"\fcontent_type\x18\x03 \x01(\tR\vcontentType\x12\x12\n" +
 	"\x04data\x18\x04 \x01(\fR\x04data\"H\n" +
 	"\x19UploadGroupBannerResponse\x12+\n" +
-	"\x05group\x18\x01 \x01(\v2\x15.user.v1.GroupSummaryR\x05group2\xb5\x05\n" +
+	"\x05group\x18\x01 \x01(\v2\x15.user.v1.GroupSummaryR\x05group2\xd6\x04\n" +
 	"\fGroupService\x12K\n" +
-	"\fListMyGroups\x12\x1c.user.v1.ListMyGroupsRequest\x1a\x1d.user.v1.ListMyGroupsResponse\x12]\n" +
-	"\x12ListJoinableGroups\x12\".user.v1.ListJoinableGroupsRequest\x1a#.user.v1.ListJoinableGroupsResponse\x12H\n" +
+	"\fListMyGroups\x12\x1c.user.v1.ListMyGroupsRequest\x1a\x1d.user.v1.ListMyGroupsResponse\x12H\n" +
 	"\vCreateGroup\x12\x1b.user.v1.CreateGroupRequest\x1a\x1c.user.v1.CreateGroupResponse\x12T\n" +
 	"\x0fReorderMyGroups\x12\x1f.user.v1.ReorderMyGroupsRequest\x1a .user.v1.ReorderMyGroupsResponse\x12H\n" +
 	"\vDeleteGroup\x12\x1b.user.v1.DeleteGroupRequest\x1a\x1c.user.v1.DeleteGroupResponse\x12T\n" +
@@ -1066,54 +983,49 @@ func file_user_v1_group_proto_rawDescGZIP() []byte {
 	return file_user_v1_group_proto_rawDescData
 }
 
-var file_user_v1_group_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
+var file_user_v1_group_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
 var file_user_v1_group_proto_goTypes = []any{
 	(*GroupSummary)(nil),               // 0: user.v1.GroupSummary
 	(*ListMyGroupsRequest)(nil),        // 1: user.v1.ListMyGroupsRequest
 	(*ListMyGroupsResponse)(nil),       // 2: user.v1.ListMyGroupsResponse
-	(*ListJoinableGroupsRequest)(nil),  // 3: user.v1.ListJoinableGroupsRequest
-	(*ListJoinableGroupsResponse)(nil), // 4: user.v1.ListJoinableGroupsResponse
-	(*CreateGroupRequest)(nil),         // 5: user.v1.CreateGroupRequest
-	(*CreateGroupResponse)(nil),        // 6: user.v1.CreateGroupResponse
-	(*ReorderMyGroupsRequest)(nil),     // 7: user.v1.ReorderMyGroupsRequest
-	(*ReorderMyGroupsResponse)(nil),    // 8: user.v1.ReorderMyGroupsResponse
-	(*DeleteGroupRequest)(nil),         // 9: user.v1.DeleteGroupRequest
-	(*DeleteGroupResponse)(nil),        // 10: user.v1.DeleteGroupResponse
-	(*UploadGroupIconRequest)(nil),     // 11: user.v1.UploadGroupIconRequest
-	(*UploadGroupIconResponse)(nil),    // 12: user.v1.UploadGroupIconResponse
-	(*UpdateGroupProfileRequest)(nil),  // 13: user.v1.UpdateGroupProfileRequest
-	(*UpdateGroupProfileResponse)(nil), // 14: user.v1.UpdateGroupProfileResponse
-	(*UploadGroupBannerRequest)(nil),   // 15: user.v1.UploadGroupBannerRequest
-	(*UploadGroupBannerResponse)(nil),  // 16: user.v1.UploadGroupBannerResponse
+	(*CreateGroupRequest)(nil),         // 3: user.v1.CreateGroupRequest
+	(*CreateGroupResponse)(nil),        // 4: user.v1.CreateGroupResponse
+	(*ReorderMyGroupsRequest)(nil),     // 5: user.v1.ReorderMyGroupsRequest
+	(*ReorderMyGroupsResponse)(nil),    // 6: user.v1.ReorderMyGroupsResponse
+	(*DeleteGroupRequest)(nil),         // 7: user.v1.DeleteGroupRequest
+	(*DeleteGroupResponse)(nil),        // 8: user.v1.DeleteGroupResponse
+	(*UploadGroupIconRequest)(nil),     // 9: user.v1.UploadGroupIconRequest
+	(*UploadGroupIconResponse)(nil),    // 10: user.v1.UploadGroupIconResponse
+	(*UpdateGroupProfileRequest)(nil),  // 11: user.v1.UpdateGroupProfileRequest
+	(*UpdateGroupProfileResponse)(nil), // 12: user.v1.UpdateGroupProfileResponse
+	(*UploadGroupBannerRequest)(nil),   // 13: user.v1.UploadGroupBannerRequest
+	(*UploadGroupBannerResponse)(nil),  // 14: user.v1.UploadGroupBannerResponse
 }
 var file_user_v1_group_proto_depIdxs = []int32{
 	0,  // 0: user.v1.ListMyGroupsResponse.groups:type_name -> user.v1.GroupSummary
-	0,  // 1: user.v1.ListJoinableGroupsResponse.groups:type_name -> user.v1.GroupSummary
-	0,  // 2: user.v1.CreateGroupResponse.group:type_name -> user.v1.GroupSummary
-	0,  // 3: user.v1.UploadGroupIconResponse.group:type_name -> user.v1.GroupSummary
-	0,  // 4: user.v1.UpdateGroupProfileResponse.group:type_name -> user.v1.GroupSummary
-	0,  // 5: user.v1.UploadGroupBannerResponse.group:type_name -> user.v1.GroupSummary
-	1,  // 6: user.v1.GroupService.ListMyGroups:input_type -> user.v1.ListMyGroupsRequest
-	3,  // 7: user.v1.GroupService.ListJoinableGroups:input_type -> user.v1.ListJoinableGroupsRequest
-	5,  // 8: user.v1.GroupService.CreateGroup:input_type -> user.v1.CreateGroupRequest
-	7,  // 9: user.v1.GroupService.ReorderMyGroups:input_type -> user.v1.ReorderMyGroupsRequest
-	9,  // 10: user.v1.GroupService.DeleteGroup:input_type -> user.v1.DeleteGroupRequest
-	11, // 11: user.v1.GroupService.UploadGroupIcon:input_type -> user.v1.UploadGroupIconRequest
-	13, // 12: user.v1.GroupService.UpdateGroupProfile:input_type -> user.v1.UpdateGroupProfileRequest
-	15, // 13: user.v1.GroupService.UploadGroupBanner:input_type -> user.v1.UploadGroupBannerRequest
-	2,  // 14: user.v1.GroupService.ListMyGroups:output_type -> user.v1.ListMyGroupsResponse
-	4,  // 15: user.v1.GroupService.ListJoinableGroups:output_type -> user.v1.ListJoinableGroupsResponse
-	6,  // 16: user.v1.GroupService.CreateGroup:output_type -> user.v1.CreateGroupResponse
-	8,  // 17: user.v1.GroupService.ReorderMyGroups:output_type -> user.v1.ReorderMyGroupsResponse
-	10, // 18: user.v1.GroupService.DeleteGroup:output_type -> user.v1.DeleteGroupResponse
-	12, // 19: user.v1.GroupService.UploadGroupIcon:output_type -> user.v1.UploadGroupIconResponse
-	14, // 20: user.v1.GroupService.UpdateGroupProfile:output_type -> user.v1.UpdateGroupProfileResponse
-	16, // 21: user.v1.GroupService.UploadGroupBanner:output_type -> user.v1.UploadGroupBannerResponse
-	14, // [14:22] is the sub-list for method output_type
-	6,  // [6:14] is the sub-list for method input_type
-	6,  // [6:6] is the sub-list for extension type_name
-	6,  // [6:6] is the sub-list for extension extendee
-	0,  // [0:6] is the sub-list for field type_name
+	0,  // 1: user.v1.CreateGroupResponse.group:type_name -> user.v1.GroupSummary
+	0,  // 2: user.v1.UploadGroupIconResponse.group:type_name -> user.v1.GroupSummary
+	0,  // 3: user.v1.UpdateGroupProfileResponse.group:type_name -> user.v1.GroupSummary
+	0,  // 4: user.v1.UploadGroupBannerResponse.group:type_name -> user.v1.GroupSummary
+	1,  // 5: user.v1.GroupService.ListMyGroups:input_type -> user.v1.ListMyGroupsRequest
+	3,  // 6: user.v1.GroupService.CreateGroup:input_type -> user.v1.CreateGroupRequest
+	5,  // 7: user.v1.GroupService.ReorderMyGroups:input_type -> user.v1.ReorderMyGroupsRequest
+	7,  // 8: user.v1.GroupService.DeleteGroup:input_type -> user.v1.DeleteGroupRequest
+	9,  // 9: user.v1.GroupService.UploadGroupIcon:input_type -> user.v1.UploadGroupIconRequest
+	11, // 10: user.v1.GroupService.UpdateGroupProfile:input_type -> user.v1.UpdateGroupProfileRequest
+	13, // 11: user.v1.GroupService.UploadGroupBanner:input_type -> user.v1.UploadGroupBannerRequest
+	2,  // 12: user.v1.GroupService.ListMyGroups:output_type -> user.v1.ListMyGroupsResponse
+	4,  // 13: user.v1.GroupService.CreateGroup:output_type -> user.v1.CreateGroupResponse
+	6,  // 14: user.v1.GroupService.ReorderMyGroups:output_type -> user.v1.ReorderMyGroupsResponse
+	8,  // 15: user.v1.GroupService.DeleteGroup:output_type -> user.v1.DeleteGroupResponse
+	10, // 16: user.v1.GroupService.UploadGroupIcon:output_type -> user.v1.UploadGroupIconResponse
+	12, // 17: user.v1.GroupService.UpdateGroupProfile:output_type -> user.v1.UpdateGroupProfileResponse
+	14, // 18: user.v1.GroupService.UploadGroupBanner:output_type -> user.v1.UploadGroupBannerResponse
+	12, // [12:19] is the sub-list for method output_type
+	5,  // [5:12] is the sub-list for method input_type
+	5,  // [5:5] is the sub-list for extension type_name
+	5,  // [5:5] is the sub-list for extension extendee
+	0,  // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_user_v1_group_proto_init() }
@@ -1127,7 +1039,7 @@ func file_user_v1_group_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_user_v1_group_proto_rawDesc), len(file_user_v1_group_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   17,
+			NumMessages:   15,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

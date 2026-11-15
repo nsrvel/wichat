@@ -17,7 +17,6 @@ import (
 type PgRepository interface {
 	GetFirstGroup(ctx context.Context) (models.Group, error)
 	ListGroupsForUser(ctx context.Context, userID string) ([]models.Group, error)
-	ListJoinableGroups(ctx context.Context, userID string) ([]models.Group, error)
 	FindGroupByID(ctx context.Context, id string) (models.Group, error)
 	FindGroupByPublicID(ctx context.Context, publicID string) (models.Group, error)
 	CreateGroupWithOwner(ctx context.Context, group models.Group, owner models.GroupMember) error
@@ -58,11 +57,6 @@ func (r pgRepository) GetFirstGroup(ctx context.Context) (models.Group, error) {
 // ListGroupsForUser returns groups the user belongs to, ordered by rail preference then name.
 func (r pgRepository) ListGroupsForUser(ctx context.Context, userID string) ([]models.Group, error) {
 	return r.listGroupsRaw(ctx, constants.SQLListGroupsForUser, userID, "ListGroupsForUser")
-}
-
-// ListJoinableGroups returns instance groups the user is not in.
-func (r pgRepository) ListJoinableGroups(ctx context.Context, userID string) ([]models.Group, error) {
-	return r.listGroupsRaw(ctx, constants.SQLListJoinableGroups, userID, "ListJoinableGroups")
 }
 
 // FindGroupByID loads one group by id.
@@ -183,7 +177,7 @@ func groupJoinSelect(q *bun.SelectQuery) *bun.SelectQuery {
 		ColumnExpr("g.id AS g_id, g.public_id AS g_public_id, g.created_at AS g_created_at, g.updated_at AS g_updated_at").
 		ColumnExpr("s.group_id AS s_group_id, s.name AS s_name, s.logo_url AS s_logo_url").
 		ColumnExpr("s.description AS s_description, s.is_private AS s_is_private").
-		ColumnExpr("s.banner_color AS s_banner_color, s.banner_url AS s_banner_url").
+		ColumnExpr("s.banner_color AS s_banner_color, s.banner_url AS s_banner_url, s.hide_roles AS s_hide_roles").
 		ColumnExpr("s.retention_days AS s_retention_days, s.trash_retention_days AS s_trash_retention_days").
 		ColumnExpr("s.created_at AS s_created_at, s.updated_at AS s_updated_at").
 		ColumnExpr("ch.public_id AS ch_public_id").
@@ -195,7 +189,7 @@ func groupFromRows(g models.GroupRow, s models.GroupSettingsRow, defaultChannelP
 	return models.Group{
 		ID: g.ID, PublicID: g.PublicID, Name: s.Name, LogoURL: s.LogoURL,
 		Description: s.Description, IsPrivate: s.IsPrivate,
-		BannerColor: s.BannerColor, BannerURL: s.BannerURL,
+		BannerColor: s.BannerColor, BannerURL: s.BannerURL, HideRoles: s.HideRoles,
 		DefaultChannelPublicID: defaultChannelPublicID,
 		CallerRole:             callerRole,
 		CreatedAt:              g.CreatedAt, UpdatedAt: g.UpdatedAt,

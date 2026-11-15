@@ -25,6 +25,8 @@ type Handler interface {
 	SearchUsers(w http.ResponseWriter, r *http.Request)
 	UploadAvatar(w http.ResponseWriter, r *http.Request)
 	UpdateProfile(w http.ResponseWriter, r *http.Request)
+	UpdateStatusNote(w http.ResponseWriter, r *http.Request)
+	UpdatePreferences(w http.ResponseWriter, r *http.Request)
 	UpdateUsername(w http.ResponseWriter, r *http.Request)
 	RequestEmailChange(w http.ResponseWriter, r *http.Request)
 	VerifyEmailChange(w http.ResponseWriter, r *http.Request)
@@ -44,12 +46,22 @@ type Handler interface {
 	ListDevices(w http.ResponseWriter, r *http.Request)
 	RevokeDevice(w http.ResponseWriter, r *http.Request)
 	RevokeOtherDevices(w http.ResponseWriter, r *http.Request)
+	ListActivityLogs(w http.ResponseWriter, r *http.Request)
+	GetMyPresence(w http.ResponseWriter, r *http.Request)
+	UpdateMyPresence(w http.ResponseWriter, r *http.Request)
+	WithPresenceBroadcaster(b PresenceBroadcaster) Handler
+}
+
+// PresenceBroadcaster pushes presence.updated events to subscribed groups.
+type PresenceBroadcaster interface {
+	DeliverGroup(groupID string, payload []byte)
 }
 
 type handler struct {
 	ms               *microservices.Clients
 	log              logger.Logger
 	turnstileSiteKey string
+	broadcaster      PresenceBroadcaster
 }
 
 // NewHandler wires user HTTP to the ms-user client.
@@ -59,6 +71,11 @@ func NewHandler(ms *microservices.Clients, log logger.Logger, turnstileSiteKey .
 		siteKey = strings.TrimSpace(turnstileSiteKey[0])
 	}
 	return handler{ms: ms, log: log, turnstileSiteKey: siteKey}
+}
+
+func (h handler) WithPresenceBroadcaster(b PresenceBroadcaster) Handler {
+	h.broadcaster = b
+	return h
 }
 
 func (h handler) SetupStatus(w http.ResponseWriter, r *http.Request) {
@@ -228,6 +245,71 @@ func (h handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		Bio:         body.Bio,
 		BannerColor: body.BannerColor,
 		ClearAvatar: body.ClearAvatar,
+	})
+	if err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	// Response
+	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(authHttp.UserFromPB(out.GetUser())))
+}
+
+func (h handler) UpdateStatusNote(w http.ResponseWriter, r *http.Request) {
+	// Auth
+	token := authHttp.Bearer(r)
+	if token == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.Unauthenticated(exception.MsgUnauthorized, nil))
+		return
+	}
+
+	// Input
+	var body authHttp.UpdateUserStatusNoteBody
+	if err := authHttp.DecodeJSON(w, r, &body); err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+	expiresAt := ""
+	if body.ExpiresAt != nil {
+		expiresAt = *body.ExpiresAt
+	}
+
+	// Service
+	out, err := h.ms.User.GRPC.User.UpdateUserStatusNote(r.Context(), &userv1.UpdateUserStatusNoteRequest{
+		AccessToken: token,
+		Text:        body.Text,
+		Emoji:       body.Emoji,
+		ExpiresAt:   expiresAt,
+	})
+	if err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	// Response
+	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(authHttp.UserFromPB(out.GetUser())))
+}
+
+func (h handler) UpdatePreferences(w http.ResponseWriter, r *http.Request) {
+	// Auth
+	token := authHttp.Bearer(r)
+	if token == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.Unauthenticated(exception.MsgUnauthorized, nil))
+		return
+	}
+
+	// Input
+	var body authHttp.UpdateUserPreferencesBody
+	if err := authHttp.DecodeJSON(w, r, &body); err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	// Service
+	out, err := h.ms.User.GRPC.User.UpdateUserPreferences(r.Context(), &userv1.UpdateUserPreferencesRequest{
+		AccessToken: token,
+		Locale:      body.Locale,
+		TimeFormat:  body.TimeFormat,
 	})
 	if err != nil {
 		authHttp.WriteOutbound(w, r, h.log, err)
@@ -850,4 +932,119 @@ func (h handler) RevokeOtherDevices(w http.ResponseWriter, r *http.Request) {
 
 	// Response
 	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(authHttp.OKBody{OK: true}))
+}
+
+func (h handler) ListActivityLogs(w http.ResponseWriter, r *http.Request) {
+	// Auth
+	token := authHttp.Bearer(r)
+	if token == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.Unauthenticated(exception.MsgUnauthorized, nil))
+		return
+	}
+
+	// Input
+	q := r.URL.Query()
+	var limit int32
+	if rawLimit := strings.TrimSpace(q.Get("limit")); rawLimit != "" {
+		parsed, err := strconv.ParseInt(rawLimit, 10, 32)
+		if err != nil || parsed <= 0 {
+			authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "limit"}))
+			return
+		}
+		limit = int32(parsed)
+	}
+
+	// Service
+	res, err := h.ms.User.GRPC.User.ListUserActivityLogs(r.Context(), &userv1.ListUserActivityLogsRequest{
+		AccessToken: token,
+		Category:    strings.TrimSpace(q.Get("category")),
+		Action:      strings.TrimSpace(q.Get("action")),
+		Limit:       limit,
+		Cursor:      strings.TrimSpace(q.Get("cursor")),
+	})
+	if err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	// Response
+	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(struct {
+		Logs       []authHttp.UserActivityLogBody `json:"logs"`
+		NextCursor string                         `json:"next_cursor,omitempty"`
+	}{
+		Logs:       authHttp.UserActivityLogsFromPB(res.GetLogs()),
+		NextCursor: res.GetNextCursor(),
+	}))
+}
+
+func (h handler) GetMyPresence(w http.ResponseWriter, r *http.Request) {
+	token := authHttp.Bearer(r)
+	if token == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.Unauthenticated(exception.MsgUnauthorized, nil))
+		return
+	}
+
+	res, err := h.ms.User.GRPC.Presence.GetMyPresence(r.Context(), &userv1.GetMyPresenceRequest{
+		AccessToken: token,
+	})
+	if err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(authHttp.MyPresenceBody{
+		ManualStatus:    res.GetManualStatus(),
+		EffectiveStatus: res.GetEffectiveStatus(),
+		IsOnline:        res.GetIsOnline(),
+		ExpiresAt:       res.GetExpiresAt(),
+	}))
+}
+
+func (h handler) UpdateMyPresence(w http.ResponseWriter, r *http.Request) {
+	token := authHttp.Bearer(r)
+	if token == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.Unauthenticated(exception.MsgUnauthorized, nil))
+		return
+	}
+
+	var body authHttp.UpdateMyPresenceRequestBody
+	if err := json.NewDecoder(io.LimitReader(r.Body, 4096)).Decode(&body); err != nil {
+		authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, nil))
+		return
+	}
+
+	res, err := h.ms.User.GRPC.Presence.SetManualPresence(r.Context(), &userv1.SetManualPresenceRequest{
+		AccessToken: token,
+		Status:      strings.TrimSpace(body.Status),
+		TtlSeconds:  body.TTLSeconds,
+	})
+	if err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	if h.broadcaster != nil && len(res.GetGroupIds()) > 0 {
+		if payload, mErr := json.Marshal(struct {
+			Type           string `json:"type"`
+			UserID         string `json:"user_id"`
+			PresenceStatus string `json:"presence_status"`
+			IsOnline       bool   `json:"is_online"`
+		}{
+			Type:           "presence.updated",
+			UserID:         res.GetUserId(),
+			PresenceStatus: res.GetEffectiveStatus(),
+			IsOnline:       res.GetIsOnline(),
+		}); mErr == nil {
+			for _, gid := range res.GetGroupIds() {
+				h.broadcaster.DeliverGroup(gid, payload)
+			}
+		}
+	}
+
+	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(authHttp.MyPresenceBody{
+		ManualStatus:    res.GetManualStatus(),
+		EffectiveStatus: res.GetEffectiveStatus(),
+		IsOnline:        res.GetIsOnline(),
+		ExpiresAt:       res.GetExpiresAt(),
+	}))
 }

@@ -127,6 +127,7 @@ func (h handler) PreviewGroupInvite(w http.ResponseWriter, r *http.Request) {
 
 	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(authHttp.InvitePreviewBody{
 		Valid:        out.GetValid(),
+		IsPrivate:    out.GetIsPrivate(),
 		GroupName:    out.GetGroupName(),
 		ChannelName:  out.GetChannelName(),
 		GroupLogoURL: out.GetGroupLogoUrl(),

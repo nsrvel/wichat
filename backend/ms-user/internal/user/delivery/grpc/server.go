@@ -6,8 +6,10 @@ import (
 	"time"
 
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
+	activitysvc "github.com/wichat/wichat/backend/ms-user/internal/user-activity-log/service"
 	usersvc "github.com/wichat/wichat/backend/ms-user/internal/user/service"
 	authPb "github.com/wichat/wichat/backend/ms-user/pkg/auth-pb"
+	"github.com/wichat/wichat/backend/wi-shared/exception"
 	userv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/user/v1"
 	responsegrpc "github.com/wichat/wichat/backend/wi-shared/response/grpc"
 )
@@ -15,12 +17,19 @@ import (
 // Server implements userv1.UserServiceServer.
 type Server struct {
 	userv1.UnimplementedUserServiceServer
-	svc usersvc.Service
+	svc         usersvc.Service
+	activitySvc activitysvc.Service
 }
 
 // NewServer creates a new UserServiceServer.
 func NewServer(svc usersvc.Service) *Server {
 	return &Server{svc: svc}
+}
+
+// WithActivityLog attaches the user activity log service for ListUserActivityLogs.
+func (s *Server) WithActivityLog(activitySvc activitysvc.Service) *Server {
+	s.activitySvc = activitySvc
+	return s
 }
 
 func (s *Server) SetupStatus(ctx context.Context, _ *userv1.SetupStatusRequest) (*userv1.SetupStatusResponse, error) {
@@ -101,6 +110,57 @@ func (s *Server) UpdateUserProfile(ctx context.Context, req *userv1.UpdateUserPr
 	}
 
 	return &userv1.UpdateUserProfileResponse{User: authPb.User(*user)}, nil
+}
+
+func (s *Server) UpdateUserStatusNote(ctx context.Context, req *userv1.UpdateUserStatusNoteRequest) (*userv1.UpdateUserStatusNoteResponse, error) {
+	user, err := s.svc.UpdateUserStatusNote(
+		ctx,
+		req.GetAccessToken(),
+		req.GetText(),
+		req.GetEmoji(),
+		req.GetExpiresAt(),
+	)
+	if err != nil {
+		return nil, responsegrpc.ToStatus(err)
+	}
+
+	return &userv1.UpdateUserStatusNoteResponse{User: authPb.User(*user)}, nil
+}
+
+func (s *Server) UpdateUserPreferences(ctx context.Context, req *userv1.UpdateUserPreferencesRequest) (*userv1.UpdateUserPreferencesResponse, error) {
+	user, err := s.svc.UpdateUserPreferences(
+		ctx,
+		req.GetAccessToken(),
+		req.GetLocale(),
+		req.GetTimeFormat(),
+	)
+	if err != nil {
+		return nil, responsegrpc.ToStatus(err)
+	}
+
+	return &userv1.UpdateUserPreferencesResponse{User: authPb.User(*user)}, nil
+}
+
+func (s *Server) ListUserActivityLogs(ctx context.Context, req *userv1.ListUserActivityLogsRequest) (*userv1.ListUserActivityLogsResponse, error) {
+	if s.activitySvc == nil {
+		return nil, responsegrpc.ToStatus(exception.Unavailable(exception.MsgUnavailable, nil))
+	}
+	page, err := s.activitySvc.ListMyActivityLogs(
+		ctx,
+		req.GetAccessToken(),
+		req.GetCategory(),
+		req.GetAction(),
+		int(req.GetLimit()),
+		req.GetCursor(),
+	)
+	if err != nil {
+		return nil, responsegrpc.ToStatus(err)
+	}
+
+	return &userv1.ListUserActivityLogsResponse{
+		Logs:       authPb.UserActivityLogs(page.Logs),
+		NextCursor: page.NextCursor,
+	}, nil
 }
 
 func (s *Server) UpdateUsername(ctx context.Context, req *userv1.UpdateUsernameRequest) (*userv1.UpdateUsernameResponse, error) {

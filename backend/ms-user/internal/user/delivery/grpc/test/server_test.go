@@ -7,16 +7,28 @@ import (
 
 	"github.com/pquerna/otp/totp"
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
+	activitymock "github.com/wichat/wichat/backend/ms-user/internal/user-activity-log/repository/mock"
+	activityservice "github.com/wichat/wichat/backend/ms-user/internal/user-activity-log/service"
 	usergrpc "github.com/wichat/wichat/backend/ms-user/internal/user/delivery/grpc"
 	usermock "github.com/wichat/wichat/backend/ms-user/internal/user/repository/mock"
 	testSupport "github.com/wichat/wichat/backend/ms-user/pkg/test-support"
+	"github.com/wichat/wichat/backend/wi-shared/infra/logger"
 	userv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/user/v1"
 )
 
 func TestUserGRPCServer(t *testing.T) {
 	st := usermock.NewState()
 	authSvc, notify, _, userSvc, groupSvc, _ := testSupport.NewAuthService(t, st, nil)
-	srv := usergrpc.NewServer(userSvc)
+	_, _, sessions := testSupport.TestRepos(st)
+	actState := activitymock.NewState()
+	actSvc := activityservice.NewService(
+		activitymock.NewPgRepositoryMock(actState),
+		sessions,
+		[]byte(testSupport.TestJWTSecret),
+		logger.New(logger.Options{Service: "user-grpc-test", Env: "test", Level: "error"}),
+	)
+	userSvc = userSvc.WithActivityLog(actSvc)
+	srv := usergrpc.NewServer(userSvc).WithActivityLog(actSvc)
 	ctx := context.Background()
 
 	statusRes, err := srv.SetupStatus(ctx, &userv1.SetupStatusRequest{})
@@ -200,6 +212,28 @@ func TestUserGRPCServer(t *testing.T) {
 		got.GetCreatedAt() == "" {
 		t.Fatalf("unexpected UpdateUserProfile response user: %+v", got)
 	}
+	noteResp, err := srv.UpdateUserStatusNote(ctx, &userv1.UpdateUserStatusNoteRequest{
+		AccessToken: owner.AccessToken,
+		Text:        "Focused",
+		Emoji:       "🎧",
+	})
+	if err != nil {
+		t.Fatalf("UpdateUserStatusNote: %v", err)
+	}
+	if got := noteResp.GetUser(); got.GetStatusNoteText() != "Focused" || got.GetStatusNoteEmoji() != "🎧" {
+		t.Fatalf("unexpected UpdateUserStatusNote response user: %+v", got)
+	}
+	prefsResp, err := srv.UpdateUserPreferences(ctx, &userv1.UpdateUserPreferencesRequest{
+		AccessToken: owner.AccessToken,
+		Locale:      "id",
+		TimeFormat:  "24h",
+	})
+	if err != nil {
+		t.Fatalf("UpdateUserPreferences: %v", err)
+	}
+	if got := prefsResp.GetUser(); got.GetLocale() != "id" || got.GetTimeFormat() != "24h" {
+		t.Fatalf("unexpected UpdateUserPreferences response user: %+v", got)
+	}
 	if _, err := srv.UpdateUsername(ctx, &userv1.UpdateUsernameRequest{
 		AccessToken:     owner.AccessToken,
 		Username:        "owner.updated",
@@ -236,5 +270,13 @@ func TestUserGRPCServer(t *testing.T) {
 		CurrentPassword: "new-strong-password-123",
 	}); err != nil || !revAll.GetOk() {
 		t.Fatalf("RevokeOtherSessions: %+v %v", revAll, err)
+	}
+
+	logsResp, err := srv.ListUserActivityLogs(ctx, &userv1.ListUserActivityLogsRequest{
+		AccessToken: owner.AccessToken,
+		Limit:       20,
+	})
+	if err != nil || len(logsResp.GetLogs()) == 0 {
+		t.Fatalf("ListUserActivityLogs: %+v %v", logsResp, err)
 	}
 }

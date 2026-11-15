@@ -16,6 +16,8 @@ func (userRouteStub) CheckUsername(http.ResponseWriter, *http.Request)          
 func (userRouteStub) SearchUsers(http.ResponseWriter, *http.Request)              {}
 func (userRouteStub) UploadAvatar(http.ResponseWriter, *http.Request)             {}
 func (userRouteStub) UpdateProfile(http.ResponseWriter, *http.Request)            {}
+func (userRouteStub) UpdateStatusNote(http.ResponseWriter, *http.Request)         {}
+func (userRouteStub) UpdatePreferences(http.ResponseWriter, *http.Request)        {}
 func (userRouteStub) UpdateUsername(http.ResponseWriter, *http.Request)           {}
 func (userRouteStub) RequestEmailChange(http.ResponseWriter, *http.Request)       {}
 func (userRouteStub) VerifyEmailChange(http.ResponseWriter, *http.Request)        {}
@@ -35,6 +37,12 @@ func (userRouteStub) DeleteAccount(http.ResponseWriter, *http.Request)          
 func (userRouteStub) ListDevices(http.ResponseWriter, *http.Request)              {}
 func (userRouteStub) RevokeDevice(http.ResponseWriter, *http.Request)             {}
 func (userRouteStub) RevokeOtherDevices(http.ResponseWriter, *http.Request)       {}
+func (userRouteStub) ListActivityLogs(http.ResponseWriter, *http.Request)         {}
+func (userRouteStub) GetMyPresence(http.ResponseWriter, *http.Request)            {}
+func (userRouteStub) UpdateMyPresence(http.ResponseWriter, *http.Request)         {}
+func (s userRouteStub) WithPresenceBroadcaster(userhttp.PresenceBroadcaster) userhttp.Handler {
+	return s
+}
 
 func TestRegisterMountsSetupStatus(t *testing.T) {
 	mux := http.NewServeMux()
@@ -56,6 +64,7 @@ func TestRegisterMountsSetupStatus(t *testing.T) {
 		{http.MethodPost, "/api/v1/users/me/mfa/recovery-codes/regenerate"},
 		{http.MethodPost, "/api/v1/users/me/disable"},
 		{http.MethodPost, "/api/v1/users/me/delete"},
+		{http.MethodGet, "/api/v1/users/me/activity-logs"},
 		{http.MethodGet, "/api/v1/users/me/devices"},
 		{http.MethodDelete, "/api/v1/users/me/devices/sess-1"},
 		{http.MethodPost, "/api/v1/users/me/devices/revoke-others"},

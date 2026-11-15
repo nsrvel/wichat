@@ -2,18 +2,30 @@ syntax = "proto3";
 
 package user.v1;
 
+import "user/v1/group_member.proto";
+
 option go_package = "github.com/wichat/wichat/backend/wi-shared/models/gen/user/v1;userv1";
 
 // GroupRoleService manages group roles, permissions, and role member assignments.
 service GroupRoleService {
-  // ListGroupRoles returns all roles in a group with permissions and member counts.
+  // ListGroupRoles returns all roles in a group with permissions, member counts, and hide_roles setting.
   rpc ListGroupRoles(ListGroupRolesRequest) returns (ListGroupRolesResponse);
+  // CreateGroupRole creates a new custom role (defaults to "new role" with empty permissions).
+  rpc CreateGroupRole(CreateGroupRoleRequest) returns (CreateGroupRoleResponse);
   // UpdateGroupRole updates role metadata and permissions.
   rpc UpdateGroupRole(UpdateGroupRoleRequest) returns (UpdateGroupRoleResponse);
+  // DuplicateGroupRole duplicates an existing role into a new custom role.
+  rpc DuplicateGroupRole(DuplicateGroupRoleRequest) returns (DuplicateGroupRoleResponse);
+  // DeleteGroupRole deletes a non-system, non-default role.
+  rpc DeleteGroupRole(DeleteGroupRoleRequest) returns (DeleteGroupRoleResponse);
+  // ListGroupRoleMembers returns members assigned to a role.
+  rpc ListGroupRoleMembers(ListGroupRoleMembersRequest) returns (ListGroupRoleMembersResponse);
   // AddGroupRoleMembers assigns members to a role.
   rpc AddGroupRoleMembers(AddGroupRoleMembersRequest) returns (AddGroupRoleMembersResponse);
   // RemoveGroupRoleMember revokes a role from a member.
   rpc RemoveGroupRoleMember(RemoveGroupRoleMemberRequest) returns (RemoveGroupRoleMemberResponse);
+  // UpdateGroupHideRoles updates whether role badges/colors are hidden from regular members.
+  rpc UpdateGroupHideRoles(UpdateGroupHideRolesRequest) returns (UpdateGroupHideRolesResponse);
 }
 
 message GroupRole {
@@ -39,6 +51,17 @@ message ListGroupRolesRequest {
 
 message ListGroupRolesResponse {
   repeated GroupRole roles = 1;
+  bool hide_roles = 2;
+}
+
+message CreateGroupRoleRequest {
+  string access_token = 1;
+  string group_id = 2;
+  string name = 3;
+}
+
+message CreateGroupRoleResponse {
+  GroupRole role = 1;
 }
 
 message UpdateGroupRoleRequest {
@@ -50,10 +73,41 @@ message UpdateGroupRoleRequest {
   bool hoist = 6;
   bool mentionable = 7;
   repeated string permissions = 8;
+  bool clear_permissions = 9;
 }
 
 message UpdateGroupRoleResponse {
   GroupRole role = 1;
+}
+
+message DuplicateGroupRoleRequest {
+  string access_token = 1;
+  string group_id = 2;
+  string role_id = 3;
+}
+
+message DuplicateGroupRoleResponse {
+  GroupRole role = 1;
+}
+
+message DeleteGroupRoleRequest {
+  string access_token = 1;
+  string group_id = 2;
+  string role_id = 3;
+}
+
+message DeleteGroupRoleResponse {
+  bool ok = 1;
+}
+
+message ListGroupRoleMembersRequest {
+  string access_token = 1;
+  string group_id = 2;
+  string role_id = 3;
+}
+
+message ListGroupRoleMembersResponse {
+  repeated GroupMemberEntry members = 1;
 }
 
 message AddGroupRoleMembersRequest {
@@ -76,5 +130,15 @@ message RemoveGroupRoleMemberRequest {
 
 message RemoveGroupRoleMemberResponse {
   GroupRole role = 1;
+}
+
+message UpdateGroupHideRolesRequest {
+  string access_token = 1;
+  string group_id = 2;
+  bool hide_roles = 3;
+}
+
+message UpdateGroupHideRolesResponse {
+  bool hide_roles = 1;
 }
 

@@ -38,6 +38,10 @@ func TestGroupNameAndIcon(t *testing.T) {
 	if err != nil || color != "volcano" {
 		t.Fatalf("banner color %q %v", color, err)
 	}
+	hexColor, err := validator.GroupBannerColor("#5865f2")
+	if err != nil || hexColor != "#5865F2" {
+		t.Fatalf("hex banner color %q %v", hexColor, err)
+	}
 	if _, err := validator.GroupBannerColor("not-a-color"); err == nil {
 		t.Fatal("bad banner color")
 	}

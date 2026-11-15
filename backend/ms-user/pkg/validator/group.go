@@ -29,17 +29,21 @@ func GroupDescription(raw string) (string, error) {
 	return trimmed, nil
 }
 
-// GroupBannerColor normalizes a solid banner palette id.
+// GroupBannerColor normalizes a hex banner color or legacy solid banner palette id.
 func GroupBannerColor(raw string) (string, error) {
-	id := strings.TrimSpace(strings.ToLower(raw))
-	if id == "" || id == "default" {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" || strings.EqualFold(trimmed, "default") {
 		return "", nil
 	}
-	if _, ok := constants.AllowedGroupBannerColors[id]; !ok {
-		return "", exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "banner_color"})
+	if hexColorPattern.MatchString(trimmed) {
+		return strings.ToUpper(trimmed), nil
+	}
+	lower := strings.ToLower(trimmed)
+	if _, ok := constants.AllowedGroupBannerColors[lower]; ok {
+		return lower, nil
 	}
 
-	return id, nil
+	return "", exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "banner_color"})
 }
 
 func validateGroupImageUpload(contentType string, size, maxBytes int64) error {

@@ -14,6 +14,8 @@ import (
 	groupmembermock "github.com/wichat/wichat/backend/ms-user/internal/group-member/repository/mock"
 	groupmock "github.com/wichat/wichat/backend/ms-user/internal/group/repository/mock"
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
+	activitymock "github.com/wichat/wichat/backend/ms-user/internal/user-activity-log/repository/mock"
+	activityservice "github.com/wichat/wichat/backend/ms-user/internal/user-activity-log/service"
 	userrepo "github.com/wichat/wichat/backend/ms-user/internal/user/repository"
 	usermock "github.com/wichat/wichat/backend/ms-user/internal/user/repository/mock"
 	userservice "github.com/wichat/wichat/backend/ms-user/internal/user/service"
@@ -281,6 +283,83 @@ func TestUpdateUserProfileAndAvatar(t *testing.T) {
 	// Validation error on invalid hex color
 	if _, err := svc.UpdateUserProfile(ctx, sess.AccessToken, "Ada L.", "", "", "not-hex", false); codeOf(t, err) != string(exception.MsgInvalidInput) {
 		t.Fatalf("expected invalid_input for bad banner_color, got %v", err)
+	}
+}
+
+func TestUpdateUserStatusNote(t *testing.T) {
+	ctx := context.Background()
+	st := usermock.NewState()
+	authSvc, notify, users, _, _, _ := testSupport.NewAuthService(t, st, nil)
+	_, _, sessions := testSupport.TestRepos(st)
+
+	sess := testSupport.RegisterSession(t, authSvc, notify, registerInput("status-note@example.com"))
+	log := logger.New(logger.Options{Service: "user-test", Env: "test", Level: "error"})
+	svc := userservice.NewService(
+		users,
+		groupmock.NewPgRepositoryMock(st),
+		groupmembermock.NewPgRepositoryMock(st),
+		nil,
+		sessions,
+		nil,
+		nil,
+		nil,
+		[]byte(testSupport.TestJWTSecret),
+		log,
+	)
+
+	exp := time.Now().UTC().Add(time.Hour).Format(time.RFC3339)
+	updated, err := svc.UpdateUserStatusNote(ctx, sess.AccessToken, "Deep work", "💻", exp)
+	if err != nil {
+		t.Fatalf("update status note: %v", err)
+	}
+	if updated.StatusNoteText != "Deep work" || updated.StatusNoteEmoji != "💻" || updated.StatusNoteExpiresAt == nil {
+		t.Fatalf("unexpected status note: %+v", updated)
+	}
+
+	cleared, err := svc.UpdateUserStatusNote(ctx, sess.AccessToken, "", "", "")
+	if err != nil {
+		t.Fatalf("clear status note: %v", err)
+	}
+	if cleared.StatusNoteText != "" || cleared.StatusNoteEmoji != "" || cleared.StatusNoteExpiresAt != nil {
+		t.Fatalf("expected cleared status note, got %+v", cleared)
+	}
+
+	if _, err := svc.UpdateUserStatusNote(ctx, sess.AccessToken, strings.Repeat("x", constants.MaxUserStatusNoteRunes+1), "", ""); codeOf(t, err) != string(exception.MsgInvalidInput) {
+		t.Fatalf("expected invalid_input for long status note, got %v", err)
+	}
+}
+
+func TestUpdateUserPreferences(t *testing.T) {
+	ctx := context.Background()
+	st := usermock.NewState()
+	authSvc, notify, users, _, _, _ := testSupport.NewAuthService(t, st, nil)
+	_, _, sessions := testSupport.TestRepos(st)
+
+	sess := testSupport.RegisterSession(t, authSvc, notify, registerInput("prefs@example.com"))
+	log := logger.New(logger.Options{Service: "user-test", Env: "test", Level: "error"})
+	svc := userservice.NewService(
+		users,
+		groupmock.NewPgRepositoryMock(st),
+		groupmembermock.NewPgRepositoryMock(st),
+		nil,
+		sessions,
+		nil,
+		nil,
+		nil,
+		[]byte(testSupport.TestJWTSecret),
+		log,
+	)
+
+	updated, err := svc.UpdateUserPreferences(ctx, sess.AccessToken, "id", "24h")
+	if err != nil {
+		t.Fatalf("update preferences: %v", err)
+	}
+	if updated.Locale != "id" || updated.TimeFormat != "24h" {
+		t.Fatalf("unexpected preferences: %+v", updated)
+	}
+
+	if _, err := svc.UpdateUserPreferences(ctx, sess.AccessToken, "fr", "auto"); codeOf(t, err) != string(exception.MsgInvalidInput) {
+		t.Fatalf("expected invalid_input for bad locale, got %v", err)
 	}
 }
 
@@ -890,5 +969,71 @@ func TestUserSessionsListAndRevoke(t *testing.T) {
 	listedFinal, _, err := userSvc.ListSessions(ctx, sess1.AccessToken)
 	if err != nil || len(listedFinal) != 1 || listedFinal[0].ID != currentID {
 		t.Fatalf("expected only current session after RevokeOtherSessions, got %+v %v", listedFinal, err)
+	}
+}
+
+func TestUserActivityRecording(t *testing.T) {
+	ctx := context.Background()
+	st := usermock.NewState()
+	actState := activitymock.NewState()
+	actRepo := activitymock.NewPgRepositoryMock(actState)
+	authSvc, notify, users, _, _, _ := testSupport.NewAuthService(t, st, nil)
+	_, _, sessions := testSupport.TestRepos(st)
+
+	log := logger.New(logger.Options{Service: "user-test", Env: "test", Level: "error"})
+	actSvc := activityservice.NewService(actRepo, sessions, []byte(testSupport.TestJWTSecret), log)
+
+	sess := testSupport.RegisterSession(t, authSvc, notify, registerInput("activity@example.com"))
+	svc := userservice.NewService(
+		users,
+		groupmock.NewPgRepositoryMock(st),
+		groupmembermock.NewPgRepositoryMock(st),
+		nil,
+		sessions,
+		nil,
+		nil,
+		nil,
+		[]byte(testSupport.TestJWTSecret),
+		log,
+	).WithActivityLog(actSvc)
+
+	if _, err := svc.UpdateUserProfile(ctx, sess.AccessToken, "Ada L", "she/her", "Builder", "#123456", false); err != nil {
+		t.Fatalf("UpdateUserProfile: %v", err)
+	}
+	if _, err := svc.UpdateUserStatusNote(ctx, sess.AccessToken, "Focus", "🎯", ""); err != nil {
+		t.Fatalf("UpdateUserStatusNote set: %v", err)
+	}
+	if _, err := svc.UpdateUserStatusNote(ctx, sess.AccessToken, "", "", ""); err != nil {
+		t.Fatalf("UpdateUserStatusNote clear: %v", err)
+	}
+	if _, err := svc.UpdateUserPreferences(ctx, sess.AccessToken, "id", "24h"); err != nil {
+		t.Fatalf("UpdateUserPreferences: %v", err)
+	}
+	if _, err := svc.UpdateUsername(ctx, sess.AccessToken, "ada_updated", testPassword); err != nil {
+		t.Fatalf("UpdateUsername: %v", err)
+	}
+	if err := svc.UpdatePassword(ctx, sess.AccessToken, testPassword, "new-correct-horse-battery"); err != nil {
+		t.Fatalf("UpdatePassword: %v", err)
+	}
+
+	page, err := actSvc.ListMyActivityLogs(ctx, sess.AccessToken, "", "", 20, "")
+	if err != nil {
+		t.Fatalf("ListMyActivityLogs: %v", err)
+	}
+	gotActions := make(map[string]bool)
+	for _, entry := range page.Logs {
+		gotActions[entry.Action] = true
+	}
+	for _, want := range []string{
+		constants.ActivityUserProfileUpdated,
+		constants.ActivityUserStatusNoteUpdated,
+		constants.ActivityUserStatusNoteCleared,
+		constants.ActivityUserPreferencesUpdated,
+		constants.ActivityUserUsernameUpdated,
+		constants.ActivityUserPasswordUpdated,
+	} {
+		if !gotActions[want] {
+			t.Fatalf("expected recorded action %q, got %v", want, gotActions)
+		}
 	}
 }

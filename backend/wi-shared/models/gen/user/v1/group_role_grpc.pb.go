@@ -20,9 +20,14 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	GroupRoleService_ListGroupRoles_FullMethodName        = "/user.v1.GroupRoleService/ListGroupRoles"
+	GroupRoleService_CreateGroupRole_FullMethodName       = "/user.v1.GroupRoleService/CreateGroupRole"
 	GroupRoleService_UpdateGroupRole_FullMethodName       = "/user.v1.GroupRoleService/UpdateGroupRole"
+	GroupRoleService_DuplicateGroupRole_FullMethodName    = "/user.v1.GroupRoleService/DuplicateGroupRole"
+	GroupRoleService_DeleteGroupRole_FullMethodName       = "/user.v1.GroupRoleService/DeleteGroupRole"
+	GroupRoleService_ListGroupRoleMembers_FullMethodName  = "/user.v1.GroupRoleService/ListGroupRoleMembers"
 	GroupRoleService_AddGroupRoleMembers_FullMethodName   = "/user.v1.GroupRoleService/AddGroupRoleMembers"
 	GroupRoleService_RemoveGroupRoleMember_FullMethodName = "/user.v1.GroupRoleService/RemoveGroupRoleMember"
+	GroupRoleService_UpdateGroupHideRoles_FullMethodName  = "/user.v1.GroupRoleService/UpdateGroupHideRoles"
 )
 
 // GroupRoleServiceClient is the client API for GroupRoleService service.
@@ -31,14 +36,24 @@ const (
 //
 // GroupRoleService manages group roles, permissions, and role member assignments.
 type GroupRoleServiceClient interface {
-	// ListGroupRoles returns all roles in a group with permissions and member counts.
+	// ListGroupRoles returns all roles in a group with permissions, member counts, and hide_roles setting.
 	ListGroupRoles(ctx context.Context, in *ListGroupRolesRequest, opts ...grpc.CallOption) (*ListGroupRolesResponse, error)
+	// CreateGroupRole creates a new custom role (defaults to "new role" with empty permissions).
+	CreateGroupRole(ctx context.Context, in *CreateGroupRoleRequest, opts ...grpc.CallOption) (*CreateGroupRoleResponse, error)
 	// UpdateGroupRole updates role metadata and permissions.
 	UpdateGroupRole(ctx context.Context, in *UpdateGroupRoleRequest, opts ...grpc.CallOption) (*UpdateGroupRoleResponse, error)
+	// DuplicateGroupRole duplicates an existing role into a new custom role.
+	DuplicateGroupRole(ctx context.Context, in *DuplicateGroupRoleRequest, opts ...grpc.CallOption) (*DuplicateGroupRoleResponse, error)
+	// DeleteGroupRole deletes a non-system, non-default role.
+	DeleteGroupRole(ctx context.Context, in *DeleteGroupRoleRequest, opts ...grpc.CallOption) (*DeleteGroupRoleResponse, error)
+	// ListGroupRoleMembers returns members assigned to a role.
+	ListGroupRoleMembers(ctx context.Context, in *ListGroupRoleMembersRequest, opts ...grpc.CallOption) (*ListGroupRoleMembersResponse, error)
 	// AddGroupRoleMembers assigns members to a role.
 	AddGroupRoleMembers(ctx context.Context, in *AddGroupRoleMembersRequest, opts ...grpc.CallOption) (*AddGroupRoleMembersResponse, error)
 	// RemoveGroupRoleMember revokes a role from a member.
 	RemoveGroupRoleMember(ctx context.Context, in *RemoveGroupRoleMemberRequest, opts ...grpc.CallOption) (*RemoveGroupRoleMemberResponse, error)
+	// UpdateGroupHideRoles updates whether role badges/colors are hidden from regular members.
+	UpdateGroupHideRoles(ctx context.Context, in *UpdateGroupHideRolesRequest, opts ...grpc.CallOption) (*UpdateGroupHideRolesResponse, error)
 }
 
 type groupRoleServiceClient struct {
@@ -59,10 +74,50 @@ func (c *groupRoleServiceClient) ListGroupRoles(ctx context.Context, in *ListGro
 	return out, nil
 }
 
+func (c *groupRoleServiceClient) CreateGroupRole(ctx context.Context, in *CreateGroupRoleRequest, opts ...grpc.CallOption) (*CreateGroupRoleResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateGroupRoleResponse)
+	err := c.cc.Invoke(ctx, GroupRoleService_CreateGroupRole_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *groupRoleServiceClient) UpdateGroupRole(ctx context.Context, in *UpdateGroupRoleRequest, opts ...grpc.CallOption) (*UpdateGroupRoleResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(UpdateGroupRoleResponse)
 	err := c.cc.Invoke(ctx, GroupRoleService_UpdateGroupRole_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *groupRoleServiceClient) DuplicateGroupRole(ctx context.Context, in *DuplicateGroupRoleRequest, opts ...grpc.CallOption) (*DuplicateGroupRoleResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DuplicateGroupRoleResponse)
+	err := c.cc.Invoke(ctx, GroupRoleService_DuplicateGroupRole_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *groupRoleServiceClient) DeleteGroupRole(ctx context.Context, in *DeleteGroupRoleRequest, opts ...grpc.CallOption) (*DeleteGroupRoleResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteGroupRoleResponse)
+	err := c.cc.Invoke(ctx, GroupRoleService_DeleteGroupRole_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *groupRoleServiceClient) ListGroupRoleMembers(ctx context.Context, in *ListGroupRoleMembersRequest, opts ...grpc.CallOption) (*ListGroupRoleMembersResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListGroupRoleMembersResponse)
+	err := c.cc.Invoke(ctx, GroupRoleService_ListGroupRoleMembers_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -89,20 +144,40 @@ func (c *groupRoleServiceClient) RemoveGroupRoleMember(ctx context.Context, in *
 	return out, nil
 }
 
+func (c *groupRoleServiceClient) UpdateGroupHideRoles(ctx context.Context, in *UpdateGroupHideRolesRequest, opts ...grpc.CallOption) (*UpdateGroupHideRolesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateGroupHideRolesResponse)
+	err := c.cc.Invoke(ctx, GroupRoleService_UpdateGroupHideRoles_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // GroupRoleServiceServer is the server API for GroupRoleService service.
 // All implementations must embed UnimplementedGroupRoleServiceServer
 // for forward compatibility.
 //
 // GroupRoleService manages group roles, permissions, and role member assignments.
 type GroupRoleServiceServer interface {
-	// ListGroupRoles returns all roles in a group with permissions and member counts.
+	// ListGroupRoles returns all roles in a group with permissions, member counts, and hide_roles setting.
 	ListGroupRoles(context.Context, *ListGroupRolesRequest) (*ListGroupRolesResponse, error)
+	// CreateGroupRole creates a new custom role (defaults to "new role" with empty permissions).
+	CreateGroupRole(context.Context, *CreateGroupRoleRequest) (*CreateGroupRoleResponse, error)
 	// UpdateGroupRole updates role metadata and permissions.
 	UpdateGroupRole(context.Context, *UpdateGroupRoleRequest) (*UpdateGroupRoleResponse, error)
+	// DuplicateGroupRole duplicates an existing role into a new custom role.
+	DuplicateGroupRole(context.Context, *DuplicateGroupRoleRequest) (*DuplicateGroupRoleResponse, error)
+	// DeleteGroupRole deletes a non-system, non-default role.
+	DeleteGroupRole(context.Context, *DeleteGroupRoleRequest) (*DeleteGroupRoleResponse, error)
+	// ListGroupRoleMembers returns members assigned to a role.
+	ListGroupRoleMembers(context.Context, *ListGroupRoleMembersRequest) (*ListGroupRoleMembersResponse, error)
 	// AddGroupRoleMembers assigns members to a role.
 	AddGroupRoleMembers(context.Context, *AddGroupRoleMembersRequest) (*AddGroupRoleMembersResponse, error)
 	// RemoveGroupRoleMember revokes a role from a member.
 	RemoveGroupRoleMember(context.Context, *RemoveGroupRoleMemberRequest) (*RemoveGroupRoleMemberResponse, error)
+	// UpdateGroupHideRoles updates whether role badges/colors are hidden from regular members.
+	UpdateGroupHideRoles(context.Context, *UpdateGroupHideRolesRequest) (*UpdateGroupHideRolesResponse, error)
 	mustEmbedUnimplementedGroupRoleServiceServer()
 }
 
@@ -116,14 +191,29 @@ type UnimplementedGroupRoleServiceServer struct{}
 func (UnimplementedGroupRoleServiceServer) ListGroupRoles(context.Context, *ListGroupRolesRequest) (*ListGroupRolesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListGroupRoles not implemented")
 }
+func (UnimplementedGroupRoleServiceServer) CreateGroupRole(context.Context, *CreateGroupRoleRequest) (*CreateGroupRoleResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateGroupRole not implemented")
+}
 func (UnimplementedGroupRoleServiceServer) UpdateGroupRole(context.Context, *UpdateGroupRoleRequest) (*UpdateGroupRoleResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateGroupRole not implemented")
+}
+func (UnimplementedGroupRoleServiceServer) DuplicateGroupRole(context.Context, *DuplicateGroupRoleRequest) (*DuplicateGroupRoleResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DuplicateGroupRole not implemented")
+}
+func (UnimplementedGroupRoleServiceServer) DeleteGroupRole(context.Context, *DeleteGroupRoleRequest) (*DeleteGroupRoleResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteGroupRole not implemented")
+}
+func (UnimplementedGroupRoleServiceServer) ListGroupRoleMembers(context.Context, *ListGroupRoleMembersRequest) (*ListGroupRoleMembersResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListGroupRoleMembers not implemented")
 }
 func (UnimplementedGroupRoleServiceServer) AddGroupRoleMembers(context.Context, *AddGroupRoleMembersRequest) (*AddGroupRoleMembersResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method AddGroupRoleMembers not implemented")
 }
 func (UnimplementedGroupRoleServiceServer) RemoveGroupRoleMember(context.Context, *RemoveGroupRoleMemberRequest) (*RemoveGroupRoleMemberResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RemoveGroupRoleMember not implemented")
+}
+func (UnimplementedGroupRoleServiceServer) UpdateGroupHideRoles(context.Context, *UpdateGroupHideRolesRequest) (*UpdateGroupHideRolesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateGroupHideRoles not implemented")
 }
 func (UnimplementedGroupRoleServiceServer) mustEmbedUnimplementedGroupRoleServiceServer() {}
 func (UnimplementedGroupRoleServiceServer) testEmbeddedByValue()                          {}
@@ -164,6 +254,24 @@ func _GroupRoleService_ListGroupRoles_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _GroupRoleService_CreateGroupRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateGroupRoleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GroupRoleServiceServer).CreateGroupRole(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GroupRoleService_CreateGroupRole_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GroupRoleServiceServer).CreateGroupRole(ctx, req.(*CreateGroupRoleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _GroupRoleService_UpdateGroupRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateGroupRoleRequest)
 	if err := dec(in); err != nil {
@@ -178,6 +286,60 @@ func _GroupRoleService_UpdateGroupRole_Handler(srv interface{}, ctx context.Cont
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(GroupRoleServiceServer).UpdateGroupRole(ctx, req.(*UpdateGroupRoleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _GroupRoleService_DuplicateGroupRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DuplicateGroupRoleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GroupRoleServiceServer).DuplicateGroupRole(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GroupRoleService_DuplicateGroupRole_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GroupRoleServiceServer).DuplicateGroupRole(ctx, req.(*DuplicateGroupRoleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _GroupRoleService_DeleteGroupRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteGroupRoleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GroupRoleServiceServer).DeleteGroupRole(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GroupRoleService_DeleteGroupRole_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GroupRoleServiceServer).DeleteGroupRole(ctx, req.(*DeleteGroupRoleRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _GroupRoleService_ListGroupRoleMembers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListGroupRoleMembersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GroupRoleServiceServer).ListGroupRoleMembers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GroupRoleService_ListGroupRoleMembers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GroupRoleServiceServer).ListGroupRoleMembers(ctx, req.(*ListGroupRoleMembersRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -218,6 +380,24 @@ func _GroupRoleService_RemoveGroupRoleMember_Handler(srv interface{}, ctx contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _GroupRoleService_UpdateGroupHideRoles_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateGroupHideRolesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GroupRoleServiceServer).UpdateGroupHideRoles(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GroupRoleService_UpdateGroupHideRoles_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GroupRoleServiceServer).UpdateGroupHideRoles(ctx, req.(*UpdateGroupHideRolesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // GroupRoleService_ServiceDesc is the grpc.ServiceDesc for GroupRoleService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -230,8 +410,24 @@ var GroupRoleService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _GroupRoleService_ListGroupRoles_Handler,
 		},
 		{
+			MethodName: "CreateGroupRole",
+			Handler:    _GroupRoleService_CreateGroupRole_Handler,
+		},
+		{
 			MethodName: "UpdateGroupRole",
 			Handler:    _GroupRoleService_UpdateGroupRole_Handler,
+		},
+		{
+			MethodName: "DuplicateGroupRole",
+			Handler:    _GroupRoleService_DuplicateGroupRole_Handler,
+		},
+		{
+			MethodName: "DeleteGroupRole",
+			Handler:    _GroupRoleService_DeleteGroupRole_Handler,
+		},
+		{
+			MethodName: "ListGroupRoleMembers",
+			Handler:    _GroupRoleService_ListGroupRoleMembers_Handler,
 		},
 		{
 			MethodName: "AddGroupRoleMembers",
@@ -240,6 +436,10 @@ var GroupRoleService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RemoveGroupRoleMember",
 			Handler:    _GroupRoleService_RemoveGroupRoleMember_Handler,
+		},
+		{
+			MethodName: "UpdateGroupHideRoles",
+			Handler:    _GroupRoleService_UpdateGroupHideRoles_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

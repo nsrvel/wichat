@@ -66,18 +66,8 @@ func TestCreateJoinGroupFlow(t *testing.T) {
 
 	member := testSupport.RegisterSession(t, authSvc, notify, registerInput("member@example.com"))
 
-	joinable, err := groupSvc.ListJoinableGroups(ctx, member.AccessToken)
-	if err != nil || len(joinable) != 1 || joinable[0].ID != created.ID {
-		t.Fatalf("joinable: %+v err %v", joinable, err)
-	}
-
 	if err := testSupport.NewGroupMemberService(t, st).JoinGroup(ctx, member.AccessToken, created.ID); err != nil {
 		t.Fatal(err)
-	}
-
-	joinable, err = groupSvc.ListJoinableGroups(ctx, member.AccessToken)
-	if err != nil || len(joinable) != 0 {
-		t.Fatalf("joinable after join: %+v", joinable)
 	}
 
 	mine, err = groupSvc.ListMyGroups(ctx, member.AccessToken)
@@ -352,9 +342,9 @@ func TestUpdateGroupProfileOwner(t *testing.T) {
 
 	updated, err := groupSvc.UpdateGroupProfile(
 		ctx, owner.AccessToken, created.ID,
-		"New Name", "About us", true, "volcano", false, false,
+		"New Name", "About us", true, "#5865f2", false, false,
 	)
-	if err != nil || updated.Name != "New Name" || updated.Description != "About us" || !updated.IsPrivate || updated.BannerColor != "volcano" {
+	if err != nil || updated.Name != "New Name" || updated.Description != "About us" || !updated.IsPrivate || updated.BannerColor != "#5865F2" {
 		t.Fatalf("update: %+v err %v", updated, err)
 	}
 

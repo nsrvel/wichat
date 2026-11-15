@@ -8,6 +8,7 @@ import (
 	channeldelivery "github.com/wichat/wichat/backend/api-gateway/internal/channel/delivery/http"
 	chatdelivery "github.com/wichat/wichat/backend/api-gateway/internal/chat/delivery/http"
 	groupmemberdelivery "github.com/wichat/wichat/backend/api-gateway/internal/group-member/delivery/http"
+	grouproledelivery "github.com/wichat/wichat/backend/api-gateway/internal/group-role/delivery/http"
 	groupdelivery "github.com/wichat/wichat/backend/api-gateway/internal/group/delivery/http"
 	invitedelivery "github.com/wichat/wichat/backend/api-gateway/internal/invite/delivery/http"
 	"github.com/wichat/wichat/backend/api-gateway/internal/middleware"
@@ -33,9 +34,10 @@ func (s *server) buildHandler(ms *microservices.Clients, rtHub *hub.Hub) (http.H
 func (s *server) mapHandlers(mux *http.ServeMux, ms *microservices.Clients, rtHub *hub.Hub) {
 	// APIs
 	authdelivery.Register(mux, authdelivery.NewHandler(ms, s.log, s.cfg.SecureCookies(), s.cfg.WebOrigin, s.cfg.TurnstileSecretKey))
-	userdelivery.Register(mux, userdelivery.NewHandler(ms, s.log, s.cfg.TurnstileSiteKey))
+	userdelivery.Register(mux, userdelivery.NewHandler(ms, s.log, s.cfg.TurnstileSiteKey).WithPresenceBroadcaster(rtHub))
 	groupdelivery.Register(mux, groupdelivery.NewHandler(ms, s.log))
 	groupmemberdelivery.Register(mux, groupmemberdelivery.NewHandler(ms, s.log))
+	grouproledelivery.Register(mux, grouproledelivery.NewHandler(ms, s.log))
 	channeldelivery.Register(mux, channeldelivery.NewHandler(ms, s.log))
 	invitedelivery.Register(mux, invitedelivery.NewHandler(ms, s.log, s.cfg.WebOrigin))
 	chatdelivery.Register(mux, chatdelivery.NewHandler(ms, s.log))

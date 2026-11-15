@@ -103,7 +103,6 @@ var DefaultEveryonePermissions = []string{
 	PermViewChannels,
 	PermSendMessages,
 	PermReadMessageHistory,
-	PermCreateInvite,
 	PermAttachFiles,
 	PermAddReactions,
 	PermConnect,

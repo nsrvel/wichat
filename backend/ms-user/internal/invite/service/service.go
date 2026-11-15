@@ -15,6 +15,7 @@ import (
 	grouprepo "github.com/wichat/wichat/backend/ms-user/internal/group/repository"
 	inviterepo "github.com/wichat/wichat/backend/ms-user/internal/invite/repository"
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
+	activitysvc "github.com/wichat/wichat/backend/ms-user/internal/user-activity-log/service"
 	userrepo "github.com/wichat/wichat/backend/ms-user/internal/user/repository"
 	"github.com/wichat/wichat/backend/ms-user/pkg/access"
 	"github.com/wichat/wichat/backend/ms-user/pkg/constants"
@@ -37,6 +38,7 @@ type Service interface {
 	SendGroupInvites(ctx context.Context, accessToken string, in models.SendGroupInvitesInput) (*models.SendGroupInvitesResult, error)
 	PreviewInvite(ctx context.Context, inviteToken string) (*models.InvitePreviewResult, error)
 	RedeemInvite(ctx context.Context, accessToken, inviteToken string) (*models.RedeemInviteResult, error)
+	WithActivityLog(r activitysvc.Recorder) Service
 }
 
 type service struct {
@@ -48,6 +50,7 @@ type service struct {
 	users            userrepo.PgRepository
 	sessions         authrepo.SessionRepository
 	notify           Notifier
+	activity         activitysvc.Recorder
 	secret           []byte
 	webBase          string
 	objectPublicBase string
@@ -88,6 +91,21 @@ func NewService(
 		log:              log,
 		now:              func() time.Time { return time.Now().UTC() },
 	}
+}
+
+func (s service) WithActivityLog(r activitysvc.Recorder) Service {
+	s.activity = r
+	return s
+}
+
+func (s service) recordActivity(ctx context.Context, entry models.UserActivityLogEntry) {
+	if s.activity == nil {
+		return
+	}
+	if entry.CreatedAt.IsZero() {
+		entry.CreatedAt = s.now()
+	}
+	s.activity.Record(ctx, entry)
 }
 
 func (s service) GetInviteLink(
@@ -343,6 +361,14 @@ func (s service) PreviewInvite(ctx context.Context, inviteToken string) (*models
 		return nil, err
 	}
 
+	if group.IsPrivate {
+		return &models.InvitePreviewResult{
+			Valid:     true,
+			IsPrivate: true,
+			ExpiresAt: row.ExpiresAt,
+		}, nil
+	}
+
 	channelName := ""
 	if row.ChannelID != nil && strings.TrimSpace(*row.ChannelID) != "" {
 		ch, err := s.channels.FindByID(ctx, *row.ChannelID)
@@ -411,6 +437,7 @@ func (s service) RedeemInvite(ctx context.Context, accessToken, inviteToken stri
 		return nil, exception.PermissionDenied("user is banned from this group", nil)
 	}
 
+	joinedNew := false
 	if _, err := s.members.FindGroupMember(ctx, group.ID, userID); err != nil {
 		if !errors.Is(err, constants.ErrNotFound) {
 			return nil, err
@@ -420,12 +447,32 @@ func (s service) RedeemInvite(ctx context.Context, accessToken, inviteToken stri
 		}); err != nil && !errors.Is(err, constants.ErrConflict) {
 			return nil, err
 		}
+		joinedNew = true
 	}
 
 	if row.Kind == constants.GroupInviteKindEmail {
 		if err := s.invites.MarkRedeemed(ctx, row.ID, userID, now); err != nil && !errors.Is(err, constants.ErrNotFound) {
 			return nil, err
 		}
+	}
+
+	if joinedNew {
+		s.recordActivity(ctx, models.UserActivityLogEntry{
+			UserID:     userID,
+			ActorID:    userID,
+			Category:   constants.ActivityCategoryGroup,
+			Action:     constants.ActivityGroupJoined,
+			TargetType: constants.ActivityTargetGroup,
+			TargetID:   group.PublicID,
+			Summary:    "Joined group via invite",
+			Metadata: map[string]any{
+				"group_id":    group.ID,
+				"group_name":  group.Name,
+				"via":         "invite",
+				"invite_kind": row.Kind,
+			},
+			CreatedAt: now,
+		})
 	}
 
 	channelPublic := ""

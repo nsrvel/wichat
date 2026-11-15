@@ -41,7 +41,7 @@ func TestGroupMockUpdatesAndMembersPage(t *testing.T) {
 	}
 }
 
-func TestGroupMockJoinableAndCRUD(t *testing.T) {
+func TestGroupMockCRUD(t *testing.T) {
 	st := usermock.NewState()
 	repo := groupmock.NewPgRepositoryMock(st)
 	ctx := context.Background()
@@ -54,10 +54,6 @@ func TestGroupMockJoinableAndCRUD(t *testing.T) {
 	}
 	if _, err := repo.GetFirstGroup(ctx); err != nil {
 		t.Fatal(err)
-	}
-	joinable, err := repo.ListJoinableGroups(ctx, "u2")
-	if err != nil || len(joinable) != 1 {
-		t.Fatalf("%+v %v", joinable, err)
 	}
 	if err := repo.DeleteGroup(ctx, "g2"); err != nil {
 		t.Fatal(err)

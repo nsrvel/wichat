@@ -29,6 +29,8 @@ type PgRepository interface {
 	UpdateUserPasswordHash(ctx context.Context, userID, hash string, now time.Time) error
 	UpdateUserAvatarURL(ctx context.Context, userID, avatarURL string, now time.Time) error
 	UpdateUserProfile(ctx context.Context, userID string, patch models.UserProfilePatch, now time.Time) error
+	UpdateUserStatusNote(ctx context.Context, userID string, patch models.UserStatusNotePatch, now time.Time) error
+	UpdateUserPreferences(ctx context.Context, userID string, patch models.UserPreferencesPatch, now time.Time) error
 	UpdateUsername(ctx context.Context, userID, username string, now time.Time) error
 	UpdateEmail(ctx context.Context, userID, email string, now time.Time) error
 	DisableAccount(ctx context.Context, userID string, now time.Time) error
@@ -415,7 +417,51 @@ func (r pgRepository) UpdateUserProfile(ctx context.Context, userID string, patc
 	return nil
 }
 
-// UpdateUsername updates the caller's unique username on users.
+// UpdateUserStatusNote replaces or clears the caller's status note on users.
+func (r pgRepository) UpdateUserStatusNote(ctx context.Context, userID string, patch models.UserStatusNotePatch, now time.Time) error {
+	res, err := r.db.NewUpdate().Model((*models.UserRow)(nil)).
+		Set("status_note_text = ?", patch.Text).
+		Set("status_note_emoji = ?", patch.Emoji).
+		Set("status_note_expires_at = ?", patch.ExpiresAt).
+		Set("updated_at = ?", now).
+		Where("id = ?", userID).
+		Exec(ctx)
+	if err != nil {
+		return err
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return constants.ErrNotFound
+	}
+
+	return nil
+}
+
+// UpdateUserPreferences updates the caller's display locale and time format on users.
+func (r pgRepository) UpdateUserPreferences(ctx context.Context, userID string, patch models.UserPreferencesPatch, now time.Time) error {
+	res, err := r.db.NewUpdate().Model((*models.UserRow)(nil)).
+		Set("locale = ?", patch.Locale).
+		Set("time_format = ?", patch.TimeFormat).
+		Set("updated_at = ?", now).
+		Where("id = ?", userID).
+		Exec(ctx)
+	if err != nil {
+		return err
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return constants.ErrNotFound
+	}
+
+	return nil
+}
+
 func (r pgRepository) UpdateUsername(ctx context.Context, userID, username string, now time.Time) error {
 	res, err := r.db.NewUpdate().Model((*models.UserRow)(nil)).
 		Set("username = ?", username).

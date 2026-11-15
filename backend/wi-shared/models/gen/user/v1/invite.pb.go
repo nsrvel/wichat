@@ -323,6 +323,7 @@ type PreviewGroupInviteResponse struct {
 	GroupLogoUrl  string                 `protobuf:"bytes,6,opt,name=group_logo_url,json=groupLogoUrl,proto3" json:"group_logo_url,omitempty"`
 	MemberCount   int32                  `protobuf:"varint,7,opt,name=member_count,json=memberCount,proto3" json:"member_count,omitempty"`
 	OnlineCount   int32                  `protobuf:"varint,8,opt,name=online_count,json=onlineCount,proto3" json:"online_count,omitempty"`
+	IsPrivate     bool                   `protobuf:"varint,9,opt,name=is_private,json=isPrivate,proto3" json:"is_private,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -411,6 +412,13 @@ func (x *PreviewGroupInviteResponse) GetOnlineCount() int32 {
 		return x.OnlineCount
 	}
 	return 0
+}
+
+func (x *PreviewGroupInviteResponse) GetIsPrivate() bool {
+	if x != nil {
+		return x.IsPrivate
+	}
+	return false
 }
 
 type RedeemGroupInviteRequest struct {
@@ -543,7 +551,7 @@ const file_user_v1_invite_proto_rawDesc = "" +
 	"\aemailed\x18\x02 \x01(\x05R\aemailed\x12\x18\n" +
 	"\askipped\x18\x03 \x01(\x05R\askipped\"1\n" +
 	"\x19PreviewGroupInviteRequest\x12\x14\n" +
-	"\x05token\x18\x01 \x01(\tR\x05token\"\x97\x02\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\"\xb6\x02\n" +
 	"\x1aPreviewGroupInviteResponse\x12\x14\n" +
 	"\x05valid\x18\x01 \x01(\bR\x05valid\x12\x1d\n" +
 	"\n" +
@@ -554,7 +562,9 @@ const file_user_v1_invite_proto_rawDesc = "" +
 	"\x06reason\x18\x05 \x01(\tR\x06reason\x12$\n" +
 	"\x0egroup_logo_url\x18\x06 \x01(\tR\fgroupLogoUrl\x12!\n" +
 	"\fmember_count\x18\a \x01(\x05R\vmemberCount\x12!\n" +
-	"\fonline_count\x18\b \x01(\x05R\vonlineCount\"S\n" +
+	"\fonline_count\x18\b \x01(\x05R\vonlineCount\x12\x1d\n" +
+	"\n" +
+	"is_private\x18\t \x01(\bR\tisPrivate\"S\n" +
 	"\x18RedeemGroupInviteRequest\x12!\n" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x14\n" +
 	"\x05token\x18\x02 \x01(\tR\x05token\"U\n" +

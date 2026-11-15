@@ -41,6 +41,8 @@ message GroupMemberRoleSummary {
   string slug = 2;
   string name = 3;
   string color = 4;
+  bool hoist = 5;
+  int32 position = 6;
 }
 
 message GroupMemberEntry {
@@ -53,6 +55,8 @@ message GroupMemberEntry {
   repeated GroupMemberRoleSummary roles = 6;
   string username = 7;
   string avatar_url = 8;
+  bool is_online = 9;
+  string presence_status = 10;
 }
 
 message ListGroupMembersRequest {

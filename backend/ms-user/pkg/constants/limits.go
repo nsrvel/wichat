@@ -4,17 +4,20 @@ import "time"
 
 // Account and credential limits.
 const (
-	MinPasswordLen       = 12
-	MaxPasswordLen       = 128
-	MinJWTSecretLen      = 32
-	MinDisplayNameRunes  = 2
-	MaxDisplayNameRunes  = 50
-	MaxUserPronounsRunes = 40
-	MaxUserBioRunes      = 190
-	MaxAvatarURLRunes    = 2048
-	MaxUserAvatarBytes   = 5 * 1024 * 1024
-	MaxUserAgentLen      = 512
-	MinAgeYears          = 13
+	MinPasswordLen            = 12
+	MaxPasswordLen            = 128
+	MinJWTSecretLen           = 32
+	MinDisplayNameRunes       = 2
+	MaxDisplayNameRunes       = 50
+	MaxUserPronounsRunes      = 40
+	MaxUserBioRunes           = 190
+	MaxUserStatusNoteRunes    = 80
+	MaxUserStatusEmojiRunes   = 16
+	MaxUserStatusNoteDuration = 30 * 24 * time.Hour
+	MaxAvatarURLRunes         = 2048
+	MaxUserAvatarBytes        = 5 * 1024 * 1024
+	MaxUserAgentLen           = 512
+	MinAgeYears               = 13
 )
 
 // Group, role, channel, and instance setup limits.

@@ -27,7 +27,7 @@ import (
 	"github.com/wichat/wichat/backend/wi-shared/infra/logger"
 )
 
-func TestCreateGroupWithOwnerListAndJoinable(t *testing.T) {
+func TestCreateGroupWithOwnerAndList(t *testing.T) {
 	users, groups, members, channels, cleanup := newGroupPgRepositories(t)
 	defer cleanup()
 	ctx := context.Background()
@@ -125,20 +125,10 @@ func TestCreateGroupWithOwnerListAndJoinable(t *testing.T) {
 		t.Fatalf("public id format: %q", mine[0].PublicID)
 	}
 
-	joinable, err := groups.ListJoinableGroups(ctx, memberID)
-	if err != nil || len(joinable) != 1 || joinable[0].PublicID != publicID {
-		t.Fatalf("ListJoinableGroups: %+v err %v", joinable, err)
-	}
-
 	if err := members.InsertGroupMember(ctx, models.GroupMember{
 		GroupID: groupID, UserID: memberID, Role: constants.GroupRoleMember, CreatedAt: now,
 	}); err != nil {
 		t.Fatalf("InsertGroupMember: %v", err)
-	}
-
-	joinable, err = groups.ListJoinableGroups(ctx, memberID)
-	if err != nil || len(joinable) != 0 {
-		t.Fatalf("joinable after join: %+v err %v", joinable, err)
 	}
 
 	memberMine, err := groups.ListGroupsForUser(ctx, memberID)

@@ -27,6 +27,7 @@ type GroupSettingsRow struct {
 	IsPrivate          bool      `bun:"is_private"`
 	BannerColor        string    `bun:"banner_color"`
 	BannerURL          string    `bun:"banner_url"`
+	HideRoles          bool      `bun:"hide_roles"`
 	RetentionDays      int       `bun:"retention_days"`
 	TrashRetentionDays int       `bun:"trash_retention_days"`
 	CreatedAt          time.Time `bun:"created_at"`

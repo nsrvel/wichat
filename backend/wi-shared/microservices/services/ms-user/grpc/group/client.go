@@ -12,7 +12,6 @@ import (
 // Client calls group-domain GroupService RPCs with shared timeouts, retries, and circuit breaking.
 type Client interface {
 	ListMyGroups(ctx context.Context, in *userv1.ListMyGroupsRequest) (*userv1.ListMyGroupsResponse, error)
-	ListJoinableGroups(ctx context.Context, in *userv1.ListJoinableGroupsRequest) (*userv1.ListJoinableGroupsResponse, error)
 	CreateGroup(ctx context.Context, in *userv1.CreateGroupRequest) (*userv1.CreateGroupResponse, error)
 	ReorderMyGroups(ctx context.Context, in *userv1.ReorderMyGroupsRequest) (*userv1.ReorderMyGroupsResponse, error)
 	DeleteGroup(ctx context.Context, in *userv1.DeleteGroupRequest) (*userv1.DeleteGroupResponse, error)
@@ -47,12 +46,6 @@ func New(stub userv1.GroupServiceClient, settings utils.Settings, log logger.Log
 func (c *client) ListMyGroups(ctx context.Context, in *userv1.ListMyGroupsRequest) (*userv1.ListMyGroupsResponse, error) {
 	return utils.CallUnaryResult(ctx, c.read, c.log, "group.GroupService/ListMyGroups", func(callCtx context.Context) (*userv1.ListMyGroupsResponse, error) {
 		return c.stub.ListMyGroups(callCtx, in)
-	})
-}
-
-func (c *client) ListJoinableGroups(ctx context.Context, in *userv1.ListJoinableGroupsRequest) (*userv1.ListJoinableGroupsResponse, error) {
-	return utils.CallUnaryResult(ctx, c.read, c.log, "group.GroupService/ListJoinableGroups", func(callCtx context.Context) (*userv1.ListJoinableGroupsResponse, error) {
-		return c.stub.ListJoinableGroups(callCtx, in)
 	})
 }
 

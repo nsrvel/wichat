@@ -18,6 +18,12 @@ service UserService {
   rpc UploadUserAvatar(UploadUserAvatarRequest) returns (UploadUserAvatarResponse);
   // UpdateUserProfile replaces caller-editable user profile scalars.
   rpc UpdateUserProfile(UpdateUserProfileRequest) returns (UpdateUserProfileResponse);
+  // UpdateUserStatusNote replaces or clears the caller's status note.
+  rpc UpdateUserStatusNote(UpdateUserStatusNoteRequest) returns (UpdateUserStatusNoteResponse);
+  // UpdateUserPreferences updates the caller's display locale and time format.
+  rpc UpdateUserPreferences(UpdateUserPreferencesRequest) returns (UpdateUserPreferencesResponse);
+  // ListUserActivityLogs returns paginated universal audit log entries for the caller.
+  rpc ListUserActivityLogs(ListUserActivityLogsRequest) returns (ListUserActivityLogsResponse);
   // UpdateUsername changes the caller's username after verifying their current password.
   rpc UpdateUsername(UpdateUsernameRequest) returns (UpdateUsernameResponse);
   // RequestEmailChange sends a verification code to the caller's current email.
@@ -72,6 +78,11 @@ message User {
   string banner_color = 9;
   string created_at = 10;
   bool has_password = 11;
+  string status_note_text = 12;
+  string status_note_emoji = 13;
+  string status_note_expires_at = 14;
+  string locale = 15;
+  string time_format = 16;
 }
 
 // SetupStatusRequest is empty.
@@ -352,5 +363,53 @@ message RevokeOtherSessionsRequest {
 
 message RevokeOtherSessionsResponse {
   bool ok = 1;
+}
+
+message UpdateUserStatusNoteRequest {
+  string access_token = 1;
+  string text = 2;
+  string emoji = 3;
+  string expires_at = 4;
+}
+
+message UpdateUserStatusNoteResponse {
+  User user = 1;
+}
+
+message UpdateUserPreferencesRequest {
+  string access_token = 1;
+  string locale = 2;
+  string time_format = 3;
+}
+
+message UpdateUserPreferencesResponse {
+  User user = 1;
+}
+
+message UserActivityLog {
+  string id = 1;
+  string user_id = 2;
+  string actor_id = 3;
+  string category = 4;
+  string action = 5;
+  string target_type = 6;
+  string target_id = 7;
+  string summary = 8;
+  string changes_json = 9;
+  string metadata_json = 10;
+  string created_at = 11;
+}
+
+message ListUserActivityLogsRequest {
+  string access_token = 1;
+  string category = 2;
+  string action = 3;
+  int32 limit = 4;
+  string cursor = 5;
+}
+
+message ListUserActivityLogsResponse {
+  repeated UserActivityLog logs = 1;
+  string next_cursor = 2;
 }
 

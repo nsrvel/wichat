@@ -59,6 +59,7 @@ func (s *Server) PreviewGroupInvite(ctx context.Context, req *userv1.PreviewGrou
 
 	resp := &userv1.PreviewGroupInviteResponse{
 		Valid:        out.Valid,
+		IsPrivate:    out.IsPrivate,
 		GroupName:    out.GroupName,
 		ChannelName:  out.ChannelName,
 		GroupLogoUrl: out.GroupLogoURL,

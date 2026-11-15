@@ -20,6 +20,8 @@ func Register(mux *http.ServeMux, h Handler) {
 	mux.Handle("GET /api/v1/users/search", searchLimit.Wrap(http.HandlerFunc(h.SearchUsers)))
 	mux.Handle("POST /api/v1/users/me/avatar", profileLimit.Wrap(http.HandlerFunc(h.UploadAvatar)))
 	mux.Handle("PATCH /api/v1/users/me/profile", profileLimit.Wrap(http.HandlerFunc(h.UpdateProfile)))
+	mux.Handle("PATCH /api/v1/users/me/status-note", profileLimit.Wrap(http.HandlerFunc(h.UpdateStatusNote)))
+	mux.Handle("PATCH /api/v1/users/me/preferences", profileLimit.Wrap(http.HandlerFunc(h.UpdatePreferences)))
 	mux.Handle("PATCH /api/v1/users/me/username", profileLimit.Wrap(http.HandlerFunc(h.UpdateUsername)))
 	mux.Handle("POST /api/v1/users/me/email/request", profileLimit.Wrap(http.HandlerFunc(h.RequestEmailChange)))
 	mux.Handle("POST /api/v1/users/me/email/verify", profileLimit.Wrap(http.HandlerFunc(h.VerifyEmailChange)))
@@ -39,4 +41,7 @@ func Register(mux *http.ServeMux, h Handler) {
 	mux.Handle("GET /api/v1/users/me/devices", profileLimit.Wrap(http.HandlerFunc(h.ListDevices)))
 	mux.Handle("DELETE /api/v1/users/me/devices/{id}", profileLimit.Wrap(http.HandlerFunc(h.RevokeDevice)))
 	mux.Handle("POST /api/v1/users/me/devices/revoke-others", profileLimit.Wrap(http.HandlerFunc(h.RevokeOtherDevices)))
+	mux.Handle("GET /api/v1/users/me/activity-logs", profileLimit.Wrap(http.HandlerFunc(h.ListActivityLogs)))
+	mux.Handle("GET /api/v1/users/me/presence", profileLimit.Wrap(http.HandlerFunc(h.GetMyPresence)))
+	mux.Handle("PUT /api/v1/users/me/presence", profileLimit.Wrap(http.HandlerFunc(h.UpdateMyPresence)))
 }

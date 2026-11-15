@@ -106,16 +106,21 @@ type SessionBody struct {
 
 // UserBody is the public user slice in auth responses.
 type UserBody struct {
-	ID          string `json:"id"`
-	Email       string `json:"email"`
-	DisplayName string `json:"display_name"`
-	Username    string `json:"username"`
-	AvatarURL   string `json:"avatar_url"`
-	Pronouns    string `json:"pronouns"`
-	Bio         string `json:"bio"`
-	BannerColor string `json:"banner_color"`
-	CreatedAt   string `json:"created_at"`
-	HasPassword bool   `json:"has_password"`
+	ID                  string  `json:"id"`
+	Email               string  `json:"email"`
+	DisplayName         string  `json:"display_name"`
+	Username            string  `json:"username"`
+	AvatarURL           string  `json:"avatar_url"`
+	Pronouns            string  `json:"pronouns"`
+	Bio                 string  `json:"bio"`
+	BannerColor         string  `json:"banner_color"`
+	StatusNoteText      string  `json:"status_note_text"`
+	StatusNoteEmoji     string  `json:"status_note_emoji"`
+	StatusNoteExpiresAt *string `json:"status_note_expires_at"`
+	Locale              string  `json:"locale"`
+	TimeFormat          string  `json:"time_format"`
+	CreatedAt           string  `json:"created_at"`
+	HasPassword         bool    `json:"has_password"`
 }
 
 // UpdateUserProfileBody is PATCH /api/v1/users/me/profile.
@@ -125,6 +130,19 @@ type UpdateUserProfileBody struct {
 	Bio         string `json:"bio"`
 	BannerColor string `json:"banner_color"`
 	ClearAvatar bool   `json:"clear_avatar"`
+}
+
+// UpdateUserStatusNoteBody is PATCH /api/v1/users/me/status-note.
+type UpdateUserStatusNoteBody struct {
+	Text      string  `json:"text"`
+	Emoji     string  `json:"emoji"`
+	ExpiresAt *string `json:"expires_at"`
+}
+
+// UpdateUserPreferencesBody is PATCH /api/v1/users/me/preferences.
+type UpdateUserPreferencesBody struct {
+	Locale     string `json:"locale"`
+	TimeFormat string `json:"time_format"`
 }
 
 // UpdateUsernameBody is PATCH /api/v1/users/me/username.
@@ -256,15 +274,17 @@ type OKBody struct {
 
 // GroupBody is a public group in JSON responses.
 type GroupBody struct {
-	ID               string `json:"id"`
-	Name             string `json:"name"`
-	LogoURL          string `json:"logo_url"`
-	Description      string `json:"description"`
-	IsPrivate        bool   `json:"is_private"`
-	BannerColor      string `json:"banner_color"`
-	BannerURL        string `json:"banner_url"`
-	DefaultChannelID string `json:"default_channel_id"`
-	Role             string `json:"role,omitempty"`
+	ID                   string   `json:"id"`
+	Name                 string   `json:"name"`
+	LogoURL              string   `json:"logo_url"`
+	Description          string   `json:"description"`
+	IsPrivate            bool     `json:"is_private"`
+	BannerColor          string   `json:"banner_color"`
+	BannerURL            string   `json:"banner_url"`
+	HideRoles            bool     `json:"hide_roles"`
+	DefaultChannelID     string   `json:"default_channel_id"`
+	Role                 string   `json:"role,omitempty"`
+	EffectivePermissions []string `json:"effective_permissions"`
 }
 
 // UpdateGroupProfileBody is PATCH /api/v1/groups/{id}/profile.
@@ -307,14 +327,41 @@ type ReorderMyGroupsBody struct {
 	GroupIDs []string `json:"group_ids"`
 }
 
+// GroupMemberRoleSummaryBody summarizes an assigned role for a group member.
+type GroupMemberRoleSummaryBody struct {
+	ID       string `json:"id"`
+	Slug     string `json:"slug"`
+	Name     string `json:"name"`
+	Color    string `json:"color"`
+	Hoist    bool   `json:"hoist"`
+	Position int32  `json:"position"`
+}
+
 // GroupMemberBody is one row in the share access list.
 type GroupMemberBody struct {
-	UserID      string `json:"user_id"`
-	DisplayName string `json:"display_name"`
-	Username    string `json:"username"`
-	AvatarURL   string `json:"avatar_url"`
-	Role        string `json:"role"`
-	JoinedAt    string `json:"joined_at"`
+	UserID         string                       `json:"user_id"`
+	DisplayName    string                       `json:"display_name"`
+	Username       string                       `json:"username"`
+	AvatarURL      string                       `json:"avatar_url"`
+	Role           string                       `json:"role"`
+	JoinedAt       string                       `json:"joined_at"`
+	Roles          []GroupMemberRoleSummaryBody `json:"roles,omitempty"`
+	IsOnline       bool                         `json:"is_online"`
+	PresenceStatus string                       `json:"presence_status"`
+}
+
+// MyPresenceBody is GET/PUT /api/v1/users/me/presence.
+type MyPresenceBody struct {
+	ManualStatus    string `json:"manual_status"`
+	EffectiveStatus string `json:"effective_status"`
+	IsOnline        bool   `json:"is_online"`
+	ExpiresAt       string `json:"expires_at,omitempty"`
+}
+
+// UpdateMyPresenceRequestBody is PUT /api/v1/users/me/presence.
+type UpdateMyPresenceRequestBody struct {
+	Status     string `json:"status"`
+	TTLSeconds int64  `json:"ttl_seconds,omitempty"`
 }
 
 // GroupMembersPageBody is GET /api/v1/groups/{id}/members.
@@ -361,6 +408,7 @@ type SendGroupInvitesResultBody struct {
 // InvitePreviewBody is GET /api/v1/invites/preview.
 type InvitePreviewBody struct {
 	Valid        bool   `json:"valid"`
+	IsPrivate    bool   `json:"is_private,omitempty"`
 	GroupName    string `json:"group_name,omitempty"`
 	ChannelName  string `json:"channel_name,omitempty"`
 	GroupLogoURL string `json:"group_logo_url"`
@@ -438,16 +486,115 @@ func GroupFromPB(g *userv1.GroupSummary) GroupBody {
 	}
 
 	return GroupBody{
-		ID:               g.GetId(),
-		Name:             g.GetName(),
-		LogoURL:          g.GetLogoUrl(),
-		Description:      g.GetDescription(),
-		IsPrivate:        g.GetIsPrivate(),
-		BannerColor:      g.GetBannerColor(),
-		BannerURL:        g.GetBannerUrl(),
-		DefaultChannelID: g.GetDefaultChannelId(),
-		Role:             g.GetRole(),
+		ID:                   g.GetId(),
+		Name:                 g.GetName(),
+		LogoURL:              g.GetLogoUrl(),
+		Description:          g.GetDescription(),
+		IsPrivate:            g.GetIsPrivate(),
+		BannerColor:          g.GetBannerColor(),
+		BannerURL:            g.GetBannerUrl(),
+		HideRoles:            g.GetHideRoles(),
+		DefaultChannelID:     g.GetDefaultChannelId(),
+		Role:                 g.GetRole(),
+		EffectivePermissions: nonNilStrings(g.GetEffectivePermissions()),
 	}
+}
+
+// GroupRoleBody is a group role in JSON responses.
+type GroupRoleBody struct {
+	ID          string   `json:"id"`
+	Slug        string   `json:"slug"`
+	Name        string   `json:"name"`
+	Color       string   `json:"color"`
+	Hoist       bool     `json:"hoist"`
+	Mentionable bool     `json:"mentionable"`
+	IsDefault   bool     `json:"is_default"`
+	IsSystem    bool     `json:"is_system"`
+	Position    int32    `json:"position"`
+	Permissions []string `json:"permissions"`
+	MemberCount int32    `json:"member_count"`
+	CreatedAt   string   `json:"created_at"`
+	UpdatedAt   string   `json:"updated_at"`
+}
+
+// GroupRolesListBody is GET /api/v1/groups/{id}/roles.
+type GroupRolesListBody struct {
+	Roles     []GroupRoleBody `json:"roles"`
+	HideRoles bool            `json:"hide_roles"`
+}
+
+// GroupRoleResponseBody wraps a single GroupRoleBody.
+type GroupRoleResponseBody struct {
+	Role GroupRoleBody `json:"role"`
+}
+
+// CreateGroupRoleBody is POST /api/v1/groups/{id}/roles.
+type CreateGroupRoleBody struct {
+	Name string `json:"name"`
+}
+
+// UpdateGroupRoleBody is PATCH /api/v1/groups/{id}/roles/{roleId}.
+type UpdateGroupRoleBody struct {
+	Name        *string  `json:"name"`
+	Color       *string  `json:"color"`
+	Hoist       *bool    `json:"hoist"`
+	Mentionable *bool    `json:"mentionable"`
+	Permissions []string `json:"permissions"`
+}
+
+// AddGroupRoleMembersBody is POST /api/v1/groups/{id}/roles/{roleId}/members.
+type AddGroupRoleMembersBody struct {
+	UserIDs []string `json:"user_ids"`
+}
+
+// GroupRoleMembersBody is GET /api/v1/groups/{id}/roles/{roleId}/members.
+type GroupRoleMembersBody struct {
+	Members []GroupMemberBody `json:"members"`
+}
+
+// UpdateGroupHideRolesBody is PATCH /api/v1/groups/{id}/roles/settings.
+type UpdateGroupHideRolesBody struct {
+	HideRoles bool `json:"hide_roles"`
+}
+
+// GroupRoleFromPB maps a userv1.GroupRole to JSON.
+func GroupRoleFromPB(r *userv1.GroupRole) GroupRoleBody {
+	if r == nil {
+		return GroupRoleBody{Permissions: []string{}}
+	}
+
+	return GroupRoleBody{
+		ID:          r.GetId(),
+		Slug:        r.GetSlug(),
+		Name:        r.GetName(),
+		Color:       r.GetColor(),
+		Hoist:       r.GetHoist(),
+		Mentionable: r.GetMentionable(),
+		IsDefault:   r.GetIsDefault(),
+		IsSystem:    r.GetIsSystem(),
+		Position:    r.GetPosition(),
+		Permissions: nonNilStrings(r.GetPermissions()),
+		MemberCount: r.GetMemberCount(),
+		CreatedAt:   r.GetCreatedAt(),
+		UpdatedAt:   r.GetUpdatedAt(),
+	}
+}
+
+// GroupRolesFromPB maps role protos to JSON bodies.
+func GroupRolesFromPB(roles []*userv1.GroupRole) []GroupRoleBody {
+	out := make([]GroupRoleBody, len(roles))
+	for i, r := range roles {
+		out[i] = GroupRoleFromPB(r)
+	}
+
+	return out
+}
+
+func nonNilStrings(in []string) []string {
+	if in == nil {
+		return []string{}
+	}
+	return in
 }
 
 // ChannelFromPB maps a channel summary proto to JSON.
@@ -493,13 +640,39 @@ func GroupMembersFromPB(members []*userv1.GroupMemberEntry) []GroupMemberBody {
 		if m == nil {
 			continue
 		}
+		pbRoles := m.GetRoles()
+		roles := make([]GroupMemberRoleSummaryBody, 0, len(pbRoles))
+		for _, r := range pbRoles {
+			if r == nil {
+				continue
+			}
+			roles = append(roles, GroupMemberRoleSummaryBody{
+				ID:       r.GetId(),
+				Slug:     r.GetSlug(),
+				Name:     r.GetName(),
+				Color:    r.GetColor(),
+				Hoist:    r.GetHoist(),
+				Position: r.GetPosition(),
+			})
+		}
+		presenceStatus := m.GetPresenceStatus()
+		if presenceStatus == "" {
+			if m.GetIsOnline() {
+				presenceStatus = "online"
+			} else {
+				presenceStatus = "offline"
+			}
+		}
 		out[i] = GroupMemberBody{
-			UserID:      m.GetUserId(),
-			DisplayName: m.GetDisplayName(),
-			Username:    m.GetUsername(),
-			AvatarURL:   m.GetAvatarUrl(),
-			Role:        m.GetRole(),
-			JoinedAt:    m.GetJoinedAt(),
+			UserID:         m.GetUserId(),
+			DisplayName:    m.GetDisplayName(),
+			Username:       m.GetUsername(),
+			AvatarURL:      m.GetAvatarUrl(),
+			Role:           m.GetRole(),
+			JoinedAt:       m.GetJoinedAt(),
+			Roles:          roles,
+			IsOnline:       m.GetIsOnline(),
+			PresenceStatus: presenceStatus,
 		}
 	}
 
@@ -526,17 +699,27 @@ func UserSearchFromPB(users []*userv1.UserSearchHit) []UserSearchHitBody {
 
 // UserFromPB maps auth user proto to JSON body.
 func UserFromPB(user *userv1.User) UserBody {
+	var expiresAt *string
+	if raw := user.GetStatusNoteExpiresAt(); raw != "" {
+		expiresAt = &raw
+	}
+
 	return UserBody{
-		ID:          user.GetId(),
-		Email:       user.GetEmail(),
-		DisplayName: user.GetDisplayName(),
-		Username:    user.GetUsername(),
-		AvatarURL:   user.GetAvatarUrl(),
-		Pronouns:    user.GetPronouns(),
-		Bio:         user.GetBio(),
-		BannerColor: user.GetBannerColor(),
-		CreatedAt:   user.GetCreatedAt(),
-		HasPassword: user.GetHasPassword(),
+		ID:                  user.GetId(),
+		Email:               user.GetEmail(),
+		DisplayName:         user.GetDisplayName(),
+		Username:            user.GetUsername(),
+		AvatarURL:           user.GetAvatarUrl(),
+		Pronouns:            user.GetPronouns(),
+		Bio:                 user.GetBio(),
+		BannerColor:         user.GetBannerColor(),
+		StatusNoteText:      user.GetStatusNoteText(),
+		StatusNoteEmoji:     user.GetStatusNoteEmoji(),
+		StatusNoteExpiresAt: expiresAt,
+		Locale:              user.GetLocale(),
+		TimeFormat:          user.GetTimeFormat(),
+		CreatedAt:           user.GetCreatedAt(),
+		HasPassword:         user.GetHasPassword(),
 	}
 }
 
@@ -654,4 +837,51 @@ func SafeReturnPath(raw string) string {
 func RedirectSignIn(w http.ResponseWriter, r *http.Request, webOrigin, code string) {
 	target := strings.TrimRight(strings.TrimSpace(webOrigin), "/") + "/sign-in?error=" + url.QueryEscape(code)
 	http.Redirect(w, r, target, http.StatusFound)
+}
+
+// UserActivityLogBody is the JSON representation of a universal user audit event.
+type UserActivityLogBody struct {
+	ID         string          `json:"id"`
+	UserID     string          `json:"user_id"`
+	ActorID    string          `json:"actor_id"`
+	Category   string          `json:"category"`
+	Action     string          `json:"action"`
+	TargetType string          `json:"target_type"`
+	TargetID   string          `json:"target_id"`
+	Summary    string          `json:"summary"`
+	Changes    json.RawMessage `json:"changes"`
+	Metadata   json.RawMessage `json:"metadata"`
+	CreatedAt  string          `json:"created_at"`
+}
+
+// UserActivityLogsFromPB maps proto UserActivityLog items to JSON bodies.
+func UserActivityLogsFromPB(logs []*userv1.UserActivityLog) []UserActivityLogBody {
+	out := make([]UserActivityLogBody, 0, len(logs))
+	for _, entry := range logs {
+		if entry == nil {
+			continue
+		}
+		changes := json.RawMessage("{}")
+		if raw := strings.TrimSpace(entry.GetChangesJson()); raw != "" {
+			changes = json.RawMessage(raw)
+		}
+		meta := json.RawMessage("{}")
+		if raw := strings.TrimSpace(entry.GetMetadataJson()); raw != "" {
+			meta = json.RawMessage(raw)
+		}
+		out = append(out, UserActivityLogBody{
+			ID:         entry.GetId(),
+			UserID:     entry.GetUserId(),
+			ActorID:    entry.GetActorId(),
+			Category:   entry.GetCategory(),
+			Action:     entry.GetAction(),
+			TargetType: entry.GetTargetType(),
+			TargetID:   entry.GetTargetId(),
+			Summary:    entry.GetSummary(),
+			Changes:    changes,
+			Metadata:   meta,
+			CreatedAt:  entry.GetCreatedAt(),
+		})
+	}
+	return out
 }

@@ -10,21 +10,26 @@ import (
 type UserRow struct {
 	bun.BaseModel `bun:"table:users"`
 
-	ID              string     `bun:"id,pk,type:uuid"`
-	Email           *string    `bun:"email"`
-	Username        string     `bun:"username"`
-	DisplayName     string     `bun:"display_name"`
-	AvatarURL       string     `bun:"avatar_url"`
-	Pronouns        string     `bun:"pronouns"`
-	Bio             string     `bun:"bio"`
-	BannerColor     string     `bun:"banner_color"`
-	BirthDate       *time.Time `bun:"birth_date,nullzero"`
-	IsGuest         bool       `bun:"is_guest"`
-	IsInstanceOwner bool       `bun:"is_instance_owner"`
-	DisabledAt      *time.Time `bun:"disabled_at,nullzero"`
-	DeletedAt       *time.Time `bun:"deleted_at,nullzero"`
-	CreatedAt       time.Time  `bun:"created_at"`
-	UpdatedAt       time.Time  `bun:"updated_at"`
+	ID                  string     `bun:"id,pk,type:uuid"`
+	Email               *string    `bun:"email"`
+	Username            string     `bun:"username"`
+	DisplayName         string     `bun:"display_name"`
+	AvatarURL           string     `bun:"avatar_url"`
+	Pronouns            string     `bun:"pronouns"`
+	Bio                 string     `bun:"bio"`
+	BannerColor         string     `bun:"banner_color"`
+	StatusNoteText      string     `bun:"status_note_text"`
+	StatusNoteEmoji     string     `bun:"status_note_emoji"`
+	StatusNoteExpiresAt *time.Time `bun:"status_note_expires_at"`
+	Locale              string     `bun:"locale"`
+	TimeFormat          string     `bun:"time_format"`
+	BirthDate           *time.Time `bun:"birth_date,nullzero"`
+	IsGuest             bool       `bun:"is_guest"`
+	IsInstanceOwner     bool       `bun:"is_instance_owner"`
+	DisabledAt          *time.Time `bun:"disabled_at,nullzero"`
+	DeletedAt           *time.Time `bun:"deleted_at,nullzero"`
+	CreatedAt           time.Time  `bun:"created_at"`
+	UpdatedAt           time.Time  `bun:"updated_at"`
 }
 
 // UserCredentialRow maps user_credentials for Bun.
@@ -78,6 +83,9 @@ func UserRowFrom(u User) UserRow {
 		ID: u.ID, Email: email, Username: u.Username,
 		DisplayName: u.DisplayName, AvatarURL: u.AvatarURL,
 		Pronouns: u.Pronouns, Bio: u.Bio, BannerColor: u.BannerColor,
+		StatusNoteText: u.StatusNoteText, StatusNoteEmoji: u.StatusNoteEmoji,
+		StatusNoteExpiresAt: u.StatusNoteExpiresAt,
+		Locale:              u.Locale, TimeFormat: u.TimeFormat,
 		BirthDate: u.BirthDate, IsGuest: u.IsGuest,
 		IsInstanceOwner: u.IsInstanceOwner,
 		DisabledAt:      u.DisabledAt, DeletedAt: u.DeletedAt,
@@ -87,21 +95,26 @@ func UserRowFrom(u User) UserRow {
 
 func (r UserRow) ToModel(passwordHash string) User {
 	u := User{
-		Username:        r.Username,
-		DisplayName:     r.DisplayName,
-		AvatarURL:       r.AvatarURL,
-		Pronouns:        r.Pronouns,
-		Bio:             r.Bio,
-		BannerColor:     r.BannerColor,
-		BirthDate:       r.BirthDate,
-		IsGuest:         r.IsGuest,
-		IsInstanceOwner: r.IsInstanceOwner,
-		DisabledAt:      r.DisabledAt,
-		DeletedAt:       r.DeletedAt,
-		CreatedAt:       r.CreatedAt,
-		UpdatedAt:       r.UpdatedAt,
-		ID:              r.ID,
-		PasswordHash:    passwordHash,
+		Username:            r.Username,
+		DisplayName:         r.DisplayName,
+		AvatarURL:           r.AvatarURL,
+		Pronouns:            r.Pronouns,
+		Bio:                 r.Bio,
+		BannerColor:         r.BannerColor,
+		StatusNoteText:      r.StatusNoteText,
+		StatusNoteEmoji:     r.StatusNoteEmoji,
+		StatusNoteExpiresAt: r.StatusNoteExpiresAt,
+		Locale:              r.Locale,
+		TimeFormat:          r.TimeFormat,
+		BirthDate:           r.BirthDate,
+		IsGuest:             r.IsGuest,
+		IsInstanceOwner:     r.IsInstanceOwner,
+		DisabledAt:          r.DisabledAt,
+		DeletedAt:           r.DeletedAt,
+		CreatedAt:           r.CreatedAt,
+		UpdatedAt:           r.UpdatedAt,
+		ID:                  r.ID,
+		PasswordHash:        passwordHash,
 	}
 	if r.Email != nil {
 		u.Email = *r.Email

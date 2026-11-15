@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package user.v1;
+
+option go_package = "github.com/wichat/wichat/backend/wi-shared/models/gen/user/v1;userv1";
+
+// PresenceService manages user connection heartbeats and manual presence overrides.
+service PresenceService {
+  // HeartbeatPresence records an active/idle WebSocket heartbeat and returns effective presence transition.
+  rpc HeartbeatPresence(HeartbeatPresenceRequest) returns (PresenceTransitionResponse);
+  // DisconnectPresence removes a WebSocket connection and returns effective presence transition.
+  rpc DisconnectPresence(DisconnectPresenceRequest) returns (PresenceTransitionResponse);
+  // SetManualPresence sets the caller's manual presence override (online, idle, dnd, invisible).
+  rpc SetManualPresence(SetManualPresenceRequest) returns (SetManualPresenceResponse);
+  // GetMyPresence returns the caller's current manual and effective presence status.
+  rpc GetMyPresence(GetMyPresenceRequest) returns (GetMyPresenceResponse);
+}
+
+message HeartbeatPresenceRequest {
+  string access_token = 1;
+  string conn_id = 2;
+  string activity = 3; // "active" | "idle"
+}
+
+message DisconnectPresenceRequest {
+  string user_id = 1;
+  string conn_id = 2;
+}
+
+message PresenceTransitionResponse {
+  string user_id = 1;
+  string previous_status = 2;  // "online" | "idle" | "dnd" | "offline"
+  string effective_status = 3; // "online" | "idle" | "dnd" | "offline"
+  bool is_online = 4;
+  repeated string group_ids = 5;
+}
+
+message SetManualPresenceRequest {
+  string access_token = 1;
+  string status = 2;     // "online" | "idle" | "dnd" | "invisible"
+  int64 ttl_seconds = 3; // 0 = no expiry
+}
+
+message SetManualPresenceResponse {
+  string user_id = 1;
+  string manual_status = 2;
+  string effective_status = 3;
+  bool is_online = 4;
+  string expires_at = 5;
+  repeated string group_ids = 6;
+}
+
+message GetMyPresenceRequest {
+  string access_token = 1;
+}
+
+message GetMyPresenceResponse {
+  string manual_status = 1;
+  string effective_status = 2;
+  bool is_online = 3;
+  string expires_at = 4;
+}

@@ -13,7 +13,6 @@ func Register(mux *http.ServeMux, h Handler) {
 
 	mux.HandleFunc("GET /api/v1/groups/mine", h.ListMyGroups)
 	mux.Handle("PUT /api/v1/groups/mine/order", groupLimit.Wrap(http.HandlerFunc(h.ReorderMyGroups)))
-	mux.HandleFunc("GET /api/v1/groups/joinable", h.ListJoinableGroups)
 	mux.Handle("POST /api/v1/groups", groupLimit.Wrap(http.HandlerFunc(h.CreateGroup)))
 	mux.Handle("POST /api/v1/groups/{id}/delete", groupLimit.Wrap(http.HandlerFunc(h.DeleteGroup)))
 	mux.Handle("DELETE /api/v1/groups/{id}", groupLimit.Wrap(http.HandlerFunc(h.DeleteGroup)))

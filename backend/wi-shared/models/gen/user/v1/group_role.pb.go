@@ -216,6 +216,7 @@ func (x *ListGroupRolesRequest) GetGroupId() string {
 type ListGroupRolesResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Roles         []*GroupRole           `protobuf:"bytes,1,rep,name=roles,proto3" json:"roles,omitempty"`
+	HideRoles     bool                   `protobuf:"varint,2,opt,name=hide_roles,json=hideRoles,proto3" json:"hide_roles,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -257,23 +258,135 @@ func (x *ListGroupRolesResponse) GetRoles() []*GroupRole {
 	return nil
 }
 
-type UpdateGroupRoleRequest struct {
+func (x *ListGroupRolesResponse) GetHideRoles() bool {
+	if x != nil {
+		return x.HideRoles
+	}
+	return false
+}
+
+type CreateGroupRoleRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
 	GroupId       string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
-	RoleId        string                 `protobuf:"bytes,3,opt,name=role_id,json=roleId,proto3" json:"role_id,omitempty"`
-	Name          string                 `protobuf:"bytes,4,opt,name=name,proto3" json:"name,omitempty"`
-	Color         string                 `protobuf:"bytes,5,opt,name=color,proto3" json:"color,omitempty"`
-	Hoist         bool                   `protobuf:"varint,6,opt,name=hoist,proto3" json:"hoist,omitempty"`
-	Mentionable   bool                   `protobuf:"varint,7,opt,name=mentionable,proto3" json:"mentionable,omitempty"`
-	Permissions   []string               `protobuf:"bytes,8,rep,name=permissions,proto3" json:"permissions,omitempty"`
+	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
+func (x *CreateGroupRoleRequest) Reset() {
+	*x = CreateGroupRoleRequest{}
+	mi := &file_user_v1_group_role_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateGroupRoleRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateGroupRoleRequest) ProtoMessage() {}
+
+func (x *CreateGroupRoleRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_group_role_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateGroupRoleRequest.ProtoReflect.Descriptor instead.
+func (*CreateGroupRoleRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_group_role_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *CreateGroupRoleRequest) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
+func (x *CreateGroupRoleRequest) GetGroupId() string {
+	if x != nil {
+		return x.GroupId
+	}
+	return ""
+}
+
+func (x *CreateGroupRoleRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type CreateGroupRoleResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Role          *GroupRole             `protobuf:"bytes,1,opt,name=role,proto3" json:"role,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateGroupRoleResponse) Reset() {
+	*x = CreateGroupRoleResponse{}
+	mi := &file_user_v1_group_role_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateGroupRoleResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateGroupRoleResponse) ProtoMessage() {}
+
+func (x *CreateGroupRoleResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_group_role_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateGroupRoleResponse.ProtoReflect.Descriptor instead.
+func (*CreateGroupRoleResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_group_role_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *CreateGroupRoleResponse) GetRole() *GroupRole {
+	if x != nil {
+		return x.Role
+	}
+	return nil
+}
+
+type UpdateGroupRoleRequest struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	AccessToken      string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	GroupId          string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	RoleId           string                 `protobuf:"bytes,3,opt,name=role_id,json=roleId,proto3" json:"role_id,omitempty"`
+	Name             string                 `protobuf:"bytes,4,opt,name=name,proto3" json:"name,omitempty"`
+	Color            string                 `protobuf:"bytes,5,opt,name=color,proto3" json:"color,omitempty"`
+	Hoist            bool                   `protobuf:"varint,6,opt,name=hoist,proto3" json:"hoist,omitempty"`
+	Mentionable      bool                   `protobuf:"varint,7,opt,name=mentionable,proto3" json:"mentionable,omitempty"`
+	Permissions      []string               `protobuf:"bytes,8,rep,name=permissions,proto3" json:"permissions,omitempty"`
+	ClearPermissions bool                   `protobuf:"varint,9,opt,name=clear_permissions,json=clearPermissions,proto3" json:"clear_permissions,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
 func (x *UpdateGroupRoleRequest) Reset() {
 	*x = UpdateGroupRoleRequest{}
-	mi := &file_user_v1_group_role_proto_msgTypes[3]
+	mi := &file_user_v1_group_role_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -285,7 +398,7 @@ func (x *UpdateGroupRoleRequest) String() string {
 func (*UpdateGroupRoleRequest) ProtoMessage() {}
 
 func (x *UpdateGroupRoleRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_group_role_proto_msgTypes[3]
+	mi := &file_user_v1_group_role_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -298,7 +411,7 @@ func (x *UpdateGroupRoleRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateGroupRoleRequest.ProtoReflect.Descriptor instead.
 func (*UpdateGroupRoleRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_group_role_proto_rawDescGZIP(), []int{3}
+	return file_user_v1_group_role_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *UpdateGroupRoleRequest) GetAccessToken() string {
@@ -357,6 +470,13 @@ func (x *UpdateGroupRoleRequest) GetPermissions() []string {
 	return nil
 }
 
+func (x *UpdateGroupRoleRequest) GetClearPermissions() bool {
+	if x != nil {
+		return x.ClearPermissions
+	}
+	return false
+}
+
 type UpdateGroupRoleResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Role          *GroupRole             `protobuf:"bytes,1,opt,name=role,proto3" json:"role,omitempty"`
@@ -366,7 +486,7 @@ type UpdateGroupRoleResponse struct {
 
 func (x *UpdateGroupRoleResponse) Reset() {
 	*x = UpdateGroupRoleResponse{}
-	mi := &file_user_v1_group_role_proto_msgTypes[4]
+	mi := &file_user_v1_group_role_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -378,7 +498,7 @@ func (x *UpdateGroupRoleResponse) String() string {
 func (*UpdateGroupRoleResponse) ProtoMessage() {}
 
 func (x *UpdateGroupRoleResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_group_role_proto_msgTypes[4]
+	mi := &file_user_v1_group_role_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -391,12 +511,324 @@ func (x *UpdateGroupRoleResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateGroupRoleResponse.ProtoReflect.Descriptor instead.
 func (*UpdateGroupRoleResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_group_role_proto_rawDescGZIP(), []int{4}
+	return file_user_v1_group_role_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *UpdateGroupRoleResponse) GetRole() *GroupRole {
 	if x != nil {
 		return x.Role
+	}
+	return nil
+}
+
+type DuplicateGroupRoleRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	GroupId       string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	RoleId        string                 `protobuf:"bytes,3,opt,name=role_id,json=roleId,proto3" json:"role_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DuplicateGroupRoleRequest) Reset() {
+	*x = DuplicateGroupRoleRequest{}
+	mi := &file_user_v1_group_role_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DuplicateGroupRoleRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DuplicateGroupRoleRequest) ProtoMessage() {}
+
+func (x *DuplicateGroupRoleRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_group_role_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DuplicateGroupRoleRequest.ProtoReflect.Descriptor instead.
+func (*DuplicateGroupRoleRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_group_role_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *DuplicateGroupRoleRequest) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
+func (x *DuplicateGroupRoleRequest) GetGroupId() string {
+	if x != nil {
+		return x.GroupId
+	}
+	return ""
+}
+
+func (x *DuplicateGroupRoleRequest) GetRoleId() string {
+	if x != nil {
+		return x.RoleId
+	}
+	return ""
+}
+
+type DuplicateGroupRoleResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Role          *GroupRole             `protobuf:"bytes,1,opt,name=role,proto3" json:"role,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DuplicateGroupRoleResponse) Reset() {
+	*x = DuplicateGroupRoleResponse{}
+	mi := &file_user_v1_group_role_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DuplicateGroupRoleResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DuplicateGroupRoleResponse) ProtoMessage() {}
+
+func (x *DuplicateGroupRoleResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_group_role_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DuplicateGroupRoleResponse.ProtoReflect.Descriptor instead.
+func (*DuplicateGroupRoleResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_group_role_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *DuplicateGroupRoleResponse) GetRole() *GroupRole {
+	if x != nil {
+		return x.Role
+	}
+	return nil
+}
+
+type DeleteGroupRoleRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	GroupId       string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	RoleId        string                 `protobuf:"bytes,3,opt,name=role_id,json=roleId,proto3" json:"role_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteGroupRoleRequest) Reset() {
+	*x = DeleteGroupRoleRequest{}
+	mi := &file_user_v1_group_role_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteGroupRoleRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteGroupRoleRequest) ProtoMessage() {}
+
+func (x *DeleteGroupRoleRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_group_role_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteGroupRoleRequest.ProtoReflect.Descriptor instead.
+func (*DeleteGroupRoleRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_group_role_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *DeleteGroupRoleRequest) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
+func (x *DeleteGroupRoleRequest) GetGroupId() string {
+	if x != nil {
+		return x.GroupId
+	}
+	return ""
+}
+
+func (x *DeleteGroupRoleRequest) GetRoleId() string {
+	if x != nil {
+		return x.RoleId
+	}
+	return ""
+}
+
+type DeleteGroupRoleResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteGroupRoleResponse) Reset() {
+	*x = DeleteGroupRoleResponse{}
+	mi := &file_user_v1_group_role_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteGroupRoleResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteGroupRoleResponse) ProtoMessage() {}
+
+func (x *DeleteGroupRoleResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_group_role_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteGroupRoleResponse.ProtoReflect.Descriptor instead.
+func (*DeleteGroupRoleResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_group_role_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *DeleteGroupRoleResponse) GetOk() bool {
+	if x != nil {
+		return x.Ok
+	}
+	return false
+}
+
+type ListGroupRoleMembersRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	GroupId       string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	RoleId        string                 `protobuf:"bytes,3,opt,name=role_id,json=roleId,proto3" json:"role_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListGroupRoleMembersRequest) Reset() {
+	*x = ListGroupRoleMembersRequest{}
+	mi := &file_user_v1_group_role_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListGroupRoleMembersRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListGroupRoleMembersRequest) ProtoMessage() {}
+
+func (x *ListGroupRoleMembersRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_group_role_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListGroupRoleMembersRequest.ProtoReflect.Descriptor instead.
+func (*ListGroupRoleMembersRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_group_role_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *ListGroupRoleMembersRequest) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
+func (x *ListGroupRoleMembersRequest) GetGroupId() string {
+	if x != nil {
+		return x.GroupId
+	}
+	return ""
+}
+
+func (x *ListGroupRoleMembersRequest) GetRoleId() string {
+	if x != nil {
+		return x.RoleId
+	}
+	return ""
+}
+
+type ListGroupRoleMembersResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Members       []*GroupMemberEntry    `protobuf:"bytes,1,rep,name=members,proto3" json:"members,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListGroupRoleMembersResponse) Reset() {
+	*x = ListGroupRoleMembersResponse{}
+	mi := &file_user_v1_group_role_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListGroupRoleMembersResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListGroupRoleMembersResponse) ProtoMessage() {}
+
+func (x *ListGroupRoleMembersResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_group_role_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListGroupRoleMembersResponse.ProtoReflect.Descriptor instead.
+func (*ListGroupRoleMembersResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_group_role_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *ListGroupRoleMembersResponse) GetMembers() []*GroupMemberEntry {
+	if x != nil {
+		return x.Members
 	}
 	return nil
 }
@@ -413,7 +845,7 @@ type AddGroupRoleMembersRequest struct {
 
 func (x *AddGroupRoleMembersRequest) Reset() {
 	*x = AddGroupRoleMembersRequest{}
-	mi := &file_user_v1_group_role_proto_msgTypes[5]
+	mi := &file_user_v1_group_role_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -425,7 +857,7 @@ func (x *AddGroupRoleMembersRequest) String() string {
 func (*AddGroupRoleMembersRequest) ProtoMessage() {}
 
 func (x *AddGroupRoleMembersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_group_role_proto_msgTypes[5]
+	mi := &file_user_v1_group_role_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -438,7 +870,7 @@ func (x *AddGroupRoleMembersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddGroupRoleMembersRequest.ProtoReflect.Descriptor instead.
 func (*AddGroupRoleMembersRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_group_role_proto_rawDescGZIP(), []int{5}
+	return file_user_v1_group_role_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *AddGroupRoleMembersRequest) GetAccessToken() string {
@@ -478,7 +910,7 @@ type AddGroupRoleMembersResponse struct {
 
 func (x *AddGroupRoleMembersResponse) Reset() {
 	*x = AddGroupRoleMembersResponse{}
-	mi := &file_user_v1_group_role_proto_msgTypes[6]
+	mi := &file_user_v1_group_role_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -490,7 +922,7 @@ func (x *AddGroupRoleMembersResponse) String() string {
 func (*AddGroupRoleMembersResponse) ProtoMessage() {}
 
 func (x *AddGroupRoleMembersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_group_role_proto_msgTypes[6]
+	mi := &file_user_v1_group_role_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -503,7 +935,7 @@ func (x *AddGroupRoleMembersResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddGroupRoleMembersResponse.ProtoReflect.Descriptor instead.
 func (*AddGroupRoleMembersResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_group_role_proto_rawDescGZIP(), []int{6}
+	return file_user_v1_group_role_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *AddGroupRoleMembersResponse) GetRole() *GroupRole {
@@ -525,7 +957,7 @@ type RemoveGroupRoleMemberRequest struct {
 
 func (x *RemoveGroupRoleMemberRequest) Reset() {
 	*x = RemoveGroupRoleMemberRequest{}
-	mi := &file_user_v1_group_role_proto_msgTypes[7]
+	mi := &file_user_v1_group_role_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -537,7 +969,7 @@ func (x *RemoveGroupRoleMemberRequest) String() string {
 func (*RemoveGroupRoleMemberRequest) ProtoMessage() {}
 
 func (x *RemoveGroupRoleMemberRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_group_role_proto_msgTypes[7]
+	mi := &file_user_v1_group_role_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -550,7 +982,7 @@ func (x *RemoveGroupRoleMemberRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveGroupRoleMemberRequest.ProtoReflect.Descriptor instead.
 func (*RemoveGroupRoleMemberRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_group_role_proto_rawDescGZIP(), []int{7}
+	return file_user_v1_group_role_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *RemoveGroupRoleMemberRequest) GetAccessToken() string {
@@ -590,7 +1022,7 @@ type RemoveGroupRoleMemberResponse struct {
 
 func (x *RemoveGroupRoleMemberResponse) Reset() {
 	*x = RemoveGroupRoleMemberResponse{}
-	mi := &file_user_v1_group_role_proto_msgTypes[8]
+	mi := &file_user_v1_group_role_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -602,7 +1034,7 @@ func (x *RemoveGroupRoleMemberResponse) String() string {
 func (*RemoveGroupRoleMemberResponse) ProtoMessage() {}
 
 func (x *RemoveGroupRoleMemberResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_group_role_proto_msgTypes[8]
+	mi := &file_user_v1_group_role_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -615,7 +1047,7 @@ func (x *RemoveGroupRoleMemberResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveGroupRoleMemberResponse.ProtoReflect.Descriptor instead.
 func (*RemoveGroupRoleMemberResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_group_role_proto_rawDescGZIP(), []int{8}
+	return file_user_v1_group_role_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *RemoveGroupRoleMemberResponse) GetRole() *GroupRole {
@@ -625,11 +1057,115 @@ func (x *RemoveGroupRoleMemberResponse) GetRole() *GroupRole {
 	return nil
 }
 
+type UpdateGroupHideRolesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	GroupId       string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	HideRoles     bool                   `protobuf:"varint,3,opt,name=hide_roles,json=hideRoles,proto3" json:"hide_roles,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateGroupHideRolesRequest) Reset() {
+	*x = UpdateGroupHideRolesRequest{}
+	mi := &file_user_v1_group_role_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateGroupHideRolesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateGroupHideRolesRequest) ProtoMessage() {}
+
+func (x *UpdateGroupHideRolesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_group_role_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateGroupHideRolesRequest.ProtoReflect.Descriptor instead.
+func (*UpdateGroupHideRolesRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_group_role_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *UpdateGroupHideRolesRequest) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
+func (x *UpdateGroupHideRolesRequest) GetGroupId() string {
+	if x != nil {
+		return x.GroupId
+	}
+	return ""
+}
+
+func (x *UpdateGroupHideRolesRequest) GetHideRoles() bool {
+	if x != nil {
+		return x.HideRoles
+	}
+	return false
+}
+
+type UpdateGroupHideRolesResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	HideRoles     bool                   `protobuf:"varint,1,opt,name=hide_roles,json=hideRoles,proto3" json:"hide_roles,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateGroupHideRolesResponse) Reset() {
+	*x = UpdateGroupHideRolesResponse{}
+	mi := &file_user_v1_group_role_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateGroupHideRolesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateGroupHideRolesResponse) ProtoMessage() {}
+
+func (x *UpdateGroupHideRolesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_group_role_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateGroupHideRolesResponse.ProtoReflect.Descriptor instead.
+func (*UpdateGroupHideRolesResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_group_role_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *UpdateGroupHideRolesResponse) GetHideRoles() bool {
+	if x != nil {
+		return x.HideRoles
+	}
+	return false
+}
+
 var File_user_v1_group_role_proto protoreflect.FileDescriptor
 
 const file_user_v1_group_role_proto_rawDesc = "" +
 	"\n" +
-	"\x18user/v1/group_role.proto\x12\auser.v1\"\xec\x02\n" +
+	"\x18user/v1/group_role.proto\x12\auser.v1\x1a\x1auser/v1/group_member.proto\"\xec\x02\n" +
 	"\tGroupRole\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04slug\x18\x02 \x01(\tR\x04slug\x12\x12\n" +
@@ -650,9 +1186,17 @@ const file_user_v1_group_role_proto_rawDesc = "" +
 	"updated_at\x18\r \x01(\tR\tupdatedAt\"U\n" +
 	"\x15ListGroupRolesRequest\x12!\n" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
-	"\bgroup_id\x18\x02 \x01(\tR\agroupId\"B\n" +
+	"\bgroup_id\x18\x02 \x01(\tR\agroupId\"a\n" +
 	"\x16ListGroupRolesResponse\x12(\n" +
-	"\x05roles\x18\x01 \x03(\v2\x12.user.v1.GroupRoleR\x05roles\"\xf3\x01\n" +
+	"\x05roles\x18\x01 \x03(\v2\x12.user.v1.GroupRoleR\x05roles\x12\x1d\n" +
+	"\n" +
+	"hide_roles\x18\x02 \x01(\bR\thideRoles\"j\n" +
+	"\x16CreateGroupRoleRequest\x12!\n" +
+	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
+	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x12\n" +
+	"\x04name\x18\x03 \x01(\tR\x04name\"A\n" +
+	"\x17CreateGroupRoleResponse\x12&\n" +
+	"\x04role\x18\x01 \x01(\v2\x12.user.v1.GroupRoleR\x04role\"\xa0\x02\n" +
 	"\x16UpdateGroupRoleRequest\x12!\n" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
 	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x17\n" +
@@ -661,9 +1205,28 @@ const file_user_v1_group_role_proto_rawDesc = "" +
 	"\x05color\x18\x05 \x01(\tR\x05color\x12\x14\n" +
 	"\x05hoist\x18\x06 \x01(\bR\x05hoist\x12 \n" +
 	"\vmentionable\x18\a \x01(\bR\vmentionable\x12 \n" +
-	"\vpermissions\x18\b \x03(\tR\vpermissions\"A\n" +
+	"\vpermissions\x18\b \x03(\tR\vpermissions\x12+\n" +
+	"\x11clear_permissions\x18\t \x01(\bR\x10clearPermissions\"A\n" +
 	"\x17UpdateGroupRoleResponse\x12&\n" +
-	"\x04role\x18\x01 \x01(\v2\x12.user.v1.GroupRoleR\x04role\"\x8e\x01\n" +
+	"\x04role\x18\x01 \x01(\v2\x12.user.v1.GroupRoleR\x04role\"r\n" +
+	"\x19DuplicateGroupRoleRequest\x12!\n" +
+	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
+	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x17\n" +
+	"\arole_id\x18\x03 \x01(\tR\x06roleId\"D\n" +
+	"\x1aDuplicateGroupRoleResponse\x12&\n" +
+	"\x04role\x18\x01 \x01(\v2\x12.user.v1.GroupRoleR\x04role\"o\n" +
+	"\x16DeleteGroupRoleRequest\x12!\n" +
+	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
+	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x17\n" +
+	"\arole_id\x18\x03 \x01(\tR\x06roleId\")\n" +
+	"\x17DeleteGroupRoleResponse\x12\x0e\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok\"t\n" +
+	"\x1bListGroupRoleMembersRequest\x12!\n" +
+	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
+	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x17\n" +
+	"\arole_id\x18\x03 \x01(\tR\x06roleId\"S\n" +
+	"\x1cListGroupRoleMembersResponse\x123\n" +
+	"\amembers\x18\x01 \x03(\v2\x19.user.v1.GroupMemberEntryR\amembers\"\x8e\x01\n" +
 	"\x1aAddGroupRoleMembersRequest\x12!\n" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
 	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x17\n" +
@@ -677,12 +1240,25 @@ const file_user_v1_group_role_proto_rawDesc = "" +
 	"\arole_id\x18\x03 \x01(\tR\x06roleId\x12\x17\n" +
 	"\auser_id\x18\x04 \x01(\tR\x06userId\"G\n" +
 	"\x1dRemoveGroupRoleMemberResponse\x12&\n" +
-	"\x04role\x18\x01 \x01(\v2\x12.user.v1.GroupRoleR\x04role2\x85\x03\n" +
+	"\x04role\x18\x01 \x01(\v2\x12.user.v1.GroupRoleR\x04role\"z\n" +
+	"\x1bUpdateGroupHideRolesRequest\x12!\n" +
+	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
+	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x1d\n" +
+	"\n" +
+	"hide_roles\x18\x03 \x01(\bR\thideRoles\"=\n" +
+	"\x1cUpdateGroupHideRolesResponse\x12\x1d\n" +
+	"\n" +
+	"hide_roles\x18\x01 \x01(\bR\thideRoles2\xda\x06\n" +
 	"\x10GroupRoleService\x12Q\n" +
 	"\x0eListGroupRoles\x12\x1e.user.v1.ListGroupRolesRequest\x1a\x1f.user.v1.ListGroupRolesResponse\x12T\n" +
-	"\x0fUpdateGroupRole\x12\x1f.user.v1.UpdateGroupRoleRequest\x1a .user.v1.UpdateGroupRoleResponse\x12`\n" +
+	"\x0fCreateGroupRole\x12\x1f.user.v1.CreateGroupRoleRequest\x1a .user.v1.CreateGroupRoleResponse\x12T\n" +
+	"\x0fUpdateGroupRole\x12\x1f.user.v1.UpdateGroupRoleRequest\x1a .user.v1.UpdateGroupRoleResponse\x12]\n" +
+	"\x12DuplicateGroupRole\x12\".user.v1.DuplicateGroupRoleRequest\x1a#.user.v1.DuplicateGroupRoleResponse\x12T\n" +
+	"\x0fDeleteGroupRole\x12\x1f.user.v1.DeleteGroupRoleRequest\x1a .user.v1.DeleteGroupRoleResponse\x12c\n" +
+	"\x14ListGroupRoleMembers\x12$.user.v1.ListGroupRoleMembersRequest\x1a%.user.v1.ListGroupRoleMembersResponse\x12`\n" +
 	"\x13AddGroupRoleMembers\x12#.user.v1.AddGroupRoleMembersRequest\x1a$.user.v1.AddGroupRoleMembersResponse\x12f\n" +
-	"\x15RemoveGroupRoleMember\x12%.user.v1.RemoveGroupRoleMemberRequest\x1a&.user.v1.RemoveGroupRoleMemberResponseB\xa0\x01\n" +
+	"\x15RemoveGroupRoleMember\x12%.user.v1.RemoveGroupRoleMemberRequest\x1a&.user.v1.RemoveGroupRoleMemberResponse\x12c\n" +
+	"\x14UpdateGroupHideRoles\x12$.user.v1.UpdateGroupHideRolesRequest\x1a%.user.v1.UpdateGroupHideRolesResponseB\xa0\x01\n" +
 	"\vcom.user.v1B\x0eGroupRoleProtoP\x01ZDgithub.com/wichat/wichat/backend/wi-shared/models/gen/user/v1;userv1\xa2\x02\x03UXX\xaa\x02\aUser.V1\xca\x02\aUser\\V1\xe2\x02\x13User\\V1\\GPBMetadata\xea\x02\bUser::V1b\x06proto3"
 
 var (
@@ -697,36 +1273,60 @@ func file_user_v1_group_role_proto_rawDescGZIP() []byte {
 	return file_user_v1_group_role_proto_rawDescData
 }
 
-var file_user_v1_group_role_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_user_v1_group_role_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
 var file_user_v1_group_role_proto_goTypes = []any{
 	(*GroupRole)(nil),                     // 0: user.v1.GroupRole
 	(*ListGroupRolesRequest)(nil),         // 1: user.v1.ListGroupRolesRequest
 	(*ListGroupRolesResponse)(nil),        // 2: user.v1.ListGroupRolesResponse
-	(*UpdateGroupRoleRequest)(nil),        // 3: user.v1.UpdateGroupRoleRequest
-	(*UpdateGroupRoleResponse)(nil),       // 4: user.v1.UpdateGroupRoleResponse
-	(*AddGroupRoleMembersRequest)(nil),    // 5: user.v1.AddGroupRoleMembersRequest
-	(*AddGroupRoleMembersResponse)(nil),   // 6: user.v1.AddGroupRoleMembersResponse
-	(*RemoveGroupRoleMemberRequest)(nil),  // 7: user.v1.RemoveGroupRoleMemberRequest
-	(*RemoveGroupRoleMemberResponse)(nil), // 8: user.v1.RemoveGroupRoleMemberResponse
+	(*CreateGroupRoleRequest)(nil),        // 3: user.v1.CreateGroupRoleRequest
+	(*CreateGroupRoleResponse)(nil),       // 4: user.v1.CreateGroupRoleResponse
+	(*UpdateGroupRoleRequest)(nil),        // 5: user.v1.UpdateGroupRoleRequest
+	(*UpdateGroupRoleResponse)(nil),       // 6: user.v1.UpdateGroupRoleResponse
+	(*DuplicateGroupRoleRequest)(nil),     // 7: user.v1.DuplicateGroupRoleRequest
+	(*DuplicateGroupRoleResponse)(nil),    // 8: user.v1.DuplicateGroupRoleResponse
+	(*DeleteGroupRoleRequest)(nil),        // 9: user.v1.DeleteGroupRoleRequest
+	(*DeleteGroupRoleResponse)(nil),       // 10: user.v1.DeleteGroupRoleResponse
+	(*ListGroupRoleMembersRequest)(nil),   // 11: user.v1.ListGroupRoleMembersRequest
+	(*ListGroupRoleMembersResponse)(nil),  // 12: user.v1.ListGroupRoleMembersResponse
+	(*AddGroupRoleMembersRequest)(nil),    // 13: user.v1.AddGroupRoleMembersRequest
+	(*AddGroupRoleMembersResponse)(nil),   // 14: user.v1.AddGroupRoleMembersResponse
+	(*RemoveGroupRoleMemberRequest)(nil),  // 15: user.v1.RemoveGroupRoleMemberRequest
+	(*RemoveGroupRoleMemberResponse)(nil), // 16: user.v1.RemoveGroupRoleMemberResponse
+	(*UpdateGroupHideRolesRequest)(nil),   // 17: user.v1.UpdateGroupHideRolesRequest
+	(*UpdateGroupHideRolesResponse)(nil),  // 18: user.v1.UpdateGroupHideRolesResponse
+	(*GroupMemberEntry)(nil),              // 19: user.v1.GroupMemberEntry
 }
 var file_user_v1_group_role_proto_depIdxs = []int32{
-	0, // 0: user.v1.ListGroupRolesResponse.roles:type_name -> user.v1.GroupRole
-	0, // 1: user.v1.UpdateGroupRoleResponse.role:type_name -> user.v1.GroupRole
-	0, // 2: user.v1.AddGroupRoleMembersResponse.role:type_name -> user.v1.GroupRole
-	0, // 3: user.v1.RemoveGroupRoleMemberResponse.role:type_name -> user.v1.GroupRole
-	1, // 4: user.v1.GroupRoleService.ListGroupRoles:input_type -> user.v1.ListGroupRolesRequest
-	3, // 5: user.v1.GroupRoleService.UpdateGroupRole:input_type -> user.v1.UpdateGroupRoleRequest
-	5, // 6: user.v1.GroupRoleService.AddGroupRoleMembers:input_type -> user.v1.AddGroupRoleMembersRequest
-	7, // 7: user.v1.GroupRoleService.RemoveGroupRoleMember:input_type -> user.v1.RemoveGroupRoleMemberRequest
-	2, // 8: user.v1.GroupRoleService.ListGroupRoles:output_type -> user.v1.ListGroupRolesResponse
-	4, // 9: user.v1.GroupRoleService.UpdateGroupRole:output_type -> user.v1.UpdateGroupRoleResponse
-	6, // 10: user.v1.GroupRoleService.AddGroupRoleMembers:output_type -> user.v1.AddGroupRoleMembersResponse
-	8, // 11: user.v1.GroupRoleService.RemoveGroupRoleMember:output_type -> user.v1.RemoveGroupRoleMemberResponse
-	8, // [8:12] is the sub-list for method output_type
-	4, // [4:8] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	0,  // 0: user.v1.ListGroupRolesResponse.roles:type_name -> user.v1.GroupRole
+	0,  // 1: user.v1.CreateGroupRoleResponse.role:type_name -> user.v1.GroupRole
+	0,  // 2: user.v1.UpdateGroupRoleResponse.role:type_name -> user.v1.GroupRole
+	0,  // 3: user.v1.DuplicateGroupRoleResponse.role:type_name -> user.v1.GroupRole
+	19, // 4: user.v1.ListGroupRoleMembersResponse.members:type_name -> user.v1.GroupMemberEntry
+	0,  // 5: user.v1.AddGroupRoleMembersResponse.role:type_name -> user.v1.GroupRole
+	0,  // 6: user.v1.RemoveGroupRoleMemberResponse.role:type_name -> user.v1.GroupRole
+	1,  // 7: user.v1.GroupRoleService.ListGroupRoles:input_type -> user.v1.ListGroupRolesRequest
+	3,  // 8: user.v1.GroupRoleService.CreateGroupRole:input_type -> user.v1.CreateGroupRoleRequest
+	5,  // 9: user.v1.GroupRoleService.UpdateGroupRole:input_type -> user.v1.UpdateGroupRoleRequest
+	7,  // 10: user.v1.GroupRoleService.DuplicateGroupRole:input_type -> user.v1.DuplicateGroupRoleRequest
+	9,  // 11: user.v1.GroupRoleService.DeleteGroupRole:input_type -> user.v1.DeleteGroupRoleRequest
+	11, // 12: user.v1.GroupRoleService.ListGroupRoleMembers:input_type -> user.v1.ListGroupRoleMembersRequest
+	13, // 13: user.v1.GroupRoleService.AddGroupRoleMembers:input_type -> user.v1.AddGroupRoleMembersRequest
+	15, // 14: user.v1.GroupRoleService.RemoveGroupRoleMember:input_type -> user.v1.RemoveGroupRoleMemberRequest
+	17, // 15: user.v1.GroupRoleService.UpdateGroupHideRoles:input_type -> user.v1.UpdateGroupHideRolesRequest
+	2,  // 16: user.v1.GroupRoleService.ListGroupRoles:output_type -> user.v1.ListGroupRolesResponse
+	4,  // 17: user.v1.GroupRoleService.CreateGroupRole:output_type -> user.v1.CreateGroupRoleResponse
+	6,  // 18: user.v1.GroupRoleService.UpdateGroupRole:output_type -> user.v1.UpdateGroupRoleResponse
+	8,  // 19: user.v1.GroupRoleService.DuplicateGroupRole:output_type -> user.v1.DuplicateGroupRoleResponse
+	10, // 20: user.v1.GroupRoleService.DeleteGroupRole:output_type -> user.v1.DeleteGroupRoleResponse
+	12, // 21: user.v1.GroupRoleService.ListGroupRoleMembers:output_type -> user.v1.ListGroupRoleMembersResponse
+	14, // 22: user.v1.GroupRoleService.AddGroupRoleMembers:output_type -> user.v1.AddGroupRoleMembersResponse
+	16, // 23: user.v1.GroupRoleService.RemoveGroupRoleMember:output_type -> user.v1.RemoveGroupRoleMemberResponse
+	18, // 24: user.v1.GroupRoleService.UpdateGroupHideRoles:output_type -> user.v1.UpdateGroupHideRolesResponse
+	16, // [16:25] is the sub-list for method output_type
+	7,  // [7:16] is the sub-list for method input_type
+	7,  // [7:7] is the sub-list for extension type_name
+	7,  // [7:7] is the sub-list for extension extendee
+	0,  // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_user_v1_group_role_proto_init() }
@@ -734,13 +1334,14 @@ func file_user_v1_group_role_proto_init() {
 	if File_user_v1_group_role_proto != nil {
 		return
 	}
+	file_user_v1_group_member_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_user_v1_group_role_proto_rawDesc), len(file_user_v1_group_role_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   19,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -17,6 +17,9 @@ type Client interface {
 	CheckUsername(ctx context.Context, in *userv1.CheckUsernameRequest) (*userv1.CheckUsernameResponse, error)
 	UploadUserAvatar(ctx context.Context, in *userv1.UploadUserAvatarRequest) (*userv1.UploadUserAvatarResponse, error)
 	UpdateUserProfile(ctx context.Context, in *userv1.UpdateUserProfileRequest) (*userv1.UpdateUserProfileResponse, error)
+	UpdateUserStatusNote(ctx context.Context, in *userv1.UpdateUserStatusNoteRequest) (*userv1.UpdateUserStatusNoteResponse, error)
+	UpdateUserPreferences(ctx context.Context, in *userv1.UpdateUserPreferencesRequest) (*userv1.UpdateUserPreferencesResponse, error)
+	ListUserActivityLogs(ctx context.Context, in *userv1.ListUserActivityLogsRequest) (*userv1.ListUserActivityLogsResponse, error)
 	UpdateUsername(ctx context.Context, in *userv1.UpdateUsernameRequest) (*userv1.UpdateUsernameResponse, error)
 	RequestEmailChange(ctx context.Context, in *userv1.RequestEmailChangeRequest) (*userv1.RequestEmailChangeResponse, error)
 	VerifyEmailChange(ctx context.Context, in *userv1.VerifyEmailChangeRequest) (*userv1.VerifyEmailChangeResponse, error)
@@ -94,6 +97,24 @@ func (c *client) UploadUserAvatar(ctx context.Context, in *userv1.UploadUserAvat
 func (c *client) UpdateUserProfile(ctx context.Context, in *userv1.UpdateUserProfileRequest) (*userv1.UpdateUserProfileResponse, error) {
 	return utils.CallUnaryResult(ctx, c.none, c.log, "user.UserService/UpdateUserProfile", func(callCtx context.Context) (*userv1.UpdateUserProfileResponse, error) {
 		return c.stub.UpdateUserProfile(callCtx, in)
+	})
+}
+
+func (c *client) UpdateUserStatusNote(ctx context.Context, in *userv1.UpdateUserStatusNoteRequest) (*userv1.UpdateUserStatusNoteResponse, error) {
+	return utils.CallUnaryResult(ctx, c.none, c.log, "user.UserService/UpdateUserStatusNote", func(callCtx context.Context) (*userv1.UpdateUserStatusNoteResponse, error) {
+		return c.stub.UpdateUserStatusNote(callCtx, in)
+	})
+}
+
+func (c *client) UpdateUserPreferences(ctx context.Context, in *userv1.UpdateUserPreferencesRequest) (*userv1.UpdateUserPreferencesResponse, error) {
+	return utils.CallUnaryResult(ctx, c.none, c.log, "user.UserService/UpdateUserPreferences", func(callCtx context.Context) (*userv1.UpdateUserPreferencesResponse, error) {
+		return c.stub.UpdateUserPreferences(callCtx, in)
+	})
+}
+
+func (c *client) ListUserActivityLogs(ctx context.Context, in *userv1.ListUserActivityLogsRequest) (*userv1.ListUserActivityLogsResponse, error) {
+	return utils.CallUnaryResult(ctx, c.none, c.log, "user.UserService/ListUserActivityLogs", func(callCtx context.Context) (*userv1.ListUserActivityLogsResponse, error) {
+		return c.stub.ListUserActivityLogs(callCtx, in)
 	})
 }
 

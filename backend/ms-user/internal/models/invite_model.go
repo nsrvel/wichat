@@ -4,13 +4,15 @@ import "time"
 
 // GroupMemberProfile is a member row with account fields for the share UI.
 type GroupMemberProfile struct {
-	UserID      string
-	DisplayName string
-	Username    string
-	AvatarURL   string
-	Role        string
-	JoinedAt    time.Time
-	Roles       []GroupRoleSummary
+	UserID         string
+	DisplayName    string
+	Username       string
+	AvatarURL      string
+	Role           string
+	JoinedAt       time.Time
+	Roles          []GroupRoleSummary
+	IsOnline       bool
+	PresenceStatus string
 }
 
 // GroupMemberCursor pages group_members by (created_at, user_id).
@@ -64,6 +66,7 @@ type RedeemInviteResult struct {
 // InvitePreviewResult is public invite metadata for the landing page.
 type InvitePreviewResult struct {
 	Valid        bool
+	IsPrivate    bool
 	GroupName    string
 	ChannelName  string
 	GroupLogoURL string

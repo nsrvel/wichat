@@ -10,6 +10,7 @@ import (
 	groupmember "github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-user/grpc/group-member"
 	grouprole "github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-user/grpc/group-role"
 	"github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-user/grpc/invite"
+	"github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-user/grpc/presence"
 	"github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-user/grpc/user"
 	"github.com/wichat/wichat/backend/wi-shared/microservices/utils"
 	userv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/user/v1"
@@ -30,6 +31,7 @@ type GRPC struct {
 	GroupRole   grouprole.Client
 	Invite      invite.Client
 	Channel     channel.Client
+	Presence    presence.Client
 	General     general.Client
 }
 
@@ -43,6 +45,7 @@ func NewGRPC(conn *grpc.ClientConn, settings utils.Settings, log logger.Logger) 
 		GroupRole:   grouprole.New(userv1.NewGroupRoleServiceClient(conn), settings, log),
 		Invite:      invite.New(userv1.NewInviteServiceClient(conn), settings, log),
 		Channel:     channel.New(userv1.NewChannelServiceClient(conn), settings, log),
+		Presence:    presence.New(userv1.NewPresenceServiceClient(conn), settings, log),
 		General:     general.New(conn, settings, log),
 	}
 }
