@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
-import { WiStudioLogoMark } from "@/components/brand/wistudio-logo-mark";
+import { BrandHeader } from "@/components/layout/brand-header";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
 	StatusIllustration,
@@ -44,19 +44,11 @@ export function StatusScreen({
 	return (
 		<main
 			className={cn(
-				"relative flex min-h-dvh w-full flex-col overflow-hidden bg-background text-foreground",
+				"relative flex min-h-dvh w-full flex-col overflow-hidden bg-background pt-[max(0.75rem,env(safe-area-inset-top))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(1.25rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] text-foreground sm:px-6 sm:pt-6 sm:pb-8 md:px-10 md:pb-10",
 				className,
 			)}
 		>
-			<header className="relative z-10 flex items-center px-6 pt-6 sm:px-10 sm:pt-8">
-				<Link
-					href={homeHref}
-					className="inline-flex items-center gap-2.5 rounded-xl text-sm font-semibold tracking-tight text-foreground/90 transition-opacity hover:opacity-80"
-				>
-					<WiStudioLogoMark size={28} />
-					<span>WiChat</span>
-				</Link>
-			</header>
+			<BrandHeader />
 
 			<section className="relative z-10 flex flex-1 items-center justify-center px-6 pb-16 pt-8 sm:px-10">
 				<div className="flex w-full max-w-2xl flex-col items-center gap-8 md:flex-row md:items-center md:justify-center md:gap-12">

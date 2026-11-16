@@ -1,6 +1,17 @@
 "use client";
 
+import { I18nProvider } from "@wichat/i18n";
+import { Geist_Mono } from "next/font/google";
 import { useEffect } from "react";
+import { StatusScreen } from "@/components/status/status-screen";
+import { ThemeProvider } from "@/components/theme-provider";
+import { appSans } from "@/lib/fonts/app-sans";
+import "./globals.css";
+
+const geistMono = Geist_Mono({
+	variable: "--font-geist-mono",
+	subsets: ["latin"],
+});
 
 export default function GlobalErrorPage({
 	error,
@@ -14,35 +25,27 @@ export default function GlobalErrorPage({
 	}, [error]);
 
 	return (
-		<html lang="en" className="dark h-full antialiased">
-			<body className="flex min-h-dvh w-full flex-col bg-[#0f1014] font-sans text-zinc-100">
-				<main className="relative flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden px-6 text-center">
-					<div className="relative z-10 flex max-w-sm flex-col items-center">
-						<p className="text-sm font-medium text-zinc-400">Something went wrong</p>
-						<h1 className="mt-1 text-6xl font-bold leading-none tracking-tight tabular-nums sm:text-7xl">
-							500
-						</h1>
-						<p className="mt-3.5 text-sm leading-relaxed text-zinc-400">
-							We ran into an unexpected issue. Please try again in a moment.
-						</p>
-						<div className="mt-6 flex flex-wrap items-center justify-center gap-2.5">
-							<button
-								type="button"
-								onClick={reset}
-								className="inline-flex h-10 items-center justify-center rounded-xl bg-zinc-100 px-5 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-200"
-							>
-								Try again
-							</button>
-							{/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
-							<a
-								href="/"
-								className="inline-flex h-10 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900/60 px-5 text-sm font-medium text-zinc-100 transition-colors hover:bg-zinc-800"
-							>
-								Back to home
-							</a>
-						</div>
-					</div>
-				</main>
+		<html
+			lang="en"
+			suppressHydrationWarning
+			className={`${appSans.variable} ${geistMono.variable} dark h-full antialiased`}
+		>
+			<body
+				className={`${appSans.className} flex min-h-dvh w-full flex-col bg-background font-sans text-foreground`}
+				suppressHydrationWarning
+			>
+				<ThemeProvider
+					attribute="class"
+					defaultTheme="dark"
+					forcedTheme="dark"
+					enableSystem={false}
+					storageKey="wichat-theme"
+					disableTransitionOnChange
+				>
+					<I18nProvider locale="en">
+						<StatusScreen variant="error" onRetry={reset} />
+					</I18nProvider>
+				</ThemeProvider>
 			</body>
 		</html>
 	);

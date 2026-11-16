@@ -42,8 +42,8 @@ const CreateCategorySchema = z.object({
 	name: z
 		.string()
 		.trim()
-		.min(1, "channel.create_category_dialog.validation_required")
-		.max(64, "channel.create_category_dialog.validation_max"),
+		.min(1, "channel_category.create_dialog.validation_required")
+		.max(64, "channel_category.create_dialog.validation_max"),
 	isPrivate: z.boolean(),
 });
 
@@ -125,7 +125,7 @@ export function CreateCategoryDialog({
 	return (
 		<WiChatDialog open={open} onOpenChange={handleOpenChange} titleId={CREATE_CATEGORY_TITLE_ID}>
 			<WiChatDialogHeader
-				title={t("channel.create_category_dialog.title")}
+				title={t("channel_category.create_dialog.title")}
 				titleId={CREATE_CATEGORY_TITLE_ID}
 			/>
 
@@ -140,7 +140,7 @@ export function CreateCategoryDialog({
 								return;
 							}
 							toast.info(
-								t("channel.create_category_dialog.preview_toast", {
+								t("channel_category.create_dialog.preview_toast", {
 									name: values.name,
 								}),
 							);
@@ -153,7 +153,7 @@ export function CreateCategoryDialog({
 							render={({ field }) => (
 								<FormItem className="space-y-1.5">
 									<FormLabel className={authFieldLabelClass}>
-										{t("channel.create_category_dialog.name_label")}
+										{t("channel_category.create_dialog.name_label")}
 										<span className="text-destructive" aria-hidden>
 											{" *"}
 										</span>
@@ -168,7 +168,7 @@ export function CreateCategoryDialog({
 												}}
 												maxLength={64}
 												autoFocus
-												placeholder={t("channel.create_category_dialog.name_placeholder")}
+												placeholder={t("channel_category.create_dialog.name_placeholder")}
 												className={cn(authInputClass, "pr-11")}
 											/>
 											<ExpressionPickerPopover
@@ -184,7 +184,7 @@ export function CreateCategoryDialog({
 												trigger={
 													<button
 														type="button"
-														aria-label={t("channel.create_category_dialog.emoji_picker")}
+														aria-label={t("channel_category.create_dialog.emoji_picker")}
 														className="absolute right-2 flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground data-[popup-open]:bg-accent data-[popup-open]:text-foreground"
 													>
 														<Smile className="size-[18px]" strokeWidth={1.8} />
@@ -206,10 +206,10 @@ export function CreateCategoryDialog({
 										className="flex cursor-pointer items-center gap-1.5 text-sm font-semibold text-foreground"
 									>
 										<Lock className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-										<span>{t("channel.create_category_dialog.private_title")}</span>
+										<span>{t("channel_category.create_dialog.private_title")}</span>
 									</label>
 									<p className="text-xs leading-relaxed text-muted-foreground">
-										{t("channel.create_category_dialog.private_description")}
+										{t("channel_category.create_dialog.private_description")}
 									</p>
 								</div>
 								<Switch
@@ -218,7 +218,7 @@ export function CreateCategoryDialog({
 									onCheckedChange={(checked) =>
 										form.setValue("isPrivate", checked, { shouldDirty: true })
 									}
-									aria-label={t("channel.create_category_dialog.private_title")}
+									aria-label={t("channel_category.create_dialog.private_title")}
 									className="mt-0.5"
 								/>
 							</div>
@@ -229,9 +229,9 @@ export function CreateCategoryDialog({
 
 			<WiChatDialogFooter>
 				<WiChatDialogFooterActions
-					backLabel={t("channel.create_category_dialog.cancel")}
+					backLabel={t("channel_category.create_dialog.cancel")}
 					onBack={() => handleOpenChange(false)}
-					primaryLabel={t("channel.create_category_dialog.submit")}
+					primaryLabel={t("channel_category.create_dialog.submit")}
 					primaryType="submit"
 					primaryForm={CREATE_CATEGORY_FORM_ID}
 					primaryDisabled={!canSubmit || submitting}

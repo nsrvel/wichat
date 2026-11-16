@@ -241,6 +241,7 @@ type CreateGroupRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
 	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Template      string                 `protobuf:"bytes,3,opt,name=template,proto3" json:"template,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -285,6 +286,13 @@ func (x *CreateGroupRequest) GetAccessToken() string {
 func (x *CreateGroupRequest) GetName() string {
 	if x != nil {
 		return x.Name
+	}
+	return ""
+}
+
+func (x *CreateGroupRequest) GetTemplate() string {
+	if x != nil {
+		return x.Template
 	}
 	return ""
 }
@@ -1217,10 +1225,11 @@ const file_user_v1_group_proto_rawDesc = "" +
 	"\x13ListMyGroupsRequest\x12!\n" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\"E\n" +
 	"\x14ListMyGroupsResponse\x12-\n" +
-	"\x06groups\x18\x01 \x03(\v2\x15.user.v1.GroupSummaryR\x06groups\"K\n" +
+	"\x06groups\x18\x01 \x03(\v2\x15.user.v1.GroupSummaryR\x06groups\"g\n" +
 	"\x12CreateGroupRequest\x12!\n" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\"B\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1a\n" +
+	"\btemplate\x18\x03 \x01(\tR\btemplate\"B\n" +
 	"\x13CreateGroupResponse\x12+\n" +
 	"\x05group\x18\x01 \x01(\v2\x15.user.v1.GroupSummaryR\x05group\"X\n" +
 	"\x16ReorderMyGroupsRequest\x12!\n" +

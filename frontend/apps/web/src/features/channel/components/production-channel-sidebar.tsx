@@ -11,7 +11,6 @@ import {
 	PointerSensor,
 	closestCenter,
 	pointerWithin,
-	useDroppable,
 	useSensor,
 	useSensors,
 } from "@dnd-kit/core";
@@ -21,7 +20,7 @@ import {
 	sortableKeyboardCoordinates,
 	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import type { Channel } from "@wichat/contracts/chat/channel";
+import { type Channel, creatableChannelKindSchema } from "@wichat/contracts/chat/channel";
 import { useQuery } from "@tanstack/react-query";
 import { AtSign, Compass, FileText, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -39,10 +38,15 @@ import {
 	sidebarNestedListClass,
 } from "@/components/layout/channel-sidebar/sidebar-nav-styles";
 import { sidebarNavGlyphIconClass } from "@/components/layout/sidebar-list-icon";
-import { SortableCategoryItem } from "@/features/channel/components/sortable-category-item";
+import { SortableCategoryItem } from "@/features/channel-category/components/sortable-category-item";
 import { SortableChannelRow } from "@/features/channel/components/sortable-channel-list";
 import { formatChannelDisplayName } from "@/features/channel/lib/channel-display";
+import { useCategorySettings } from "@/features/channel-category/category-settings/category-settings-provider";
+import { useChannelSettings } from "@/features/channel/channel-settings/channel-settings-provider";
+import { DeleteCategoryConfirmDialog } from "@/features/channel-category/category-settings/delete-category-confirm-dialog";
 import { useCreateChannelDialog } from "@/features/channel/create-channel-dialog-provider";
+import { useInviteDialog } from "@/features/invite/invite-dialog-provider";
+import { translateError } from "@/integrations/i18n/translate-error";
 import { railOrderMove } from "@/features/shell/lib/rail-order";
 import { hasGroupPermission } from "@/lib/group-permissions";
 import {
@@ -51,11 +55,14 @@ import {
 } from "@/hooks/use-resizable-sidebar-width";
 import { channelPath, quickViewPath, type QuickViewId } from "@/lib/app-routes";
 import { cn } from "@/lib/utils";
-import { partitionChannelsBySidebarSection } from "@/features/channel/lib/partition-group-channels";
 import {
-	useReorderGroupCategoriesMutation,
+	useCreateGroupChannelMutation,
 	useReorderGroupChannelsMutation,
 } from "@/services/channel/channel.mutation";
+import {
+	useDeleteGroupCategoryMutation,
+	useReorderGroupCategoriesMutation,
+} from "@/services/channel-category/channel-category.mutation";
 import * as channelQuery from "@/services/channel/channel.query";
 import { myGroupsQueryOpts } from "@/services/group/group.query";
 
@@ -77,6 +84,15 @@ export function ProductionChannelSidebar({
 	const { t } = useTranslation();
 	const router = useRouter();
 	const { openCreateChannel } = useCreateChannelDialog();
+	const { openCategorySettings } = useCategorySettings();
+	const { openChannelSettings } = useChannelSettings();
+	const { openInvite } = useInviteDialog();
+	const createChannel = useCreateGroupChannelMutation(groupId);
+	const deleteCategoryMutation = useDeleteGroupCategoryMutation(groupId);
+	const [pendingDeleteCategory, setPendingDeleteCategory] = useState<{
+		id: string;
+		name: string;
+	} | null>(null);
 	const channels = useQuery(channelQuery.groupChannelsQueryOpts(groupId));
 	const { data: myGroups = [] } = useQuery(myGroupsQueryOpts());
 	const currentGroup = myGroups.find((g) => g.id === groupId);
@@ -88,17 +104,9 @@ export function ProductionChannelSidebar({
 	const width = controlledWidth ?? internalWidth;
 
 	const [quickViewsOpen, setQuickViewsOpen] = useState(true);
-	const [favoritesOpen, setFavoritesOpen] = useState(true);
 	const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
 	const [chatsOpen, setChatsOpen] = useState(true);
 	const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
-
-	const FAVORITES_BUCKET_ID = "__favorites__";
-	const { setNodeRef: setFavoritesDroppableRef } = useDroppable({
-		id: FAVORITES_BUCKET_ID,
-		disabled: !canManageChannels,
-		data: { type: "favorites", categoryId: FAVORITES_BUCKET_ID },
-	});
 
 	const channelList = channels.data?.channels ?? [];
 	const categories = channels.data?.categories ?? [];
@@ -109,12 +117,117 @@ export function ProductionChannelSidebar({
 
 	const [activeDrag, setActiveDrag] = useState<ActiveDragItem | null>(null);
 	const [dragChannels, setDragChannels] = useState<Channel[] | null>(null);
-	const { favorites: favoriteChannels, listChannels } = partitionChannelsBySidebarSection(
-		dragChannels ?? channelList,
-	);
+	const displayedChannels = dragChannels ?? channelList;
+	const uncategorizedChannels = displayedChannels.filter((c) => !c.category_id);
 
 	const reorderCategories = useReorderGroupCategoriesMutation(groupId);
 	const reorderChannels = useReorderGroupChannelsMutation(groupId);
+	const collapseAllCategories = () => {
+		setQuickViewsOpen(false);
+		setChatsOpen(false);
+		setCollapsedCategories(Object.fromEntries(categories.map((entry) => [entry.id, true])));
+	};
+	const moveChannelToCategory = (ch: Channel, targetCategoryId: string | null) => {
+		const targetIds = channelList
+			.filter((entry) => (entry.category_id || null) === targetCategoryId && entry.id !== ch.id)
+			.map((entry) => entry.id);
+		targetIds.push(ch.id);
+		reorderChannels.mutate(
+			{
+				channelIds: targetIds,
+				categoryId: targetCategoryId ?? undefined,
+				sidebarSection: "channels",
+			},
+			{
+				onSuccess: () => toast.success(t("channel.channel_context_menu.move_success")),
+				onError: (err) => toast.error(translateError(t, err)),
+			},
+		);
+	};
+	const duplicateChannel = (ch: Channel) => {
+		const parsedKind = creatableChannelKindSchema.safeParse(ch.type);
+		createChannel.mutate(
+			{
+				name: `${ch.name}-copy`.slice(0, 64),
+				type: parsedKind.success ? parsedKind.data : "text_only",
+				category_id: ch.category_id ?? undefined,
+				is_private: ch.is_private,
+			},
+			{
+				onSuccess: () => toast.success(t("channel.channel_context_menu.duplicate_success")),
+				onError: (err) => toast.error(translateError(t, err)),
+			},
+		);
+	};
+	const moveChannelInCategory = (ch: Channel, edge: "first" | "last") => {
+		const catId = ch.category_id || null;
+		const siblingIds = channelList
+			.filter((entry) => (entry.category_id || null) === catId)
+			.map((entry) => entry.id);
+		const nextIds = railOrderMove(siblingIds, ch.id, edge);
+		if (nextIds.every((id, i) => id === siblingIds[i])) {
+			return;
+		}
+		reorderChannels.mutate(
+			{
+				channelIds: nextIds,
+				categoryId: catId ?? undefined,
+				sidebarSection: "channels",
+			},
+			{
+				onError: (err) => toast.error(translateError(t, err)),
+			},
+		);
+	};
+	const renderChannelRow = (
+		ch: Channel,
+		index: number,
+		siblingCount: number,
+		categoryId?: string,
+	) => (
+		<SortableChannelRow
+			key={ch.id}
+			channel={ch}
+			categories={categories}
+			categoryId={categoryId}
+			selected={!activeQuickView && ch.id === activeChannelId}
+			disabled={!canManageChannels}
+			canManage={canManageChannels}
+			isFirstInCategory={index === 0}
+			isLastInCategory={index >= siblingCount - 1}
+			activeMenuId={activeMenuId}
+			onActiveMenuIdChange={setActiveMenuId}
+			onSelect={() => router.push(channelPath(groupId, ch.id))}
+			onInvite={() =>
+				openInvite({
+					scope: "channel",
+					groupId,
+					groupName: currentGroup?.name ?? "",
+					channelId: ch.id,
+					channelName: ch.name,
+				})
+			}
+			onMoveToCategory={(targetCategoryId) => moveChannelToCategory(ch, targetCategoryId)}
+			onMoveToFirstInCategory={() => moveChannelInCategory(ch, "first")}
+			onMoveToLastInCategory={() => moveChannelInCategory(ch, "last")}
+			onEditChannel={() =>
+				openChannelSettings({
+					groupId,
+					channelId: ch.id,
+					channelName: ch.name,
+					channelType: ch.type,
+				})
+			}
+			onDuplicateChannel={() => duplicateChannel(ch)}
+			onCreateChannel={() =>
+				openCreateChannel({
+					groupId,
+					groupName: currentGroup?.name,
+					defaultCategoryId: ch.category_id ?? undefined,
+				})
+			}
+		/>
+	);
 	const sensors = useSensors(
 		useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
 		useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -156,7 +269,7 @@ export function ProductionChannelSidebar({
 			return;
 		}
 		const overData = over.data.current as
-			{ type?: "category" | "channel" | "favorites"; categoryId?: string } | undefined;
+			{ type?: "category" | "channel"; categoryId?: string } | undefined;
 		const targetCategoryId = overData?.categoryId;
 		if (!targetCategoryId) {
 			return;
@@ -174,18 +287,16 @@ export function ProductionChannelSidebar({
 				return prev;
 			}
 			const activeChannel = prev[activeIndex];
-			const currentBucket =
-				activeChannel.sidebar_section === "favorites"
-					? FAVORITES_BUCKET_ID
-					: (activeChannel.category_id ?? "");
+			const currentBucket = activeChannel.category_id ?? "";
 			if (currentBucket === targetCategoryId) {
 				return prev;
 			}
 
-			const updated: Channel =
-				targetCategoryId === FAVORITES_BUCKET_ID
-					? { ...activeChannel, sidebar_section: "favorites", category_id: "" }
-					: { ...activeChannel, sidebar_section: "channels", category_id: targetCategoryId };
+			const updated: Channel = {
+				...activeChannel,
+				sidebar_section: "channels",
+				category_id: targetCategoryId,
+			};
 			const withoutActive = prev.filter((c) => c.id !== activeId);
 
 			if (overData?.type === "channel") {
@@ -294,13 +405,10 @@ export function ProductionChannelSidebar({
 			if (!movedChannel) {
 				return;
 			}
-			const isFavorites = movedChannel.sidebar_section === "favorites";
 			const targetCategoryId = movedChannel.category_id ?? "";
-			const targetChannels = isFavorites
-				? snapshotChannels.filter((c) => c.sidebar_section === "favorites")
-				: snapshotChannels.filter(
-						(c) => c.sidebar_section !== "favorites" && c.category_id === targetCategoryId,
-					);
+			const targetChannels = snapshotChannels.filter(
+				(c) => (c.category_id ?? "") === targetCategoryId,
+			);
 			const oldIndex = targetChannels.findIndex((c) => c.id === activeId);
 			const overIndex = targetChannels.findIndex((c) => c.id === String(over.id));
 			const reordered =
@@ -308,15 +416,11 @@ export function ProductionChannelSidebar({
 					? arrayMove(targetChannels, oldIndex, overIndex)
 					: targetChannels;
 
-			reorderChannels.mutate(
-				isFavorites
-					? { channelIds: reordered.map((c) => c.id), sidebarSection: "favorites" }
-					: {
-							channelIds: reordered.map((c) => c.id),
-							categoryId: targetCategoryId || undefined,
-							sidebarSection: "channels",
-						},
-			);
+			reorderChannels.mutate({
+				channelIds: reordered.map((c) => c.id),
+				categoryId: targetCategoryId || undefined,
+				sidebarSection: "channels",
+			});
 		}
 	};
 
@@ -340,14 +444,21 @@ export function ProductionChannelSidebar({
 				<div className="thin-scroll flex-1 overflow-y-auto pb-20">
 					<div className={SIDEBAR_INSET_X}>
 						<div className="group/cat">
-							<SidebarCategoryRow
-								title={t("shell.sidebar.quick_views")}
+							<SidebarCategoryContextMenu
+								categoryName={t("shell.sidebar.quick_views")}
 								open={quickViewsOpen}
 								onToggle={() => setQuickViewsOpen((o) => !o)}
-								menuId="cat-quick-views"
-								activeMenuId={activeMenuId}
-								onActiveMenuIdChange={setActiveMenuId}
-							/>
+								onCollapseAll={collapseAllCategories}
+							>
+								<SidebarCategoryRow
+									title={t("shell.sidebar.quick_views")}
+									open={quickViewsOpen}
+									onToggle={() => setQuickViewsOpen((o) => !o)}
+									menuId="cat-quick-views"
+									activeMenuId={activeMenuId}
+									onActiveMenuIdChange={setActiveMenuId}
+								/>
+							</SidebarCategoryContextMenu>
 							{quickViewsOpen ? (
 								<nav className={sidebarNestedListClass}>
 									<SidebarNavItem
@@ -399,56 +510,27 @@ export function ProductionChannelSidebar({
 							onDragEnd={onDragEnd}
 							onDragCancel={resetDragState}
 						>
-							<div ref={setFavoritesDroppableRef} className="group/cat mt-2">
-								<SidebarCategoryRow
-									title={t("shell.sidebar.favorites")}
-									open={favoritesOpen}
-									onToggle={() => setFavoritesOpen((o) => !o)}
-									menuId="cat-favorites"
-									activeMenuId={activeMenuId}
-									onActiveMenuIdChange={setActiveMenuId}
-								/>
-								{favoritesOpen ? (
-									favoriteChannels.length > 0 ? (
-										<SortableContext
-											items={favoriteChannels.map((ch) => ch.id)}
-											strategy={verticalListSortingStrategy}
-										>
-											<div className={sidebarNestedListClass}>
-												{favoriteChannels.map((ch) => (
-													<SortableChannelRow
-														key={ch.id}
-														channel={ch}
-														categoryId={FAVORITES_BUCKET_ID}
-														selected={!activeQuickView && ch.id === activeChannelId}
-														disabled={!canManageChannels}
-														activeMenuId={activeMenuId}
-														onActiveMenuIdChange={setActiveMenuId}
-														onSelect={() => router.push(channelPath(groupId, ch.id))}
-													/>
-												))}
-											</div>
-										</SortableContext>
-									) : (
-										<SidebarCategoryEmptyHint>
-											{t("shell.sidebar.empty_favorites")}
-										</SidebarCategoryEmptyHint>
-									)
-								) : null}
-							</div>
+							{uncategorizedChannels.length > 0 ? (
+								<SortableContext
+									items={uncategorizedChannels.map((ch) => ch.id)}
+									strategy={verticalListSortingStrategy}
+								>
+									<div className={cn(sidebarNestedListClass, "mt-2")}>
+										{uncategorizedChannels.map((ch, idx) =>
+											renderChannelRow(ch, idx, uncategorizedChannels.length, ""),
+										)}
+									</div>
+								</SortableContext>
+							) : null}
 							<SortableContext items={orderedCategoryIds} strategy={verticalListSortingStrategy}>
 								{categories.map((cat, index) => {
 									const isOpen = !collapsedCategories[cat.id];
-									const catChannels = listChannels.filter((ch) => ch.category_id === cat.id);
+									const catChannels = displayedChannels.filter((ch) => ch.category_id === cat.id);
 									const toggleCategory = () =>
 										setCollapsedCategories((prev) => ({
 											...prev,
 											[cat.id]: isOpen,
 										}));
-									const collapseAllCategories = () =>
-										setCollapsedCategories(
-											Object.fromEntries(categories.map((entry) => [entry.id, true])),
-										);
 									return (
 										<SortableCategoryItem
 											key={cat.id}
@@ -458,7 +540,7 @@ export function ProductionChannelSidebar({
 											canManage={canManageChannels}
 											isFirst={index === 0}
 											isLast={index === categories.length - 1}
-											addLabel={t("channel.category_context_menu.create_channel")}
+											addLabel={t("channel_category.context_menu.create_channel")}
 											onToggle={toggleCategory}
 											onCollapseAll={collapseAllCategories}
 											onAddClick={
@@ -473,6 +555,22 @@ export function ProductionChannelSidebar({
 											}
 											onMoveToTop={() => moveCategory(cat.id, "first")}
 											onMoveToBottom={() => moveCategory(cat.id, "last")}
+											onEditCategory={
+												canManageChannels
+													? () =>
+															openCategorySettings({
+																groupId,
+																categoryId: cat.id,
+																categoryName: cat.name,
+																isPrivate: cat.is_private,
+															})
+													: undefined
+											}
+											onDeleteCategory={
+												canManageChannels
+													? () => setPendingDeleteCategory({ id: cat.id, name: cat.name })
+													: undefined
+											}
 										>
 											{isOpen ? (
 												catChannels.length > 0 ? (
@@ -481,18 +579,9 @@ export function ProductionChannelSidebar({
 														strategy={verticalListSortingStrategy}
 													>
 														<div className={sidebarNestedListClass}>
-															{catChannels.map((ch) => (
-																<SortableChannelRow
-																	key={ch.id}
-																	channel={ch}
-																	categoryId={cat.id}
-																	selected={!activeQuickView && ch.id === activeChannelId}
-																	disabled={!canManageChannels}
-																	activeMenuId={activeMenuId}
-																	onActiveMenuIdChange={setActiveMenuId}
-																	onSelect={() => router.push(channelPath(groupId, ch.id))}
-																/>
-															))}
+															{catChannels.map((ch, idx) =>
+																renderChannelRow(ch, idx, catChannels.length, cat.id),
+															)}
 														</div>
 													</SortableContext>
 												) : channels.isPending ? null : (
@@ -540,12 +629,7 @@ export function ProductionChannelSidebar({
 								categoryName={t("shell.sidebar.chats")}
 								open={chatsOpen}
 								onToggle={() => setChatsOpen((o) => !o)}
-								onCollapseAll={() => {
-									setChatsOpen(false);
-									setCollapsedCategories(
-										Object.fromEntries(categories.map((entry) => [entry.id, true])),
-									);
-								}}
+								onCollapseAll={collapseAllCategories}
 							>
 								<SidebarCategoryRow
 									title={t("shell.sidebar.chats")}
@@ -567,6 +651,31 @@ export function ProductionChannelSidebar({
 			{!panelResizeHandle ? null : (
 				<div className="pointer-events-none absolute inset-y-0 right-0 w-px" aria-hidden />
 			)}
+			<DeleteCategoryConfirmDialog
+				categoryName={pendingDeleteCategory?.name ?? ""}
+				open={pendingDeleteCategory !== null}
+				onOpenChange={(open) => {
+					if (!open) {
+						setPendingDeleteCategory(null);
+					}
+				}}
+				confirmDisabled={deleteCategoryMutation.isPending}
+				onConfirm={() => {
+					if (!pendingDeleteCategory) {
+						return;
+					}
+					const targetCat = pendingDeleteCategory;
+					deleteCategoryMutation.mutate(targetCat.id, {
+						onSuccess: () => {
+							setPendingDeleteCategory(null);
+							toast.success(t("channel_category.settings.deleted_toast", { name: targetCat.name }));
+						},
+						onError: (err) => {
+							toast.error(translateError(t, err));
+						},
+					});
+				}}
+			/>
 		</div>
 	);
 }

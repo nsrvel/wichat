@@ -16,6 +16,9 @@ import (
 	authgrpc "github.com/wichat/wichat/backend/ms-user/internal/auth/delivery/grpc"
 	authrepo "github.com/wichat/wichat/backend/ms-user/internal/auth/repository"
 	authservice "github.com/wichat/wichat/backend/ms-user/internal/auth/service"
+	categorygrpc "github.com/wichat/wichat/backend/ms-user/internal/channel-category/delivery/grpc"
+	categoryrepo "github.com/wichat/wichat/backend/ms-user/internal/channel-category/repository"
+	categoryservice "github.com/wichat/wichat/backend/ms-user/internal/channel-category/service"
 	channelgrpc "github.com/wichat/wichat/backend/ms-user/internal/channel/delivery/grpc"
 	channelrepo "github.com/wichat/wichat/backend/ms-user/internal/channel/repository"
 	channelservice "github.com/wichat/wichat/backend/ms-user/internal/channel/service"
@@ -140,6 +143,7 @@ func (s *server) Run(ctx context.Context) error {
 	userMinio := userrepo.NewMinioRepository(minioClient)
 	groupMinio := grouprepo.NewMinioRepository(minioClient)
 	channelPg := channelrepo.NewPgRepository(db, s.log)
+	categoryPg := categoryrepo.NewPgRepository(db, s.log)
 	invitePg := inviterepo.NewPgRepository(db, s.log)
 	authSessions := authrepo.NewSessionRepository(db)
 	authRefresh := authrepo.NewRedisRefreshStore(rdb)
@@ -167,7 +171,8 @@ func (s *server) Run(ctx context.Context) error {
 	groupActivityRepo := groupactivityrepo.NewPgRepository(db)
 	groupActivitySvc := groupactivityservice.NewService(groupActivityRepo, groupPg, groupMemberPg, groupRolePg, authSessions, secret, s.log)
 	userSvc := userservice.NewServiceWithMFA(userPg, groupPg, groupMemberPg, userMinio, authSessions, authRefresh, emailAuthStore, emailChangeStore, userMFAStore, wa, mfaKey, notifyClient, secret, s.log).WithActivityLog(activitySvc)
-	channelSvc := channelservice.NewService(channelPg, groupPg, groupMemberPg, groupRolePg, authSessions, secret, s.log)
+	channelSvc := channelservice.NewService(channelPg, categoryPg, groupPg, groupMemberPg, groupRolePg, authSessions, secret, s.log).WithGroupActivityLog(groupActivitySvc)
+	categorySvc := categoryservice.NewService(categoryPg, groupPg, groupMemberPg, groupRolePg, authSessions, secret, s.log).WithGroupActivityLog(groupActivitySvc)
 	groupSvc := groupservice.NewService(groupPg, groupMemberPg, groupRolePg, channelSvc, userPg, groupMinio, authSessions, secret, s.log).WithActivityLog(activitySvc).WithGroupActivityLog(groupActivitySvc)
 	groupMemberSvc := groupmemberservice.NewService(groupMemberPg, groupPg, groupRolePg, authSessions, secret, s.log).WithActivityLog(activitySvc).WithGroupActivityLog(groupActivitySvc).WithPresence(presenceSvc)
 	groupRoleSvc := grouproleservice.NewService(groupRolePg, groupPg, groupMemberPg, authSessions, secret, s.log).WithGroupActivityLog(groupActivitySvc)
@@ -204,6 +209,7 @@ func (s *server) Run(ctx context.Context) error {
 	userv1.RegisterGroupRoleServiceServer(grpcSrv, grouprolegrpc.NewServer(groupRoleSvc))
 	userv1.RegisterInviteServiceServer(grpcSrv, invitegrpc.NewServer(inviteSvc))
 	userv1.RegisterChannelServiceServer(grpcSrv, channelgrpc.NewServer(channelSvc))
+	userv1.RegisterChannelCategoryServiceServer(grpcSrv, categorygrpc.NewServer(categorySvc))
 	userv1.RegisterPresenceServiceServer(grpcSrv, presencegrpc.NewServer(presenceSvc))
 	userv1.RegisterGeneralServiceServer(grpcSrv, generalgrpc.NewServer("ms-user"))
 

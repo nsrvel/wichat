@@ -31,7 +31,7 @@ async function openGroupHeaderMenu(page: Page, groupName: string): Promise<void>
 }
 
 test.describe("Group create category & starter sidebar", () => {
-	test("new group shows permanent categories (Quick views, Favorites, Chats), starter Text Channels & Voice Channels, and 2 General channels", async ({
+	test("new group shows permanent sections (Quick views, Chats), starter categories (Favorites, Text Channels, Voice Channels), and 2 General channels", async ({
 		page,
 		context,
 		request,
@@ -41,7 +41,11 @@ test.describe("Group create category & starter sidebar", () => {
 		const group = await createGroupWithInvite(request, owner, groupName);
 
 		const payload = await fetchGroupChannels(request, owner, group.id);
-		expect(payload.categories.map((c) => c.name)).toEqual(["Text Channels", "Voice Channels"]);
+		expect(payload.categories.map((c) => c.name)).toEqual([
+			"Favorites",
+			"Text Channels",
+			"Voice Channels",
+		]);
 		const generals = payload.channels.filter((c) => c.name === "General");
 		expect(generals).toHaveLength(2);
 		expect(generals.map((c) => c.type).sort()).toEqual(["text_only", "voice_only"]);
@@ -49,15 +53,15 @@ test.describe("Group create category & starter sidebar", () => {
 		await loginInBrowser(context, owner);
 		await page.goto(`/channel/${encodeURIComponent(group.id)}`);
 
-		// Permanent categories only: Quick views, Favorites, Chats
+		// Permanent sections: Quick views, Chats
 		await expect(page.getByRole("button", { name: /^quick views$/i })).toBeVisible();
-		await expect(page.getByRole("button", { name: /^favorites$/i })).toBeVisible();
 		await expect(page.getByRole("button", { name: /^chats$/i })).toBeVisible();
 
 		// Legacy "Channels" category is removed
 		await expect(page.getByRole("button", { name: /^channels$/i })).toBeHidden();
 
 		// Starter categories & 2 General channels
+		await expect(page.getByRole("button", { name: /^favorites$/i })).toBeVisible();
 		await expect(page.getByRole("button", { name: /^text channels$/i })).toBeVisible();
 		await expect(page.getByRole("button", { name: /^voice channels$/i })).toBeVisible();
 		await expect(page.getByRole("button", { name: /^general$/i })).toHaveCount(2);

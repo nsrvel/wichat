@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ChevronRight } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
@@ -32,7 +33,7 @@ import {
 import { GroupIconUpload } from "@/components/group/group-icon-upload";
 import { translateError } from "@/integrations/i18n/translate-error";
 import { groupNameSchema } from "@wichat/contracts/common";
-import type { Group } from "@wichat/contracts/group";
+import type { Group, GroupTemplateId } from "@wichat/contracts/group";
 import { cn } from "@/lib/utils";
 import { normalizeInviteToken } from "@/features/invite/lib/normalize-invite-token";
 import { channelPath } from "@/lib/app-routes";
@@ -50,38 +51,44 @@ export type GroupOnboardingMode = "pick" | "create" | "join";
 
 type Mode = GroupOnboardingMode;
 
-const GROUP_TEMPLATES = [
+const CREATE_OWN_ICON_SRC = "/template-icons/template-create-my-own.png";
+
+const GROUP_TEMPLATES: ReadonlyArray<{
+	id: Exclude<GroupTemplateId, "custom">;
+	iconSrc: string;
+	labelKey: string;
+	nameKey: string;
+}> = [
 	{
-		id: "gaming",
-		emoji: "🎮",
-		labelKey: "group.home.template_gaming",
-		nameKey: "group.home.template_gaming_name",
+		id: "office",
+		iconSrc: "/template-icons/template-startup-company.png",
+		labelKey: "group.home.template_office",
+		nameKey: "group.home.template_office_name",
 	},
 	{
-		id: "friends",
-		emoji: "💜",
-		labelKey: "group.home.template_friends",
-		nameKey: "group.home.template_friends_name",
+		id: "project",
+		iconSrc: "/template-icons/template-project-team.png",
+		labelKey: "group.home.template_project",
+		nameKey: "group.home.template_project_name",
 	},
 	{
 		id: "study",
-		emoji: "🍎",
+		iconSrc: "/template-icons/template-study-group.png",
 		labelKey: "group.home.template_study",
 		nameKey: "group.home.template_study_name",
 	},
 	{
-		id: "school",
-		emoji: "📖",
-		labelKey: "group.home.template_school",
-		nameKey: "group.home.template_school_name",
+		id: "gaming",
+		iconSrc: "/template-icons/template-gaming.png",
+		labelKey: "group.home.template_gaming",
+		nameKey: "group.home.template_gaming_name",
 	},
-] as const;
+];
 
 const optionRowClass =
 	"flex w-full min-w-0 items-center gap-3 rounded-xl bg-field px-3 py-2.5 text-left text-sm font-medium text-foreground transition-colors hover:bg-field/80 sm:py-3";
 
-const optionEmojiClass =
-	"flex size-10 shrink-0 items-center justify-center text-[1.625rem] leading-none";
+const optionIconClass = "size-10 shrink-0 rounded-xl object-cover";
 
 function modeStepIndex(mode: Mode): number {
 	if (mode === "pick") {
@@ -107,6 +114,7 @@ export function GroupOnboardingFlow({
 }: GroupOnboardingFlowProps) {
 	const { t } = useTranslation();
 	const [mode, setMode] = useState<Mode>(initialMode);
+	const [selectedTemplate, setSelectedTemplate] = useState<GroupTemplateId>("custom");
 	const stepIndex = modeStepIndex(mode);
 	const router = useRouter();
 	const queryClient = useQueryClient();
@@ -143,8 +151,9 @@ export function GroupOnboardingFlow({
 		router.push(channelPath(groupId, defaultChannelId));
 	};
 
-	const startCreate = (prefillName = "") => {
+	const startCreate = (prefillName = "", template: GroupTemplateId = "custom") => {
 		form.reset({ name: prefillName });
+		setSelectedTemplate(template);
 		setGroupIconFile(null);
 		setMode("create");
 	};
@@ -167,10 +176,19 @@ export function GroupOnboardingFlow({
 			/>
 			<WiChatDialogBody>
 				<div className="space-y-5 pb-4 sm:space-y-6 sm:pb-5">
-					<button type="button" className={optionRowClass} onClick={() => startCreate()}>
-						<span className={optionEmojiClass} aria-hidden>
-							🏆
-						</span>
+					<button
+						type="button"
+						className={optionRowClass}
+						onClick={() => startCreate("", "custom")}
+					>
+						<Image
+							src={CREATE_OWN_ICON_SRC}
+							alt=""
+							width={40}
+							height={40}
+							className={optionIconClass}
+							aria-hidden
+						/>
 						<span className="min-w-0 flex-1">{t("group.home.create_own")}</span>
 						<ChevronRight className="size-5 shrink-0 text-muted-foreground" aria-hidden />
 					</button>
@@ -185,11 +203,16 @@ export function GroupOnboardingFlow({
 									<button
 										type="button"
 										className={optionRowClass}
-										onClick={() => startCreate(t(template.nameKey))}
+										onClick={() => startCreate(t(template.nameKey), template.id)}
 									>
-										<span className={optionEmojiClass} aria-hidden>
-											{template.emoji}
-										</span>
+										<Image
+											src={template.iconSrc}
+											alt=""
+											width={40}
+											height={40}
+											className={optionIconClass}
+											aria-hidden
+										/>
 										<span className="min-w-0 flex-1">{t(template.labelKey)}</span>
 										<ChevronRight className="size-5 shrink-0 text-muted-foreground" aria-hidden />
 									</button>
@@ -230,51 +253,54 @@ export function GroupOnboardingFlow({
 							className={authFormClass}
 							onSubmit={form.handleSubmit((values) => {
 								setCreateBusy(true);
-								createGroup.mutate(values, {
-									onSuccess: async (group) => {
-										try {
-											const owned: Group = {
-												...group,
-												role: group.role ?? "owner",
-											};
-											queryClient.setQueryData<Group[]>([Q_MY_GROUPS], (prev) => [
-												...(prev ?? []).filter((g) => g.id !== owned.id),
-												owned,
-											]);
+								createGroup.mutate(
+									{ name: values.name, template: selectedTemplate },
+									{
+										onSuccess: async (group) => {
+											try {
+												const owned: Group = {
+													...group,
+													role: group.role ?? "owner",
+												};
+												queryClient.setQueryData<Group[]>([Q_MY_GROUPS], (prev) => [
+													...(prev ?? []).filter((g) => g.id !== owned.id),
+													owned,
+												]);
 
-											if (groupIconFile) {
-												try {
-													const updated = await uploadGroupIcon(group.id, groupIconFile);
-													queryClient.setQueryData<Group[]>([Q_MY_GROUPS], (prev) => {
-														const list = prev ?? [];
-														return list.map((g) =>
-															g.id === updated.id
-																? {
-																		...g,
-																		logo_url: updated.logo_url,
-																		role: updated.role ?? g.role ?? "owner",
-																	}
-																: g,
-														);
-													});
-												} catch {
-													// Group already created — continue without logo (e.g. MinIO off locally).
+												if (groupIconFile) {
+													try {
+														const updated = await uploadGroupIcon(group.id, groupIconFile);
+														queryClient.setQueryData<Group[]>([Q_MY_GROUPS], (prev) => {
+															const list = prev ?? [];
+															return list.map((g) =>
+																g.id === updated.id
+																	? {
+																			...g,
+																			logo_url: updated.logo_url,
+																			role: updated.role ?? g.role ?? "owner",
+																		}
+																	: g,
+															);
+														});
+													} catch {
+														// Group already created — continue without logo (e.g. MinIO off locally).
+													}
 												}
+												openGroupChannel(group.id, group.default_channel_id);
+											} catch (err) {
+												form.setError("root", {
+													message: translateError(t, err),
+												});
+											} finally {
+												setCreateBusy(false);
 											}
-											openGroupChannel(group.id, group.default_channel_id);
-										} catch (err) {
-											form.setError("root", {
-												message: translateError(t, err),
-											});
-										} finally {
+										},
+										onError: (err) => {
 											setCreateBusy(false);
-										}
+											form.setError("root", { message: translateError(t, err) });
+										},
 									},
-									onError: (err) => {
-										setCreateBusy(false);
-										form.setError("root", { message: translateError(t, err) });
-									},
-								});
+								);
 							})}
 						>
 							<TextField

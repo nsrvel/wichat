@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"strings"
 	"time"
 
 	authrepo "github.com/wichat/wichat/backend/ms-user/internal/auth/repository"
@@ -27,7 +28,7 @@ import (
 // Service is the group lifecycle and profile use-case API.
 type Service interface {
 	ListMyGroups(ctx context.Context, accessToken string) ([]models.PublicGroup, error)
-	CreateGroup(ctx context.Context, accessToken, name string) (*models.PublicGroup, error)
+	CreateGroup(ctx context.Context, accessToken, name string, template ...string) (*models.PublicGroup, error)
 	ReorderMyGroups(ctx context.Context, accessToken string, groupPublicIDs []string) error
 	DeleteGroup(ctx context.Context, accessToken, groupID string) error
 	UploadGroupIcon(ctx context.Context, accessToken, groupPublicID, contentType string, body io.Reader, size int64) (*models.PublicGroup, error)
@@ -146,13 +147,32 @@ func (s service) ListMyGroups(ctx context.Context, accessToken string) ([]models
 	return out, nil
 }
 
-func (s service) CreateGroup(ctx context.Context, accessToken, name string) (*models.PublicGroup, error) {
+func normalizeGroupTemplate(raw string) (string, error) {
+	t := strings.TrimSpace(strings.ToLower(raw))
+	switch t {
+	case "", "custom", "office", "project", "study", "gaming":
+		return t, nil
+	default:
+		return "", exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "template"})
+	}
+}
+
+func (s service) CreateGroup(ctx context.Context, accessToken, name string, template ...string) (*models.PublicGroup, error) {
 	userID, err := access.UserIDFromAccessToken(ctx, accessToken, s.secret, s.sessions, s.now())
 	if err != nil {
 		return nil, err
 	}
 
 	trimmed, err := validator.GroupName(name)
+	if err != nil {
+		return nil, err
+	}
+
+	rawTemplate := ""
+	if len(template) > 0 {
+		rawTemplate = template[0]
+	}
+	templateKey, err := normalizeGroupTemplate(rawTemplate)
 	if err != nil {
 		return nil, err
 	}
@@ -199,7 +219,7 @@ func (s service) CreateGroup(ctx context.Context, accessToken, name string) (*mo
 		return nil, exception.Internal(errors.New("group public id"))
 	}
 
-	if err := s.channels.SeedDefaultChannels(ctx, groupID, userID, now); err != nil {
+	if err := s.channels.SeedDefaultChannelsWithTemplate(ctx, groupID, userID, templateKey, now); err != nil {
 		if delErr := s.groups.DeleteGroup(ctx, groupID); delErr != nil {
 			s.log.Error("create group rollback", "group_id", groupID, "seed_err", err, "delete_err", delErr)
 		}

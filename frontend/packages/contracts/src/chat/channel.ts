@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { publicEntityIdSchema } from "../common";
+import { ChannelCategorySchema } from "./channel-category";
 
 export const channelSidebarSectionSchema = z.enum(["favorites", "channels"]);
 
@@ -13,28 +14,29 @@ export const channelKindSchema = z.enum([
 	"private",
 ]);
 
-export const ChannelCategorySchema = z.object({
-	id: publicEntityIdSchema,
-	name: z.string(),
-	is_private: z.boolean().default(false),
-	position: z.number().int().default(0),
-});
-export type ChannelCategory = z.infer<typeof ChannelCategorySchema>;
-
-export const CreateChannelCategoryRequestSchema = z.object({
-	name: z.string().trim().min(1).max(64),
-	is_private: z.boolean().default(false),
-});
-export type CreateChannelCategoryRequest = z.infer<
-	typeof CreateChannelCategoryRequestSchema
+export const channelContentVisibilitySchema = z.enum([
+	"default",
+	"spoiler",
+	"age_restricted",
+]);
+export type ChannelContentVisibility = z.infer<
+	typeof channelContentVisibilitySchema
 >;
 
-export const CreateChannelCategoryResponseSchema = z.object({
-	category: ChannelCategorySchema,
-});
-export type CreateChannelCategoryResponse = z.infer<
-	typeof CreateChannelCategoryResponseSchema
->;
+export const forumDefaultLayoutSchema = z.enum(["list", "gallery"]);
+export type ForumDefaultLayout = z.infer<typeof forumDefaultLayoutSchema>;
+
+export const forumSortOrderSchema = z.enum([
+	"recent_activity",
+	"creation_time",
+]);
+export type ForumSortOrder = z.infer<typeof forumSortOrderSchema>;
+
+export const forumTagMatchingSchema = z.enum(["match_some", "match_all"]);
+export type ForumTagMatching = z.infer<typeof forumTagMatchingSchema>;
+
+export const voiceVideoQualitySchema = z.enum(["auto", "720p"]);
+export type VoiceVideoQuality = z.infer<typeof voiceVideoQualitySchema>;
 
 export const ChannelSchema = z.object({
 	id: publicEntityIdSchema,
@@ -45,14 +47,44 @@ export const ChannelSchema = z.object({
 	is_private: z.boolean().default(false),
 	category_id: publicEntityIdSchema.or(z.literal("")).nullable().optional(),
 	position: z.number().int().default(0),
+	slowmode_seconds: z.number().int().default(0),
+	thread_slowmode_seconds: z.number().int().default(0),
+	content_visibility: channelContentVisibilitySchema.default("default"),
+	forum_default_layout: forumDefaultLayoutSchema.default("list"),
+	forum_sort_order: forumSortOrderSchema.default("recent_activity"),
+	forum_tag_matching: forumTagMatchingSchema.default("match_some"),
+	bitrate_kbps: z.number().int().default(64),
+	video_quality: voiceVideoQualitySchema.default("auto"),
+	user_limit: z.number().int().default(0),
+	rtc_region: z.string().default("automatic"),
 });
 export type Channel = z.infer<typeof ChannelSchema>;
 
-export const ReorderChannelCategoriesRequestSchema = z.object({
-	category_ids: z.array(publicEntityIdSchema).min(1),
+export const UpdateGroupChannelRequestSchema = z
+	.object({
+		name: z.string().trim().min(1).max(64).optional(),
+		is_private: z.boolean().optional(),
+		slowmode_seconds: z.number().int().min(0).max(21600).optional(),
+		thread_slowmode_seconds: z.number().int().min(0).max(21600).optional(),
+		content_visibility: channelContentVisibilitySchema.optional(),
+		forum_default_layout: forumDefaultLayoutSchema.optional(),
+		forum_sort_order: forumSortOrderSchema.optional(),
+		forum_tag_matching: forumTagMatchingSchema.optional(),
+		bitrate_kbps: z.number().int().min(8).max(96).optional(),
+		video_quality: voiceVideoQualitySchema.optional(),
+		user_limit: z.number().int().min(0).max(99).optional(),
+		rtc_region: z.string().trim().min(1).max(64).optional(),
+	})
+	.refine((v) => Object.values(v).some((val) => val !== undefined));
+export type UpdateGroupChannelRequest = z.infer<
+	typeof UpdateGroupChannelRequestSchema
+>;
+
+export const UpdateGroupChannelResponseSchema = z.object({
+	channel: ChannelSchema,
 });
-export type ReorderChannelCategoriesRequest = z.infer<
-	typeof ReorderChannelCategoriesRequestSchema
+export type UpdateGroupChannelResponse = z.infer<
+	typeof UpdateGroupChannelResponseSchema
 >;
 
 export const ReorderGroupChannelsRequestSchema = z.object({

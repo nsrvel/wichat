@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	authrepo "github.com/wichat/wichat/backend/ms-user/internal/auth/repository"
+	categorymock "github.com/wichat/wichat/backend/ms-user/internal/channel-category/repository/mock"
 	channelmock "github.com/wichat/wichat/backend/ms-user/internal/channel/repository/mock"
 	channelservice "github.com/wichat/wichat/backend/ms-user/internal/channel/service"
 	groupmembermock "github.com/wichat/wichat/backend/ms-user/internal/group-member/repository/mock"
@@ -53,7 +54,7 @@ func NewGroupService(t *testing.T, st *usermock.State) (groupservice.Service, gr
 	roles := grouprolemock.NewPgRepositoryMock(st)
 	log := logger.New(logger.Options{Service: "group-test", Env: "test", Level: "error"})
 
-	channelSvc := channelservice.NewService(channelmock.NewPgRepositoryMock(st), groups, members, roles, sessions, []byte(TestJWTSecret), log)
+	channelSvc := channelservice.NewService(channelmock.NewPgRepositoryMock(st), categorymock.NewPgRepositoryMock(st), groups, members, roles, sessions, []byte(TestJWTSecret), log)
 
 	return groupservice.NewService(groups, members, roles, channelSvc, users, disabledGroupMinio(log), sessions, []byte(TestJWTSecret), log), groups, users, sessions
 }
@@ -66,7 +67,7 @@ func NewGroupServiceWithFakeMinio(t *testing.T, st *usermock.State) groupservice
 	members := groupmembermock.NewPgRepositoryMock(st)
 	roles := grouprolemock.NewPgRepositoryMock(st)
 	log := logger.New(logger.Options{Service: "group-test", Env: "test", Level: "error"})
-	channelSvc := channelservice.NewService(channelmock.NewPgRepositoryMock(st), groups, members, roles, sessions, []byte(TestJWTSecret), log)
+	channelSvc := channelservice.NewService(channelmock.NewPgRepositoryMock(st), categorymock.NewPgRepositoryMock(st), groups, members, roles, sessions, []byte(TestJWTSecret), log)
 
 	return groupservice.NewService(groups, members, roles, channelSvc, users, FakeGroupMinio{}, sessions, []byte(TestJWTSecret), log)
 }

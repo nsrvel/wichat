@@ -19,6 +19,7 @@ import (
 // PgRepository is the Postgres store for group roles and permissions.
 type PgRepository interface {
 	GetEffectivePermissions(ctx context.Context, groupID, userID string) ([]string, error)
+	ListUserRoleIDs(ctx context.Context, groupID, userID string) ([]string, error)
 	ListRolesForGroup(ctx context.Context, groupID string) ([]models.GroupRole, error)
 	FindRoleByID(ctx context.Context, groupID, roleID string) (models.GroupRole, error)
 	CreateRole(ctx context.Context, groupID, name, color string, hoist, mentionable bool, permissions []string, now time.Time) (models.GroupRole, error)
@@ -82,6 +83,26 @@ func (r pgRepository) GetEffectivePermissions(ctx context.Context, groupID, user
 		}
 	}
 	return perms, nil
+}
+
+// ListUserRoleIDs returns all role IDs held by userID in groupID (including @everyone default role).
+func (r pgRepository) ListUserRoleIDs(ctx context.Context, groupID, userID string) ([]string, error) {
+	var roleIDs []string
+	query := `
+		SELECT gr.id
+		FROM group_roles gr
+		WHERE gr.group_id = ? AND gr.is_default = true
+		UNION
+		SELECT gmr.role_id
+		FROM group_member_roles gmr
+		WHERE gmr.group_id = ? AND gmr.user_id = ?
+	`
+	if err := r.db.NewRaw(query, groupID, groupID, userID).Scan(ctx, &roleIDs); err != nil {
+		r.logIfInfraErr("ListUserRoleIDs", err)
+		return nil, err
+	}
+
+	return roleIDs, nil
 }
 
 type roleWithCountRow struct {

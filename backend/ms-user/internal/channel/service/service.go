@@ -9,7 +9,9 @@ import (
 	"unicode/utf8"
 
 	authrepo "github.com/wichat/wichat/backend/ms-user/internal/auth/repository"
+	categoryrepo "github.com/wichat/wichat/backend/ms-user/internal/channel-category/repository"
 	channelrepo "github.com/wichat/wichat/backend/ms-user/internal/channel/repository"
+	groupactivitysvc "github.com/wichat/wichat/backend/ms-user/internal/group-activity-log/service"
 	groupmemberrepo "github.com/wichat/wichat/backend/ms-user/internal/group-member/repository"
 	grouprolerepo "github.com/wichat/wichat/backend/ms-user/internal/group-role/repository"
 	grouprepo "github.com/wichat/wichat/backend/ms-user/internal/group/repository"
@@ -24,28 +26,37 @@ import (
 // Service is channel metadata for a group workspace.
 type Service interface {
 	ListGroupChannels(ctx context.Context, accessToken, groupPublicID string) ([]models.PublicChannel, []models.PublicChannelCategory, error)
-	CreateGroupCategory(ctx context.Context, accessToken, groupPublicID, name string, isPrivate bool) (models.PublicChannelCategory, error)
 	CreateGroupChannel(ctx context.Context, accessToken, groupPublicID, name, channelType, categoryPublicID string, isPrivate bool) (models.PublicChannel, error)
-	ReorderChannelCategories(ctx context.Context, accessToken, groupPublicID string, categoryPublicIDs []string) error
+	UpdateGroupChannel(ctx context.Context, accessToken, groupPublicID, channelPublicID string, input models.UpdateChannelInput) (models.PublicChannel, error)
+	DeleteGroupChannel(ctx context.Context, accessToken, groupPublicID, channelPublicID string) error
+	ListChannelPermissions(ctx context.Context, accessToken, groupPublicID, channelPublicID string) ([]models.PublicChannelCategoryPermissionOverride, error)
+	UpsertChannelPermission(ctx context.Context, accessToken, groupPublicID, channelPublicID, targetType, targetPublicID string, allow, deny []string) (models.PublicChannelCategoryPermissionOverride, error)
+	DeleteChannelPermission(ctx context.Context, accessToken, groupPublicID, channelPublicID, targetType, targetPublicID string) error
+	SyncChannelPermissions(ctx context.Context, accessToken, groupPublicID, channelPublicID string) (models.PublicChannel, error)
 	ReorderGroupChannels(ctx context.Context, accessToken, groupPublicID, sidebarSection, categoryPublicID string, channelPublicIDs []string) error
 	AssertGroupChannelAccess(ctx context.Context, accessToken, groupPublicID, channelPublicID string) (models.ChannelAccess, error)
 	SeedDefaultChannels(ctx context.Context, groupID, ownerUserID string, createdAt time.Time) error
+	SeedDefaultChannelsWithTemplate(ctx context.Context, groupID, ownerUserID, template string, createdAt time.Time) error
+	WithGroupActivityLog(r groupactivitysvc.Recorder) Service
 }
 
 type service struct {
-	channels channelrepo.PgRepository
-	groups   grouprepo.PgRepository
-	members  groupmemberrepo.PgRepository
-	roles    grouprolerepo.PgRepository
-	sessions authrepo.SessionRepository
-	secret   []byte
-	log      logger.Logger
-	now      func() time.Time
+	channels      channelrepo.PgRepository
+	categories    categoryrepo.PgRepository
+	groups        grouprepo.PgRepository
+	members       groupmemberrepo.PgRepository
+	roles         grouprolerepo.PgRepository
+	sessions      authrepo.SessionRepository
+	groupActivity groupactivitysvc.Recorder
+	secret        []byte
+	log           logger.Logger
+	now           func() time.Time
 }
 
 // NewService builds channel use cases.
 func NewService(
 	channels channelrepo.PgRepository,
+	categories categoryrepo.PgRepository,
 	groups grouprepo.PgRepository,
 	members groupmemberrepo.PgRepository,
 	roles grouprolerepo.PgRepository,
@@ -57,15 +68,99 @@ func NewService(
 	copy(copied, secret)
 
 	return service{
-		channels: channels,
-		groups:   groups,
-		members:  members,
-		roles:    roles,
-		sessions: sessions,
-		secret:   copied,
-		log:      log,
-		now:      func() time.Time { return time.Now().UTC() },
+		channels:   channels,
+		categories: categories,
+		groups:     groups,
+		members:    members,
+		roles:      roles,
+		sessions:   sessions,
+		secret:     copied,
+		log:        log,
+		now:        func() time.Time { return time.Now().UTC() },
 	}
+}
+
+func (s service) WithGroupActivityLog(r groupactivitysvc.Recorder) Service {
+	s.groupActivity = r
+	return s
+}
+
+func (s service) recordGroupActivity(ctx context.Context, entry models.GroupActivityLogEntry) {
+	if s.groupActivity == nil {
+		return
+	}
+	if entry.CreatedAt.IsZero() {
+		entry.CreatedAt = s.now()
+	}
+	s.groupActivity.Record(ctx, entry)
+}
+
+func resolveCategoryEffectivePermissions(
+	basePerms []string,
+	isPrivate bool,
+	overrides []models.ChannelCategoryPermissionOverride,
+	memberRoleIDs []string,
+	userID string,
+) []string {
+	permSet := make(map[string]struct{}, len(basePerms))
+	for _, p := range basePerms {
+		permSet[p] = struct{}{}
+	}
+	if isPrivate {
+		delete(permSet, constants.PermViewChannels)
+	}
+
+	// 1. @everyone override
+	for _, o := range overrides {
+		if o.TargetType == "role" && o.IsEveryone {
+			for _, d := range o.DenyPermissions {
+				delete(permSet, d)
+			}
+			for _, a := range o.AllowPermissions {
+				permSet[a] = struct{}{}
+			}
+		}
+	}
+
+	// 2. Assigned custom roles (union of denies, then union of allows)
+	roleDenies := make(map[string]struct{})
+	roleAllows := make(map[string]struct{})
+	for _, o := range overrides {
+		if o.TargetType == "role" && !o.IsEveryone && slices.Contains(memberRoleIDs, o.TargetID) {
+			for _, d := range o.DenyPermissions {
+				roleDenies[d] = struct{}{}
+			}
+			for _, a := range o.AllowPermissions {
+				roleAllows[a] = struct{}{}
+			}
+		}
+	}
+	for d := range roleDenies {
+		delete(permSet, d)
+	}
+	for a := range roleAllows {
+		permSet[a] = struct{}{}
+	}
+
+	// 3. Specific member override (highest precedence)
+	for _, o := range overrides {
+		if o.TargetType == "member" && o.TargetID == userID {
+			for _, d := range o.DenyPermissions {
+				delete(permSet, d)
+			}
+			for _, a := range o.AllowPermissions {
+				permSet[a] = struct{}{}
+			}
+		}
+	}
+
+	out := make([]string, 0, len(permSet))
+	for _, p := range constants.AllKnownPermissions {
+		if _, ok := permSet[p]; ok {
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 func (s service) ListGroupChannels(ctx context.Context, accessToken, groupPublicID string) ([]models.PublicChannel, []models.PublicChannelCategory, error) {
@@ -88,7 +183,8 @@ func (s service) ListGroupChannels(ctx context.Context, accessToken, groupPublic
 		return nil, nil, err
 	}
 
-	if _, err := s.members.FindGroupMember(ctx, group.ID, userID); err != nil {
+	member, err := s.members.FindGroupMember(ctx, group.ID, userID)
+	if err != nil {
 		if errors.Is(err, constants.ErrNotFound) {
 			return nil, nil, exception.PermissionDenied(exception.MsgForbidden, nil)
 		}
@@ -101,45 +197,403 @@ func (s service) ListGroupChannels(ctx context.Context, accessToken, groupPublic
 		return nil, nil, err
 	}
 
-	categories, err := s.channels.ListCategoriesByGroupID(ctx, group.ID)
+	categories, err := s.categories.ListCategoriesByGroupID(ctx, group.ID)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	outChannels := make([]models.PublicChannel, len(channels))
-	for i, ch := range channels {
-		outChannels[i] = ch.Public()
+	bypass := member.Role == constants.GroupRoleOwner
+	var basePerms []string
+	var roleIDs []string
+	overridesByCat := make(map[string][]models.ChannelCategoryPermissionOverride)
+	if !bypass && s.roles != nil {
+		basePerms, err = s.roles.GetEffectivePermissions(ctx, group.ID, userID)
+		if err != nil {
+			return nil, nil, err
+		}
+		if slices.Contains(basePerms, constants.PermAdministrator) {
+			bypass = true
+		} else {
+			roleIDs, err = s.roles.ListUserRoleIDs(ctx, group.ID, userID)
+			if err != nil {
+				return nil, nil, err
+			}
+			allOverrides, err := s.categories.ListGroupCategoryPermissionOverrides(ctx, group.ID)
+			if err != nil {
+				return nil, nil, err
+			}
+			for _, o := range allOverrides {
+				overridesByCat[o.CategoryID] = append(overridesByCat[o.CategoryID], o)
+			}
+		}
 	}
 
-	outCategories := make([]models.PublicChannelCategory, len(categories))
-	for i, cat := range categories {
-		outCategories[i] = cat.Public()
+	visibleCats := make(map[string]bool, len(categories))
+	outCategories := make([]models.PublicChannelCategory, 0, len(categories))
+	for _, cat := range categories {
+		if bypass || s.roles == nil {
+			visibleCats[cat.ID] = true
+			outCategories = append(outCategories, cat.Public())
+			continue
+		}
+		effective := resolveCategoryEffectivePermissions(
+			basePerms,
+			cat.IsPrivate,
+			overridesByCat[cat.ID],
+			roleIDs,
+			userID,
+		)
+		if slices.Contains(effective, constants.PermViewChannels) {
+			visibleCats[cat.ID] = true
+			outCategories = append(outCategories, cat.Public())
+		}
+	}
+
+	outChannels := make([]models.PublicChannel, 0, len(channels))
+	for _, ch := range channels {
+		if ch.CategoryID != "" && !visibleCats[ch.CategoryID] {
+			continue
+		}
+		outChannels = append(outChannels, ch.Public())
 	}
 
 	return outChannels, outCategories, nil
 }
 
-func (s service) CreateGroupCategory(
+func validateUpdateChannelInput(input models.UpdateChannelInput) (models.UpdateChannelInput, error) {
+	out := input
+	hasAny := false
+	if input.Name != nil {
+		trimmed := strings.TrimSpace(*input.Name)
+		if trimmed == "" || utf8.RuneCountInString(trimmed) > 64 {
+			return models.UpdateChannelInput{}, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "name"})
+		}
+		out.Name = &trimmed
+		hasAny = true
+	}
+	if input.IsPrivate != nil {
+		hasAny = true
+	}
+	if input.SlowmodeSeconds != nil {
+		if *input.SlowmodeSeconds < 0 || *input.SlowmodeSeconds > 21600 {
+			return models.UpdateChannelInput{}, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "slowmode_seconds"})
+		}
+		hasAny = true
+	}
+	if input.ThreadSlowmodeSeconds != nil {
+		if *input.ThreadSlowmodeSeconds < 0 || *input.ThreadSlowmodeSeconds > 21600 {
+			return models.UpdateChannelInput{}, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "thread_slowmode_seconds"})
+		}
+		hasAny = true
+	}
+	if input.ContentVisibility != nil {
+		v := strings.TrimSpace(*input.ContentVisibility)
+		if v != "default" && v != "spoiler" && v != "age_restricted" {
+			return models.UpdateChannelInput{}, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "content_visibility"})
+		}
+		out.ContentVisibility = &v
+		hasAny = true
+	}
+	if input.ForumDefaultLayout != nil {
+		v := strings.TrimSpace(*input.ForumDefaultLayout)
+		if v != "list" && v != "gallery" {
+			return models.UpdateChannelInput{}, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "forum_default_layout"})
+		}
+		out.ForumDefaultLayout = &v
+		hasAny = true
+	}
+	if input.ForumSortOrder != nil {
+		v := strings.TrimSpace(*input.ForumSortOrder)
+		if v != "recent_activity" && v != "creation_time" {
+			return models.UpdateChannelInput{}, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "forum_sort_order"})
+		}
+		out.ForumSortOrder = &v
+		hasAny = true
+	}
+	if input.ForumTagMatching != nil {
+		v := strings.TrimSpace(*input.ForumTagMatching)
+		if v != "match_some" && v != "match_all" {
+			return models.UpdateChannelInput{}, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "forum_tag_matching"})
+		}
+		out.ForumTagMatching = &v
+		hasAny = true
+	}
+	if input.BitrateKbps != nil {
+		if *input.BitrateKbps < 8 || *input.BitrateKbps > 96 {
+			return models.UpdateChannelInput{}, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "bitrate_kbps"})
+		}
+		hasAny = true
+	}
+	if input.VideoQuality != nil {
+		v := strings.TrimSpace(*input.VideoQuality)
+		if v != "auto" && v != "720p" {
+			return models.UpdateChannelInput{}, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "video_quality"})
+		}
+		out.VideoQuality = &v
+		hasAny = true
+	}
+	if input.UserLimit != nil {
+		if *input.UserLimit < 0 || *input.UserLimit > 99 {
+			return models.UpdateChannelInput{}, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "user_limit"})
+		}
+		hasAny = true
+	}
+	if input.RTCRegion != nil {
+		v := strings.TrimSpace(*input.RTCRegion)
+		if v == "" || len(v) > 64 {
+			return models.UpdateChannelInput{}, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "rtc_region"})
+		}
+		out.RTCRegion = &v
+		hasAny = true
+	}
+	if !hasAny {
+		return models.UpdateChannelInput{}, exception.InvalidInput(exception.MsgInvalidInput, nil)
+	}
+
+	return out, nil
+}
+
+func (s service) UpdateGroupChannel(
 	ctx context.Context,
-	accessToken, groupPublicID, name string,
-	isPrivate bool,
-) (models.PublicChannelCategory, error) {
-	trimmed := strings.TrimSpace(name)
-	if trimmed == "" || utf8.RuneCountInString(trimmed) > 64 {
-		return models.PublicChannelCategory{}, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "name"})
+	accessToken, groupPublicID, channelPublicID string,
+	input models.UpdateChannelInput,
+) (models.PublicChannel, error) {
+	chPubID := strings.TrimSpace(channelPublicID)
+	if chPubID == "" {
+		return models.PublicChannel{}, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "channel_id"})
+	}
+
+	cleanInput, err := validateUpdateChannelInput(input)
+	if err != nil {
+		return models.PublicChannel{}, err
 	}
 
 	userID, group, err := s.resolveGroupWithManageChannels(ctx, accessToken, groupPublicID)
 	if err != nil {
-		return models.PublicChannelCategory{}, err
+		return models.PublicChannel{}, err
 	}
 
-	cat, err := s.channels.CreateCategory(ctx, group.ID, trimmed, isPrivate, userID, s.now())
+	ch, err := s.channels.UpdateChannel(ctx, group.ID, chPubID, cleanInput, s.now())
 	if err != nil {
-		return models.PublicChannelCategory{}, err
+		if errors.Is(err, constants.ErrNotFound) {
+			return models.PublicChannel{}, exception.NotFound(exception.MsgInvalidInput, map[string]any{"field": "channel_id"})
+		}
+		return models.PublicChannel{}, err
 	}
 
-	return cat.Public(), nil
+	s.recordGroupActivity(ctx, models.GroupActivityLogEntry{
+		GroupID:    group.ID,
+		ActorID:    userID,
+		Category:   "channel",
+		Action:     "channel.update",
+		TargetType: "channel",
+		TargetID:   ch.PublicID,
+		Metadata:   map[string]any{"name": ch.Name, "is_private": ch.IsPrivate},
+	})
+
+	return ch.Public(), nil
+}
+
+func (s service) DeleteGroupChannel(
+	ctx context.Context,
+	accessToken, groupPublicID, channelPublicID string,
+) error {
+	chPubID := strings.TrimSpace(channelPublicID)
+	if chPubID == "" {
+		return exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "channel_id"})
+	}
+
+	userID, group, err := s.resolveGroupWithManageChannels(ctx, accessToken, groupPublicID)
+	if err != nil {
+		return err
+	}
+
+	if err := s.channels.DeleteChannel(ctx, group.ID, chPubID); err != nil {
+		if errors.Is(err, constants.ErrNotFound) {
+			return exception.NotFound(exception.MsgInvalidInput, map[string]any{"field": "channel_id"})
+		}
+		return err
+	}
+
+	s.recordGroupActivity(ctx, models.GroupActivityLogEntry{
+		GroupID:    group.ID,
+		ActorID:    userID,
+		Category:   "channel",
+		Action:     "channel.delete",
+		TargetType: "channel",
+		TargetID:   chPubID,
+	})
+
+	return nil
+}
+
+func (s service) ListChannelPermissions(
+	ctx context.Context,
+	accessToken, groupPublicID, channelPublicID string,
+) ([]models.PublicChannelCategoryPermissionOverride, error) {
+	chPubID := strings.TrimSpace(channelPublicID)
+	if chPubID == "" {
+		return nil, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "channel_id"})
+	}
+
+	_, group, err := s.resolveGroupWithManageChannels(ctx, accessToken, groupPublicID)
+	if err != nil {
+		return nil, err
+	}
+
+	overrides, err := s.channels.ListChannelPermissionOverrides(ctx, group.ID, chPubID)
+	if err != nil {
+		if errors.Is(err, constants.ErrNotFound) {
+			return nil, exception.NotFound(exception.MsgInvalidInput, map[string]any{"field": "channel_id"})
+		}
+		return nil, err
+	}
+
+	return overrides, nil
+}
+
+func sanitizeChannelPermList(perms []string) ([]string, error) {
+	out := make([]string, 0, len(perms))
+	seen := make(map[string]struct{}, len(perms))
+	for _, raw := range perms {
+		p := strings.TrimSpace(raw)
+		if p == "" {
+			continue
+		}
+		if !slices.Contains(constants.AllKnownPermissions, p) {
+			return nil, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "permissions"})
+		}
+		if _, dup := seen[p]; dup {
+			continue
+		}
+		seen[p] = struct{}{}
+		out = append(out, p)
+	}
+
+	return out, nil
+}
+
+func (s service) UpsertChannelPermission(
+	ctx context.Context,
+	accessToken, groupPublicID, channelPublicID, targetType, targetPublicID string,
+	allow, deny []string,
+) (models.PublicChannelCategoryPermissionOverride, error) {
+	chPubID := strings.TrimSpace(channelPublicID)
+	tType := strings.TrimSpace(targetType)
+	tID := strings.TrimSpace(targetPublicID)
+	if chPubID == "" || tID == "" || (tType != "role" && tType != "member") {
+		return models.PublicChannelCategoryPermissionOverride{}, exception.InvalidInput(exception.MsgInvalidInput, nil)
+	}
+
+	cleanAllow, err := sanitizeChannelPermList(allow)
+	if err != nil {
+		return models.PublicChannelCategoryPermissionOverride{}, err
+	}
+	cleanDeny, err := sanitizeChannelPermList(deny)
+	if err != nil {
+		return models.PublicChannelCategoryPermissionOverride{}, err
+	}
+	for _, p := range cleanAllow {
+		if slices.Contains(cleanDeny, p) {
+			return models.PublicChannelCategoryPermissionOverride{}, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "permissions"})
+		}
+	}
+
+	userID, group, err := s.resolveGroupWithManageChannels(ctx, accessToken, groupPublicID)
+	if err != nil {
+		return models.PublicChannelCategoryPermissionOverride{}, err
+	}
+
+	override, err := s.channels.UpsertChannelPermissionOverride(ctx, group.ID, chPubID, tType, tID, cleanAllow, cleanDeny, s.now())
+	if err != nil {
+		if errors.Is(err, constants.ErrNotFound) {
+			return models.PublicChannelCategoryPermissionOverride{}, exception.NotFound(exception.MsgInvalidInput, nil)
+		}
+		return models.PublicChannelCategoryPermissionOverride{}, err
+	}
+
+	s.recordGroupActivity(ctx, models.GroupActivityLogEntry{
+		GroupID:    group.ID,
+		ActorID:    userID,
+		Category:   "channel",
+		Action:     "channel.permissions.update",
+		TargetType: "channel",
+		TargetID:   chPubID,
+		Metadata:   map[string]any{"target_type": tType, "target_id": tID},
+	})
+
+	return override, nil
+}
+
+func (s service) DeleteChannelPermission(
+	ctx context.Context,
+	accessToken, groupPublicID, channelPublicID, targetType, targetPublicID string,
+) error {
+	chPubID := strings.TrimSpace(channelPublicID)
+	tType := strings.TrimSpace(targetType)
+	tID := strings.TrimSpace(targetPublicID)
+	if chPubID == "" || tID == "" || (tType != "role" && tType != "member") {
+		return exception.InvalidInput(exception.MsgInvalidInput, nil)
+	}
+
+	userID, group, err := s.resolveGroupWithManageChannels(ctx, accessToken, groupPublicID)
+	if err != nil {
+		return err
+	}
+
+	if err := s.channels.DeleteChannelPermissionOverride(ctx, group.ID, chPubID, tType, tID); err != nil {
+		if errors.Is(err, constants.ErrNotFound) {
+			return exception.NotFound(exception.MsgInvalidInput, nil)
+		}
+		return err
+	}
+
+	s.recordGroupActivity(ctx, models.GroupActivityLogEntry{
+		GroupID:    group.ID,
+		ActorID:    userID,
+		Category:   "channel",
+		Action:     "channel.permissions.delete",
+		TargetType: "channel",
+		TargetID:   chPubID,
+		Metadata:   map[string]any{"target_type": tType, "target_id": tID},
+	})
+
+	return nil
+}
+
+func (s service) SyncChannelPermissions(
+	ctx context.Context,
+	accessToken, groupPublicID, channelPublicID string,
+) (models.PublicChannel, error) {
+	chPubID := strings.TrimSpace(channelPublicID)
+	if chPubID == "" {
+		return models.PublicChannel{}, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "channel_id"})
+	}
+
+	userID, group, err := s.resolveGroupWithManageChannels(ctx, accessToken, groupPublicID)
+	if err != nil {
+		return models.PublicChannel{}, err
+	}
+
+	ch, err := s.channels.SyncChannelPermissionsWithCategory(ctx, group.ID, chPubID, s.now())
+	if err != nil {
+		if errors.Is(err, constants.ErrNotFound) {
+			return models.PublicChannel{}, exception.NotFound(exception.MsgInvalidInput, map[string]any{"field": "channel_id"})
+		}
+		return models.PublicChannel{}, err
+	}
+
+	s.recordGroupActivity(ctx, models.GroupActivityLogEntry{
+		GroupID:    group.ID,
+		ActorID:    userID,
+		Category:   "channel",
+		Action:     "channel.permissions.sync",
+		TargetType: "channel",
+		TargetID:   ch.PublicID,
+		Metadata:   map[string]any{"category_id": ch.CategoryPublicID},
+	})
+
+	return ch.Public(), nil
 }
 
 func (s service) CreateGroupChannel(
@@ -186,7 +640,7 @@ func (s service) resolveCategoryUUID(ctx context.Context, groupID, categoryPubli
 	if err != nil {
 		return "", err
 	}
-	categories, err := s.channels.ListCategoriesByGroupID(ctx, groupID)
+	categories, err := s.categories.ListCategoriesByGroupID(ctx, groupID)
 	if err != nil {
 		return "", err
 	}
@@ -197,36 +651,6 @@ func (s service) resolveCategoryUUID(ctx context.Context, groupID, categoryPubli
 	}
 
 	return "", exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "category_id"})
-}
-
-func (s service) ReorderChannelCategories(
-	ctx context.Context,
-	accessToken, groupPublicID string,
-	categoryPublicIDs []string,
-) error {
-	_, group, err := s.resolveGroupWithManageChannels(ctx, accessToken, groupPublicID)
-	if err != nil {
-		return err
-	}
-
-	categories, err := s.channels.ListCategoriesByGroupID(ctx, group.ID)
-	if err != nil {
-		return err
-	}
-	if len(categoryPublicIDs) != len(categories) {
-		return exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "category_ids"})
-	}
-
-	byPublic := make(map[string]string, len(categories))
-	for _, cat := range categories {
-		byPublic[cat.PublicID] = cat.ID
-	}
-	orderedUUIDs, err := mapOrderedPublicIDs(categoryPublicIDs, byPublic, "category_ids")
-	if err != nil {
-		return err
-	}
-
-	return s.channels.SetCategoryPositions(ctx, group.ID, orderedUUIDs)
 }
 
 func (s service) ReorderGroupChannels(
@@ -375,7 +799,8 @@ func (s service) AssertGroupChannelAccess(ctx context.Context, accessToken, grou
 		return models.ChannelAccess{}, err
 	}
 
-	if _, err := s.members.FindGroupMember(ctx, group.ID, userID); err != nil {
+	member, err := s.members.FindGroupMember(ctx, group.ID, userID)
+	if err != nil {
 		if errors.Is(err, constants.ErrNotFound) {
 			return models.ChannelAccess{}, exception.PermissionDenied(exception.MsgForbidden, nil)
 		}
@@ -393,10 +818,47 @@ func (s service) AssertGroupChannelAccess(ctx context.Context, accessToken, grou
 	}
 
 	var perms []string
-	if s.roles != nil {
+	if member.Role == constants.GroupRoleOwner {
+		perms = append([]string(nil), constants.AllKnownPermissions...)
+	} else if s.roles != nil {
 		p, err := s.roles.GetEffectivePermissions(ctx, group.ID, userID)
-		if err == nil {
-			perms = p
+		if err != nil {
+			return models.ChannelAccess{}, err
+		}
+		perms = p
+
+		if !slices.Contains(perms, constants.PermAdministrator) && ch.CategoryID != "" {
+			categories, err := s.categories.ListCategoriesByGroupID(ctx, group.ID)
+			if err != nil {
+				return models.ChannelAccess{}, err
+			}
+			var cat *models.ChannelCategory
+			for i := range categories {
+				if categories[i].ID == ch.CategoryID {
+					cat = &categories[i]
+					break
+				}
+			}
+			if cat != nil {
+				roleIDs, err := s.roles.ListUserRoleIDs(ctx, group.ID, userID)
+				if err != nil {
+					return models.ChannelAccess{}, err
+				}
+				allOverrides, err := s.categories.ListGroupCategoryPermissionOverrides(ctx, group.ID)
+				if err != nil {
+					return models.ChannelAccess{}, err
+				}
+				var catOverrides []models.ChannelCategoryPermissionOverride
+				for _, o := range allOverrides {
+					if o.CategoryID == cat.ID {
+						catOverrides = append(catOverrides, o)
+					}
+				}
+				perms = resolveCategoryEffectivePermissions(perms, cat.IsPrivate, catOverrides, roleIDs, userID)
+				if !slices.Contains(perms, constants.PermViewChannels) {
+					return models.ChannelAccess{}, exception.PermissionDenied(exception.MsgForbidden, nil)
+				}
+			}
 		}
 	}
 
@@ -405,4 +867,8 @@ func (s service) AssertGroupChannelAccess(ctx context.Context, accessToken, grou
 
 func (s service) SeedDefaultChannels(ctx context.Context, groupID, ownerUserID string, createdAt time.Time) error {
 	return s.channels.SeedDefaultChannels(ctx, groupID, ownerUserID, createdAt)
+}
+
+func (s service) SeedDefaultChannelsWithTemplate(ctx context.Context, groupID, ownerUserID, template string, createdAt time.Time) error {
+	return s.channels.SeedDefaultChannelsWithTemplate(ctx, groupID, ownerUserID, template, createdAt)
 }

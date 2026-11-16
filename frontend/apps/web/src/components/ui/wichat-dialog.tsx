@@ -103,7 +103,10 @@ export function WiChatDialogStepCarousel({
 	const translatePercent = safeIndex * panelWidthPercent;
 	const carouselRef = useRef<HTMLDivElement | null>(null);
 	const panelRefs = useRef<(HTMLDivElement | null)[]>([]);
-	const [viewportHeight, setViewportHeight] = useState<number | undefined>(undefined);
+	const [sizeState, setSizeState] = useState<{
+		height: number | undefined;
+		maxHeight: number | undefined;
+	}>({ height: undefined, maxHeight: undefined });
 
 	const snapActiveHeight = useCallback(() => {
 		const el = panelRefs.current[safeIndex];
@@ -111,11 +114,7 @@ export function WiChatDialogStepCarousel({
 			return;
 		}
 
-		const childrenHeight = Array.from(el.children).reduce(
-			(sum, child) => sum + (child as HTMLElement).scrollHeight,
-			0,
-		);
-		const raw = childrenHeight > 0 ? childrenHeight : el.scrollHeight;
+		const raw = Math.ceil(el.getBoundingClientRect().height);
 		if (raw <= 0) {
 			return;
 		}
@@ -126,7 +125,12 @@ export function WiChatDialogStepCarousel({
 			? parseFloat(dialogStyle.paddingTop) + parseFloat(dialogStyle.paddingBottom)
 			: 72;
 		const maxPx = Math.max(200, Math.floor(window.innerHeight * 0.9) - padY);
-		setViewportHeight(Math.min(raw, maxPx));
+		const nextHeight = Math.min(raw, maxPx);
+		setSizeState((prev) =>
+			prev.height === nextHeight && prev.maxHeight === maxPx
+				? prev
+				: { height: nextHeight, maxHeight: maxPx },
+		);
 	}, [safeIndex]);
 
 	useLayoutEffect(() => {
@@ -154,14 +158,11 @@ export function WiChatDialogStepCarousel({
 	return (
 		<div
 			ref={carouselRef}
-			className={cn("min-h-0 w-full shrink overflow-x-clip", className)}
-			style={viewportHeight === undefined ? undefined : { height: viewportHeight }}
+			className={cn("min-h-0 w-full shrink overflow-hidden", className)}
+			style={sizeState.height === undefined ? undefined : { height: sizeState.height }}
 		>
 			<div
-				className={cn(
-					"flex h-full min-h-0 items-stretch transition-transform",
-					shellStepMotionClass,
-				)}
+				className={cn("flex items-start transition-transform", shellStepMotionClass)}
 				style={{
 					width: `${trackWidthPercent}%`,
 					transform: `translateX(-${translatePercent}%)`,
@@ -173,8 +174,11 @@ export function WiChatDialogStepCarousel({
 						ref={(node) => {
 							panelRefs.current[index] = node;
 						}}
-						className="flex h-full min-h-0 min-w-0 shrink-0 flex-col"
-						style={{ width: `${panelWidthPercent}%` }}
+						className="flex min-w-0 shrink-0 flex-col"
+						style={{
+							width: `${panelWidthPercent}%`,
+							...(sizeState.maxHeight === undefined ? {} : { maxHeight: sizeState.maxHeight }),
+						}}
 						aria-hidden={index !== safeIndex}
 						{...(index !== safeIndex ? { inert: true as const } : {})}
 					>

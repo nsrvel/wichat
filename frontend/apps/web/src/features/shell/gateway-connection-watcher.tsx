@@ -1,21 +1,23 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2, WifiOff } from "lucide-react";
 import { useEffect, useSyncExternalStore } from "react";
-import { Button } from "@/components/ui/button";
+import { WorkspaceLoader } from "@/components/layout/workspace-loader";
 import {
+	getGatewayAttempt,
 	getGatewayStatus,
 	onGatewayRecovered,
-	probeGatewayNow,
 	subscribeGatewayStatus,
 } from "@/integrations/realtime/gateway-connection";
 
-const getServerSnapshot = () => "connected" as const;
+const CONNECTION_PROBLEMS_ATTEMPTS = 2;
+const getServerStatus = () => "connected" as const;
+const getServerAttempt = () => 0;
 
 export function GatewayConnectionWatcher() {
 	const queryClient = useQueryClient();
-	const status = useSyncExternalStore(subscribeGatewayStatus, getGatewayStatus, getServerSnapshot);
+	const status = useSyncExternalStore(subscribeGatewayStatus, getGatewayStatus, getServerStatus);
+	const attempt = useSyncExternalStore(subscribeGatewayStatus, getGatewayAttempt, getServerAttempt);
 
 	useEffect(() => {
 		return onGatewayRecovered(() => {
@@ -23,28 +25,13 @@ export function GatewayConnectionWatcher() {
 		});
 	}, [queryClient]);
 
-	if (status !== "reconnecting") {
-		return null;
+	if (status === "reconnecting" && attempt >= CONNECTION_PROBLEMS_ATTEMPTS) {
+		return (
+			<div className="fixed inset-0 z-[90] flex flex-col bg-background">
+				<WorkspaceLoader showLabel labelKey="shell.connection.problems" />
+			</div>
+		);
 	}
 
-	return (
-		<div
-			role="status"
-			aria-live="polite"
-			className="fixed top-3 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2.5 rounded-full border border-amber-500/30 bg-background/95 px-3.5 py-1.5 text-xs font-medium text-foreground shadow-lg backdrop-blur"
-		>
-			<WifiOff className="h-3.5 w-3.5 text-amber-500" />
-			<Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-			<span>Connection lost. Reconnecting to server...</span>
-			<Button
-				type="button"
-				variant="ghost"
-				size="sm"
-				className="h-6 px-2 text-xs"
-				onClick={() => void probeGatewayNow()}
-			>
-				Retry
-			</Button>
-		</div>
-	);
+	return null;
 }

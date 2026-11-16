@@ -18,6 +18,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
+	categoryrepo "github.com/wichat/wichat/backend/ms-user/internal/channel-category/repository"
 	channelrepo "github.com/wichat/wichat/backend/ms-user/internal/channel/repository"
 	groupmemberrepo "github.com/wichat/wichat/backend/ms-user/internal/group-member/repository"
 	grouprepo "github.com/wichat/wichat/backend/ms-user/internal/group/repository"
@@ -28,7 +29,7 @@ import (
 )
 
 func TestCreateGroupWithOwnerAndList(t *testing.T) {
-	users, groups, members, channels, cleanup := newGroupPgRepositories(t)
+	users, groups, members, channels, catRepo, cleanup := newGroupPgRepositories(t)
 	defer cleanup()
 	ctx := context.Background()
 	now := time.Now().UTC().Truncate(time.Microsecond)
@@ -102,8 +103,11 @@ func TestCreateGroupWithOwnerAndList(t *testing.T) {
 			if ch.IsPrivate {
 				t.Fatalf("announcements is_private: %+v", ch)
 			}
-			if ch.SidebarSection != constants.SidebarSectionFavorites {
+			if ch.SidebarSection != constants.SidebarSectionChannels {
 				t.Fatalf("announcements sidebar_section: %+v", ch)
+			}
+			if ch.CategoryID == "" {
+				t.Fatalf("announcements category_id should be set: %+v", ch)
 			}
 			if ch.ImageURL != "" {
 				t.Fatalf("announcements image_url: %+v", ch)
@@ -111,11 +115,11 @@ func TestCreateGroupWithOwnerAndList(t *testing.T) {
 		}
 	}
 
-	cats, err := channels.ListCategoriesByGroupID(ctx, groupID)
-	if err != nil || len(cats) != 2 {
+	cats, err := catRepo.ListCategoriesByGroupID(ctx, groupID)
+	if err != nil || len(cats) != 3 {
 		t.Fatalf("ListCategoriesByGroupID: %+v err %v", cats, err)
 	}
-	createdCat, err := channels.CreateCategory(ctx, groupID, "Engineering", true, ownerID, now)
+	createdCat, err := catRepo.CreateCategory(ctx, groupID, "Engineering", true, ownerID, now)
 	if err != nil || createdCat.Name != "Engineering" || !createdCat.IsPrivate {
 		t.Fatalf("CreateCategory: %+v err %v", createdCat, err)
 	}
@@ -150,7 +154,7 @@ func TestCreateGroupWithOwnerAndList(t *testing.T) {
 }
 
 func TestUpdateGroupProfilePg(t *testing.T) {
-	users, groups, _, _, cleanup := newGroupPgRepositories(t)
+	users, groups, _, _, _, cleanup := newGroupPgRepositories(t)
 	defer cleanup()
 	ctx := context.Background()
 	now := time.Now().UTC().Truncate(time.Microsecond)
@@ -190,7 +194,7 @@ func TestUpdateGroupProfilePg(t *testing.T) {
 	}
 }
 
-func newGroupPgRepositories(t *testing.T) (userrepo.PgRepository, grouprepo.PgRepository, groupmemberrepo.PgRepository, channelrepo.PgRepository, func()) {
+func newGroupPgRepositories(t *testing.T) (userrepo.PgRepository, grouprepo.PgRepository, groupmemberrepo.PgRepository, channelrepo.PgRepository, categoryrepo.PgRepository, func()) {
 	t.Helper()
 	ctx := context.Background()
 
@@ -234,7 +238,7 @@ func newGroupPgRepositories(t *testing.T) (userrepo.PgRepository, grouprepo.PgRe
 
 	log := logger.New(logger.Options{Service: "group-repo-test", Env: "test", Level: "error"})
 
-	return userrepo.NewPgRepository(db), grouprepo.NewPgRepository(db, log), groupmemberrepo.NewPgRepository(db, log), channelrepo.NewPgRepository(db, log), cleanup
+	return userrepo.NewPgRepository(db), grouprepo.NewPgRepository(db, log), groupmemberrepo.NewPgRepository(db, log), channelrepo.NewPgRepository(db, log), categoryrepo.NewPgRepository(db, log), cleanup
 }
 
 func runMigrations(dsn string) error {

@@ -1,28 +1,24 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type {
 	Channel,
-	ChannelCategory,
 	ChannelsList,
-	CreateChannelCategoryRequest,
 	CreateGroupChannelRequest,
+	UpdateGroupChannelRequest,
 } from "@wichat/contracts/chat/channel";
-import { Q_GROUP_CHANNELS } from "@/services/channel/channel.key";
+import type {
+	CategoryPermissionTargetType,
+	UpsertCategoryPermissionOverrideRequest,
+} from "@wichat/contracts/chat/channel-category";
+import { Q_CHANNEL_PERMISSIONS, Q_GROUP_CHANNELS } from "@/services/channel/channel.key";
 import {
-	createGroupCategory,
 	createGroupChannel,
-	reorderGroupCategories,
+	deleteChannelPermission,
+	deleteGroupChannel,
 	reorderGroupChannels,
+	syncChannelPermissions,
+	updateGroupChannel,
+	upsertChannelPermission,
 } from "@/services/channel/channel.service";
-
-export function useCreateGroupCategoryMutation(groupId: string) {
-	const queryClient = useQueryClient();
-	return useMutation({
-		mutationFn: (payload: CreateChannelCategoryRequest) => createGroupCategory(groupId, payload),
-		onSuccess: () => {
-			void queryClient.invalidateQueries({ queryKey: [Q_GROUP_CHANNELS, groupId] });
-		},
-	});
-}
 
 export function useCreateGroupChannelMutation(groupId: string) {
 	const queryClient = useQueryClient();
@@ -30,43 +26,6 @@ export function useCreateGroupChannelMutation(groupId: string) {
 		mutationFn: (payload: CreateGroupChannelRequest) => createGroupChannel(groupId, payload),
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: [Q_GROUP_CHANNELS, groupId] });
-		},
-	});
-}
-
-export function useReorderGroupCategoriesMutation(groupId: string) {
-	const queryClient = useQueryClient();
-	const queryKey = [Q_GROUP_CHANNELS, groupId] as const;
-
-	return useMutation({
-		mutationFn: (categoryIds: string[]) => reorderGroupCategories(groupId, categoryIds),
-		onMutate: async (categoryIds) => {
-			await queryClient.cancelQueries({ queryKey });
-			const previous = queryClient.getQueryData<ChannelsList>(queryKey);
-			if (previous) {
-				const byId = new Map(previous.categories.map((c) => [c.id, c]));
-				const reordered = categoryIds
-					.map((id, index) => {
-						const cat = byId.get(id);
-						return cat ? { ...cat, position: index } : null;
-					})
-					.filter((c): c is ChannelCategory => c !== null);
-				if (reordered.length === previous.categories.length) {
-					queryClient.setQueryData<ChannelsList>(queryKey, {
-						...previous,
-						categories: reordered,
-					});
-				}
-			}
-			return { previous };
-		},
-		onError: (_err, _ids, ctx) => {
-			if (ctx?.previous) {
-				queryClient.setQueryData(queryKey, ctx.previous);
-			}
-		},
-		onSettled: () => {
-			void queryClient.invalidateQueries({ queryKey });
 		},
 	});
 }
@@ -114,6 +73,76 @@ export function useReorderGroupChannelsMutation(groupId: string) {
 		},
 		onSettled: () => {
 			void queryClient.invalidateQueries({ queryKey });
+		},
+	});
+}
+
+export function useUpdateGroupChannelMutation(groupId: string) {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: ({
+			channelId,
+			payload,
+		}: {
+			channelId: string;
+			payload: UpdateGroupChannelRequest;
+		}) => updateGroupChannel(groupId, channelId, payload),
+		onSuccess: () => {
+			void queryClient.invalidateQueries({ queryKey: [Q_GROUP_CHANNELS, groupId] });
+		},
+	});
+}
+
+export function useDeleteGroupChannelMutation(groupId: string) {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: (channelId: string) => deleteGroupChannel(groupId, channelId),
+		onSuccess: () => {
+			void queryClient.invalidateQueries({ queryKey: [Q_GROUP_CHANNELS, groupId] });
+		},
+	});
+}
+
+export function useUpsertChannelPermissionMutation(groupId: string, channelId: string) {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: (payload: UpsertCategoryPermissionOverrideRequest) =>
+			upsertChannelPermission(groupId, channelId, payload),
+		onSuccess: () => {
+			void queryClient.invalidateQueries({
+				queryKey: [Q_CHANNEL_PERMISSIONS, groupId, channelId],
+			});
+		},
+	});
+}
+
+export function useDeleteChannelPermissionMutation(groupId: string, channelId: string) {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: ({
+			targetType,
+			targetId,
+		}: {
+			targetType: CategoryPermissionTargetType;
+			targetId: string;
+		}) => deleteChannelPermission(groupId, channelId, targetType, targetId),
+		onSuccess: () => {
+			void queryClient.invalidateQueries({
+				queryKey: [Q_CHANNEL_PERMISSIONS, groupId, channelId],
+			});
+		},
+	});
+}
+
+export function useSyncChannelPermissionsMutation(groupId: string, channelId: string) {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: () => syncChannelPermissions(groupId, channelId),
+		onSuccess: () => {
+			void queryClient.invalidateQueries({ queryKey: [Q_GROUP_CHANNELS, groupId] });
+			void queryClient.invalidateQueries({
+				queryKey: [Q_CHANNEL_PERMISSIONS, groupId, channelId],
+			});
 		},
 	});
 }

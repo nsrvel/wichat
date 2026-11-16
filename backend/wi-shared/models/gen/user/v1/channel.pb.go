@@ -21,75 +21,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// ChannelCategory is category metadata for grouping channels in the sidebar.
-type ChannelCategory struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	IsPrivate     bool                   `protobuf:"varint,3,opt,name=is_private,json=isPrivate,proto3" json:"is_private,omitempty"`
-	Position      int32                  `protobuf:"varint,4,opt,name=position,proto3" json:"position,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *ChannelCategory) Reset() {
-	*x = ChannelCategory{}
-	mi := &file_user_v1_channel_proto_msgTypes[0]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ChannelCategory) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ChannelCategory) ProtoMessage() {}
-
-func (x *ChannelCategory) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_channel_proto_msgTypes[0]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use ChannelCategory.ProtoReflect.Descriptor instead.
-func (*ChannelCategory) Descriptor() ([]byte, []int) {
-	return file_user_v1_channel_proto_rawDescGZIP(), []int{0}
-}
-
-func (x *ChannelCategory) GetId() string {
-	if x != nil {
-		return x.Id
-	}
-	return ""
-}
-
-func (x *ChannelCategory) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *ChannelCategory) GetIsPrivate() bool {
-	if x != nil {
-		return x.IsPrivate
-	}
-	return false
-}
-
-func (x *ChannelCategory) GetPosition() int32 {
-	if x != nil {
-		return x.Position
-	}
-	return 0
-}
-
 // ChannelSummary is channel metadata for the sidebar.
 type ChannelSummary struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -105,14 +36,34 @@ type ChannelSummary struct {
 	// Optional category public id (empty when uncategorized, e.g. favorites).
 	CategoryId string `protobuf:"bytes,7,opt,name=category_id,json=categoryId,proto3" json:"category_id,omitempty"`
 	// Display order position within its category/section.
-	Position      int32 `protobuf:"varint,8,opt,name=position,proto3" json:"position,omitempty"`
+	Position int32 `protobuf:"varint,8,opt,name=position,proto3" json:"position,omitempty"`
+	// Message/post slowmode interval in seconds (0 = off).
+	SlowmodeSeconds int32 `protobuf:"varint,9,opt,name=slowmode_seconds,json=slowmodeSeconds,proto3" json:"slowmode_seconds,omitempty"`
+	// Thread/message slowmode interval in seconds for forum posts (0 = off).
+	ThreadSlowmodeSeconds int32 `protobuf:"varint,10,opt,name=thread_slowmode_seconds,json=threadSlowmodeSeconds,proto3" json:"thread_slowmode_seconds,omitempty"`
+	// Content visibility mode: default | spoiler | age_restricted.
+	ContentVisibility string `protobuf:"bytes,11,opt,name=content_visibility,json=contentVisibility,proto3" json:"content_visibility,omitempty"`
+	// Forum default layout: list | gallery.
+	ForumDefaultLayout string `protobuf:"bytes,12,opt,name=forum_default_layout,json=forumDefaultLayout,proto3" json:"forum_default_layout,omitempty"`
+	// Forum default sort order: recent_activity | creation_time.
+	ForumSortOrder string `protobuf:"bytes,13,opt,name=forum_sort_order,json=forumSortOrder,proto3" json:"forum_sort_order,omitempty"`
+	// Forum default tag matching: match_some | match_all.
+	ForumTagMatching string `protobuf:"bytes,14,opt,name=forum_tag_matching,json=forumTagMatching,proto3" json:"forum_tag_matching,omitempty"`
+	// Voice audio bitrate in kbps (8..96).
+	BitrateKbps int32 `protobuf:"varint,16,opt,name=bitrate_kbps,json=bitrateKbps,proto3" json:"bitrate_kbps,omitempty"`
+	// Voice camera video quality: auto | 720p.
+	VideoQuality string `protobuf:"bytes,17,opt,name=video_quality,json=videoQuality,proto3" json:"video_quality,omitempty"`
+	// Voice user limit (0 = unlimited, 1..99).
+	UserLimit int32 `protobuf:"varint,18,opt,name=user_limit,json=userLimit,proto3" json:"user_limit,omitempty"`
+	// Voice RTC region override (automatic or region slug).
+	RtcRegion     string `protobuf:"bytes,19,opt,name=rtc_region,json=rtcRegion,proto3" json:"rtc_region,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ChannelSummary) Reset() {
 	*x = ChannelSummary{}
-	mi := &file_user_v1_channel_proto_msgTypes[1]
+	mi := &file_user_v1_channel_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -124,7 +75,7 @@ func (x *ChannelSummary) String() string {
 func (*ChannelSummary) ProtoMessage() {}
 
 func (x *ChannelSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_channel_proto_msgTypes[1]
+	mi := &file_user_v1_channel_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -137,7 +88,7 @@ func (x *ChannelSummary) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChannelSummary.ProtoReflect.Descriptor instead.
 func (*ChannelSummary) Descriptor() ([]byte, []int) {
-	return file_user_v1_channel_proto_rawDescGZIP(), []int{1}
+	return file_user_v1_channel_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *ChannelSummary) GetId() string {
@@ -196,6 +147,76 @@ func (x *ChannelSummary) GetPosition() int32 {
 	return 0
 }
 
+func (x *ChannelSummary) GetSlowmodeSeconds() int32 {
+	if x != nil {
+		return x.SlowmodeSeconds
+	}
+	return 0
+}
+
+func (x *ChannelSummary) GetThreadSlowmodeSeconds() int32 {
+	if x != nil {
+		return x.ThreadSlowmodeSeconds
+	}
+	return 0
+}
+
+func (x *ChannelSummary) GetContentVisibility() string {
+	if x != nil {
+		return x.ContentVisibility
+	}
+	return ""
+}
+
+func (x *ChannelSummary) GetForumDefaultLayout() string {
+	if x != nil {
+		return x.ForumDefaultLayout
+	}
+	return ""
+}
+
+func (x *ChannelSummary) GetForumSortOrder() string {
+	if x != nil {
+		return x.ForumSortOrder
+	}
+	return ""
+}
+
+func (x *ChannelSummary) GetForumTagMatching() string {
+	if x != nil {
+		return x.ForumTagMatching
+	}
+	return ""
+}
+
+func (x *ChannelSummary) GetBitrateKbps() int32 {
+	if x != nil {
+		return x.BitrateKbps
+	}
+	return 0
+}
+
+func (x *ChannelSummary) GetVideoQuality() string {
+	if x != nil {
+		return x.VideoQuality
+	}
+	return ""
+}
+
+func (x *ChannelSummary) GetUserLimit() int32 {
+	if x != nil {
+		return x.UserLimit
+	}
+	return 0
+}
+
+func (x *ChannelSummary) GetRtcRegion() string {
+	if x != nil {
+		return x.RtcRegion
+	}
+	return ""
+}
+
 type ListGroupChannelsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
@@ -206,7 +227,7 @@ type ListGroupChannelsRequest struct {
 
 func (x *ListGroupChannelsRequest) Reset() {
 	*x = ListGroupChannelsRequest{}
-	mi := &file_user_v1_channel_proto_msgTypes[2]
+	mi := &file_user_v1_channel_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -218,7 +239,7 @@ func (x *ListGroupChannelsRequest) String() string {
 func (*ListGroupChannelsRequest) ProtoMessage() {}
 
 func (x *ListGroupChannelsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_channel_proto_msgTypes[2]
+	mi := &file_user_v1_channel_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -231,7 +252,7 @@ func (x *ListGroupChannelsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListGroupChannelsRequest.ProtoReflect.Descriptor instead.
 func (*ListGroupChannelsRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_channel_proto_rawDescGZIP(), []int{2}
+	return file_user_v1_channel_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *ListGroupChannelsRequest) GetAccessToken() string {
@@ -258,7 +279,7 @@ type ListGroupChannelsResponse struct {
 
 func (x *ListGroupChannelsResponse) Reset() {
 	*x = ListGroupChannelsResponse{}
-	mi := &file_user_v1_channel_proto_msgTypes[3]
+	mi := &file_user_v1_channel_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -270,7 +291,7 @@ func (x *ListGroupChannelsResponse) String() string {
 func (*ListGroupChannelsResponse) ProtoMessage() {}
 
 func (x *ListGroupChannelsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_channel_proto_msgTypes[3]
+	mi := &file_user_v1_channel_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -283,7 +304,7 @@ func (x *ListGroupChannelsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListGroupChannelsResponse.ProtoReflect.Descriptor instead.
 func (*ListGroupChannelsResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_channel_proto_rawDescGZIP(), []int{3}
+	return file_user_v1_channel_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *ListGroupChannelsResponse) GetChannels() []*ChannelSummary {
@@ -296,118 +317,6 @@ func (x *ListGroupChannelsResponse) GetChannels() []*ChannelSummary {
 func (x *ListGroupChannelsResponse) GetCategories() []*ChannelCategory {
 	if x != nil {
 		return x.Categories
-	}
-	return nil
-}
-
-type CreateChannelCategoryRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
-	GroupId       string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
-	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
-	IsPrivate     bool                   `protobuf:"varint,4,opt,name=is_private,json=isPrivate,proto3" json:"is_private,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *CreateChannelCategoryRequest) Reset() {
-	*x = CreateChannelCategoryRequest{}
-	mi := &file_user_v1_channel_proto_msgTypes[4]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CreateChannelCategoryRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CreateChannelCategoryRequest) ProtoMessage() {}
-
-func (x *CreateChannelCategoryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_channel_proto_msgTypes[4]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use CreateChannelCategoryRequest.ProtoReflect.Descriptor instead.
-func (*CreateChannelCategoryRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_channel_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *CreateChannelCategoryRequest) GetAccessToken() string {
-	if x != nil {
-		return x.AccessToken
-	}
-	return ""
-}
-
-func (x *CreateChannelCategoryRequest) GetGroupId() string {
-	if x != nil {
-		return x.GroupId
-	}
-	return ""
-}
-
-func (x *CreateChannelCategoryRequest) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *CreateChannelCategoryRequest) GetIsPrivate() bool {
-	if x != nil {
-		return x.IsPrivate
-	}
-	return false
-}
-
-type CreateChannelCategoryResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Category      *ChannelCategory       `protobuf:"bytes,1,opt,name=category,proto3" json:"category,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *CreateChannelCategoryResponse) Reset() {
-	*x = CreateChannelCategoryResponse{}
-	mi := &file_user_v1_channel_proto_msgTypes[5]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CreateChannelCategoryResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CreateChannelCategoryResponse) ProtoMessage() {}
-
-func (x *CreateChannelCategoryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_channel_proto_msgTypes[5]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use CreateChannelCategoryResponse.ProtoReflect.Descriptor instead.
-func (*CreateChannelCategoryResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_channel_proto_rawDescGZIP(), []int{5}
-}
-
-func (x *CreateChannelCategoryResponse) GetCategory() *ChannelCategory {
-	if x != nil {
-		return x.Category
 	}
 	return nil
 }
@@ -426,7 +335,7 @@ type CreateGroupChannelRequest struct {
 
 func (x *CreateGroupChannelRequest) Reset() {
 	*x = CreateGroupChannelRequest{}
-	mi := &file_user_v1_channel_proto_msgTypes[6]
+	mi := &file_user_v1_channel_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -438,7 +347,7 @@ func (x *CreateGroupChannelRequest) String() string {
 func (*CreateGroupChannelRequest) ProtoMessage() {}
 
 func (x *CreateGroupChannelRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_channel_proto_msgTypes[6]
+	mi := &file_user_v1_channel_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -451,7 +360,7 @@ func (x *CreateGroupChannelRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateGroupChannelRequest.ProtoReflect.Descriptor instead.
 func (*CreateGroupChannelRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_channel_proto_rawDescGZIP(), []int{6}
+	return file_user_v1_channel_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *CreateGroupChannelRequest) GetAccessToken() string {
@@ -505,7 +414,7 @@ type CreateGroupChannelResponse struct {
 
 func (x *CreateGroupChannelResponse) Reset() {
 	*x = CreateGroupChannelResponse{}
-	mi := &file_user_v1_channel_proto_msgTypes[7]
+	mi := &file_user_v1_channel_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -517,7 +426,7 @@ func (x *CreateGroupChannelResponse) String() string {
 func (*CreateGroupChannelResponse) ProtoMessage() {}
 
 func (x *CreateGroupChannelResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_channel_proto_msgTypes[7]
+	mi := &file_user_v1_channel_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -530,7 +439,7 @@ func (x *CreateGroupChannelResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreateGroupChannelResponse.ProtoReflect.Descriptor instead.
 func (*CreateGroupChannelResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_channel_proto_rawDescGZIP(), []int{7}
+	return file_user_v1_channel_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *CreateGroupChannelResponse) GetChannel() *ChannelSummary {
@@ -540,30 +449,42 @@ func (x *CreateGroupChannelResponse) GetChannel() *ChannelSummary {
 	return nil
 }
 
-type ReorderChannelCategoriesRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
-	GroupId       string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
-	CategoryIds   []string               `protobuf:"bytes,3,rep,name=category_ids,json=categoryIds,proto3" json:"category_ids,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+type UpdateGroupChannelRequest struct {
+	state                 protoimpl.MessageState `protogen:"open.v1"`
+	AccessToken           string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	GroupId               string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	ChannelId             string                 `protobuf:"bytes,3,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
+	Name                  *string                `protobuf:"bytes,4,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	IsPrivate             *bool                  `protobuf:"varint,5,opt,name=is_private,json=isPrivate,proto3,oneof" json:"is_private,omitempty"`
+	SlowmodeSeconds       *int32                 `protobuf:"varint,6,opt,name=slowmode_seconds,json=slowmodeSeconds,proto3,oneof" json:"slowmode_seconds,omitempty"`
+	ThreadSlowmodeSeconds *int32                 `protobuf:"varint,7,opt,name=thread_slowmode_seconds,json=threadSlowmodeSeconds,proto3,oneof" json:"thread_slowmode_seconds,omitempty"`
+	ContentVisibility     *string                `protobuf:"bytes,8,opt,name=content_visibility,json=contentVisibility,proto3,oneof" json:"content_visibility,omitempty"`
+	ForumDefaultLayout    *string                `protobuf:"bytes,9,opt,name=forum_default_layout,json=forumDefaultLayout,proto3,oneof" json:"forum_default_layout,omitempty"`
+	ForumSortOrder        *string                `protobuf:"bytes,10,opt,name=forum_sort_order,json=forumSortOrder,proto3,oneof" json:"forum_sort_order,omitempty"`
+	ForumTagMatching      *string                `protobuf:"bytes,11,opt,name=forum_tag_matching,json=forumTagMatching,proto3,oneof" json:"forum_tag_matching,omitempty"`
+	BitrateKbps           *int32                 `protobuf:"varint,13,opt,name=bitrate_kbps,json=bitrateKbps,proto3,oneof" json:"bitrate_kbps,omitempty"`
+	VideoQuality          *string                `protobuf:"bytes,14,opt,name=video_quality,json=videoQuality,proto3,oneof" json:"video_quality,omitempty"`
+	UserLimit             *int32                 `protobuf:"varint,15,opt,name=user_limit,json=userLimit,proto3,oneof" json:"user_limit,omitempty"`
+	RtcRegion             *string                `protobuf:"bytes,16,opt,name=rtc_region,json=rtcRegion,proto3,oneof" json:"rtc_region,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
 }
 
-func (x *ReorderChannelCategoriesRequest) Reset() {
-	*x = ReorderChannelCategoriesRequest{}
-	mi := &file_user_v1_channel_proto_msgTypes[8]
+func (x *UpdateGroupChannelRequest) Reset() {
+	*x = UpdateGroupChannelRequest{}
+	mi := &file_user_v1_channel_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ReorderChannelCategoriesRequest) String() string {
+func (x *UpdateGroupChannelRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ReorderChannelCategoriesRequest) ProtoMessage() {}
+func (*UpdateGroupChannelRequest) ProtoMessage() {}
 
-func (x *ReorderChannelCategoriesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_channel_proto_msgTypes[8]
+func (x *UpdateGroupChannelRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_channel_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -574,53 +495,287 @@ func (x *ReorderChannelCategoriesRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ReorderChannelCategoriesRequest.ProtoReflect.Descriptor instead.
-func (*ReorderChannelCategoriesRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_channel_proto_rawDescGZIP(), []int{8}
+// Deprecated: Use UpdateGroupChannelRequest.ProtoReflect.Descriptor instead.
+func (*UpdateGroupChannelRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_channel_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *ReorderChannelCategoriesRequest) GetAccessToken() string {
+func (x *UpdateGroupChannelRequest) GetAccessToken() string {
 	if x != nil {
 		return x.AccessToken
 	}
 	return ""
 }
 
-func (x *ReorderChannelCategoriesRequest) GetGroupId() string {
+func (x *UpdateGroupChannelRequest) GetGroupId() string {
 	if x != nil {
 		return x.GroupId
 	}
 	return ""
 }
 
-func (x *ReorderChannelCategoriesRequest) GetCategoryIds() []string {
+func (x *UpdateGroupChannelRequest) GetChannelId() string {
 	if x != nil {
-		return x.CategoryIds
+		return x.ChannelId
+	}
+	return ""
+}
+
+func (x *UpdateGroupChannelRequest) GetName() string {
+	if x != nil && x.Name != nil {
+		return *x.Name
+	}
+	return ""
+}
+
+func (x *UpdateGroupChannelRequest) GetIsPrivate() bool {
+	if x != nil && x.IsPrivate != nil {
+		return *x.IsPrivate
+	}
+	return false
+}
+
+func (x *UpdateGroupChannelRequest) GetSlowmodeSeconds() int32 {
+	if x != nil && x.SlowmodeSeconds != nil {
+		return *x.SlowmodeSeconds
+	}
+	return 0
+}
+
+func (x *UpdateGroupChannelRequest) GetThreadSlowmodeSeconds() int32 {
+	if x != nil && x.ThreadSlowmodeSeconds != nil {
+		return *x.ThreadSlowmodeSeconds
+	}
+	return 0
+}
+
+func (x *UpdateGroupChannelRequest) GetContentVisibility() string {
+	if x != nil && x.ContentVisibility != nil {
+		return *x.ContentVisibility
+	}
+	return ""
+}
+
+func (x *UpdateGroupChannelRequest) GetForumDefaultLayout() string {
+	if x != nil && x.ForumDefaultLayout != nil {
+		return *x.ForumDefaultLayout
+	}
+	return ""
+}
+
+func (x *UpdateGroupChannelRequest) GetForumSortOrder() string {
+	if x != nil && x.ForumSortOrder != nil {
+		return *x.ForumSortOrder
+	}
+	return ""
+}
+
+func (x *UpdateGroupChannelRequest) GetForumTagMatching() string {
+	if x != nil && x.ForumTagMatching != nil {
+		return *x.ForumTagMatching
+	}
+	return ""
+}
+
+func (x *UpdateGroupChannelRequest) GetBitrateKbps() int32 {
+	if x != nil && x.BitrateKbps != nil {
+		return *x.BitrateKbps
+	}
+	return 0
+}
+
+func (x *UpdateGroupChannelRequest) GetVideoQuality() string {
+	if x != nil && x.VideoQuality != nil {
+		return *x.VideoQuality
+	}
+	return ""
+}
+
+func (x *UpdateGroupChannelRequest) GetUserLimit() int32 {
+	if x != nil && x.UserLimit != nil {
+		return *x.UserLimit
+	}
+	return 0
+}
+
+func (x *UpdateGroupChannelRequest) GetRtcRegion() string {
+	if x != nil && x.RtcRegion != nil {
+		return *x.RtcRegion
+	}
+	return ""
+}
+
+type UpdateGroupChannelResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Channel       *ChannelSummary        `protobuf:"bytes,1,opt,name=channel,proto3" json:"channel,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateGroupChannelResponse) Reset() {
+	*x = UpdateGroupChannelResponse{}
+	mi := &file_user_v1_channel_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateGroupChannelResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateGroupChannelResponse) ProtoMessage() {}
+
+func (x *UpdateGroupChannelResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_channel_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateGroupChannelResponse.ProtoReflect.Descriptor instead.
+func (*UpdateGroupChannelResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_channel_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *UpdateGroupChannelResponse) GetChannel() *ChannelSummary {
+	if x != nil {
+		return x.Channel
 	}
 	return nil
 }
 
-type ReorderChannelCategoriesResponse struct {
+type DeleteGroupChannelRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	GroupId       string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	ChannelId     string                 `protobuf:"bytes,3,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteGroupChannelRequest) Reset() {
+	*x = DeleteGroupChannelRequest{}
+	mi := &file_user_v1_channel_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteGroupChannelRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteGroupChannelRequest) ProtoMessage() {}
+
+func (x *DeleteGroupChannelRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_channel_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteGroupChannelRequest.ProtoReflect.Descriptor instead.
+func (*DeleteGroupChannelRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_channel_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *DeleteGroupChannelRequest) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
+func (x *DeleteGroupChannelRequest) GetGroupId() string {
+	if x != nil {
+		return x.GroupId
+	}
+	return ""
+}
+
+func (x *DeleteGroupChannelRequest) GetChannelId() string {
+	if x != nil {
+		return x.ChannelId
+	}
+	return ""
+}
+
+type DeleteGroupChannelResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *ReorderChannelCategoriesResponse) Reset() {
-	*x = ReorderChannelCategoriesResponse{}
+func (x *DeleteGroupChannelResponse) Reset() {
+	*x = DeleteGroupChannelResponse{}
+	mi := &file_user_v1_channel_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteGroupChannelResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteGroupChannelResponse) ProtoMessage() {}
+
+func (x *DeleteGroupChannelResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_channel_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteGroupChannelResponse.ProtoReflect.Descriptor instead.
+func (*DeleteGroupChannelResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_channel_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *DeleteGroupChannelResponse) GetOk() bool {
+	if x != nil {
+		return x.Ok
+	}
+	return false
+}
+
+type ListChannelPermissionsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	GroupId       string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	ChannelId     string                 `protobuf:"bytes,3,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListChannelPermissionsRequest) Reset() {
+	*x = ListChannelPermissionsRequest{}
 	mi := &file_user_v1_channel_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ReorderChannelCategoriesResponse) String() string {
+func (x *ListChannelPermissionsRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ReorderChannelCategoriesResponse) ProtoMessage() {}
+func (*ListChannelPermissionsRequest) ProtoMessage() {}
 
-func (x *ReorderChannelCategoriesResponse) ProtoReflect() protoreflect.Message {
+func (x *ListChannelPermissionsRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_user_v1_channel_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -632,16 +787,434 @@ func (x *ReorderChannelCategoriesResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use ReorderChannelCategoriesResponse.ProtoReflect.Descriptor instead.
-func (*ReorderChannelCategoriesResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use ListChannelPermissionsRequest.ProtoReflect.Descriptor instead.
+func (*ListChannelPermissionsRequest) Descriptor() ([]byte, []int) {
 	return file_user_v1_channel_proto_rawDescGZIP(), []int{9}
 }
 
-func (x *ReorderChannelCategoriesResponse) GetOk() bool {
+func (x *ListChannelPermissionsRequest) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
+func (x *ListChannelPermissionsRequest) GetGroupId() string {
+	if x != nil {
+		return x.GroupId
+	}
+	return ""
+}
+
+func (x *ListChannelPermissionsRequest) GetChannelId() string {
+	if x != nil {
+		return x.ChannelId
+	}
+	return ""
+}
+
+type ListChannelPermissionsResponse struct {
+	state         protoimpl.MessageState               `protogen:"open.v1"`
+	Overrides     []*ChannelCategoryPermissionOverride `protobuf:"bytes,1,rep,name=overrides,proto3" json:"overrides,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListChannelPermissionsResponse) Reset() {
+	*x = ListChannelPermissionsResponse{}
+	mi := &file_user_v1_channel_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListChannelPermissionsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListChannelPermissionsResponse) ProtoMessage() {}
+
+func (x *ListChannelPermissionsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_channel_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListChannelPermissionsResponse.ProtoReflect.Descriptor instead.
+func (*ListChannelPermissionsResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_channel_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *ListChannelPermissionsResponse) GetOverrides() []*ChannelCategoryPermissionOverride {
+	if x != nil {
+		return x.Overrides
+	}
+	return nil
+}
+
+type UpsertChannelPermissionRequest struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	AccessToken      string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	GroupId          string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	ChannelId        string                 `protobuf:"bytes,3,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
+	TargetType       string                 `protobuf:"bytes,4,opt,name=target_type,json=targetType,proto3" json:"target_type,omitempty"`
+	TargetId         string                 `protobuf:"bytes,5,opt,name=target_id,json=targetId,proto3" json:"target_id,omitempty"`
+	AllowPermissions []string               `protobuf:"bytes,6,rep,name=allow_permissions,json=allowPermissions,proto3" json:"allow_permissions,omitempty"`
+	DenyPermissions  []string               `protobuf:"bytes,7,rep,name=deny_permissions,json=denyPermissions,proto3" json:"deny_permissions,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *UpsertChannelPermissionRequest) Reset() {
+	*x = UpsertChannelPermissionRequest{}
+	mi := &file_user_v1_channel_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpsertChannelPermissionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpsertChannelPermissionRequest) ProtoMessage() {}
+
+func (x *UpsertChannelPermissionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_channel_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpsertChannelPermissionRequest.ProtoReflect.Descriptor instead.
+func (*UpsertChannelPermissionRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_channel_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *UpsertChannelPermissionRequest) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
+func (x *UpsertChannelPermissionRequest) GetGroupId() string {
+	if x != nil {
+		return x.GroupId
+	}
+	return ""
+}
+
+func (x *UpsertChannelPermissionRequest) GetChannelId() string {
+	if x != nil {
+		return x.ChannelId
+	}
+	return ""
+}
+
+func (x *UpsertChannelPermissionRequest) GetTargetType() string {
+	if x != nil {
+		return x.TargetType
+	}
+	return ""
+}
+
+func (x *UpsertChannelPermissionRequest) GetTargetId() string {
+	if x != nil {
+		return x.TargetId
+	}
+	return ""
+}
+
+func (x *UpsertChannelPermissionRequest) GetAllowPermissions() []string {
+	if x != nil {
+		return x.AllowPermissions
+	}
+	return nil
+}
+
+func (x *UpsertChannelPermissionRequest) GetDenyPermissions() []string {
+	if x != nil {
+		return x.DenyPermissions
+	}
+	return nil
+}
+
+type UpsertChannelPermissionResponse struct {
+	state         protoimpl.MessageState             `protogen:"open.v1"`
+	Override      *ChannelCategoryPermissionOverride `protobuf:"bytes,1,opt,name=override,proto3" json:"override,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpsertChannelPermissionResponse) Reset() {
+	*x = UpsertChannelPermissionResponse{}
+	mi := &file_user_v1_channel_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpsertChannelPermissionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpsertChannelPermissionResponse) ProtoMessage() {}
+
+func (x *UpsertChannelPermissionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_channel_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpsertChannelPermissionResponse.ProtoReflect.Descriptor instead.
+func (*UpsertChannelPermissionResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_channel_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *UpsertChannelPermissionResponse) GetOverride() *ChannelCategoryPermissionOverride {
+	if x != nil {
+		return x.Override
+	}
+	return nil
+}
+
+type DeleteChannelPermissionRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	GroupId       string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	ChannelId     string                 `protobuf:"bytes,3,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
+	TargetType    string                 `protobuf:"bytes,4,opt,name=target_type,json=targetType,proto3" json:"target_type,omitempty"`
+	TargetId      string                 `protobuf:"bytes,5,opt,name=target_id,json=targetId,proto3" json:"target_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteChannelPermissionRequest) Reset() {
+	*x = DeleteChannelPermissionRequest{}
+	mi := &file_user_v1_channel_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteChannelPermissionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteChannelPermissionRequest) ProtoMessage() {}
+
+func (x *DeleteChannelPermissionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_channel_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteChannelPermissionRequest.ProtoReflect.Descriptor instead.
+func (*DeleteChannelPermissionRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_channel_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *DeleteChannelPermissionRequest) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
+func (x *DeleteChannelPermissionRequest) GetGroupId() string {
+	if x != nil {
+		return x.GroupId
+	}
+	return ""
+}
+
+func (x *DeleteChannelPermissionRequest) GetChannelId() string {
+	if x != nil {
+		return x.ChannelId
+	}
+	return ""
+}
+
+func (x *DeleteChannelPermissionRequest) GetTargetType() string {
+	if x != nil {
+		return x.TargetType
+	}
+	return ""
+}
+
+func (x *DeleteChannelPermissionRequest) GetTargetId() string {
+	if x != nil {
+		return x.TargetId
+	}
+	return ""
+}
+
+type DeleteChannelPermissionResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteChannelPermissionResponse) Reset() {
+	*x = DeleteChannelPermissionResponse{}
+	mi := &file_user_v1_channel_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteChannelPermissionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteChannelPermissionResponse) ProtoMessage() {}
+
+func (x *DeleteChannelPermissionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_channel_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteChannelPermissionResponse.ProtoReflect.Descriptor instead.
+func (*DeleteChannelPermissionResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_channel_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *DeleteChannelPermissionResponse) GetOk() bool {
 	if x != nil {
 		return x.Ok
 	}
 	return false
+}
+
+type SyncChannelPermissionsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	GroupId       string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	ChannelId     string                 `protobuf:"bytes,3,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SyncChannelPermissionsRequest) Reset() {
+	*x = SyncChannelPermissionsRequest{}
+	mi := &file_user_v1_channel_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SyncChannelPermissionsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SyncChannelPermissionsRequest) ProtoMessage() {}
+
+func (x *SyncChannelPermissionsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_channel_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SyncChannelPermissionsRequest.ProtoReflect.Descriptor instead.
+func (*SyncChannelPermissionsRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_channel_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *SyncChannelPermissionsRequest) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
+func (x *SyncChannelPermissionsRequest) GetGroupId() string {
+	if x != nil {
+		return x.GroupId
+	}
+	return ""
+}
+
+func (x *SyncChannelPermissionsRequest) GetChannelId() string {
+	if x != nil {
+		return x.ChannelId
+	}
+	return ""
+}
+
+type SyncChannelPermissionsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Channel       *ChannelSummary        `protobuf:"bytes,1,opt,name=channel,proto3" json:"channel,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SyncChannelPermissionsResponse) Reset() {
+	*x = SyncChannelPermissionsResponse{}
+	mi := &file_user_v1_channel_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SyncChannelPermissionsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SyncChannelPermissionsResponse) ProtoMessage() {}
+
+func (x *SyncChannelPermissionsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_channel_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SyncChannelPermissionsResponse.ProtoReflect.Descriptor instead.
+func (*SyncChannelPermissionsResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_channel_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *SyncChannelPermissionsResponse) GetChannel() *ChannelSummary {
+	if x != nil {
+		return x.Channel
+	}
+	return nil
 }
 
 type ReorderGroupChannelsRequest struct {
@@ -657,7 +1230,7 @@ type ReorderGroupChannelsRequest struct {
 
 func (x *ReorderGroupChannelsRequest) Reset() {
 	*x = ReorderGroupChannelsRequest{}
-	mi := &file_user_v1_channel_proto_msgTypes[10]
+	mi := &file_user_v1_channel_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -669,7 +1242,7 @@ func (x *ReorderGroupChannelsRequest) String() string {
 func (*ReorderGroupChannelsRequest) ProtoMessage() {}
 
 func (x *ReorderGroupChannelsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_channel_proto_msgTypes[10]
+	mi := &file_user_v1_channel_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -682,7 +1255,7 @@ func (x *ReorderGroupChannelsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReorderGroupChannelsRequest.ProtoReflect.Descriptor instead.
 func (*ReorderGroupChannelsRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_channel_proto_rawDescGZIP(), []int{10}
+	return file_user_v1_channel_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *ReorderGroupChannelsRequest) GetAccessToken() string {
@@ -729,7 +1302,7 @@ type ReorderGroupChannelsResponse struct {
 
 func (x *ReorderGroupChannelsResponse) Reset() {
 	*x = ReorderGroupChannelsResponse{}
-	mi := &file_user_v1_channel_proto_msgTypes[11]
+	mi := &file_user_v1_channel_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -741,7 +1314,7 @@ func (x *ReorderGroupChannelsResponse) String() string {
 func (*ReorderGroupChannelsResponse) ProtoMessage() {}
 
 func (x *ReorderGroupChannelsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_channel_proto_msgTypes[11]
+	mi := &file_user_v1_channel_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -754,7 +1327,7 @@ func (x *ReorderGroupChannelsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReorderGroupChannelsResponse.ProtoReflect.Descriptor instead.
 func (*ReorderGroupChannelsResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_channel_proto_rawDescGZIP(), []int{11}
+	return file_user_v1_channel_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *ReorderGroupChannelsResponse) GetOk() bool {
@@ -775,7 +1348,7 @@ type AssertGroupChannelAccessRequest struct {
 
 func (x *AssertGroupChannelAccessRequest) Reset() {
 	*x = AssertGroupChannelAccessRequest{}
-	mi := &file_user_v1_channel_proto_msgTypes[12]
+	mi := &file_user_v1_channel_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -787,7 +1360,7 @@ func (x *AssertGroupChannelAccessRequest) String() string {
 func (*AssertGroupChannelAccessRequest) ProtoMessage() {}
 
 func (x *AssertGroupChannelAccessRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_channel_proto_msgTypes[12]
+	mi := &file_user_v1_channel_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -800,7 +1373,7 @@ func (x *AssertGroupChannelAccessRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AssertGroupChannelAccessRequest.ProtoReflect.Descriptor instead.
 func (*AssertGroupChannelAccessRequest) Descriptor() ([]byte, []int) {
-	return file_user_v1_channel_proto_rawDescGZIP(), []int{12}
+	return file_user_v1_channel_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *AssertGroupChannelAccessRequest) GetAccessToken() string {
@@ -835,7 +1408,7 @@ type AssertGroupChannelAccessResponse struct {
 
 func (x *AssertGroupChannelAccessResponse) Reset() {
 	*x = AssertGroupChannelAccessResponse{}
-	mi := &file_user_v1_channel_proto_msgTypes[13]
+	mi := &file_user_v1_channel_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -847,7 +1420,7 @@ func (x *AssertGroupChannelAccessResponse) String() string {
 func (*AssertGroupChannelAccessResponse) ProtoMessage() {}
 
 func (x *AssertGroupChannelAccessResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_v1_channel_proto_msgTypes[13]
+	mi := &file_user_v1_channel_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -860,7 +1433,7 @@ func (x *AssertGroupChannelAccessResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AssertGroupChannelAccessResponse.ProtoReflect.Descriptor instead.
 func (*AssertGroupChannelAccessResponse) Descriptor() ([]byte, []int) {
-	return file_user_v1_channel_proto_rawDescGZIP(), []int{13}
+	return file_user_v1_channel_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *AssertGroupChannelAccessResponse) GetChannelUuid() string {
@@ -888,13 +1461,7 @@ var File_user_v1_channel_proto protoreflect.FileDescriptor
 
 const file_user_v1_channel_proto_rawDesc = "" +
 	"\n" +
-	"\x15user/v1/channel.proto\x12\auser.v1\"p\n" +
-	"\x0fChannelCategory\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1d\n" +
-	"\n" +
-	"is_private\x18\x03 \x01(\bR\tisPrivate\x12\x1a\n" +
-	"\bposition\x18\x04 \x01(\x05R\bposition\"\xea\x01\n" +
+	"\x15user/v1/channel.proto\x12\auser.v1\x1a\x1euser/v1/channel_category.proto\"\x8c\x05\n" +
 	"\x0eChannelSummary\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
@@ -905,7 +1472,20 @@ const file_user_v1_channel_proto_rawDesc = "" +
 	"is_private\x18\x06 \x01(\bR\tisPrivate\x12\x1f\n" +
 	"\vcategory_id\x18\a \x01(\tR\n" +
 	"categoryId\x12\x1a\n" +
-	"\bposition\x18\b \x01(\x05R\bposition\"X\n" +
+	"\bposition\x18\b \x01(\x05R\bposition\x12)\n" +
+	"\x10slowmode_seconds\x18\t \x01(\x05R\x0fslowmodeSeconds\x126\n" +
+	"\x17thread_slowmode_seconds\x18\n" +
+	" \x01(\x05R\x15threadSlowmodeSeconds\x12-\n" +
+	"\x12content_visibility\x18\v \x01(\tR\x11contentVisibility\x120\n" +
+	"\x14forum_default_layout\x18\f \x01(\tR\x12forumDefaultLayout\x12(\n" +
+	"\x10forum_sort_order\x18\r \x01(\tR\x0eforumSortOrder\x12,\n" +
+	"\x12forum_tag_matching\x18\x0e \x01(\tR\x10forumTagMatching\x12!\n" +
+	"\fbitrate_kbps\x18\x10 \x01(\x05R\vbitrateKbps\x12#\n" +
+	"\rvideo_quality\x18\x11 \x01(\tR\fvideoQuality\x12\x1d\n" +
+	"\n" +
+	"user_limit\x18\x12 \x01(\x05R\tuserLimit\x12\x1d\n" +
+	"\n" +
+	"rtc_region\x18\x13 \x01(\tR\trtcRegion\"X\n" +
 	"\x18ListGroupChannelsRequest\x12!\n" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
 	"\bgroup_id\x18\x02 \x01(\tR\agroupId\"\x8a\x01\n" +
@@ -913,15 +1493,7 @@ const file_user_v1_channel_proto_rawDesc = "" +
 	"\bchannels\x18\x01 \x03(\v2\x17.user.v1.ChannelSummaryR\bchannels\x128\n" +
 	"\n" +
 	"categories\x18\x02 \x03(\v2\x18.user.v1.ChannelCategoryR\n" +
-	"categories\"\x8f\x01\n" +
-	"\x1cCreateChannelCategoryRequest\x12!\n" +
-	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
-	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x12\n" +
-	"\x04name\x18\x03 \x01(\tR\x04name\x12\x1d\n" +
-	"\n" +
-	"is_private\x18\x04 \x01(\bR\tisPrivate\"U\n" +
-	"\x1dCreateChannelCategoryResponse\x124\n" +
-	"\bcategory\x18\x01 \x01(\v2\x18.user.v1.ChannelCategoryR\bcategory\"\xc1\x01\n" +
+	"categories\"\xc1\x01\n" +
 	"\x19CreateGroupChannelRequest\x12!\n" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
 	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x12\n" +
@@ -932,13 +1504,86 @@ const file_user_v1_channel_proto_rawDesc = "" +
 	"\n" +
 	"is_private\x18\x06 \x01(\bR\tisPrivate\"O\n" +
 	"\x1aCreateGroupChannelResponse\x121\n" +
-	"\achannel\x18\x01 \x01(\v2\x17.user.v1.ChannelSummaryR\achannel\"\x82\x01\n" +
-	"\x1fReorderChannelCategoriesRequest\x12!\n" +
+	"\achannel\x18\x01 \x01(\v2\x17.user.v1.ChannelSummaryR\achannel\"\xef\x06\n" +
+	"\x19UpdateGroupChannelRequest\x12!\n" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
-	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12!\n" +
-	"\fcategory_ids\x18\x03 \x03(\tR\vcategoryIds\"2\n" +
-	" ReorderChannelCategoriesResponse\x12\x0e\n" +
-	"\x02ok\x18\x01 \x01(\bR\x02ok\"\xc6\x01\n" +
+	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x1d\n" +
+	"\n" +
+	"channel_id\x18\x03 \x01(\tR\tchannelId\x12\x17\n" +
+	"\x04name\x18\x04 \x01(\tH\x00R\x04name\x88\x01\x01\x12\"\n" +
+	"\n" +
+	"is_private\x18\x05 \x01(\bH\x01R\tisPrivate\x88\x01\x01\x12.\n" +
+	"\x10slowmode_seconds\x18\x06 \x01(\x05H\x02R\x0fslowmodeSeconds\x88\x01\x01\x12;\n" +
+	"\x17thread_slowmode_seconds\x18\a \x01(\x05H\x03R\x15threadSlowmodeSeconds\x88\x01\x01\x122\n" +
+	"\x12content_visibility\x18\b \x01(\tH\x04R\x11contentVisibility\x88\x01\x01\x125\n" +
+	"\x14forum_default_layout\x18\t \x01(\tH\x05R\x12forumDefaultLayout\x88\x01\x01\x12-\n" +
+	"\x10forum_sort_order\x18\n" +
+	" \x01(\tH\x06R\x0eforumSortOrder\x88\x01\x01\x121\n" +
+	"\x12forum_tag_matching\x18\v \x01(\tH\aR\x10forumTagMatching\x88\x01\x01\x12&\n" +
+	"\fbitrate_kbps\x18\r \x01(\x05H\bR\vbitrateKbps\x88\x01\x01\x12(\n" +
+	"\rvideo_quality\x18\x0e \x01(\tH\tR\fvideoQuality\x88\x01\x01\x12\"\n" +
+	"\n" +
+	"user_limit\x18\x0f \x01(\x05H\n" +
+	"R\tuserLimit\x88\x01\x01\x12\"\n" +
+	"\n" +
+	"rtc_region\x18\x10 \x01(\tH\vR\trtcRegion\x88\x01\x01B\a\n" +
+	"\x05_nameB\r\n" +
+	"\v_is_privateB\x13\n" +
+	"\x11_slowmode_secondsB\x1a\n" +
+	"\x18_thread_slowmode_secondsB\x15\n" +
+	"\x13_content_visibilityB\x17\n" +
+	"\x15_forum_default_layoutB\x13\n" +
+	"\x11_forum_sort_orderB\x15\n" +
+	"\x13_forum_tag_matchingB\x0f\n" +
+	"\r_bitrate_kbpsB\x10\n" +
+	"\x0e_video_qualityB\r\n" +
+	"\v_user_limitB\r\n" +
+	"\v_rtc_region\"O\n" +
+	"\x1aUpdateGroupChannelResponse\x121\n" +
+	"\achannel\x18\x01 \x01(\v2\x17.user.v1.ChannelSummaryR\achannel\"x\n" +
+	"\x19DeleteGroupChannelRequest\x12!\n" +
+	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
+	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x1d\n" +
+	"\n" +
+	"channel_id\x18\x03 \x01(\tR\tchannelId\",\n" +
+	"\x1aDeleteGroupChannelResponse\x12\x0e\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok\"|\n" +
+	"\x1dListChannelPermissionsRequest\x12!\n" +
+	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
+	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x1d\n" +
+	"\n" +
+	"channel_id\x18\x03 \x01(\tR\tchannelId\"j\n" +
+	"\x1eListChannelPermissionsResponse\x12H\n" +
+	"\toverrides\x18\x01 \x03(\v2*.user.v1.ChannelCategoryPermissionOverrideR\toverrides\"\x93\x02\n" +
+	"\x1eUpsertChannelPermissionRequest\x12!\n" +
+	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
+	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x1d\n" +
+	"\n" +
+	"channel_id\x18\x03 \x01(\tR\tchannelId\x12\x1f\n" +
+	"\vtarget_type\x18\x04 \x01(\tR\n" +
+	"targetType\x12\x1b\n" +
+	"\ttarget_id\x18\x05 \x01(\tR\btargetId\x12+\n" +
+	"\x11allow_permissions\x18\x06 \x03(\tR\x10allowPermissions\x12)\n" +
+	"\x10deny_permissions\x18\a \x03(\tR\x0fdenyPermissions\"i\n" +
+	"\x1fUpsertChannelPermissionResponse\x12F\n" +
+	"\boverride\x18\x01 \x01(\v2*.user.v1.ChannelCategoryPermissionOverrideR\boverride\"\xbb\x01\n" +
+	"\x1eDeleteChannelPermissionRequest\x12!\n" +
+	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
+	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x1d\n" +
+	"\n" +
+	"channel_id\x18\x03 \x01(\tR\tchannelId\x12\x1f\n" +
+	"\vtarget_type\x18\x04 \x01(\tR\n" +
+	"targetType\x12\x1b\n" +
+	"\ttarget_id\x18\x05 \x01(\tR\btargetId\"1\n" +
+	"\x1fDeleteChannelPermissionResponse\x12\x0e\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok\"|\n" +
+	"\x1dSyncChannelPermissionsRequest\x12!\n" +
+	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
+	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x1d\n" +
+	"\n" +
+	"channel_id\x18\x03 \x01(\tR\tchannelId\"S\n" +
+	"\x1eSyncChannelPermissionsResponse\x121\n" +
+	"\achannel\x18\x01 \x01(\v2\x17.user.v1.ChannelSummaryR\achannel\"\xc6\x01\n" +
 	"\x1bReorderGroupChannelsRequest\x12!\n" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
 	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x1f\n" +
@@ -957,12 +1602,16 @@ const file_user_v1_channel_proto_rawDesc = "" +
 	" AssertGroupChannelAccessResponse\x12!\n" +
 	"\fchannel_uuid\x18\x01 \x01(\tR\vchannelUuid\x12\x1b\n" +
 	"\tuser_uuid\x18\x02 \x01(\tR\buserUuid\x12 \n" +
-	"\vpermissions\x18\x03 \x03(\tR\vpermissions2\xfa\x04\n" +
+	"\vpermissions\x18\x03 \x03(\tR\vpermissions2\x91\b\n" +
 	"\x0eChannelService\x12Z\n" +
-	"\x11ListGroupChannels\x12!.user.v1.ListGroupChannelsRequest\x1a\".user.v1.ListGroupChannelsResponse\x12f\n" +
-	"\x15CreateChannelCategory\x12%.user.v1.CreateChannelCategoryRequest\x1a&.user.v1.CreateChannelCategoryResponse\x12]\n" +
-	"\x12CreateGroupChannel\x12\".user.v1.CreateGroupChannelRequest\x1a#.user.v1.CreateGroupChannelResponse\x12o\n" +
-	"\x18ReorderChannelCategories\x12(.user.v1.ReorderChannelCategoriesRequest\x1a).user.v1.ReorderChannelCategoriesResponse\x12c\n" +
+	"\x11ListGroupChannels\x12!.user.v1.ListGroupChannelsRequest\x1a\".user.v1.ListGroupChannelsResponse\x12]\n" +
+	"\x12CreateGroupChannel\x12\".user.v1.CreateGroupChannelRequest\x1a#.user.v1.CreateGroupChannelResponse\x12]\n" +
+	"\x12UpdateGroupChannel\x12\".user.v1.UpdateGroupChannelRequest\x1a#.user.v1.UpdateGroupChannelResponse\x12]\n" +
+	"\x12DeleteGroupChannel\x12\".user.v1.DeleteGroupChannelRequest\x1a#.user.v1.DeleteGroupChannelResponse\x12i\n" +
+	"\x16ListChannelPermissions\x12&.user.v1.ListChannelPermissionsRequest\x1a'.user.v1.ListChannelPermissionsResponse\x12l\n" +
+	"\x17UpsertChannelPermission\x12'.user.v1.UpsertChannelPermissionRequest\x1a(.user.v1.UpsertChannelPermissionResponse\x12l\n" +
+	"\x17DeleteChannelPermission\x12'.user.v1.DeleteChannelPermissionRequest\x1a(.user.v1.DeleteChannelPermissionResponse\x12i\n" +
+	"\x16SyncChannelPermissions\x12&.user.v1.SyncChannelPermissionsRequest\x1a'.user.v1.SyncChannelPermissionsResponse\x12c\n" +
 	"\x14ReorderGroupChannels\x12$.user.v1.ReorderGroupChannelsRequest\x1a%.user.v1.ReorderGroupChannelsResponse\x12o\n" +
 	"\x18AssertGroupChannelAccess\x12(.user.v1.AssertGroupChannelAccessRequest\x1a).user.v1.AssertGroupChannelAccessResponseB\x9e\x01\n" +
 	"\vcom.user.v1B\fChannelProtoP\x01ZDgithub.com/wichat/wichat/backend/wi-shared/models/gen/user/v1;userv1\xa2\x02\x03UXX\xaa\x02\aUser.V1\xca\x02\aUser\\V1\xe2\x02\x13User\\V1\\GPBMetadata\xea\x02\bUser::V1b\x06proto3"
@@ -979,45 +1628,65 @@ func file_user_v1_channel_proto_rawDescGZIP() []byte {
 	return file_user_v1_channel_proto_rawDescData
 }
 
-var file_user_v1_channel_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_user_v1_channel_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
 var file_user_v1_channel_proto_goTypes = []any{
-	(*ChannelCategory)(nil),                  // 0: user.v1.ChannelCategory
-	(*ChannelSummary)(nil),                   // 1: user.v1.ChannelSummary
-	(*ListGroupChannelsRequest)(nil),         // 2: user.v1.ListGroupChannelsRequest
-	(*ListGroupChannelsResponse)(nil),        // 3: user.v1.ListGroupChannelsResponse
-	(*CreateChannelCategoryRequest)(nil),     // 4: user.v1.CreateChannelCategoryRequest
-	(*CreateChannelCategoryResponse)(nil),    // 5: user.v1.CreateChannelCategoryResponse
-	(*CreateGroupChannelRequest)(nil),        // 6: user.v1.CreateGroupChannelRequest
-	(*CreateGroupChannelResponse)(nil),       // 7: user.v1.CreateGroupChannelResponse
-	(*ReorderChannelCategoriesRequest)(nil),  // 8: user.v1.ReorderChannelCategoriesRequest
-	(*ReorderChannelCategoriesResponse)(nil), // 9: user.v1.ReorderChannelCategoriesResponse
-	(*ReorderGroupChannelsRequest)(nil),      // 10: user.v1.ReorderGroupChannelsRequest
-	(*ReorderGroupChannelsResponse)(nil),     // 11: user.v1.ReorderGroupChannelsResponse
-	(*AssertGroupChannelAccessRequest)(nil),  // 12: user.v1.AssertGroupChannelAccessRequest
-	(*AssertGroupChannelAccessResponse)(nil), // 13: user.v1.AssertGroupChannelAccessResponse
+	(*ChannelSummary)(nil),                    // 0: user.v1.ChannelSummary
+	(*ListGroupChannelsRequest)(nil),          // 1: user.v1.ListGroupChannelsRequest
+	(*ListGroupChannelsResponse)(nil),         // 2: user.v1.ListGroupChannelsResponse
+	(*CreateGroupChannelRequest)(nil),         // 3: user.v1.CreateGroupChannelRequest
+	(*CreateGroupChannelResponse)(nil),        // 4: user.v1.CreateGroupChannelResponse
+	(*UpdateGroupChannelRequest)(nil),         // 5: user.v1.UpdateGroupChannelRequest
+	(*UpdateGroupChannelResponse)(nil),        // 6: user.v1.UpdateGroupChannelResponse
+	(*DeleteGroupChannelRequest)(nil),         // 7: user.v1.DeleteGroupChannelRequest
+	(*DeleteGroupChannelResponse)(nil),        // 8: user.v1.DeleteGroupChannelResponse
+	(*ListChannelPermissionsRequest)(nil),     // 9: user.v1.ListChannelPermissionsRequest
+	(*ListChannelPermissionsResponse)(nil),    // 10: user.v1.ListChannelPermissionsResponse
+	(*UpsertChannelPermissionRequest)(nil),    // 11: user.v1.UpsertChannelPermissionRequest
+	(*UpsertChannelPermissionResponse)(nil),   // 12: user.v1.UpsertChannelPermissionResponse
+	(*DeleteChannelPermissionRequest)(nil),    // 13: user.v1.DeleteChannelPermissionRequest
+	(*DeleteChannelPermissionResponse)(nil),   // 14: user.v1.DeleteChannelPermissionResponse
+	(*SyncChannelPermissionsRequest)(nil),     // 15: user.v1.SyncChannelPermissionsRequest
+	(*SyncChannelPermissionsResponse)(nil),    // 16: user.v1.SyncChannelPermissionsResponse
+	(*ReorderGroupChannelsRequest)(nil),       // 17: user.v1.ReorderGroupChannelsRequest
+	(*ReorderGroupChannelsResponse)(nil),      // 18: user.v1.ReorderGroupChannelsResponse
+	(*AssertGroupChannelAccessRequest)(nil),   // 19: user.v1.AssertGroupChannelAccessRequest
+	(*AssertGroupChannelAccessResponse)(nil),  // 20: user.v1.AssertGroupChannelAccessResponse
+	(*ChannelCategory)(nil),                   // 21: user.v1.ChannelCategory
+	(*ChannelCategoryPermissionOverride)(nil), // 22: user.v1.ChannelCategoryPermissionOverride
 }
 var file_user_v1_channel_proto_depIdxs = []int32{
-	1,  // 0: user.v1.ListGroupChannelsResponse.channels:type_name -> user.v1.ChannelSummary
-	0,  // 1: user.v1.ListGroupChannelsResponse.categories:type_name -> user.v1.ChannelCategory
-	0,  // 2: user.v1.CreateChannelCategoryResponse.category:type_name -> user.v1.ChannelCategory
-	1,  // 3: user.v1.CreateGroupChannelResponse.channel:type_name -> user.v1.ChannelSummary
-	2,  // 4: user.v1.ChannelService.ListGroupChannels:input_type -> user.v1.ListGroupChannelsRequest
-	4,  // 5: user.v1.ChannelService.CreateChannelCategory:input_type -> user.v1.CreateChannelCategoryRequest
-	6,  // 6: user.v1.ChannelService.CreateGroupChannel:input_type -> user.v1.CreateGroupChannelRequest
-	8,  // 7: user.v1.ChannelService.ReorderChannelCategories:input_type -> user.v1.ReorderChannelCategoriesRequest
-	10, // 8: user.v1.ChannelService.ReorderGroupChannels:input_type -> user.v1.ReorderGroupChannelsRequest
-	12, // 9: user.v1.ChannelService.AssertGroupChannelAccess:input_type -> user.v1.AssertGroupChannelAccessRequest
-	3,  // 10: user.v1.ChannelService.ListGroupChannels:output_type -> user.v1.ListGroupChannelsResponse
-	5,  // 11: user.v1.ChannelService.CreateChannelCategory:output_type -> user.v1.CreateChannelCategoryResponse
-	7,  // 12: user.v1.ChannelService.CreateGroupChannel:output_type -> user.v1.CreateGroupChannelResponse
-	9,  // 13: user.v1.ChannelService.ReorderChannelCategories:output_type -> user.v1.ReorderChannelCategoriesResponse
-	11, // 14: user.v1.ChannelService.ReorderGroupChannels:output_type -> user.v1.ReorderGroupChannelsResponse
-	13, // 15: user.v1.ChannelService.AssertGroupChannelAccess:output_type -> user.v1.AssertGroupChannelAccessResponse
-	10, // [10:16] is the sub-list for method output_type
-	4,  // [4:10] is the sub-list for method input_type
-	4,  // [4:4] is the sub-list for extension type_name
-	4,  // [4:4] is the sub-list for extension extendee
-	0,  // [0:4] is the sub-list for field type_name
+	0,  // 0: user.v1.ListGroupChannelsResponse.channels:type_name -> user.v1.ChannelSummary
+	21, // 1: user.v1.ListGroupChannelsResponse.categories:type_name -> user.v1.ChannelCategory
+	0,  // 2: user.v1.CreateGroupChannelResponse.channel:type_name -> user.v1.ChannelSummary
+	0,  // 3: user.v1.UpdateGroupChannelResponse.channel:type_name -> user.v1.ChannelSummary
+	22, // 4: user.v1.ListChannelPermissionsResponse.overrides:type_name -> user.v1.ChannelCategoryPermissionOverride
+	22, // 5: user.v1.UpsertChannelPermissionResponse.override:type_name -> user.v1.ChannelCategoryPermissionOverride
+	0,  // 6: user.v1.SyncChannelPermissionsResponse.channel:type_name -> user.v1.ChannelSummary
+	1,  // 7: user.v1.ChannelService.ListGroupChannels:input_type -> user.v1.ListGroupChannelsRequest
+	3,  // 8: user.v1.ChannelService.CreateGroupChannel:input_type -> user.v1.CreateGroupChannelRequest
+	5,  // 9: user.v1.ChannelService.UpdateGroupChannel:input_type -> user.v1.UpdateGroupChannelRequest
+	7,  // 10: user.v1.ChannelService.DeleteGroupChannel:input_type -> user.v1.DeleteGroupChannelRequest
+	9,  // 11: user.v1.ChannelService.ListChannelPermissions:input_type -> user.v1.ListChannelPermissionsRequest
+	11, // 12: user.v1.ChannelService.UpsertChannelPermission:input_type -> user.v1.UpsertChannelPermissionRequest
+	13, // 13: user.v1.ChannelService.DeleteChannelPermission:input_type -> user.v1.DeleteChannelPermissionRequest
+	15, // 14: user.v1.ChannelService.SyncChannelPermissions:input_type -> user.v1.SyncChannelPermissionsRequest
+	17, // 15: user.v1.ChannelService.ReorderGroupChannels:input_type -> user.v1.ReorderGroupChannelsRequest
+	19, // 16: user.v1.ChannelService.AssertGroupChannelAccess:input_type -> user.v1.AssertGroupChannelAccessRequest
+	2,  // 17: user.v1.ChannelService.ListGroupChannels:output_type -> user.v1.ListGroupChannelsResponse
+	4,  // 18: user.v1.ChannelService.CreateGroupChannel:output_type -> user.v1.CreateGroupChannelResponse
+	6,  // 19: user.v1.ChannelService.UpdateGroupChannel:output_type -> user.v1.UpdateGroupChannelResponse
+	8,  // 20: user.v1.ChannelService.DeleteGroupChannel:output_type -> user.v1.DeleteGroupChannelResponse
+	10, // 21: user.v1.ChannelService.ListChannelPermissions:output_type -> user.v1.ListChannelPermissionsResponse
+	12, // 22: user.v1.ChannelService.UpsertChannelPermission:output_type -> user.v1.UpsertChannelPermissionResponse
+	14, // 23: user.v1.ChannelService.DeleteChannelPermission:output_type -> user.v1.DeleteChannelPermissionResponse
+	16, // 24: user.v1.ChannelService.SyncChannelPermissions:output_type -> user.v1.SyncChannelPermissionsResponse
+	18, // 25: user.v1.ChannelService.ReorderGroupChannels:output_type -> user.v1.ReorderGroupChannelsResponse
+	20, // 26: user.v1.ChannelService.AssertGroupChannelAccess:output_type -> user.v1.AssertGroupChannelAccessResponse
+	17, // [17:27] is the sub-list for method output_type
+	7,  // [7:17] is the sub-list for method input_type
+	7,  // [7:7] is the sub-list for extension type_name
+	7,  // [7:7] is the sub-list for extension extendee
+	0,  // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_user_v1_channel_proto_init() }
@@ -1025,13 +1694,15 @@ func file_user_v1_channel_proto_init() {
 	if File_user_v1_channel_proto != nil {
 		return
 	}
+	file_user_v1_channel_category_proto_init()
+	file_user_v1_channel_proto_msgTypes[5].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_user_v1_channel_proto_rawDesc), len(file_user_v1_channel_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   14,
+			NumMessages:   21,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

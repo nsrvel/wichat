@@ -299,14 +299,40 @@ type UpdateGroupProfileBody struct {
 
 // ChannelBody is channel metadata in JSON responses.
 type ChannelBody struct {
-	ID             string `json:"id"`
-	Name           string `json:"name"`
-	Type           string `json:"type"`
-	SidebarSection string `json:"sidebar_section"`
-	ImageURL       string `json:"image_url"`
-	IsPrivate      bool   `json:"is_private"`
-	CategoryID     string `json:"category_id"`
-	Position       int    `json:"position"`
+	ID                    string `json:"id"`
+	Name                  string `json:"name"`
+	Type                  string `json:"type"`
+	SidebarSection        string `json:"sidebar_section"`
+	ImageURL              string `json:"image_url"`
+	IsPrivate             bool   `json:"is_private"`
+	CategoryID            string `json:"category_id"`
+	Position              int    `json:"position"`
+	SlowmodeSeconds       int    `json:"slowmode_seconds"`
+	ThreadSlowmodeSeconds int    `json:"thread_slowmode_seconds"`
+	ContentVisibility     string `json:"content_visibility"`
+	ForumDefaultLayout    string `json:"forum_default_layout"`
+	ForumSortOrder        string `json:"forum_sort_order"`
+	ForumTagMatching      string `json:"forum_tag_matching"`
+	BitrateKbps           int    `json:"bitrate_kbps"`
+	VideoQuality          string `json:"video_quality"`
+	UserLimit             int    `json:"user_limit"`
+	RTCRegion             string `json:"rtc_region"`
+}
+
+// UpdateGroupChannelBody is PATCH /api/v1/groups/{id}/channels/{channelId}.
+type UpdateGroupChannelBody struct {
+	Name                  *string `json:"name,omitempty"`
+	IsPrivate             *bool   `json:"is_private,omitempty"`
+	SlowmodeSeconds       *int32  `json:"slowmode_seconds,omitempty"`
+	ThreadSlowmodeSeconds *int32  `json:"thread_slowmode_seconds,omitempty"`
+	ContentVisibility     *string `json:"content_visibility,omitempty"`
+	ForumDefaultLayout    *string `json:"forum_default_layout,omitempty"`
+	ForumSortOrder        *string `json:"forum_sort_order,omitempty"`
+	ForumTagMatching      *string `json:"forum_tag_matching,omitempty"`
+	BitrateKbps           *int32  `json:"bitrate_kbps,omitempty"`
+	VideoQuality          *string `json:"video_quality,omitempty"`
+	UserLimit             *int32  `json:"user_limit,omitempty"`
+	RTCRegion             *string `json:"rtc_region,omitempty"`
 }
 
 // ChannelCategoryBody is category metadata in JSON responses.
@@ -321,6 +347,67 @@ type ChannelCategoryBody struct {
 type CreateChannelCategoryBody struct {
 	Name      string `json:"name"`
 	IsPrivate bool   `json:"is_private"`
+}
+
+// UpdateChannelCategoryBody is PATCH /api/v1/groups/{id}/categories/{categoryId}.
+type UpdateChannelCategoryBody struct {
+	Name      *string `json:"name,omitempty"`
+	IsPrivate *bool   `json:"is_private,omitempty"`
+}
+
+// ChannelCategoryPermissionOverrideBody is a role or member permission override on a category.
+type ChannelCategoryPermissionOverrideBody struct {
+	TargetType       string   `json:"target_type"`
+	TargetID         string   `json:"target_id"`
+	TargetName       string   `json:"target_name"`
+	TargetColor      string   `json:"target_color"`
+	TargetAvatarURL  string   `json:"target_avatar_url"`
+	IsEveryone       bool     `json:"is_everyone"`
+	AllowPermissions []string `json:"allow_permissions"`
+	DenyPermissions  []string `json:"deny_permissions"`
+}
+
+// CategoryPermissionsListResponse is GET /api/v1/groups/{id}/categories/{categoryId}/permissions.
+type CategoryPermissionsListResponse struct {
+	Overrides []ChannelCategoryPermissionOverrideBody `json:"overrides"`
+}
+
+// UpsertCategoryPermissionOverrideBody is PUT /api/v1/groups/{id}/categories/{categoryId}/permissions.
+type UpsertCategoryPermissionOverrideBody struct {
+	TargetType       string   `json:"target_type"`
+	TargetID         string   `json:"target_id"`
+	AllowPermissions []string `json:"allow_permissions"`
+	DenyPermissions  []string `json:"deny_permissions"`
+}
+
+// CategoryPermissionOverrideResponse wraps one updated permission override.
+type CategoryPermissionOverrideResponse struct {
+	Override ChannelCategoryPermissionOverrideBody `json:"override"`
+}
+
+// CategoryPermissionOverrideFromPB maps a proto override to JSON.
+func CategoryPermissionOverrideFromPB(o *userv1.ChannelCategoryPermissionOverride) ChannelCategoryPermissionOverrideBody {
+	if o == nil {
+		return ChannelCategoryPermissionOverrideBody{AllowPermissions: []string{}, DenyPermissions: []string{}}
+	}
+	allow := o.GetAllowPermissions()
+	if allow == nil {
+		allow = []string{}
+	}
+	deny := o.GetDenyPermissions()
+	if deny == nil {
+		deny = []string{}
+	}
+	return ChannelCategoryPermissionOverrideBody{
+		TargetType:       o.GetTargetType(),
+		TargetID:         o.GetTargetId(),
+		TargetName:       o.GetTargetName(),
+		TargetColor:      o.GetTargetColor(),
+		TargetAvatarURL:  o.GetTargetAvatarUrl(),
+		IsEveryone:       o.GetIsEveryone(),
+		AllowPermissions: allow,
+		DenyPermissions:  deny,
+	}
 }
 
 // CreateGroupChannelBody is POST /api/v1/groups/{id}/channels.
@@ -366,7 +453,8 @@ type GroupsListBody struct {
 
 // CreateGroupBody is POST /api/v1/groups.
 type CreateGroupBody struct {
-	Name string `json:"name"`
+	Name     string `json:"name"`
+	Template string `json:"template,omitempty"`
 }
 
 // ReorderMyGroupsBody is PUT /api/v1/groups/mine/order.
@@ -667,14 +755,24 @@ func ChannelFromPB(c *userv1.ChannelSummary) ChannelBody {
 	}
 
 	return ChannelBody{
-		ID:             c.GetId(),
-		Name:           c.GetName(),
-		Type:           c.GetType(),
-		SidebarSection: c.GetSidebarSection(),
-		ImageURL:       c.GetImageUrl(),
-		IsPrivate:      c.GetIsPrivate(),
-		CategoryID:     c.GetCategoryId(),
-		Position:       int(c.GetPosition()),
+		ID:                    c.GetId(),
+		Name:                  c.GetName(),
+		Type:                  c.GetType(),
+		SidebarSection:        c.GetSidebarSection(),
+		ImageURL:              c.GetImageUrl(),
+		IsPrivate:             c.GetIsPrivate(),
+		CategoryID:            c.GetCategoryId(),
+		Position:              int(c.GetPosition()),
+		SlowmodeSeconds:       int(c.GetSlowmodeSeconds()),
+		ThreadSlowmodeSeconds: int(c.GetThreadSlowmodeSeconds()),
+		ContentVisibility:     c.GetContentVisibility(),
+		ForumDefaultLayout:    c.GetForumDefaultLayout(),
+		ForumSortOrder:        c.GetForumSortOrder(),
+		ForumTagMatching:      c.GetForumTagMatching(),
+		BitrateKbps:           int(c.GetBitrateKbps()),
+		VideoQuality:          c.GetVideoQuality(),
+		UserLimit:             int(c.GetUserLimit()),
+		RTCRegion:             c.GetRtcRegion(),
 	}
 }
 

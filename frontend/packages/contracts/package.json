@@ -18,6 +18,7 @@
     "./group/audit-log": "./src/group/group-audit-log.ts",
     "./group/invite": "./src/group/invite.ts",
     "./chat/channel": "./src/chat/channel.ts",
+    "./chat/channel-category": "./src/chat/channel-category.ts",
     "./chat/message": "./src/chat/message.ts"
   },
   "dependencies": {

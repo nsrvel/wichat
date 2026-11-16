@@ -1,6 +1,8 @@
 /** Signed-in hub when the user has no group membership (create / join). */
 export const APP_HOME_PATH = "/home";
 
+export const APP_DOWNLOADS_PATH = "/downloads";
+
 export type QuickViewId = "mentions" | "discover" | "drafts" | "members";
 
 export const QUICK_VIEW_IDS: readonly QuickViewId[] = [

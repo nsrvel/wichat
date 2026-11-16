@@ -16,7 +16,7 @@ import { GroupRailMenuCheckboxItem } from "@/features/shell/components/group-rai
 import { GroupRailNotificationSettingsSubmenu } from "@/features/shell/components/group-rail-menu/group-rail-notification-settings-submenu";
 import { useGroupMenuKit } from "@/features/shell/components/group-rail-menu/group-menu-kit";
 import { menuDestructiveItemClass, menuItemClass, menuSeparatorClass } from "@/lib/menu-chrome";
-import { useCreateCategoryDialog } from "@/features/channel/create-category-dialog-provider";
+import { useCreateCategoryDialog } from "@/features/channel-category/create-category-dialog-provider";
 import { useCreateChannelDialog } from "@/features/channel/create-channel-dialog-provider";
 import { useGroupSettings } from "@/features/group-settings/group-settings-provider";
 import { useInviteDialog } from "@/features/invite/invite-dialog-provider";

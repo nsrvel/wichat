@@ -1,9 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-import { createPortal } from "react-dom";
+import { FullscreenSettingsOverlay } from "@/components/layout/fullscreen-settings/fullscreen-settings-overlay";
 import { GroupSettingsShell } from "@/features/group-settings/components/group-settings-shell";
-import { groupSettingsOverlayClass } from "@/features/group-settings/lib/group-settings-chrome";
 import {
 	GroupSettingsUnsavedProvider,
 	useGroupSettingsUnsaved,
@@ -12,7 +10,6 @@ import type {
 	GroupSettingsSection,
 	GroupSettingsTarget,
 } from "@/features/group-settings/lib/group-settings-target";
-import { useMounted } from "@/hooks/use-mounted";
 
 const GROUP_SETTINGS_TITLE_ID = "group-settings-dialog-title";
 
@@ -29,28 +26,14 @@ export function GroupSettingsOverlay({
 	target,
 	section,
 }: GroupSettingsOverlayProps) {
-	const mounted = useMounted();
-
-	useEffect(() => {
-		if (!open) {
-			return;
-		}
-		const prev = document.body.style.overflow;
-		document.body.style.overflow = "hidden";
-		return () => {
-			document.body.style.overflow = prev;
-		};
-	}, [open]);
-
-	if (!open || !target || !mounted) {
+	if (!open || !target) {
 		return null;
 	}
 
-	return createPortal(
+	return (
 		<GroupSettingsUnsavedProvider>
 			<GroupSettingsOverlayDialog target={target} section={section} onClose={onClose} />
-		</GroupSettingsUnsavedProvider>,
-		document.body,
+		</GroupSettingsUnsavedProvider>
 	);
 }
 
@@ -65,25 +48,13 @@ function GroupSettingsOverlayDialog({
 }) {
 	const { runIfAllowed } = useGroupSettingsUnsaved();
 
-	useEffect(() => {
-		const onKeyDown = (event: KeyboardEvent) => {
-			if (event.key === "Escape") {
-				event.preventDefault();
-				runIfAllowed(onClose);
-			}
-		};
-		window.addEventListener("keydown", onKeyDown);
-		return () => window.removeEventListener("keydown", onKeyDown);
-	}, [onClose, runIfAllowed]);
-
 	return (
-		<div
-			className={groupSettingsOverlayClass}
-			role="dialog"
-			aria-modal="true"
-			aria-labelledby={GROUP_SETTINGS_TITLE_ID}
+		<FullscreenSettingsOverlay
+			open
+			titleId={GROUP_SETTINGS_TITLE_ID}
+			onRequestClose={() => runIfAllowed(onClose)}
 		>
 			<GroupSettingsShell target={target} section={section} onClose={() => runIfAllowed(onClose)} />
-		</div>
+		</FullscreenSettingsOverlay>
 	);
 }

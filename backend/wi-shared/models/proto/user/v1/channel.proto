@@ -2,30 +2,32 @@ syntax = "proto3";
 
 package user.v1;
 
+import "user/v1/channel_category.proto";
+
 option go_package = "github.com/wichat/wichat/backend/wi-shared/models/gen/user/v1;userv1";
 
 // ChannelService handles channel discovery and authorization within a workspace.
 service ChannelService {
   // ListGroupChannels returns channels and categories in a group the caller belongs to.
   rpc ListGroupChannels(ListGroupChannelsRequest) returns (ListGroupChannelsResponse);
-  // CreateChannelCategory creates a new channel category in a group.
-  rpc CreateChannelCategory(CreateChannelCategoryRequest) returns (CreateChannelCategoryResponse);
   // CreateGroupChannel creates a new channel in a group.
   rpc CreateGroupChannel(CreateGroupChannelRequest) returns (CreateGroupChannelResponse);
-  // ReorderChannelCategories updates category display positions in a group.
-  rpc ReorderChannelCategories(ReorderChannelCategoriesRequest) returns (ReorderChannelCategoriesResponse);
+  // UpdateGroupChannel updates a channel's settings or privacy in a group.
+  rpc UpdateGroupChannel(UpdateGroupChannelRequest) returns (UpdateGroupChannelResponse);
+  // DeleteGroupChannel deletes a channel in a group.
+  rpc DeleteGroupChannel(DeleteGroupChannelRequest) returns (DeleteGroupChannelResponse);
+  // ListChannelPermissions returns role and member permission overrides for a channel.
+  rpc ListChannelPermissions(ListChannelPermissionsRequest) returns (ListChannelPermissionsResponse);
+  // UpsertChannelPermission sets allow/deny permission overrides for a role or member on a channel.
+  rpc UpsertChannelPermission(UpsertChannelPermissionRequest) returns (UpsertChannelPermissionResponse);
+  // DeleteChannelPermission removes a role or member permission override from a channel.
+  rpc DeleteChannelPermission(DeleteChannelPermissionRequest) returns (DeleteChannelPermissionResponse);
+  // SyncChannelPermissions copies permission overrides and privacy from the channel's parent category.
+  rpc SyncChannelPermissions(SyncChannelPermissionsRequest) returns (SyncChannelPermissionsResponse);
   // ReorderGroupChannels updates channel display positions in a group.
   rpc ReorderGroupChannels(ReorderGroupChannelsRequest) returns (ReorderGroupChannelsResponse);
   // AssertGroupChannelAccess validates membership and resolves internal channel and user ids.
   rpc AssertGroupChannelAccess(AssertGroupChannelAccessRequest) returns (AssertGroupChannelAccessResponse);
-}
-
-// ChannelCategory is category metadata for grouping channels in the sidebar.
-message ChannelCategory {
-  string id = 1;
-  string name = 2;
-  bool is_private = 3;
-  int32 position = 4;
 }
 
 // ChannelSummary is channel metadata for the sidebar.
@@ -43,6 +45,26 @@ message ChannelSummary {
   string category_id = 7;
   // Display order position within its category/section.
   int32 position = 8;
+  // Message/post slowmode interval in seconds (0 = off).
+  int32 slowmode_seconds = 9;
+  // Thread/message slowmode interval in seconds for forum posts (0 = off).
+  int32 thread_slowmode_seconds = 10;
+  // Content visibility mode: default | spoiler | age_restricted.
+  string content_visibility = 11;
+  // Forum default layout: list | gallery.
+  string forum_default_layout = 12;
+  // Forum default sort order: recent_activity | creation_time.
+  string forum_sort_order = 13;
+  // Forum default tag matching: match_some | match_all.
+  string forum_tag_matching = 14;
+  // Voice audio bitrate in kbps (8..96).
+  int32 bitrate_kbps = 16;
+  // Voice camera video quality: auto | 720p.
+  string video_quality = 17;
+  // Voice user limit (0 = unlimited, 1..99).
+  int32 user_limit = 18;
+  // Voice RTC region override (automatic or region slug).
+  string rtc_region = 19;
 }
 
 message ListGroupChannelsRequest {
@@ -53,17 +75,6 @@ message ListGroupChannelsRequest {
 message ListGroupChannelsResponse {
   repeated ChannelSummary channels = 1;
   repeated ChannelCategory categories = 2;
-}
-
-message CreateChannelCategoryRequest {
-  string access_token = 1;
-  string group_id = 2;
-  string name = 3;
-  bool is_private = 4;
-}
-
-message CreateChannelCategoryResponse {
-  ChannelCategory category = 1;
 }
 
 message CreateGroupChannelRequest {
@@ -79,14 +90,82 @@ message CreateGroupChannelResponse {
   ChannelSummary channel = 1;
 }
 
-message ReorderChannelCategoriesRequest {
+message UpdateGroupChannelRequest {
   string access_token = 1;
   string group_id = 2;
-  repeated string category_ids = 3;
+  string channel_id = 3;
+  optional string name = 4;
+  optional bool is_private = 5;
+  optional int32 slowmode_seconds = 6;
+  optional int32 thread_slowmode_seconds = 7;
+  optional string content_visibility = 8;
+  optional string forum_default_layout = 9;
+  optional string forum_sort_order = 10;
+  optional string forum_tag_matching = 11;
+  optional int32 bitrate_kbps = 13;
+  optional string video_quality = 14;
+  optional int32 user_limit = 15;
+  optional string rtc_region = 16;
 }
 
-message ReorderChannelCategoriesResponse {
+message UpdateGroupChannelResponse {
+  ChannelSummary channel = 1;
+}
+
+message DeleteGroupChannelRequest {
+  string access_token = 1;
+  string group_id = 2;
+  string channel_id = 3;
+}
+
+message DeleteGroupChannelResponse {
   bool ok = 1;
+}
+
+message ListChannelPermissionsRequest {
+  string access_token = 1;
+  string group_id = 2;
+  string channel_id = 3;
+}
+
+message ListChannelPermissionsResponse {
+  repeated ChannelCategoryPermissionOverride overrides = 1;
+}
+
+message UpsertChannelPermissionRequest {
+  string access_token = 1;
+  string group_id = 2;
+  string channel_id = 3;
+  string target_type = 4;
+  string target_id = 5;
+  repeated string allow_permissions = 6;
+  repeated string deny_permissions = 7;
+}
+
+message UpsertChannelPermissionResponse {
+  ChannelCategoryPermissionOverride override = 1;
+}
+
+message DeleteChannelPermissionRequest {
+  string access_token = 1;
+  string group_id = 2;
+  string channel_id = 3;
+  string target_type = 4;
+  string target_id = 5;
+}
+
+message DeleteChannelPermissionResponse {
+  bool ok = 1;
+}
+
+message SyncChannelPermissionsRequest {
+  string access_token = 1;
+  string group_id = 2;
+  string channel_id = 3;
+}
+
+message SyncChannelPermissionsResponse {
+  ChannelSummary channel = 1;
 }
 
 message ReorderGroupChannelsRequest {

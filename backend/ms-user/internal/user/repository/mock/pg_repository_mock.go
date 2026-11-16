@@ -26,23 +26,25 @@ type recoveryCodeMock struct {
 
 // State is shared in-memory storage for user and auth repository mocks.
 type State struct {
-	mu                sync.Mutex
-	Users             []models.User
-	Sessions          []models.Session
-	Links             []googleLink
-	Settings          models.InstanceSettings
-	Groups            []models.Group
-	Members           []models.GroupMember
-	Invites           []models.GroupInviteRow
-	Channels          []models.Channel
-	ChannelCategories []models.ChannelCategory
-	Roles             []models.GroupRole
-	MemberRoles       []models.GroupMemberRoleRow
-	Bans              []models.GroupBanRow
-	MFATOTPs          map[string]models.MFATOTP
-	WebAuthnCreds     []models.WebAuthnCredential
-	RecoveryCodes     map[string][]recoveryCodeMock
-	Relationships     []models.UserRelationship
+	mu                          sync.Mutex
+	Users                       []models.User
+	Sessions                    []models.Session
+	Links                       []googleLink
+	Settings                    models.InstanceSettings
+	Groups                      []models.Group
+	Members                     []models.GroupMember
+	Invites                     []models.GroupInviteRow
+	Channels                    []models.Channel
+	ChannelCategories           []models.ChannelCategory
+	CategoryPermissionOverrides []models.ChannelCategoryPermissionOverride
+	ChannelPermissionOverrides  []models.ChannelPermissionOverride
+	Roles                       []models.GroupRole
+	MemberRoles                 []models.GroupMemberRoleRow
+	Bans                        []models.GroupBanRow
+	MFATOTPs                    map[string]models.MFATOTP
+	WebAuthnCreds               []models.WebAuthnCredential
+	RecoveryCodes               map[string][]recoveryCodeMock
+	Relationships               []models.UserRelationship
 }
 
 // NewState returns empty mock storage.

@@ -8,17 +8,9 @@ import { useGroupSettings } from "@/features/group-settings/group-settings-provi
 import { quickViewPath } from "@/lib/app-routes";
 import { hasAnyGroupPermission, hasGroupPermission } from "@/lib/group-permissions";
 import { myGroupsQueryOpts } from "@/services/group/group.query";
-import { GroupSettingsCloseButton } from "@/features/group-settings/components/group-settings-close-button";
+import { FullscreenSettingsShell } from "@/components/layout/fullscreen-settings/fullscreen-settings-shell";
 import { GroupSettingsMainSection } from "@/features/group-settings/components/group-settings-main-section";
 import { GroupSettingsSidebar } from "@/features/group-settings/components/group-settings-sidebar";
-import {
-	groupSettingsBodyOuterClass,
-	groupSettingsCanvasClass,
-	groupSettingsMainPaneClass,
-	groupSettingsShellClass,
-	groupSettingsSidebarPaneClass,
-	groupSettingsSplitBackdropClass,
-} from "@/features/group-settings/lib/group-settings-chrome";
 import type {
 	GroupSettingsSection,
 	GroupSettingsTarget,
@@ -87,27 +79,20 @@ export function GroupSettingsShell({ target, section, onClose }: GroupSettingsSh
 	};
 
 	return (
-		<div className={groupSettingsShellClass}>
-			<h1 id={GROUP_SETTINGS_TITLE_ID} className="sr-only">
-				{t("group_settings.header_title")} — {target.groupName}
-			</h1>
-			<GroupSettingsCloseButton onClose={onClose} />
-			<div className={groupSettingsSplitBackdropClass} aria-hidden />
-			<div className={groupSettingsBodyOuterClass}>
-				<div className={groupSettingsCanvasClass}>
-					<div className={groupSettingsSidebarPaneClass}>
-						<GroupSettingsSidebar
-							target={target}
-							activeSection={activeSection}
-							onSectionChange={onSectionChange}
-							onOpenMembersInWorkspace={openMembersWorkspace}
-						/>
-					</div>
-					<div className={groupSettingsMainPaneClass} role="tabpanel">
-						<GroupSettingsMainSection section={activeSection} target={target} />
-					</div>
-				</div>
-			</div>
-		</div>
+		<FullscreenSettingsShell
+			titleId={GROUP_SETTINGS_TITLE_ID}
+			srTitle={`${t("group_settings.header_title")} — ${target.groupName}`}
+			onClose={onClose}
+			sidebar={
+				<GroupSettingsSidebar
+					target={target}
+					activeSection={activeSection}
+					onSectionChange={onSectionChange}
+					onOpenMembersInWorkspace={openMembersWorkspace}
+				/>
+			}
+		>
+			<GroupSettingsMainSection section={activeSection} target={target} />
+		</FullscreenSettingsShell>
 	);
 }

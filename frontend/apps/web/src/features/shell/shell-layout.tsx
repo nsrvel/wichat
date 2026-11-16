@@ -11,7 +11,9 @@ import { WorkspacePanel } from "@/components/layout/workspace-panel";
 import { ProductionChannelSidebar } from "@/features/channel/components/production-channel-sidebar";
 import type { QuickViewId } from "@/lib/app-routes";
 import { GroupOnboardingProvider } from "@/features/group/group-onboarding-provider";
-import { CreateCategoryDialogProvider } from "@/features/channel/create-category-dialog-provider";
+import { CategorySettingsProvider } from "@/features/channel-category/category-settings/category-settings-provider";
+import { ChannelSettingsProvider } from "@/features/channel/channel-settings/channel-settings-provider";
+import { CreateCategoryDialogProvider } from "@/features/channel-category/create-category-dialog-provider";
 import { CreateChannelDialogProvider } from "@/features/channel/create-channel-dialog-provider";
 import { GroupSettingsProvider } from "@/features/group-settings/group-settings-provider";
 import { InviteDialogProvider } from "@/features/invite/invite-dialog-provider";
@@ -79,12 +81,16 @@ export function ShellLayout({ children, groupId, channelId, quickView }: ShellLa
 		<GroupOnboardingProvider>
 			<InviteDialogProvider>
 				<GroupSettingsProvider>
-					<CreateCategoryDialogProvider>
-						<CreateChannelDialogProvider>
-							<ShellInviteEffects />
-							{chrome}
-						</CreateChannelDialogProvider>
-					</CreateCategoryDialogProvider>
+					<CategorySettingsProvider>
+						<ChannelSettingsProvider>
+							<CreateCategoryDialogProvider>
+								<CreateChannelDialogProvider>
+									<ShellInviteEffects />
+									{chrome}
+								</CreateChannelDialogProvider>
+							</CreateCategoryDialogProvider>
+						</ChannelSettingsProvider>
+					</CategorySettingsProvider>
 				</GroupSettingsProvider>
 			</InviteDialogProvider>
 		</GroupOnboardingProvider>

@@ -74,8 +74,12 @@ func TestGroupRolePgRepository(t *testing.T) {
 		t.Fatalf("UpdateRole: %v, updated: %+v", err, updated)
 	}
 
-	_ = roles.AddMemberRoles(ctx, groupID, role.ID, []string{memberID})
-	_ = roles.RemoveMemberRole(ctx, groupID, role.ID, memberID)
+	_ = roles.AddMemberRoles(ctx, groupID, role.ID, []string{ownerID})
+	roleIDs, err := roles.ListUserRoleIDs(ctx, groupID, ownerID)
+	if err != nil || len(roleIDs) < 2 {
+		t.Fatalf("ListUserRoleIDs: %v, ids: %+v", err, roleIDs)
+	}
+	_ = roles.RemoveMemberRole(ctx, groupID, role.ID, ownerID)
 
 	created, err := roles.CreateRole(ctx, groupID, "new role", "#99aab5", false, false, []string{}, now)
 	if err != nil || created.Name != "new role" {

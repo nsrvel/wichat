@@ -53,6 +53,7 @@ message ListMyGroupsResponse {
 message CreateGroupRequest {
   string access_token = 1;
   string name = 2;
+  string template = 3;
 }
 
 message CreateGroupResponse {

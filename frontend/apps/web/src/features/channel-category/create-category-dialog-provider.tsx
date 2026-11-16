@@ -7,9 +7,9 @@ import {
 	CreateCategoryDialog,
 	type CreateCategoryFormValues,
 	type CreateCategoryTarget,
-} from "@/features/channel/components/create-category-dialog";
+} from "@/features/channel-category/components/create-category-dialog";
 import { translateError } from "@/integrations/i18n/translate-error";
-import { useCreateGroupCategoryMutation } from "@/services/channel/channel.mutation";
+import { useCreateGroupCategoryMutation } from "@/services/channel-category/channel-category.mutation";
 
 type CreateCategoryDialogContextValue = {
 	openCreateCategory: (target: CreateCategoryTarget) => void;

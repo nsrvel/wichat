@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	categorymock "github.com/wichat/wichat/backend/ms-user/internal/channel-category/repository/mock"
 	channelservice "github.com/wichat/wichat/backend/ms-user/internal/channel/service"
 	groupmembermock "github.com/wichat/wichat/backend/ms-user/internal/group-member/repository/mock"
 	grouprolemock "github.com/wichat/wichat/backend/ms-user/internal/group-role/repository/mock"
@@ -331,7 +332,7 @@ func TestGetInviteLinkWithChannel(t *testing.T) {
 	}
 
 	_, groups, sessions := testSupport.TestRepos(st)
-	chSvc := channelservice.NewService(testSupport.ChannelRepo(st), groups, groupmembermock.NewPgRepositoryMock(st), grouprolemock.NewPgRepositoryMock(st), sessions, []byte(testSupport.TestJWTSecret),
+	chSvc := channelservice.NewService(testSupport.ChannelRepo(st), categorymock.NewPgRepositoryMock(st), groups, groupmembermock.NewPgRepositoryMock(st), grouprolemock.NewPgRepositoryMock(st), sessions, []byte(testSupport.TestJWTSecret),
 		logger.New(logger.Options{Service: "t", Env: "test", Level: "error"}))
 	channels, _, err := chSvc.ListGroupChannels(ctx, owner.AccessToken, created.ID)
 	if err != nil || len(channels) == 0 {

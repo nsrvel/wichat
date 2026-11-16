@@ -425,3 +425,61 @@ func TestUploadGroupBannerByOwner(t *testing.T) {
 		t.Fatalf("upload banner: %+v err %v", updated, err)
 	}
 }
+
+func TestCreateGroupWithTemplates(t *testing.T) {
+	st := usermock.NewState()
+	authSvc, notify, _, _, groupSvc, _ := testSupport.NewAuthService(t, st, nil)
+	ctx := context.Background()
+
+	owner := testSupport.RegisterSession(t, authSvc, notify, registerInput("template-owner@example.com"))
+
+	if _, err := groupSvc.CreateGroup(ctx, owner.AccessToken, "BadTemplate", "unknown-template"); err == nil {
+		t.Fatal("expected error for unknown group template")
+	}
+
+	cases := []struct {
+		tmpl          string
+		wantFirstCat  string
+		wantChanCount int
+	}{
+		{"office", "Office", 8},
+		{"project", "Overview", 7},
+		{"study", "Class Info", 7},
+		{"gaming", "Lobby", 8},
+	}
+
+	for _, tc := range cases {
+		created, err := groupSvc.CreateGroup(ctx, owner.AccessToken, "Group-"+tc.tmpl, tc.tmpl)
+		if err != nil {
+			t.Fatalf("CreateGroup(%s) failed: %v", tc.tmpl, err)
+		}
+		st.Lock()
+		var groupUUID string
+		for _, g := range st.Groups {
+			if g.PublicID == created.ID {
+				groupUUID = g.ID
+				break
+			}
+		}
+		var catNames []string
+		chanCount := 0
+		for _, cat := range st.ChannelCategories {
+			if cat.GroupID == groupUUID {
+				catNames = append(catNames, cat.Name)
+			}
+		}
+		for _, ch := range st.Channels {
+			if ch.GroupID == groupUUID {
+				chanCount++
+			}
+		}
+		st.Unlock()
+
+		if len(catNames) == 0 || catNames[0] != tc.wantFirstCat {
+			t.Fatalf("template %s: expected first category %q, got %v", tc.tmpl, tc.wantFirstCat, catNames)
+		}
+		if chanCount != tc.wantChanCount {
+			t.Fatalf("template %s: expected %d channels, got %d", tc.tmpl, tc.wantChanCount, chanCount)
+		}
+	}
+}

@@ -19,6 +19,8 @@ type SortableCategoryItemProps = {
 	onAddClick?: () => void;
 	onMoveToTop: () => void;
 	onMoveToBottom: () => void;
+	onEditCategory?: () => void;
+	onDeleteCategory?: () => void;
 	children: ReactNode;
 };
 
@@ -35,6 +37,8 @@ export function SortableCategoryItem({
 	onAddClick,
 	onMoveToTop,
 	onMoveToBottom,
+	onEditCategory,
+	onDeleteCategory,
 	children,
 }: SortableCategoryItemProps) {
 	const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -66,6 +70,8 @@ export function SortableCategoryItem({
 					isLast={isLast}
 					onMoveToTop={onMoveToTop}
 					onMoveToBottom={onMoveToBottom}
+					onEditCategory={onEditCategory}
+					onDeleteCategory={onDeleteCategory}
 				>
 					<SidebarCategoryRow
 						title={categoryName}

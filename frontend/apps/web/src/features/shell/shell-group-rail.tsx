@@ -1,26 +1,26 @@
 "use client";
 
-import { Plus } from "lucide-react";
-import { useGroupOnboarding } from "@/features/group/group-onboarding-provider";
 import { useQueryClient } from "@tanstack/react-query";
+import { Download, Plus, Store } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
+import { ICON_RAIL_WIDTH_PX } from "@/components/layout/shell-chrome-context";
 import {
 	shellRailAsideClass,
 	shellRailAsideInnerClass,
 	shellRailChromeState,
 } from "@/components/layout/shell-rail/shell-rail-aside";
-import { IconRailTooltipTile } from "@/components/layout/shell-rail/icon-rail-tile-button";
 import { IconRailActionRow } from "@/components/layout/shell-rail/icon-rail-row";
-import { ICON_RAIL_WIDTH_PX } from "@/components/layout/shell-chrome-context";
-import { useMyGroupsQuery } from "@/hooks/use-my-groups-query";
-import { channelPath } from "@/lib/app-routes";
-import { readLastChannel } from "@/lib/last-channel-storage";
-import { cn } from "@/lib/utils";
+import { IconRailTooltipTile } from "@/components/layout/shell-rail/icon-rail-tile-button";
+import { useGroupOnboarding } from "@/features/group/group-onboarding-provider";
 import { GroupRailAddGroupContextMenu } from "@/features/shell/components/group-rail-add-group-context-menu";
 import { ShellGroupRailList } from "@/features/shell/components/shell-group-rail-list";
-import type { MyGroup } from "@/services/group/group.service";
+import { useMyGroupsQuery } from "@/hooks/use-my-groups-query";
+import { APP_DOWNLOADS_PATH, channelPath } from "@/lib/app-routes";
+import { readLastChannel } from "@/lib/last-channel-storage";
+import { cn } from "@/lib/utils";
 import * as channelQuery from "@/services/channel/channel.query";
+import type { MyGroup } from "@/services/group/group.service";
 
 export const SHELL_GROUP_RAIL_WIDTH_PX = ICON_RAIL_WIDTH_PX;
 
@@ -98,6 +98,20 @@ export function ShellGroupRail({
 							<Plus aria-hidden className="size-[18px]" strokeWidth={2} />
 						</IconRailTooltipTile>
 					</GroupRailAddGroupContextMenu>
+				</IconRailActionRow>
+				<IconRailActionRow>
+					<IconRailTooltipTile variant="muted" label={t("shell.marketplace")}>
+						<Store aria-hidden className="size-[18px]" strokeWidth={2} />
+					</IconRailTooltipTile>
+				</IconRailActionRow>
+				<IconRailActionRow>
+					<IconRailTooltipTile
+						variant="muted"
+						label={t("shell.download_apps")}
+						onClick={() => window.open(APP_DOWNLOADS_PATH, "_blank", "noopener,noreferrer")}
+					>
+						<Download aria-hidden className="size-[18px]" strokeWidth={2} />
+					</IconRailTooltipTile>
 				</IconRailActionRow>
 			</div>
 		</aside>

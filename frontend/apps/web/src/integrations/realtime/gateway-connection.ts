@@ -74,6 +74,7 @@ export async function probeGatewayNow(): Promise<boolean> {
 		const res = await fetch(`${env.NEXT_PUBLIC_API_URL}/api/v1/healthz`, {
 			method: "GET",
 			cache: "no-store",
+			signal: AbortSignal.timeout(3000),
 		});
 		if (res.ok) {
 			notifyGatewayReachable();
@@ -85,6 +86,9 @@ export async function probeGatewayNow(): Promise<boolean> {
 		probeInFlight = false;
 	}
 	attempt += 1;
+	for (const listener of statusListeners) {
+		listener();
+	}
 	scheduleNextProbe();
 	return false;
 }
@@ -116,6 +120,10 @@ export function notifyGatewayReachable(): void {
 
 export function getGatewayStatus(): GatewayConnectionStatus {
 	return status;
+}
+
+export function getGatewayAttempt(): number {
+	return attempt;
 }
 
 export function subscribeGatewayStatus(listener: Listener): () => void {

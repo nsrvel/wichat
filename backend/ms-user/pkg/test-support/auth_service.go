@@ -10,6 +10,7 @@ import (
 	authrepo "github.com/wichat/wichat/backend/ms-user/internal/auth/repository"
 	authmock "github.com/wichat/wichat/backend/ms-user/internal/auth/repository/mock"
 	"github.com/wichat/wichat/backend/ms-user/internal/auth/service"
+	categorymock "github.com/wichat/wichat/backend/ms-user/internal/channel-category/repository/mock"
 	channelmock "github.com/wichat/wichat/backend/ms-user/internal/channel/repository/mock"
 	channelservice "github.com/wichat/wichat/backend/ms-user/internal/channel/service"
 	groupmembermock "github.com/wichat/wichat/backend/ms-user/internal/group-member/repository/mock"
@@ -89,7 +90,7 @@ func NewAuthService(t *testing.T, st *usermock.State, now func() time.Time) (ser
 	}
 	refresh := authrepo.NewRedisRefreshStore(rdb)
 	userSvc := userservice.NewServiceWithMFA(users, groups, members, nil, sessions, refresh, emailAuth, userrepo.NewRedisEmailChangeStore(rdb), userrepo.NewMFAEnrollmentStore(rdb), wa, mfaKey, notify, []byte(TestJWTSecret), log)
-	channelSvc := channelservice.NewService(channelmock.NewPgRepositoryMock(st), groups, members, roles, sessions, []byte(TestJWTSecret), log)
+	channelSvc := channelservice.NewService(channelmock.NewPgRepositoryMock(st), categorymock.NewPgRepositoryMock(st), groups, members, roles, sessions, []byte(TestJWTSecret), log)
 	groupSvc := groupservice.NewService(groups, members, roles, channelSvc, users, disabledGroupMinio(log), sessions, []byte(TestJWTSecret), log)
 	opts := &service.Options{
 		Now:      now,

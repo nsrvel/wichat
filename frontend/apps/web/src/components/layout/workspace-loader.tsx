@@ -18,7 +18,7 @@ type WorkspaceLoaderProps = {
 	className?: string;
 	size?: number;
 	showLabel?: boolean;
-	labelKey?: "shell.loading" | "group.home.loading";
+	labelKey?: "shell.loading" | "group.home.loading" | "shell.connection.problems";
 };
 
 /** Theme-aware animated WiChat logo loader for workspace gating and transitions. */

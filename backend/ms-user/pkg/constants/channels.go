@@ -10,6 +10,7 @@ const (
 	DefaultChannelName             = "General"
 	DefaultChannelLookupKey        = "general"
 	DefaultAnnouncementChannelName = "Announcements"
+	DefaultFavoritesCategoryName   = "Favorites"
 	DefaultTextCategoryName        = "Text Channels"
 	DefaultVoiceCategoryName       = "Voice Channels"
 

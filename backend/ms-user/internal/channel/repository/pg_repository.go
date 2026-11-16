@@ -16,14 +16,18 @@ import (
 // PgRepository loads and persists channel metadata.
 type PgRepository interface {
 	ListByGroupID(ctx context.Context, groupID string) ([]models.Channel, error)
-	ListCategoriesByGroupID(ctx context.Context, groupID string) ([]models.ChannelCategory, error)
-	CreateCategory(ctx context.Context, groupID, name string, isPrivate bool, createdBy string, now time.Time) (models.ChannelCategory, error)
 	CreateChannel(ctx context.Context, groupID, categoryID, channelType, name string, isPrivate bool, createdBy string, now time.Time) (models.Channel, error)
-	SetCategoryPositions(ctx context.Context, groupID string, orderedCategoryIDs []string) error
+	UpdateChannel(ctx context.Context, groupID, channelPublicID string, input models.UpdateChannelInput, now time.Time) (models.Channel, error)
+	DeleteChannel(ctx context.Context, groupID, channelPublicID string) error
+	ListChannelPermissionOverrides(ctx context.Context, groupID, channelPublicID string) ([]models.PublicChannelCategoryPermissionOverride, error)
+	UpsertChannelPermissionOverride(ctx context.Context, groupID, channelPublicID, targetType, targetPublicID string, allow, deny []string, now time.Time) (models.PublicChannelCategoryPermissionOverride, error)
+	DeleteChannelPermissionOverride(ctx context.Context, groupID, channelPublicID, targetType, targetPublicID string) error
+	SyncChannelPermissionsWithCategory(ctx context.Context, groupID, channelPublicID string, now time.Time) (models.Channel, error)
 	SetChannelPositions(ctx context.Context, groupID string, sidebarSection, categoryID *string, orderedChannelIDs []string) error
 	FindByPublicIDInGroup(ctx context.Context, groupID, channelPublicID string) (models.Channel, error)
 	FindByID(ctx context.Context, channelID string) (models.Channel, error)
 	SeedDefaultChannels(ctx context.Context, groupID, createdBy string, createdAt time.Time) error
+	SeedDefaultChannelsWithTemplate(ctx context.Context, groupID, createdBy, template string, createdAt time.Time) error
 }
 
 type pgRepository struct {
@@ -57,51 +61,6 @@ func (r pgRepository) ListByGroupID(ctx context.Context, groupID string) ([]mode
 	}
 
 	return out, nil
-}
-
-func (r pgRepository) ListCategoriesByGroupID(ctx context.Context, groupID string) ([]models.ChannelCategory, error) {
-	var rows []models.ChannelCategoryRow
-	err := r.db.NewSelect().Model(&rows).
-		Where("group_id = ?", groupID).
-		OrderExpr("position ASC, created_at ASC").
-		Scan(ctx)
-	if err != nil {
-		r.logIfInfraErr("ListCategoriesByGroupID", err)
-
-		return nil, err
-	}
-
-	out := make([]models.ChannelCategory, len(rows))
-	for i, row := range rows {
-		out[i] = row.ToModel()
-	}
-
-	return out, nil
-}
-
-func (r pgRepository) CreateCategory(
-	ctx context.Context,
-	groupID, name string,
-	isPrivate bool,
-	createdBy string,
-	now time.Time,
-) (models.ChannelCategory, error) {
-	var maxPos int32
-	err := r.db.NewSelect().
-		TableExpr("channel_categories").
-		ColumnExpr("COALESCE(MAX(position), -1)").
-		Where("group_id = ?", groupID).
-		Scan(ctx, &maxPos)
-	if err != nil {
-		r.logIfInfraErr("CreateCategory", err)
-
-		return models.ChannelCategory{}, err
-	}
-
-	cat, err := insertCategoryWithRetry(ctx, r.db, groupID, name, isPrivate, maxPos+1, createdBy, now)
-	r.logIfInfraErr("CreateCategory", err)
-
-	return cat, err
 }
 
 func (r pgRepository) CreateChannel(
@@ -180,12 +139,318 @@ func (r pgRepository) CreateChannel(
 	return models.Channel{}, constants.ErrConflict
 }
 
-func (r pgRepository) SetCategoryPositions(ctx context.Context, groupID string, orderedCategoryIDs []string) error {
-	return r.setPositions(ctx, "SetCategoryPositions", (*models.ChannelCategoryRow)(nil), groupID, nil, nil, orderedCategoryIDs)
-}
-
 func (r pgRepository) SetChannelPositions(ctx context.Context, groupID string, sidebarSection, categoryID *string, orderedChannelIDs []string) error {
 	return r.setPositions(ctx, "SetChannelPositions", (*models.ChannelRow)(nil), groupID, sidebarSection, categoryID, orderedChannelIDs)
+}
+
+func (r pgRepository) UpdateChannel(
+	ctx context.Context,
+	groupID, channelPublicID string,
+	input models.UpdateChannelInput,
+	now time.Time,
+) (models.Channel, error) {
+	q := r.db.NewUpdate().Model((*models.ChannelRow)(nil)).
+		Set("updated_at = ?", now).
+		Where("group_id = ? AND public_id = ?", groupID, channelPublicID)
+
+	if input.Name != nil {
+		q = q.Set("name = ?", *input.Name)
+	}
+	if input.IsPrivate != nil {
+		q = q.Set("is_private = ?", *input.IsPrivate)
+	}
+	if input.SlowmodeSeconds != nil {
+		q = q.Set("slowmode_seconds = ?", *input.SlowmodeSeconds)
+	}
+	if input.ThreadSlowmodeSeconds != nil {
+		q = q.Set("thread_slowmode_seconds = ?", *input.ThreadSlowmodeSeconds)
+	}
+	if input.ContentVisibility != nil {
+		q = q.Set("content_visibility = ?", *input.ContentVisibility)
+	}
+	if input.ForumDefaultLayout != nil {
+		q = q.Set("forum_default_layout = ?", *input.ForumDefaultLayout)
+	}
+	if input.ForumSortOrder != nil {
+		q = q.Set("forum_sort_order = ?", *input.ForumSortOrder)
+	}
+	if input.ForumTagMatching != nil {
+		q = q.Set("forum_tag_matching = ?", *input.ForumTagMatching)
+	}
+	if input.BitrateKbps != nil {
+		q = q.Set("bitrate_kbps = ?", *input.BitrateKbps)
+	}
+	if input.VideoQuality != nil {
+		q = q.Set("video_quality = ?", *input.VideoQuality)
+	}
+	if input.UserLimit != nil {
+		q = q.Set("user_limit = ?", *input.UserLimit)
+	}
+	if input.RTCRegion != nil {
+		q = q.Set("rtc_region = ?", *input.RTCRegion)
+	}
+
+	res, err := q.Exec(ctx)
+	if err != nil {
+		r.logIfInfraErr("UpdateChannel", err)
+		return models.Channel{}, err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return models.Channel{}, err
+	}
+	if n == 0 {
+		return models.Channel{}, constants.ErrNotFound
+	}
+
+	return r.FindByPublicIDInGroup(ctx, groupID, channelPublicID)
+}
+
+func (r pgRepository) DeleteChannel(ctx context.Context, groupID, channelPublicID string) error {
+	res, err := r.db.NewDelete().Model((*models.ChannelRow)(nil)).
+		Where("group_id = ? AND public_id = ?", groupID, channelPublicID).
+		Exec(ctx)
+	if err != nil {
+		r.logIfInfraErr("DeleteChannel", err)
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return constants.ErrNotFound
+	}
+
+	return nil
+}
+
+func (r pgRepository) ListChannelPermissionOverrides(
+	ctx context.Context,
+	groupID, channelPublicID string,
+) ([]models.PublicChannelCategoryPermissionOverride, error) {
+	ch, err := r.FindByPublicIDInGroup(ctx, groupID, channelPublicID)
+	if err != nil {
+		return nil, err
+	}
+
+	type overrideJoinRow struct {
+		TargetType       string   `bun:"target_type"`
+		TargetID         string   `bun:"target_public_id"`
+		TargetName       string   `bun:"target_name"`
+		TargetColor      string   `bun:"target_color"`
+		TargetAvatarURL  string   `bun:"target_avatar_url"`
+		IsEveryone       bool     `bun:"is_everyone"`
+		AllowPermissions []string `bun:"allow_permissions,array"`
+		DenyPermissions  []string `bun:"deny_permissions,array"`
+	}
+
+	var rows []overrideJoinRow
+	err = r.db.NewSelect().
+		TableExpr("channel_permission_overrides AS o").
+		ColumnExpr("o.target_type").
+		ColumnExpr("COALESCE(gr.public_id, u.public_id, '') AS target_public_id").
+		ColumnExpr("COALESCE(gr.name, NULLIF(u.display_name, ''), u.username, '') AS target_name").
+		ColumnExpr("COALESCE(gr.color, '') AS target_color").
+		ColumnExpr("COALESCE(u.avatar_url, '') AS target_avatar_url").
+		ColumnExpr("COALESCE(gr.slug = ?, false) AS is_everyone", constants.RoleSlugEveryone).
+		ColumnExpr("o.allow_permissions").
+		ColumnExpr("o.deny_permissions").
+		Join("LEFT JOIN group_roles AS gr ON o.target_type = 'role' AND gr.id = o.target_id AND gr.group_id = ?", groupID).
+		Join("LEFT JOIN users AS u ON o.target_type = 'member' AND u.id = o.target_id").
+		Where("o.channel_id = ?", ch.ID).
+		Where("(gr.id IS NOT NULL OR u.id IS NOT NULL)").
+		OrderExpr("is_everyone DESC, o.target_type ASC, o.created_at ASC").
+		Scan(ctx, &rows)
+	if err != nil {
+		r.logIfInfraErr("ListChannelPermissionOverrides", err)
+		return nil, err
+	}
+
+	out := make([]models.PublicChannelCategoryPermissionOverride, len(rows))
+	for i, row := range rows {
+		out[i] = models.PublicChannelCategoryPermissionOverride{
+			TargetType:       row.TargetType,
+			TargetID:         row.TargetID,
+			TargetName:       row.TargetName,
+			TargetColor:      row.TargetColor,
+			TargetAvatarURL:  row.TargetAvatarURL,
+			IsEveryone:       row.IsEveryone,
+			AllowPermissions: row.AllowPermissions,
+			DenyPermissions:  row.DenyPermissions,
+		}
+	}
+
+	return out, nil
+}
+
+func (r pgRepository) UpsertChannelPermissionOverride(
+	ctx context.Context,
+	groupID, channelPublicID, targetType, targetPublicID string,
+	allow, deny []string,
+	now time.Time,
+) (models.PublicChannelCategoryPermissionOverride, error) {
+	ch, err := r.FindByPublicIDInGroup(ctx, groupID, channelPublicID)
+	if err != nil {
+		return models.PublicChannelCategoryPermissionOverride{}, err
+	}
+
+	out := models.PublicChannelCategoryPermissionOverride{
+		TargetType:       targetType,
+		TargetID:         targetPublicID,
+		AllowPermissions: allow,
+		DenyPermissions:  deny,
+	}
+
+	var internalTargetID string
+	switch targetType {
+	case "role":
+		var role models.GroupRoleRow
+		if err := r.db.NewSelect().Model(&role).
+			Where("group_id = ? AND public_id = ?", groupID, targetPublicID).
+			Scan(ctx); err != nil {
+			return models.PublicChannelCategoryPermissionOverride{}, pgErr.MapNotFound(err)
+		}
+		internalTargetID = role.ID
+		out.TargetName = role.Name
+		out.TargetColor = role.Color
+		out.IsEveryone = role.Slug == constants.RoleSlugEveryone
+	case "member":
+		var userRow struct {
+			ID          string `bun:"id"`
+			DisplayName string `bun:"display_name"`
+			Username    string `bun:"username"`
+			AvatarURL   string `bun:"avatar_url"`
+		}
+		if err := r.db.NewSelect().
+			TableExpr("users AS u").
+			ColumnExpr("u.id, u.display_name, u.username, u.avatar_url").
+			Join("JOIN group_members AS gm ON gm.user_id = u.id AND gm.group_id = ?", groupID).
+			Where("u.public_id = ?", targetPublicID).
+			Scan(ctx, &userRow); err != nil {
+			return models.PublicChannelCategoryPermissionOverride{}, pgErr.MapNotFound(err)
+		}
+		internalTargetID = userRow.ID
+		out.TargetName = userRow.DisplayName
+		if out.TargetName == "" {
+			out.TargetName = userRow.Username
+		}
+		out.TargetAvatarURL = userRow.AvatarURL
+	default:
+		return models.PublicChannelCategoryPermissionOverride{}, constants.ErrNotFound
+	}
+
+	id, err := token.NewID()
+	if err != nil {
+		return models.PublicChannelCategoryPermissionOverride{}, err
+	}
+	row := models.ChannelPermissionOverrideRow{
+		ID:               id,
+		ChannelID:        ch.ID,
+		TargetType:       targetType,
+		TargetID:         internalTargetID,
+		AllowPermissions: allow,
+		DenyPermissions:  deny,
+		CreatedAt:        now,
+		UpdatedAt:        now,
+	}
+
+	_, err = r.db.NewInsert().Model(&row).
+		On("CONFLICT (channel_id, target_type, target_id) DO UPDATE").
+		Set("allow_permissions = EXCLUDED.allow_permissions").
+		Set("deny_permissions = EXCLUDED.deny_permissions").
+		Set("updated_at = EXCLUDED.updated_at").
+		Exec(ctx)
+	if err != nil {
+		r.logIfInfraErr("UpsertChannelPermissionOverride", err)
+		return models.PublicChannelCategoryPermissionOverride{}, err
+	}
+
+	return out, nil
+}
+
+func (r pgRepository) DeleteChannelPermissionOverride(
+	ctx context.Context,
+	groupID, channelPublicID, targetType, targetPublicID string,
+) error {
+	ch, err := r.FindByPublicIDInGroup(ctx, groupID, channelPublicID)
+	if err != nil {
+		return err
+	}
+
+	var internalTargetID string
+	switch targetType {
+	case "role":
+		var role models.GroupRoleRow
+		if err := r.db.NewSelect().Model(&role).
+			Where("group_id = ? AND public_id = ?", groupID, targetPublicID).
+			Scan(ctx); err != nil {
+			return pgErr.MapNotFound(err)
+		}
+		internalTargetID = role.ID
+	case "member":
+		if err := r.db.NewSelect().
+			TableExpr("users").
+			ColumnExpr("id").
+			Where("public_id = ?", targetPublicID).
+			Scan(ctx, &internalTargetID); err != nil {
+			return pgErr.MapNotFound(err)
+		}
+	default:
+		return constants.ErrNotFound
+	}
+
+	_, err = r.db.NewDelete().Model((*models.ChannelPermissionOverrideRow)(nil)).
+		Where("channel_id = ? AND target_type = ? AND target_id = ?", ch.ID, targetType, internalTargetID).
+		Exec(ctx)
+	if err != nil {
+		r.logIfInfraErr("DeleteChannelPermissionOverride", err)
+	}
+
+	return err
+}
+
+func (r pgRepository) SyncChannelPermissionsWithCategory(
+	ctx context.Context,
+	groupID, channelPublicID string,
+	now time.Time,
+) (models.Channel, error) {
+	ch, err := r.FindByPublicIDInGroup(ctx, groupID, channelPublicID)
+	if err != nil {
+		return models.Channel{}, err
+	}
+	if ch.CategoryID == "" {
+		return models.Channel{}, constants.ErrNotFound
+	}
+
+	var cat models.ChannelCategoryRow
+	if err := r.db.NewSelect().Model(&cat).
+		Where("group_id = ? AND id = ?", groupID, ch.CategoryID).
+		Scan(ctx); err != nil {
+		return models.Channel{}, pgErr.MapNotFound(err)
+	}
+
+	err = r.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
+		if _, err := tx.NewUpdate().Model((*models.ChannelRow)(nil)).
+			Set("is_private = ?", cat.IsPrivate).
+			Set("updated_at = ?", now).
+			Where("group_id = ? AND id = ?", groupID, ch.ID).
+			Exec(ctx); err != nil {
+			return err
+		}
+		if _, err := tx.NewDelete().Model((*models.ChannelPermissionOverrideRow)(nil)).
+			Where("channel_id = ?", ch.ID).
+			Exec(ctx); err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		r.logIfInfraErr("SyncChannelPermissionsWithCategory", err)
+		return models.Channel{}, err
+	}
+
+	return r.FindByPublicIDInGroup(ctx, groupID, channelPublicID)
 }
 
 func (r pgRepository) setPositions(
@@ -257,10 +522,18 @@ func (r pgRepository) FindByID(ctx context.Context, channelID string) (models.Ch
 }
 
 func (r pgRepository) SeedDefaultChannels(ctx context.Context, groupID, createdBy string, createdAt time.Time) error {
+	return r.SeedDefaultChannelsWithTemplate(ctx, groupID, createdBy, "", createdAt)
+}
+
+func (r pgRepository) SeedDefaultChannelsWithTemplate(
+	ctx context.Context,
+	groupID, createdBy, template string,
+	createdAt time.Time,
+) error {
 	err := r.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
-		return InsertDefaultChannelsTx(ctx, tx, groupID, createdBy, createdAt)
+		return InsertDefaultChannelsWithTemplateTx(ctx, tx, groupID, createdBy, template, createdAt)
 	})
-	r.logIfInfraErr("SeedDefaultChannels", err)
+	r.logIfInfraErr("SeedDefaultChannelsWithTemplate", err)
 
 	return err
 }
@@ -353,33 +626,215 @@ func InsertAnnouncementChannelTx(ctx context.Context, tx bun.Tx, groupID, create
 	)
 }
 
-// InsertDefaultChannelsTx seeds Text Channels (#General), Voice Channels (General), and Announcements.
+// TemplateChannelSpec defines a seeded channel inside a template category.
+type TemplateChannelSpec struct {
+	Type string
+	Name string
+}
+
+// TemplateCategorySpec defines a seeded category and its channels for a group template.
+type TemplateCategorySpec struct {
+	Name     string
+	Channels []TemplateChannelSpec
+}
+
+// TemplateCategories returns the category and channel blueprint for a group template key.
+func TemplateCategories(template string) []TemplateCategorySpec {
+	switch template {
+	case "office":
+		return []TemplateCategorySpec{
+			{
+				Name: "Office",
+				Channels: []TemplateChannelSpec{
+					{Type: constants.ChannelKindBroadcast, Name: "announcements"},
+					{Type: constants.ChannelKindTextOnly, Name: "general"},
+					{Type: constants.ChannelKindForum, Name: "help-desk"},
+				},
+			},
+			{
+				Name: "Workspaces",
+				Channels: []TemplateChannelSpec{
+					{Type: constants.ChannelKindTextOnly, Name: "operations"},
+					{Type: constants.ChannelKindTextOnly, Name: "projects"},
+					{Type: constants.ChannelKindTextOnly, Name: "watercooler"},
+				},
+			},
+			{
+				Name: "Meeting Rooms",
+				Channels: []TemplateChannelSpec{
+					{Type: constants.ChannelKindVoiceOnly, Name: "Standup Room"},
+					{Type: constants.ChannelKindVoiceOnly, Name: "Conference Room"},
+				},
+			},
+		}
+	case "project":
+		return []TemplateCategorySpec{
+			{
+				Name: "Overview",
+				Channels: []TemplateChannelSpec{
+					{Type: constants.ChannelKindBroadcast, Name: "updates"},
+					{Type: constants.ChannelKindTextOnly, Name: "general"},
+				},
+			},
+			{
+				Name: "Execution",
+				Channels: []TemplateChannelSpec{
+					{Type: constants.ChannelKindTextOnly, Name: "tasks-and-progress"},
+					{Type: constants.ChannelKindForum, Name: "feedback-and-bugs"},
+					{Type: constants.ChannelKindTextOnly, Name: "resources"},
+				},
+			},
+			{
+				Name: "Calls",
+				Channels: []TemplateChannelSpec{
+					{Type: constants.ChannelKindVoiceOnly, Name: "Sprint Sync"},
+					{Type: constants.ChannelKindVoiceOnly, Name: "Coworking"},
+				},
+			},
+		}
+	case "study":
+		return []TemplateCategorySpec{
+			{
+				Name: "Class Info",
+				Channels: []TemplateChannelSpec{
+					{Type: constants.ChannelKindBroadcast, Name: "announcements"},
+					{Type: constants.ChannelKindTextOnly, Name: "introductions"},
+				},
+			},
+			{
+				Name: "Study & Discussion",
+				Channels: []TemplateChannelSpec{
+					{Type: constants.ChannelKindTextOnly, Name: "general"},
+					{Type: constants.ChannelKindForum, Name: "q-and-a"},
+					{Type: constants.ChannelKindTextOnly, Name: "notes-and-links"},
+				},
+			},
+			{
+				Name: "Study Rooms",
+				Channels: []TemplateChannelSpec{
+					{Type: constants.ChannelKindVoiceOnly, Name: "Silent Study"},
+					{Type: constants.ChannelKindVoiceOnly, Name: "Group Discussion"},
+				},
+			},
+		}
+	case "gaming":
+		return []TemplateCategorySpec{
+			{
+				Name: "Lobby",
+				Channels: []TemplateChannelSpec{
+					{Type: constants.ChannelKindBroadcast, Name: "announcements"},
+					{Type: constants.ChannelKindTextOnly, Name: "welcome-and-rules"},
+				},
+			},
+			{
+				Name: "Community",
+				Channels: []TemplateChannelSpec{
+					{Type: constants.ChannelKindTextOnly, Name: "general"},
+					{Type: constants.ChannelKindForum, Name: "looking-for-group"},
+					{Type: constants.ChannelKindTextOnly, Name: "clips-and-screenshots"},
+				},
+			},
+			{
+				Name: "Voice Channels",
+				Channels: []TemplateChannelSpec{
+					{Type: constants.ChannelKindVoiceOnly, Name: "Main Lobby"},
+					{Type: constants.ChannelKindVoiceOnly, Name: "Squad 1"},
+					{Type: constants.ChannelKindVoiceOnly, Name: "Squad 2"},
+				},
+			},
+		}
+	default:
+		return []TemplateCategorySpec{
+			{
+				Name: constants.DefaultFavoritesCategoryName,
+				Channels: []TemplateChannelSpec{
+					{Type: constants.ChannelKindBroadcast, Name: constants.DefaultAnnouncementChannelName},
+				},
+			},
+			{
+				Name: constants.DefaultTextCategoryName,
+				Channels: []TemplateChannelSpec{
+					{Type: constants.ChannelKindTextOnly, Name: constants.DefaultChannelName},
+				},
+			},
+			{
+				Name: constants.DefaultVoiceCategoryName,
+				Channels: []TemplateChannelSpec{
+					{Type: constants.ChannelKindVoiceOnly, Name: constants.DefaultChannelName},
+				},
+			},
+		}
+	}
+}
+
+// InsertDefaultChannelsTx seeds Favorites (Announcements), Text Channels (#General), and Voice Channels (General).
 func InsertDefaultChannelsTx(ctx context.Context, tx bun.Tx, groupID, createdBy string, now time.Time) error {
-	textCat, err := insertCategoryWithRetry(
-		ctx, tx, groupID, constants.DefaultTextCategoryName, false, 0, createdBy, now,
-	)
-	if err != nil {
-		return err
+	return InsertDefaultChannelsWithTemplateTx(ctx, tx, groupID, createdBy, "", now)
+}
+
+// InsertDefaultChannelsWithTemplateTx seeds categories and channels for the requested group template.
+func InsertDefaultChannelsWithTemplateTx(
+	ctx context.Context,
+	tx bun.Tx,
+	groupID, createdBy, template string,
+	now time.Time,
+) error {
+	specs := TemplateCategories(template)
+	var catPos int32
+	for _, catSpec := range specs {
+		cat, err := insertCategoryWithRetry(
+			ctx, tx, groupID, catSpec.Name, false, catPos, createdBy, now,
+		)
+		if err != nil {
+			return err
+		}
+		catPos++
+		var chPos int32
+		for _, chSpec := range catSpec.Channels {
+			if err := insertDefaultChannelWithPosTx(
+				ctx, tx, groupID, cat.ID, createdBy, chSpec.Type, chSpec.Name,
+				constants.SidebarSectionChannels, chPos, now,
+			); err != nil {
+				return err
+			}
+			chPos++
+		}
 	}
-	if err := InsertDefaultChannelTx(
-		ctx, tx, groupID, textCat.ID, createdBy, constants.ChannelKindTextOnly,
-		constants.DefaultChannelName, constants.SidebarSectionChannels, now,
-	); err != nil {
+
+	return nil
+}
+
+func insertDefaultChannelWithPosTx(
+	ctx context.Context,
+	tx bun.Tx,
+	groupID, categoryID, createdBy, channelType, name, sidebarSection string,
+	position int32,
+	now time.Time,
+) error {
+	for range 5 {
+		channelID, err := token.NewID()
+		if err != nil {
+			return err
+		}
+		publicId, err := token.NewPublicID()
+		if err != nil {
+			return err
+		}
+		row := models.ChannelRowFrom(models.Channel{
+			ID: channelID, PublicID: publicId, GroupID: groupID, CategoryID: categoryID,
+			Type: channelType, IsPrivate: false, Name: name, SidebarSection: sidebarSection,
+			Position: position, CreatedBy: createdBy, CreatedAt: now, UpdatedAt: now,
+		})
+		_, err = tx.NewInsert().Model(&row).Exec(ctx)
+		if err == nil {
+			return nil
+		}
+		if errors.Is(pgErr.MapUnique(err), constants.ErrConflict) {
+			continue
+		}
+
 		return err
 	}
 
-	voiceCat, err := insertCategoryWithRetry(
-		ctx, tx, groupID, constants.DefaultVoiceCategoryName, false, 1, createdBy, now,
-	)
-	if err != nil {
-		return err
-	}
-	if err := InsertDefaultChannelTx(
-		ctx, tx, groupID, voiceCat.ID, createdBy, constants.ChannelKindVoiceOnly,
-		constants.DefaultChannelName, constants.SidebarSectionChannels, now,
-	); err != nil {
-		return err
-	}
-
-	return InsertAnnouncementChannelTx(ctx, tx, groupID, createdBy, now)
+	return constants.ErrConflict
 }

@@ -106,6 +106,7 @@ func (h handler) CreateGroup(w http.ResponseWriter, r *http.Request) {
 	out, err := h.ms.User.GRPC.Group.CreateGroup(r.Context(), &userv1.CreateGroupRequest{
 		AccessToken: token,
 		Name:        name,
+		Template:    strings.TrimSpace(body.Template),
 	})
 	if err != nil {
 		authHttp.WriteOutbound(w, r, h.log, err)

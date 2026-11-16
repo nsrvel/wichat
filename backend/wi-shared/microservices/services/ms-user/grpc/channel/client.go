@@ -12,9 +12,13 @@ import (
 // Client calls channel-domain ChannelService RPCs with shared timeouts, retries, and circuit breaking.
 type Client interface {
 	ListGroupChannels(ctx context.Context, in *userv1.ListGroupChannelsRequest) (*userv1.ListGroupChannelsResponse, error)
-	CreateChannelCategory(ctx context.Context, in *userv1.CreateChannelCategoryRequest) (*userv1.CreateChannelCategoryResponse, error)
 	CreateGroupChannel(ctx context.Context, in *userv1.CreateGroupChannelRequest) (*userv1.CreateGroupChannelResponse, error)
-	ReorderChannelCategories(ctx context.Context, in *userv1.ReorderChannelCategoriesRequest) (*userv1.ReorderChannelCategoriesResponse, error)
+	UpdateGroupChannel(ctx context.Context, in *userv1.UpdateGroupChannelRequest) (*userv1.UpdateGroupChannelResponse, error)
+	DeleteGroupChannel(ctx context.Context, in *userv1.DeleteGroupChannelRequest) (*userv1.DeleteGroupChannelResponse, error)
+	ListChannelPermissions(ctx context.Context, in *userv1.ListChannelPermissionsRequest) (*userv1.ListChannelPermissionsResponse, error)
+	UpsertChannelPermission(ctx context.Context, in *userv1.UpsertChannelPermissionRequest) (*userv1.UpsertChannelPermissionResponse, error)
+	DeleteChannelPermission(ctx context.Context, in *userv1.DeleteChannelPermissionRequest) (*userv1.DeleteChannelPermissionResponse, error)
+	SyncChannelPermissions(ctx context.Context, in *userv1.SyncChannelPermissionsRequest) (*userv1.SyncChannelPermissionsResponse, error)
 	ReorderGroupChannels(ctx context.Context, in *userv1.ReorderGroupChannelsRequest) (*userv1.ReorderGroupChannelsResponse, error)
 	AssertGroupChannelAccess(ctx context.Context, in *userv1.AssertGroupChannelAccessRequest) (*userv1.AssertGroupChannelAccessResponse, error)
 }
@@ -48,21 +52,45 @@ func (c *client) ListGroupChannels(ctx context.Context, in *userv1.ListGroupChan
 	})
 }
 
-func (c *client) CreateChannelCategory(ctx context.Context, in *userv1.CreateChannelCategoryRequest) (*userv1.CreateChannelCategoryResponse, error) {
-	return utils.CallUnaryResult(ctx, c.write, c.log, "channel.ChannelService/CreateChannelCategory", func(callCtx context.Context) (*userv1.CreateChannelCategoryResponse, error) {
-		return c.stub.CreateChannelCategory(callCtx, in)
-	})
-}
-
 func (c *client) CreateGroupChannel(ctx context.Context, in *userv1.CreateGroupChannelRequest) (*userv1.CreateGroupChannelResponse, error) {
 	return utils.CallUnaryResult(ctx, c.write, c.log, "channel.ChannelService/CreateGroupChannel", func(callCtx context.Context) (*userv1.CreateGroupChannelResponse, error) {
 		return c.stub.CreateGroupChannel(callCtx, in)
 	})
 }
 
-func (c *client) ReorderChannelCategories(ctx context.Context, in *userv1.ReorderChannelCategoriesRequest) (*userv1.ReorderChannelCategoriesResponse, error) {
-	return utils.CallUnaryResult(ctx, c.write, c.log, "channel.ChannelService/ReorderChannelCategories", func(callCtx context.Context) (*userv1.ReorderChannelCategoriesResponse, error) {
-		return c.stub.ReorderChannelCategories(callCtx, in)
+func (c *client) UpdateGroupChannel(ctx context.Context, in *userv1.UpdateGroupChannelRequest) (*userv1.UpdateGroupChannelResponse, error) {
+	return utils.CallUnaryResult(ctx, c.write, c.log, "channel.ChannelService/UpdateGroupChannel", func(callCtx context.Context) (*userv1.UpdateGroupChannelResponse, error) {
+		return c.stub.UpdateGroupChannel(callCtx, in)
+	})
+}
+
+func (c *client) DeleteGroupChannel(ctx context.Context, in *userv1.DeleteGroupChannelRequest) (*userv1.DeleteGroupChannelResponse, error) {
+	return utils.CallUnaryResult(ctx, c.write, c.log, "channel.ChannelService/DeleteGroupChannel", func(callCtx context.Context) (*userv1.DeleteGroupChannelResponse, error) {
+		return c.stub.DeleteGroupChannel(callCtx, in)
+	})
+}
+
+func (c *client) ListChannelPermissions(ctx context.Context, in *userv1.ListChannelPermissionsRequest) (*userv1.ListChannelPermissionsResponse, error) {
+	return utils.CallUnaryResult(ctx, c.read, c.log, "channel.ChannelService/ListChannelPermissions", func(callCtx context.Context) (*userv1.ListChannelPermissionsResponse, error) {
+		return c.stub.ListChannelPermissions(callCtx, in)
+	})
+}
+
+func (c *client) UpsertChannelPermission(ctx context.Context, in *userv1.UpsertChannelPermissionRequest) (*userv1.UpsertChannelPermissionResponse, error) {
+	return utils.CallUnaryResult(ctx, c.write, c.log, "channel.ChannelService/UpsertChannelPermission", func(callCtx context.Context) (*userv1.UpsertChannelPermissionResponse, error) {
+		return c.stub.UpsertChannelPermission(callCtx, in)
+	})
+}
+
+func (c *client) DeleteChannelPermission(ctx context.Context, in *userv1.DeleteChannelPermissionRequest) (*userv1.DeleteChannelPermissionResponse, error) {
+	return utils.CallUnaryResult(ctx, c.write, c.log, "channel.ChannelService/DeleteChannelPermission", func(callCtx context.Context) (*userv1.DeleteChannelPermissionResponse, error) {
+		return c.stub.DeleteChannelPermission(callCtx, in)
+	})
+}
+
+func (c *client) SyncChannelPermissions(ctx context.Context, in *userv1.SyncChannelPermissionsRequest) (*userv1.SyncChannelPermissionsResponse, error) {
+	return utils.CallUnaryResult(ctx, c.write, c.log, "channel.ChannelService/SyncChannelPermissions", func(callCtx context.Context) (*userv1.SyncChannelPermissionsResponse, error) {
+		return c.stub.SyncChannelPermissions(callCtx, in)
 	})
 }
 

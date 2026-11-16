@@ -43,7 +43,7 @@ func (s *Server) ListMyGroups(ctx context.Context, req *userv1.ListMyGroupsReque
 }
 
 func (s *Server) CreateGroup(ctx context.Context, req *userv1.CreateGroupRequest) (*userv1.CreateGroupResponse, error) {
-	group, err := s.svc.CreateGroup(ctx, req.GetAccessToken(), req.GetName())
+	group, err := s.svc.CreateGroup(ctx, req.GetAccessToken(), req.GetName(), req.GetTemplate())
 	if err != nil {
 		return nil, responsegrpc.ToStatus(err)
 	}

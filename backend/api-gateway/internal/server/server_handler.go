@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	authdelivery "github.com/wichat/wichat/backend/api-gateway/internal/auth/delivery/http"
+	channelcategorydelivery "github.com/wichat/wichat/backend/api-gateway/internal/channel-category/delivery/http"
 	channeldelivery "github.com/wichat/wichat/backend/api-gateway/internal/channel/delivery/http"
 	chatdelivery "github.com/wichat/wichat/backend/api-gateway/internal/chat/delivery/http"
 	groupmemberdelivery "github.com/wichat/wichat/backend/api-gateway/internal/group-member/delivery/http"
@@ -64,6 +65,7 @@ func (s *server) mapHandlers(mux *http.ServeMux, ms *microservices.Clients, rtHu
 	groupmemberdelivery.Register(mux, groupmemberdelivery.NewHandler(ms, s.log))
 	grouproledelivery.Register(mux, grouproledelivery.NewHandler(ms, s.log))
 	channeldelivery.Register(mux, channeldelivery.NewHandler(ms, s.log))
+	channelcategorydelivery.Register(mux, channelcategorydelivery.NewHandler(ms, s.log))
 	invitedelivery.Register(mux, invitedelivery.NewHandler(ms, s.log, s.cfg.WebOrigin))
 	chatdelivery.Register(mux, chatdelivery.NewHandler(ms, s.log))
 	realtimeWs.Register(mux, realtimeWs.NewHandler(ms, rtHub, s.log, s.cfg.WebOrigin))

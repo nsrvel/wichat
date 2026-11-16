@@ -84,6 +84,31 @@ func (m pgRepositoryMock) GetEffectivePermissions(_ context.Context, groupID, us
 	return out, nil
 }
 
+func (m pgRepositoryMock) ListUserRoleIDs(_ context.Context, groupID, userID string) ([]string, error) {
+	m.st.Lock()
+	defer m.st.Unlock()
+
+	seen := make(map[string]struct{})
+	var out []string
+	for _, r := range m.st.Roles {
+		if r.GroupID == groupID && r.IsDefault {
+			if _, ok := seen[r.ID]; !ok {
+				seen[r.ID] = struct{}{}
+				out = append(out, r.ID)
+			}
+		}
+	}
+	for _, mr := range m.st.MemberRoles {
+		if mr.GroupID == groupID && mr.UserID == userID {
+			if _, ok := seen[mr.RoleID]; !ok {
+				seen[mr.RoleID] = struct{}{}
+				out = append(out, mr.RoleID)
+			}
+		}
+	}
+	return out, nil
+}
+
 func (m pgRepositoryMock) ListRolesForGroup(_ context.Context, groupID string) ([]models.GroupRole, error) {
 	m.st.Lock()
 	defer m.st.Unlock()

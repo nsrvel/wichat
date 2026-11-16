@@ -39,8 +39,18 @@ export const ReorderMyGroupsRequestSchema = z.object({
 	group_ids: z.array(publicEntityIdSchema).min(1),
 });
 
+export const groupTemplateIdSchema = z.enum([
+	"custom",
+	"office",
+	"project",
+	"study",
+	"gaming",
+]);
+export type GroupTemplateId = z.infer<typeof groupTemplateIdSchema>;
+
 export const CreateGroupRequestSchema = z.object({
 	name: groupNameSchema,
+	template: groupTemplateIdSchema.optional(),
 });
 export type CreateGroupRequest = z.infer<typeof CreateGroupRequestSchema>;
 

@@ -5,6 +5,7 @@ import (
 	"github.com/wichat/wichat/backend/wi-shared/infra/logger"
 	"github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-user/grpc/auth"
 	"github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-user/grpc/channel"
+	channelcategory "github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-user/grpc/channel-category"
 	"github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-user/grpc/general"
 	"github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-user/grpc/group"
 	groupmember "github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-user/grpc/group-member"
@@ -24,28 +25,30 @@ type Service struct {
 
 // GRPC groups gRPC clients by domain.
 type GRPC struct {
-	Auth        auth.Client
-	User        user.Client
-	Group       group.Client
-	GroupMember groupmember.Client
-	GroupRole   grouprole.Client
-	Invite      invite.Client
-	Channel     channel.Client
-	Presence    presence.Client
-	General     general.Client
+	Auth            auth.Client
+	User            user.Client
+	Group           group.Client
+	GroupMember     groupmember.Client
+	GroupRole       grouprole.Client
+	Invite          invite.Client
+	Channel         channel.Client
+	ChannelCategory channelcategory.Client
+	Presence        presence.Client
+	General         general.Client
 }
 
 // NewGRPC wires gRPC clients on an existing connection. Caller owns conn lifetime.
 func NewGRPC(conn *grpc.ClientConn, settings utils.Settings, log logger.Logger) GRPC {
 	return GRPC{
-		Auth:        auth.New(userv1.NewAuthServiceClient(conn), settings, log),
-		User:        user.New(userv1.NewUserServiceClient(conn), settings, log),
-		Group:       group.New(userv1.NewGroupServiceClient(conn), settings, log),
-		GroupMember: groupmember.New(userv1.NewGroupMemberServiceClient(conn), settings, log),
-		GroupRole:   grouprole.New(userv1.NewGroupRoleServiceClient(conn), settings, log),
-		Invite:      invite.New(userv1.NewInviteServiceClient(conn), settings, log),
-		Channel:     channel.New(userv1.NewChannelServiceClient(conn), settings, log),
-		Presence:    presence.New(userv1.NewPresenceServiceClient(conn), settings, log),
-		General:     general.New(conn, settings, log),
+		Auth:            auth.New(userv1.NewAuthServiceClient(conn), settings, log),
+		User:            user.New(userv1.NewUserServiceClient(conn), settings, log),
+		Group:           group.New(userv1.NewGroupServiceClient(conn), settings, log),
+		GroupMember:     groupmember.New(userv1.NewGroupMemberServiceClient(conn), settings, log),
+		GroupRole:       grouprole.New(userv1.NewGroupRoleServiceClient(conn), settings, log),
+		Invite:          invite.New(userv1.NewInviteServiceClient(conn), settings, log),
+		Channel:         channel.New(userv1.NewChannelServiceClient(conn), settings, log),
+		ChannelCategory: channelcategory.New(userv1.NewChannelCategoryServiceClient(conn), settings, log),
+		Presence:        presence.New(userv1.NewPresenceServiceClient(conn), settings, log),
+		General:         general.New(conn, settings, log),
 	}
 }

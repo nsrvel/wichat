@@ -5,7 +5,8 @@
 	"scripts": {
 		"dev": "next dev --webpack -p 8080",
 		"dev:turbo": "next dev --turbopack -p 8080",
-		"tunnel": "NEXT_PUBLIC_API_URL=https://wichat.wistudio.my.id next dev --webpack -p 8080",
+		"tunnel": "NEXT_PUBLIC_API_URL=https://wichat.wistudio.my.id pnpm build && NEXT_PUBLIC_API_URL=https://wichat.wistudio.my.id next start -p 8080",
+		"tunnel:dev": "NEXT_PUBLIC_API_URL=https://wichat.wistudio.my.id next dev --webpack -p 8080",
 		"build": "next build --webpack",
 		"start": "next start",
 		"lint": "eslint . --max-warnings 0",
