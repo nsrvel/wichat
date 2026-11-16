@@ -19,4 +19,5 @@ func Register(mux *http.ServeMux, h Handler) {
 	mux.Handle("POST /api/v1/groups/{id}/icon", groupLimit.Wrap(http.HandlerFunc(h.UploadGroupIcon)))
 	mux.Handle("PATCH /api/v1/groups/{id}/profile", groupLimit.Wrap(http.HandlerFunc(h.UpdateGroupProfile)))
 	mux.Handle("POST /api/v1/groups/{id}/banner", groupLimit.Wrap(http.HandlerFunc(h.UploadGroupBanner)))
+	mux.HandleFunc("GET /api/v1/groups/{id}/audit-logs", h.ListGroupAuditLogs)
 }

@@ -13,6 +13,9 @@
 		"format": "prettier --write .",
 		"format:check": "prettier --check .",
 		"typecheck": "tsc --noEmit",
+		"test:e2e": "playwright test",
+		"test:e2e:ui": "playwright test --ui",
+		"test:e2e:headed": "playwright test --headed",
 		"check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm build"
 	},
 	"dependencies": {
@@ -49,6 +52,7 @@
 	},
 	"devDependencies": {
 		"@next/env": "16.3.8",
+		"@playwright/test": "^1.65.1",
 		"@tailwindcss/postcss": "^4",
 		"@types/node": "^20",
 		"@types/qrcode": "^1.5.6",

@@ -8,13 +8,7 @@ type SwitchProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "type" | "role"
 	onCheckedChange: (checked: boolean) => void;
 };
 
-export function Switch({
-	checked,
-	onCheckedChange,
-	className,
-	disabled,
-	...props
-}: SwitchProps) {
+export function Switch({ checked, onCheckedChange, className, disabled, ...props }: SwitchProps) {
 	return (
 		<button
 			type="button"
@@ -41,4 +35,3 @@ export function Switch({
 		</button>
 	);
 }
-

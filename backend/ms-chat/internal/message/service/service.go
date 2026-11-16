@@ -69,14 +69,14 @@ func (s service) CreateChannelMessage(ctx context.Context, in *models.CreateChan
 		return models.PublicMessage{}, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "body"})
 	}
 
-	// Repository
-	createdAt := s.now()
-	msg, err := s.messages.Insert(ctx, in.ResolvedChannelID, in.CallerUserID, body, createdAt)
+	// Repository: resolve author display name before persisting message.
+	displayName, err := s.messages.FindUserDisplayName(ctx, in.CallerUserID)
 	if err != nil {
 		return models.PublicMessage{}, err
 	}
 
-	displayName, err := s.messages.FindUserDisplayName(ctx, in.CallerUserID)
+	createdAt := s.now()
+	msg, err := s.messages.Insert(ctx, in.ResolvedChannelID, in.CallerUserID, body, createdAt)
 	if err != nil {
 		return models.PublicMessage{}, err
 	}
@@ -86,13 +86,11 @@ func (s service) CreateChannelMessage(ctx context.Context, in *models.CreateChan
 		Body: msg.Body, CreatedAt: msg.CreatedAt, Mine: true,
 	}
 
-	if err := s.events.PublishMessageCreated(ctx, in.GroupPublicID, in.ChannelPublicID, out); err != nil {
-		s.log.Error("publish message.created", "err", err)
-		// ponytail: compensating delete until transactional outbox ships
-		if delErr := s.messages.DeleteByID(ctx, msg.ID); delErr != nil {
-			s.log.Error("compensating delete after publish failure", "message_id", msg.ID, "err", delErr)
-		}
-		return models.PublicMessage{}, err
+	pubCtx, pubCancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	defer pubCancel()
+	if err := s.events.PublishMessageCreated(pubCtx, in.GroupPublicID, in.ChannelPublicID, out); err != nil {
+		// Postgres commit already succeeded; avoid unsafe compensating delete that can create ghost events.
+		s.log.Error("publish message.created", "message_id", msg.ID, "err", err)
 	}
 
 	return out, nil

@@ -1,11 +1,13 @@
 import { RealtimeMessageCreatedSchema, type Message } from "@wichat/contracts/chat/message";
 import { ensureAccessToken, getAccessToken } from "@/integrations/api-client";
+import { onGatewayRecovered } from "@/integrations/realtime/gateway-connection";
 import { env } from "@/lib/env";
 
 export type ChatChannelRealtimeOptions = {
 	groupId: string;
 	channelId: string;
 	onMessageCreated: (message: Message) => void;
+	onReconnect?: () => void;
 };
 
 function realtimeWebSocketURL(accessToken: string): string {
@@ -20,8 +22,21 @@ function realtimeWebSocketURL(accessToken: string): string {
 export function subscribeChatChannel(options: ChatChannelRealtimeOptions): () => void {
 	let ws: WebSocket | null = null;
 	let closed = false;
+	let hasConnectedOnce = false;
 	let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
 	let reconnectAttempts = 0;
+
+	const scheduleReconnect = () => {
+		if (closed || reconnectTimer !== undefined) {
+			return;
+		}
+		const delay = Math.min(1000 * 2 ** reconnectAttempts, 10000);
+		reconnectAttempts++;
+		reconnectTimer = setTimeout(() => {
+			reconnectTimer = undefined;
+			void connect();
+		}, delay);
+	};
 
 	const connect = async () => {
 		if (closed) {
@@ -31,24 +46,27 @@ export function subscribeChatChannel(options: ChatChannelRealtimeOptions): () =>
 		if (!token) {
 			token = await ensureAccessToken();
 		}
+		if (closed) {
+			return;
+		}
 		if (!token) {
-			const delay = Math.min(1000 * 2 ** reconnectAttempts, 10000);
-			reconnectAttempts++;
-			reconnectTimer = setTimeout(connect, delay);
+			scheduleReconnect();
 			return;
 		}
 
 		try {
 			ws = new WebSocket(realtimeWebSocketURL(token));
 		} catch {
-			const delay = Math.min(1000 * 2 ** reconnectAttempts, 10000);
-			reconnectAttempts++;
-			reconnectTimer = setTimeout(connect, delay);
+			scheduleReconnect();
 			return;
 		}
 
 		ws.addEventListener("open", () => {
 			reconnectAttempts = 0;
+			if (hasConnectedOnce) {
+				options.onReconnect?.();
+			}
+			hasConnectedOnce = true;
 			ws?.send(
 				JSON.stringify({
 					type: "subscribe",
@@ -68,20 +86,36 @@ export function subscribeChatChannel(options: ChatChannelRealtimeOptions): () =>
 			}
 		});
 		ws.addEventListener("close", () => {
+			ws = null;
 			if (!closed) {
-				const delay = Math.min(1000 * 2 ** reconnectAttempts, 10000);
-				reconnectAttempts++;
-				reconnectTimer = setTimeout(connect, delay);
+				scheduleReconnect();
 			}
 		});
 	};
+
+	const unsubscribeRecovered = onGatewayRecovered(() => {
+		if (closed) {
+			return;
+		}
+		if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+			return;
+		}
+		if (reconnectTimer !== undefined) {
+			clearTimeout(reconnectTimer);
+			reconnectTimer = undefined;
+		}
+		reconnectAttempts = 0;
+		void connect();
+	});
 
 	void connect();
 
 	return () => {
 		closed = true;
-		if (reconnectTimer) {
+		unsubscribeRecovered();
+		if (reconnectTimer !== undefined) {
 			clearTimeout(reconnectTimer);
+			reconnectTimer = undefined;
 		}
 		ws?.close();
 		ws = null;

@@ -12,7 +12,16 @@ import {
 	MemberBanDialog,
 	MemberKickDialog,
 } from "@/features/group-settings/components/members/member-moderation-dialogs";
-import { groupSettingsMainInnerClass, groupSettingsMainScrollClass, groupSettingsMainScrollDirtyPadClass, groupSettingsMembersWorkspaceInnerClass, groupSettingsMembersWorkspaceScrollClass, groupSettingsSectionHeaderClass, groupSettingsSectionLeadClass, groupSettingsSectionTitleClass } from "@/features/group-settings/lib/group-settings-chrome";
+import {
+	groupSettingsMainInnerClass,
+	groupSettingsMainScrollClass,
+	groupSettingsMainScrollDirtyPadClass,
+	groupSettingsMembersWorkspaceInnerClass,
+	groupSettingsMembersWorkspaceScrollClass,
+	groupSettingsSectionHeaderClass,
+	groupSettingsSectionLeadClass,
+	groupSettingsSectionTitleClass,
+} from "@/features/group-settings/lib/group-settings-chrome";
 import type { GroupSettingsTarget } from "@/features/group-settings/lib/group-settings-target";
 import {
 	applyMemberView,
@@ -74,10 +83,7 @@ export function GroupSettingsMembersSection({
 	const [kickTarget, setKickTarget] = useState<GroupMember | null>(null);
 	const [banTargets, setBanTargets] = useState<GroupMember[]>([]);
 
-	const currentGroup = useMemo(
-		() => myGroups.find((g) => g.id === groupId),
-		[groupId, myGroups],
-	);
+	const currentGroup = useMemo(() => myGroups.find((g) => g.id === groupId), [groupId, myGroups]);
 	const isOwner = currentGroup?.role === "owner";
 	const hideRoles = currentGroup?.hide_roles ?? false;
 	const targetIsOwner = target.role === "owner";
@@ -208,11 +214,7 @@ export function GroupSettingsMembersSection({
 				/>
 			) : null}
 
-			<MemberKickDialog
-				groupId={groupId}
-				member={kickTarget}
-				onClose={() => setKickTarget(null)}
-			/>
+			<MemberKickDialog groupId={groupId} member={kickTarget} onClose={() => setKickTarget(null)} />
 			<MemberBanDialog
 				groupId={groupId}
 				members={banTargets}

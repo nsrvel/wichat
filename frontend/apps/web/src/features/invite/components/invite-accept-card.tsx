@@ -127,11 +127,7 @@ export function InviteAcceptCard({
 				{preview.group_name}
 			</h2>
 
-			<GroupMemberStatsPill
-				onlineCount={onlineCount}
-				memberCount={memberCount}
-				className="mb-4"
-			/>
+			<GroupMemberStatsPill onlineCount={onlineCount} memberCount={memberCount} className="mb-4" />
 
 			{groupDescription ? (
 				<p className="mb-4 line-clamp-3 max-w-xs whitespace-pre-wrap break-words text-xs leading-relaxed text-muted-foreground sm:text-[13px]">

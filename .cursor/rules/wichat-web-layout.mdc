@@ -19,15 +19,16 @@ alwaysApply: false
 | Path | Role |
 |------|------|
 | `app/` | **Routing only** — `page.tsx`, `layout.tsx`, loading/error, metadata. Thin: import a feature screen and render. |
-| `features/<domain>/` | Screens and **domain-only** UI (e.g. `features/auth/login/`). Per slice: `*-page.tsx` (shell, copy, layout) + `*-form.tsx` (Zod + fields + submit) — see below. |
-| `features/<domain>/components/` | Shared **within that domain** (login + register shell). |
-| `features/<domain>/lib/` | Pure **`.ts`** helpers for that domain (formatters, cooldown math, `groupInitials`, server loaders) — not UI. |
-| `components/ui/` | shadcn primitives. |
+| `features/<domain>/` | Screens and **domain-only** UI (`auth`, `channel`, `chat`, `group`, `group-settings`, `invite`, `shell`, `user-settings`, `dev`). Per slice: `*-page.tsx` + `*-form.tsx` or `components/<section>/`. |
+| `features/<domain>/components/` | Shared **within that domain** (grouped into subfolders when growing, e.g. `group-settings/components/{roles,members,bans,audit-logs}/`). |
+| `features/<domain>/lib/` | Pure **`.ts`** helpers for that domain (`group-settings-chrome.ts`, `group-initials.ts`, `resend-cooldown.ts`) — not JSX. |
+| `components/` & `components/ui/` | Shared across features (`ui/` shadcn primitives, `user-avatar.tsx`, `custom-select.tsx`, shared modals/pickers). |
 | `components/layout/` | Cross-feature shell (sidebar, header). **`ShellMainPane`** = bordered workspace canvas (top/left border, rounded TL when rail open). Subfolders: `layout/shell-rail/` — see `wichat-folder-grouping.mdc`. |
 | `services/` | TanStack Query layer — see `wichat-web-data.mdc`. |
-| `integrations/` | App wiring (api singleton, tanstack-query, locale cookie, MSW, LiveKit later). |
+| `integrations/` | App wiring (api singleton, tanstack-query, realtime WebSocket, locale cookie, MSW). |
 | `hooks/` | Generic UI helpers only (`use-mobile`, dialogs) — not domain fetch. |
-| `lib/` | `cn`, dates, small pure helpers. |
+| `lib/` | Shared pure helpers (`cn`, `form-field-styles.ts`, `user-initials.ts`, `api-error.ts`). |
+| `e2e/` | Playwright E2E tests grouped by domain (`e2e/members/`) + shared `e2e/fixtures/` (`api-helpers.ts`, page objects). |
 
 **Do not** put feature-specific components in root `components/<feature>/` if they belong in `features/<feature>/`. Root `components/` = shared across features.
 
@@ -69,9 +70,15 @@ Import from the **defining file** — no `index.ts` re-export barrels (see `wich
 
 - **Forbidden:** files or modules whose exports are mainly Tailwind string constants (`export const rowClass = "flex …"`), including names like `*-ui.tsx`, `*-styles.tsx`, `*-classes.tsx`, or a dedicated `workspace-panel-header.tsx` that only shares `className` strings.
 - **Required:** write utilities **on the JSX** (`className="…"` / `className={cn("…", condition && "…")}`). If two components need the same strip height, **duplicate the string** — do not extract to a shared class file.
-- **Allowed:** `cn()` helpers that depend on **props or `data-state`** (e.g. `shellRailAsideClass()`, `shellRailColumnClass(open)`) — composition logic, not a style sheet.
+- **Allowed:** `cn()` helpers that depend on **props or `data-state`** (`shellRailColumnClass(open)`), fullscreen settings shell layout tracks in `features/<domain>/lib/*-chrome.ts` (`group-settings-chrome.ts`), and shared input tokens in `src/lib/form-field-styles.ts` (`authInputClass`).
 - **Allowed:** small **non-exported** consts at the top of the **same** `.tsx` when one component reuses the same chunk many times; still prefer inline for 1–2 uses.
-- **Do not add** new exported class catalogs to `auth-shell.tsx` or similar; colocate on the new component. Shrink legacy exports when you touch that screen.
+- **Do not add** new exported class catalogs to `auth-shell.tsx` or per-component `*-styles.tsx` / `*-classes.tsx` files.
+
+## Settings overlays, tables & E2E
+
+- **Settings overlays** (`group-settings`, `user-settings`): fullscreen two-pane layout; sidebar tabs gated by permissions (e.g. `view_audit_log`, `ban_members`, `manage_roles`). Keep section `<header>` (`title` + `lead`) standalone at the top — place search, filter dropdowns, and action toolbars in the **body**, never inline beside the title/subtitle.
+- **Tables & scrolling:** use **TanStack Table** + shared pagination (`GroupSettingsMembersPagination`) for structured lists (`members`, `roles`, `bans`). Use `overlay-scroll` for scroll panes; do **not** add `scrollbar-gutter` (causes WebKit/Chromium width mismatch).
+- **Playwright E2E (`e2e/`):** organize specs by domain (`e2e/members/`), reuse `e2e/fixtures/` (`api-helpers.ts`, page objects), add `data-testid` on dynamic rows/controls, and test both happy paths and permission gates.
 
 Prefer route groups: `(auth)`, `(app)` or workspace layouts. Keep `'use client'` in features when using hooks/Query; metadata stays in server `page.tsx` when needed.
 

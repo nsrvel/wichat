@@ -3,6 +3,7 @@ package http
 import (
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 
 	authHttp "github.com/wichat/wichat/backend/api-gateway/pkg/auth-http"
@@ -23,6 +24,7 @@ type Handler interface {
 	UploadGroupIcon(w http.ResponseWriter, r *http.Request)
 	UpdateGroupProfile(w http.ResponseWriter, r *http.Request)
 	UploadGroupBanner(w http.ResponseWriter, r *http.Request)
+	ListGroupAuditLogs(w http.ResponseWriter, r *http.Request)
 }
 
 type handler struct {
@@ -282,4 +284,50 @@ func (h handler) UploadGroupBanner(w http.ResponseWriter, r *http.Request) {
 	}
 
 	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(authHttp.GroupFromPB(out.GetGroup())))
+}
+
+func (h handler) ListGroupAuditLogs(w http.ResponseWriter, r *http.Request) {
+	token := authHttp.Bearer(r)
+	if token == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.Unauthenticated(exception.MsgUnauthorized, nil))
+		return
+	}
+	groupID := strings.TrimSpace(r.PathValue("id"))
+	if groupID == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "id"}))
+		return
+	}
+
+	q := r.URL.Query()
+	var limit int32
+	if rawLimit := strings.TrimSpace(q.Get("limit")); rawLimit != "" {
+		parsed, err := strconv.ParseInt(rawLimit, 10, 32)
+		if err != nil || parsed <= 0 {
+			authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "limit"}))
+			return
+		}
+		limit = int32(parsed)
+	}
+
+	out, err := h.ms.User.GRPC.Group.ListGroupActivityLogs(r.Context(), &userv1.ListGroupActivityLogsRequest{
+		AccessToken: token,
+		GroupId:     groupID,
+		ActorId:     strings.TrimSpace(q.Get("actor_id")),
+		Category:    strings.TrimSpace(q.Get("category")),
+		Action:      strings.TrimSpace(q.Get("action")),
+		Limit:       limit,
+		Cursor:      strings.TrimSpace(q.Get("cursor")),
+	})
+	if err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(struct {
+		Logs       []authHttp.GroupActivityLogBody `json:"logs"`
+		NextCursor string                          `json:"next_cursor"`
+	}{
+		Logs:       authHttp.GroupActivityLogsFromPB(out.GetLogs()),
+		NextCursor: out.GetNextCursor(),
+	}))
 }

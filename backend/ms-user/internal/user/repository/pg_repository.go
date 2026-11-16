@@ -49,6 +49,9 @@ type PgRepository interface {
 	CountUnusedRecoveryCodes(ctx context.Context, userID string) (int32, error)
 	ReplaceRecoveryCodes(ctx context.Context, userID string, codeHashes [][]byte, now time.Time) error
 	ConsumeRecoveryCode(ctx context.Context, userID string, codeHash []byte, now time.Time) (bool, error)
+	ListRelationships(ctx context.Context, userID string) ([]models.UserRelationship, error)
+	UpsertRelationship(ctx context.Context, userID, targetUserID, kind string, now time.Time) error
+	DeleteRelationship(ctx context.Context, userID, targetUserID string) error
 }
 
 type pgRepository struct {
@@ -834,4 +837,50 @@ func (r pgRepository) ConsumeRecoveryCode(ctx context.Context, userID string, co
 	rows, _ := res.RowsAffected()
 
 	return rows > 0, nil
+}
+
+func (r pgRepository) ListRelationships(ctx context.Context, userID string) ([]models.UserRelationship, error) {
+	var rows []models.UserRelationshipRow
+	err := r.db.NewSelect().Model(&rows).
+		Where("user_id = ?", userID).
+		OrderExpr("created_at DESC").
+		Scan(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]models.UserRelationship, len(rows))
+	for i, row := range rows {
+		out[i] = models.UserRelationship{
+			UserID:       row.UserID,
+			TargetUserID: row.TargetUserID,
+			Kind:         row.Kind,
+			CreatedAt:    row.CreatedAt,
+		}
+	}
+
+	return out, nil
+}
+
+func (r pgRepository) UpsertRelationship(ctx context.Context, userID, targetUserID, kind string, now time.Time) error {
+	row := models.UserRelationshipRow{
+		UserID:       userID,
+		TargetUserID: targetUserID,
+		Kind:         kind,
+		CreatedAt:    now,
+	}
+	_, err := r.db.NewInsert().Model(&row).
+		On("CONFLICT (user_id, target_user_id) DO UPDATE").
+		Set("kind = EXCLUDED.kind").
+		Set("created_at = EXCLUDED.created_at").
+		Exec(ctx)
+
+	return err
+}
+
+func (r pgRepository) DeleteRelationship(ctx context.Context, userID, targetUserID string) error {
+	_, err := r.db.NewDelete().Model((*models.UserRelationshipRow)(nil)).
+		Where("user_id = ? AND target_user_id = ?", userID, targetUserID).
+		Exec(ctx)
+
+	return err
 }

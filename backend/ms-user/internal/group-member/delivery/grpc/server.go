@@ -2,8 +2,10 @@ package grpc
 
 import (
 	"context"
+	"time"
 
 	groupmembersvc "github.com/wichat/wichat/backend/ms-user/internal/group-member/service"
+	"github.com/wichat/wichat/backend/ms-user/internal/models"
 	authPb "github.com/wichat/wichat/backend/ms-user/pkg/auth-pb"
 	inviteCursor "github.com/wichat/wichat/backend/ms-user/pkg/invite"
 	"github.com/wichat/wichat/backend/wi-shared/exception"
@@ -57,7 +59,7 @@ func (s *Server) ListGroupMembers(ctx context.Context, req *userv1.ListGroupMemb
 }
 
 func (s *Server) KickGroupMember(ctx context.Context, req *userv1.KickGroupMemberRequest) (*userv1.KickGroupMemberResponse, error) {
-	err := s.svc.KickGroupMember(ctx, req.GetAccessToken(), req.GetGroupId(), req.GetUserId())
+	err := s.svc.KickGroupMember(ctx, req.GetAccessToken(), req.GetGroupId(), req.GetUserId(), req.GetReason())
 	if err != nil {
 		return nil, responsegrpc.ToStatus(err)
 	}
@@ -73,10 +75,86 @@ func (s *Server) BanGroupMembers(ctx context.Context, req *userv1.BanGroupMember
 		req.GetUserIds(),
 		req.GetReason(),
 		int(req.GetDeleteMessageSeconds()),
+		req.GetDurationSeconds(),
 	)
 	if err != nil {
 		return nil, responsegrpc.ToStatus(err)
 	}
 
 	return &userv1.BanGroupMembersResponse{BannedCount: int32(bannedCount)}, nil //nolint:gosec // G115
+}
+
+func (s *Server) TimeoutGroupMember(ctx context.Context, req *userv1.TimeoutGroupMemberRequest) (*userv1.TimeoutGroupMemberResponse, error) {
+	until, err := s.svc.TimeoutGroupMember(
+		ctx,
+		req.GetAccessToken(),
+		req.GetGroupId(),
+		req.GetUserId(),
+		int(req.GetDurationSeconds()),
+		req.GetReason(),
+	)
+	if err != nil {
+		return nil, responsegrpc.ToStatus(err)
+	}
+	out := ""
+	if until != nil && !until.IsZero() {
+		out = until.UTC().Format(time.RFC3339Nano)
+	}
+	return &userv1.TimeoutGroupMemberResponse{TimeoutUntil: out}, nil
+}
+
+func (s *Server) ListGroupBans(ctx context.Context, req *userv1.ListGroupBansRequest) (*userv1.ListGroupBansResponse, error) {
+	var cur *models.GroupMemberCursor
+	if req.GetCursor() != "" {
+		parsed, err := inviteCursor.DecodeMemberCursor(req.GetCursor())
+		if err != nil {
+			return nil, responsegrpc.ToStatus(err)
+		}
+		cur = parsed
+	}
+
+	page, err := s.svc.ListGroupBans(
+		ctx,
+		req.GetAccessToken(),
+		req.GetGroupId(),
+		req.GetSearch(),
+		int(req.GetLimit()),
+		cur,
+	)
+	if err != nil {
+		return nil, responsegrpc.ToStatus(err)
+	}
+
+	bans := make([]*userv1.GroupBanEntry, 0, len(page.Bans))
+	for _, b := range page.Bans {
+		expiresAt := ""
+		if b.ExpiresAt != nil && !b.ExpiresAt.IsZero() {
+			expiresAt = b.ExpiresAt.UTC().Format(time.RFC3339Nano)
+		}
+		bans = append(bans, &userv1.GroupBanEntry{
+			UserId:              b.UserID,
+			Username:            b.Username,
+			DisplayName:         b.DisplayName,
+			AvatarUrl:           b.AvatarURL,
+			Reason:              b.Reason,
+			BannedByUserId:      b.BannedByUserID,
+			BannedByUsername:    b.BannedByUsername,
+			BannedByDisplayName: b.BannedByDisplayName,
+			ExpiresAt:           expiresAt,
+			CreatedAt:           b.CreatedAt.UTC().Format(time.RFC3339Nano),
+		})
+	}
+
+	return &userv1.ListGroupBansResponse{
+		Bans:       bans,
+		NextCursor: inviteCursor.EncodeMemberCursor(page.NextCursor),
+		Total:      int32(page.Total), //nolint:gosec // G115 — ban totals are bounded by list limits
+	}, nil
+}
+
+func (s *Server) UnbanGroupMember(ctx context.Context, req *userv1.UnbanGroupMemberRequest) (*userv1.UnbanGroupMemberResponse, error) {
+	if err := s.svc.UnbanGroupMember(ctx, req.GetAccessToken(), req.GetGroupId(), req.GetUserId()); err != nil {
+		return nil, responsegrpc.ToStatus(err)
+	}
+	return &userv1.UnbanGroupMemberResponse{Success: true}, nil
 }

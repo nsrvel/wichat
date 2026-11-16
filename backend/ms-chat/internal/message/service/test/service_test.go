@@ -8,10 +8,13 @@ import (
 	"github.com/wichat/wichat/backend/ms-chat/internal/message/service"
 	"github.com/wichat/wichat/backend/ms-chat/internal/models"
 	"github.com/wichat/wichat/backend/wi-shared/exception"
+	"github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-user/grpc/channel"
 	userv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/user/v1"
 )
 
-type fakeChannel struct{}
+type fakeChannel struct {
+	channel.Client
+}
 
 func (fakeChannel) ListGroupChannels(context.Context, *userv1.ListGroupChannelsRequest) (*userv1.ListGroupChannelsResponse, error) {
 	return nil, nil

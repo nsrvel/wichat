@@ -118,3 +118,33 @@ export const UserSearchHitSchema = z.object({
 export const UserSearchSchema = z.object({
 	users: z.array(UserSearchHitSchema),
 });
+
+export const UserRelationshipKindSchema = z.enum(["ignore", "block", "none"]);
+export type UserRelationshipKind = z.infer<typeof UserRelationshipKindSchema>;
+
+export const UserRelationshipSchema = z.object({
+	target_user_id: z.string(),
+	kind: z.enum(["ignore", "block"]),
+	created_at: z.string(),
+});
+export type UserRelationship = z.infer<typeof UserRelationshipSchema>;
+
+export const ListUserRelationshipsSchema = z.object({
+	relationships: z.array(UserRelationshipSchema),
+});
+export type ListUserRelationships = z.infer<typeof ListUserRelationshipsSchema>;
+
+export const SetUserRelationshipRequestSchema = z.object({
+	kind: UserRelationshipKindSchema,
+});
+export type SetUserRelationshipRequest = z.infer<
+	typeof SetUserRelationshipRequestSchema
+>;
+
+export const SetUserRelationshipResponseSchema = z.object({
+	ok: z.boolean(),
+	kind: UserRelationshipKindSchema,
+});
+export type SetUserRelationshipResponse = z.infer<
+	typeof SetUserRelationshipResponseSchema
+>;

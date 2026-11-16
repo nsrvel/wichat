@@ -29,8 +29,10 @@ func NewProducer(cfg Config, log logger.Logger) (Producer, error) {
 
 	w := &kafka.Writer{
 		Addr:         kafka.TCP(cfg.Brokers...),
-		Balancer:     &kafka.LeastBytes{},
-		RequiredAcks: kafka.RequireOne,
+		Balancer:     &kafka.Hash{},
+		BatchTimeout: 10 * time.Millisecond,
+		WriteTimeout: 5 * time.Second,
+		RequiredAcks: kafka.RequireAll,
 		Async:        false,
 	}
 	return producer{writer: w, log: log}, nil

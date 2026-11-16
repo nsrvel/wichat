@@ -77,8 +77,7 @@ export function AuthShell({
 							<h1
 								className={cn(
 									authHeadlineClass,
-									hasVisibleHeader &&
-										"mb-2 sm:mb-3 max-h-[880px]:mb-1.5 max-h-[880px]:sm:mb-2",
+									hasVisibleHeader && "mb-2 sm:mb-3 max-h-[880px]:mb-1.5 max-h-[880px]:sm:mb-2",
 								)}
 							>
 								{headline}
@@ -100,7 +99,9 @@ export function AuthShell({
 										{notice}
 									</p>
 								) : null}
-								{cardIntro ? <p className="mb-4 text-sm text-muted-foreground">{cardIntro}</p> : null}
+								{cardIntro ? (
+									<p className="mb-4 text-sm text-muted-foreground">{cardIntro}</p>
+								) : null}
 								<div className="space-y-3 sm:space-y-4 max-h-[880px]:space-y-2 max-h-[880px]:sm:space-y-2.5">
 									{children}
 								</div>

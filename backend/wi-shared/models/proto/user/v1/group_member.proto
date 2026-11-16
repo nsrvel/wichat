@@ -16,6 +16,12 @@ service GroupMemberService {
   rpc KickGroupMember(KickGroupMemberRequest) returns (KickGroupMemberResponse);
   // BanGroupMembers bans members from a group and records reason.
   rpc BanGroupMembers(BanGroupMembersRequest) returns (BanGroupMembersResponse);
+  // TimeoutGroupMember sets or clears a temporary communication timeout on a member.
+  rpc TimeoutGroupMember(TimeoutGroupMemberRequest) returns (TimeoutGroupMemberResponse);
+  // ListGroupBans pages active bans for group moderation settings.
+  rpc ListGroupBans(ListGroupBansRequest) returns (ListGroupBansResponse);
+  // UnbanGroupMember removes an active ban for a user.
+  rpc UnbanGroupMember(UnbanGroupMemberRequest) returns (UnbanGroupMemberResponse);
 }
 
 message JoinGroupRequest {
@@ -57,6 +63,19 @@ message GroupMemberEntry {
   string avatar_url = 8;
   bool is_online = 9;
   string presence_status = 10;
+  string banner_color = 11;
+  string bio = 12;
+  string pronouns = 13;
+  string user_created_at = 14;
+  string status_note_text = 15;
+  string status_note_emoji = 16;
+  string status_note_expires_at = 17;
+  string join_method = 18;
+  string invite_code = 19;
+  string invited_by_user_id = 20;
+  string invited_by_username = 21;
+  string invited_by_display_name = 22;
+  string timeout_until = 23;
 }
 
 message ListGroupMembersRequest {
@@ -76,6 +95,7 @@ message KickGroupMemberRequest {
   string access_token = 1;
   string group_id = 2;
   string user_id = 3;
+  string reason = 4;
 }
 
 message KickGroupMemberResponse {
@@ -88,9 +108,59 @@ message BanGroupMembersRequest {
   repeated string user_ids = 3;
   string reason = 4;
   int32 delete_message_seconds = 5;
+  int64 duration_seconds = 6;
 }
 
 message BanGroupMembersResponse {
   int32 banned_count = 1;
+}
+
+message TimeoutGroupMemberRequest {
+  string access_token = 1;
+  string group_id = 2;
+  string user_id = 3;
+  int32 duration_seconds = 4;
+  string reason = 5;
+}
+
+message TimeoutGroupMemberResponse {
+  string timeout_until = 1;
+}
+
+message GroupBanEntry {
+  string user_id = 1;
+  string username = 2;
+  string display_name = 3;
+  string avatar_url = 4;
+  string reason = 5;
+  string banned_by_user_id = 6;
+  string banned_by_username = 7;
+  string banned_by_display_name = 8;
+  string expires_at = 9;
+  string created_at = 10;
+}
+
+message ListGroupBansRequest {
+  string access_token = 1;
+  string group_id = 2;
+  string search = 3;
+  int32 limit = 4;
+  string cursor = 5;
+}
+
+message ListGroupBansResponse {
+  repeated GroupBanEntry bans = 1;
+  string next_cursor = 2;
+  int32 total = 3;
+}
+
+message UnbanGroupMemberRequest {
+  string access_token = 1;
+  string group_id = 2;
+  string user_id = 3;
+}
+
+message UnbanGroupMemberResponse {
+  bool success = 1;
 }
 

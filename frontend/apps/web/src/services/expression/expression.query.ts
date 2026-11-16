@@ -7,8 +7,7 @@ import {
 
 export const expressionKeys = {
 	all: ["expressions"] as const,
-	categories: (kind: MediaExpressionKind) =>
-		[...expressionKeys.all, kind, "categories"] as const,
+	categories: (kind: MediaExpressionKind) => [...expressionKeys.all, kind, "categories"] as const,
 	media: (kind: MediaExpressionKind, query: string, limit: number) =>
 		[...expressionKeys.all, kind, query, limit] as const,
 };

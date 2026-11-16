@@ -20,6 +20,8 @@ service GroupService {
   rpc UpdateGroupProfile(UpdateGroupProfileRequest) returns (UpdateGroupProfileResponse);
   // UploadGroupBanner stores a banner image and updates group_settings.banner_url.
   rpc UploadGroupBanner(UploadGroupBannerRequest) returns (UploadGroupBannerResponse);
+  // ListGroupActivityLogs returns paginated audit log entries for a group.
+  rpc ListGroupActivityLogs(ListGroupActivityLogsRequest) returns (ListGroupActivityLogsResponse);
 }
 
 // GroupSummary is a public group row.
@@ -110,5 +112,38 @@ message UploadGroupBannerRequest {
 
 message UploadGroupBannerResponse {
   GroupSummary group = 1;
+}
+
+message GroupActivityLog {
+  string id = 1;
+  string group_id = 2;
+  string actor_id = 3;
+  string actor_username = 4;
+  string actor_display_name = 5;
+  string actor_avatar_url = 6;
+  string category = 7;
+  string action = 8;
+  string target_type = 9;
+  string target_id = 10;
+  string target_name = 11;
+  string summary = 12;
+  string changes_json = 13;
+  string metadata_json = 14;
+  string created_at = 15;
+}
+
+message ListGroupActivityLogsRequest {
+  string access_token = 1;
+  string group_id = 2;
+  string actor_id = 3;
+  string category = 4;
+  string action = 5;
+  int32 limit = 6;
+  string cursor = 7;
+}
+
+message ListGroupActivityLogsResponse {
+  repeated GroupActivityLog logs = 1;
+  string next_cursor = 2;
 }
 

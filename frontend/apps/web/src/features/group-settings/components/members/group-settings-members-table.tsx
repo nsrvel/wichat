@@ -2,6 +2,8 @@
 
 import type { GroupMember } from "@wichat/contracts/group/member";
 import type { GroupRole } from "@wichat/contracts/group/role";
+import type { UserRelationshipKind } from "@wichat/contracts/user";
+import { useQuery } from "@tanstack/react-query";
 import {
 	flexRender,
 	getCoreRowModel,
@@ -13,20 +15,34 @@ import {
 import { Check, EllipsisVertical } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { OwnerCrownIcon } from "@/components/ui/owner-crown-icon";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import {
 	createMemberContextMenuState,
 	MemberActionMenu,
 	type MemberActionMenuState,
 } from "@/features/group-settings/components/members/member-action-menu";
+import { MemberBlockDialog } from "@/features/group-settings/components/members/member-block-dialog";
+import { MemberIgnoreDialog } from "@/features/group-settings/components/members/member-ignore-dialog";
+import { MemberProfileDialog } from "@/features/group-settings/components/members/member-profile-dialog";
 import { MemberRolePickerPopover } from "@/features/group-settings/components/members/member-role-picker-popover";
+import { MemberTimeoutDialog } from "@/features/group-settings/components/members/member-timeout-dialog";
 import { GroupSettingsMembersPagination } from "@/features/group-settings/components/members/group-settings-members-pagination";
+import { useTimeoutGroupMemberMutation } from "@/services/group/group.mutation";
+import { useSetUserRelationshipMutation } from "@/services/user/user.mutation";
+import { userRelationshipsQueryOptions } from "@/services/user/user.query";
 import {
 	formatRelativeUtc,
 	formatShortDate,
 } from "@/features/group-settings/lib/group-settings-members-format";
-import { groupSettingsDataTableBodyClass, groupSettingsDataTableHeadRowClass, groupSettingsDataTableRowClass, groupSettingsDataTableShellClass } from "@/features/group-settings/lib/group-settings-chrome";
+import {
+	groupSettingsDataTableBodyClass,
+	groupSettingsDataTableHeadRowClass,
+	groupSettingsDataTableRowClass,
+	groupSettingsDataTableShellClass,
+} from "@/features/group-settings/lib/group-settings-chrome";
 import {
 	dataTableColumnPercentStyle,
 	dataTableEdgeCellClass,
@@ -40,10 +56,7 @@ import {
 } from "@/features/group-settings/lib/member-moderation-policy";
 import { isNativeContextMenuAllowed } from "@/lib/context-menu-chrome";
 import type { GroupPermissionSubject } from "@/lib/group-permissions";
-import {
-	resolveMemberHoistedRole,
-	resolveMemberNameColor,
-} from "@/lib/member-role-display";
+import { resolveMemberHoistedRole, resolveMemberNameColor } from "@/lib/member-role-display";
 import { menuCheckboxBoxClass } from "@/lib/menu-chrome";
 import { userInitials } from "@/lib/user-initials";
 import { cn } from "@/lib/utils";
@@ -154,6 +167,67 @@ export function GroupSettingsMembersTable({
 	const { t, i18n } = useTranslation();
 	const locale = i18n.language;
 	const [menuState, setMenuState] = useState<MemberActionMenuState | null>(null);
+	const [profileMemberId, setProfileMemberId] = useState<string | null>(null);
+	const [ignoreMemberId, setIgnoreMemberId] = useState<string | null>(null);
+	const [blockMemberId, setBlockMemberId] = useState<string | null>(null);
+	const [timeoutMemberId, setTimeoutMemberId] = useState<string | null>(null);
+
+	const { data: relationships = [] } = useQuery(userRelationshipsQueryOptions());
+	const setRelationship = useSetUserRelationshipMutation();
+	const timeoutMutation = useTimeoutGroupMemberMutation(groupId);
+
+	const relationshipByUserId = useMemo(() => {
+		const map = new Map<string, UserRelationshipKind>();
+		for (const rel of relationships) {
+			map.set(rel.target_user_id, rel.kind);
+		}
+		return map;
+	}, [relationships]);
+
+	const handleClearRelationship = useCallback(
+		(member: GroupMember, previousKind: UserRelationshipKind) => {
+			const name = member.display_name || member.username;
+			setRelationship.mutate(
+				{ targetUserId: member.user_id, kind: "none" },
+				{
+					onSuccess: () => {
+						toast.success(
+							t(
+								previousKind === "ignore"
+									? "group_settings.members.ignore_dialog.unignore_success"
+									: "group_settings.members.block_dialog.unblock_success",
+								{ name },
+							),
+						);
+					},
+					onError: () => {
+						toast.error(t("error.unknown"));
+					},
+				},
+			);
+		},
+		[setRelationship, t],
+	);
+
+	const handleClearTimeout = useCallback(
+		(member: GroupMember) => {
+			const name = member.display_name || member.username;
+			timeoutMutation.mutate(
+				{ userId: member.user_id, duration_seconds: 0, reason: "" },
+				{
+					onSuccess: () => {
+						toast.success(
+							t("group_settings.members.timeout_dialog.remove_success_toast", { name }),
+						);
+					},
+					onError: () => {
+						toast.error(t("common.error_generic"));
+					},
+				},
+			);
+		},
+		[t, timeoutMutation],
+	);
 
 	const policyByUserId = useMemo(() => {
 		const map = new Map<string, MemberModerationPolicy>();
@@ -171,6 +245,36 @@ export function GroupSettingsMembersTable({
 		}
 		return map;
 	}, [actorBestRolePosition, actorGroup, actorUserId, allRoles, rows]);
+
+	const profileMember = useMemo(
+		() =>
+			profileMemberId
+				? (rows.find((row) => row.member.user_id === profileMemberId)?.member ?? null)
+				: null,
+		[rows, profileMemberId],
+	);
+	const ignoreMember = useMemo(
+		() =>
+			ignoreMemberId
+				? (rows.find((row) => row.member.user_id === ignoreMemberId)?.member ?? null)
+				: null,
+		[rows, ignoreMemberId],
+	);
+	const blockMember = useMemo(
+		() =>
+			blockMemberId
+				? (rows.find((row) => row.member.user_id === blockMemberId)?.member ?? null)
+				: null,
+		[rows, blockMemberId],
+	);
+	const timeoutMember = useMemo(
+		() =>
+			timeoutMemberId
+				? (rows.find((row) => row.member.user_id === timeoutMemberId)?.member ?? null)
+				: null,
+		[rows, timeoutMemberId],
+	);
+	const profilePolicy = profileMember ? (policyByUserId.get(profileMember.user_id) ?? null) : null;
 
 	const openRowContextMenu = useCallback(
 		(event: MouseEvent<HTMLElement>, member: GroupMember) => {
@@ -306,11 +410,35 @@ export function GroupSettingsMembersTable({
 				...MEMBERS_COLUMN_SIZE.join_method,
 				header: () => t("group_settings.members.col_join_method"),
 				accessorFn: (row) => row.joinMethod,
-				cell: ({ row }) => (
-					<span className="text-muted-foreground">
-						{t(`group_settings.members.join_method.${row.original.joinMethod}`)}
-					</span>
-				),
+				cell: ({ row }) => {
+					const { joinMethod, member } = row.original;
+					const inviter = member.invited_by_username
+						? `@${member.invited_by_username}`
+						: member.invited_by_display_name.trim();
+					const content = (
+						<span className="inline-flex flex-wrap items-center gap-1.5 text-muted-foreground">
+							<span>{t(`group_settings.members.join_method.${joinMethod}`)}</span>
+							{joinMethod === "invite_link" && member.invite_code ? (
+								<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] text-foreground/85">
+									{member.invite_code}
+								</code>
+							) : null}
+						</span>
+					);
+					if (!inviter) {
+						return content;
+					}
+					return (
+						<TooltipProvider delay={200}>
+							<Tooltip>
+								<TooltipTrigger className="cursor-default text-left">{content}</TooltipTrigger>
+								<TooltipContent side="top">
+									{t("group_settings.members.join_method.invited_by", { inviter })}
+								</TooltipContent>
+							</Tooltip>
+						</TooltipProvider>
+					);
+				},
 			},
 			{
 				id: "roles",
@@ -320,9 +448,7 @@ export function GroupSettingsMembersTable({
 				cell: ({ row }) => {
 					const member = row.original.member;
 					const policy = policyByUserId.get(member.user_id);
-					const assignableRoleIds = new Set(
-						(policy?.assignableRoles ?? []).map((role) => role.id),
-					);
+					const assignableRoleIds = new Set((policy?.assignableRoles ?? []).map((role) => role.id));
 					return (
 						<MemberRolePickerPopover
 							groupId={groupId}
@@ -391,7 +517,16 @@ export function GroupSettingsMembersTable({
 		);
 
 		return defs;
-	}, [allRoles, enableBulkSelect, groupId, hideRoles, locale, openRowContextMenu, policyByUserId, t]);
+	}, [
+		allRoles,
+		enableBulkSelect,
+		groupId,
+		hideRoles,
+		locale,
+		openRowContextMenu,
+		policyByUserId,
+		t,
+	]);
 
 	// eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table returns unstable table instance by design.
 	const table = useReactTable({
@@ -461,7 +596,14 @@ export function GroupSettingsMembersTable({
 	const renderDataRow = (row: (typeof renderedRows)[number]) => (
 		<tr
 			key={row.id}
-			className={cn(groupSettingsDataTableRowClass, "group/row")}
+			className={cn(groupSettingsDataTableRowClass, "group/row cursor-pointer")}
+			onClick={(event) => {
+				const target = event.target as HTMLElement | null;
+				if (target?.closest('button, a, input, label, [role="button"], [role="checkbox"]')) {
+					return;
+				}
+				setProfileMemberId(row.original.member.user_id);
+			}}
 			onContextMenu={(event) => openRowContextMenu(event, row.original.member)}
 		>
 			{row.getVisibleCells().map((cell) => (
@@ -568,9 +710,61 @@ export function GroupSettingsMembersTable({
 			<MemberActionMenu
 				groupId={groupId}
 				menuState={menuState}
+				relationshipKind={
+					menuState ? (relationshipByUserId.get(menuState.member.user_id) ?? null) : null
+				}
 				onCloseMenu={() => setMenuState(null)}
+				onOpenProfile={(member) => setProfileMemberId(member.user_id)}
+				onRequestIgnore={(member) => setIgnoreMemberId(member.user_id)}
+				onRequestBlock={(member) => setBlockMemberId(member.user_id)}
+				onClearRelationship={handleClearRelationship}
+				onRequestTimeout={(member) => setTimeoutMemberId(member.user_id)}
+				onClearTimeout={handleClearTimeout}
 				onRequestKick={onRequestKick}
 				onRequestBan={onRequestBan}
+			/>
+
+			<MemberProfileDialog
+				groupId={groupId}
+				member={profileMember}
+				policy={profilePolicy}
+				relationshipKind={
+					profileMember ? (relationshipByUserId.get(profileMember.user_id) ?? null) : null
+				}
+				allRoles={allRoles}
+				hideRoles={hideRoles}
+				onClose={() => setProfileMemberId(null)}
+				onRequestIgnore={(member) => setIgnoreMemberId(member.user_id)}
+				onRequestBlock={(member) => setBlockMemberId(member.user_id)}
+				onClearRelationship={handleClearRelationship}
+				onRequestTimeout={(member) => setTimeoutMemberId(member.user_id)}
+				onClearTimeout={handleClearTimeout}
+				onRequestKick={onRequestKick}
+				onRequestBan={onRequestBan}
+			/>
+
+			<MemberIgnoreDialog
+				member={ignoreMember}
+				onClose={() => setIgnoreMemberId(null)}
+				onSwitchToBlock={(member) => {
+					setIgnoreMemberId(null);
+					setBlockMemberId(member.user_id);
+				}}
+			/>
+
+			<MemberBlockDialog
+				member={blockMember}
+				onClose={() => setBlockMemberId(null)}
+				onSwitchToIgnore={(member) => {
+					setBlockMemberId(null);
+					setIgnoreMemberId(member.user_id);
+				}}
+			/>
+
+			<MemberTimeoutDialog
+				groupId={groupId}
+				member={timeoutMember}
+				onClose={() => setTimeoutMemberId(null)}
 			/>
 		</div>
 	);

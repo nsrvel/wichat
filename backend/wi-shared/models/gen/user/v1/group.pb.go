@@ -893,6 +893,306 @@ func (x *UploadGroupBannerResponse) GetGroup() *GroupSummary {
 	return nil
 }
 
+type GroupActivityLog struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Id               string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	GroupId          string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	ActorId          string                 `protobuf:"bytes,3,opt,name=actor_id,json=actorId,proto3" json:"actor_id,omitempty"`
+	ActorUsername    string                 `protobuf:"bytes,4,opt,name=actor_username,json=actorUsername,proto3" json:"actor_username,omitempty"`
+	ActorDisplayName string                 `protobuf:"bytes,5,opt,name=actor_display_name,json=actorDisplayName,proto3" json:"actor_display_name,omitempty"`
+	ActorAvatarUrl   string                 `protobuf:"bytes,6,opt,name=actor_avatar_url,json=actorAvatarUrl,proto3" json:"actor_avatar_url,omitempty"`
+	Category         string                 `protobuf:"bytes,7,opt,name=category,proto3" json:"category,omitempty"`
+	Action           string                 `protobuf:"bytes,8,opt,name=action,proto3" json:"action,omitempty"`
+	TargetType       string                 `protobuf:"bytes,9,opt,name=target_type,json=targetType,proto3" json:"target_type,omitempty"`
+	TargetId         string                 `protobuf:"bytes,10,opt,name=target_id,json=targetId,proto3" json:"target_id,omitempty"`
+	TargetName       string                 `protobuf:"bytes,11,opt,name=target_name,json=targetName,proto3" json:"target_name,omitempty"`
+	Summary          string                 `protobuf:"bytes,12,opt,name=summary,proto3" json:"summary,omitempty"`
+	ChangesJson      string                 `protobuf:"bytes,13,opt,name=changes_json,json=changesJson,proto3" json:"changes_json,omitempty"`
+	MetadataJson     string                 `protobuf:"bytes,14,opt,name=metadata_json,json=metadataJson,proto3" json:"metadata_json,omitempty"`
+	CreatedAt        string                 `protobuf:"bytes,15,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *GroupActivityLog) Reset() {
+	*x = GroupActivityLog{}
+	mi := &file_user_v1_group_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GroupActivityLog) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GroupActivityLog) ProtoMessage() {}
+
+func (x *GroupActivityLog) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_group_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GroupActivityLog.ProtoReflect.Descriptor instead.
+func (*GroupActivityLog) Descriptor() ([]byte, []int) {
+	return file_user_v1_group_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *GroupActivityLog) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *GroupActivityLog) GetGroupId() string {
+	if x != nil {
+		return x.GroupId
+	}
+	return ""
+}
+
+func (x *GroupActivityLog) GetActorId() string {
+	if x != nil {
+		return x.ActorId
+	}
+	return ""
+}
+
+func (x *GroupActivityLog) GetActorUsername() string {
+	if x != nil {
+		return x.ActorUsername
+	}
+	return ""
+}
+
+func (x *GroupActivityLog) GetActorDisplayName() string {
+	if x != nil {
+		return x.ActorDisplayName
+	}
+	return ""
+}
+
+func (x *GroupActivityLog) GetActorAvatarUrl() string {
+	if x != nil {
+		return x.ActorAvatarUrl
+	}
+	return ""
+}
+
+func (x *GroupActivityLog) GetCategory() string {
+	if x != nil {
+		return x.Category
+	}
+	return ""
+}
+
+func (x *GroupActivityLog) GetAction() string {
+	if x != nil {
+		return x.Action
+	}
+	return ""
+}
+
+func (x *GroupActivityLog) GetTargetType() string {
+	if x != nil {
+		return x.TargetType
+	}
+	return ""
+}
+
+func (x *GroupActivityLog) GetTargetId() string {
+	if x != nil {
+		return x.TargetId
+	}
+	return ""
+}
+
+func (x *GroupActivityLog) GetTargetName() string {
+	if x != nil {
+		return x.TargetName
+	}
+	return ""
+}
+
+func (x *GroupActivityLog) GetSummary() string {
+	if x != nil {
+		return x.Summary
+	}
+	return ""
+}
+
+func (x *GroupActivityLog) GetChangesJson() string {
+	if x != nil {
+		return x.ChangesJson
+	}
+	return ""
+}
+
+func (x *GroupActivityLog) GetMetadataJson() string {
+	if x != nil {
+		return x.MetadataJson
+	}
+	return ""
+}
+
+func (x *GroupActivityLog) GetCreatedAt() string {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return ""
+}
+
+type ListGroupActivityLogsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	GroupId       string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	ActorId       string                 `protobuf:"bytes,3,opt,name=actor_id,json=actorId,proto3" json:"actor_id,omitempty"`
+	Category      string                 `protobuf:"bytes,4,opt,name=category,proto3" json:"category,omitempty"`
+	Action        string                 `protobuf:"bytes,5,opt,name=action,proto3" json:"action,omitempty"`
+	Limit         int32                  `protobuf:"varint,6,opt,name=limit,proto3" json:"limit,omitempty"`
+	Cursor        string                 `protobuf:"bytes,7,opt,name=cursor,proto3" json:"cursor,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListGroupActivityLogsRequest) Reset() {
+	*x = ListGroupActivityLogsRequest{}
+	mi := &file_user_v1_group_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListGroupActivityLogsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListGroupActivityLogsRequest) ProtoMessage() {}
+
+func (x *ListGroupActivityLogsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_group_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListGroupActivityLogsRequest.ProtoReflect.Descriptor instead.
+func (*ListGroupActivityLogsRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_group_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *ListGroupActivityLogsRequest) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
+func (x *ListGroupActivityLogsRequest) GetGroupId() string {
+	if x != nil {
+		return x.GroupId
+	}
+	return ""
+}
+
+func (x *ListGroupActivityLogsRequest) GetActorId() string {
+	if x != nil {
+		return x.ActorId
+	}
+	return ""
+}
+
+func (x *ListGroupActivityLogsRequest) GetCategory() string {
+	if x != nil {
+		return x.Category
+	}
+	return ""
+}
+
+func (x *ListGroupActivityLogsRequest) GetAction() string {
+	if x != nil {
+		return x.Action
+	}
+	return ""
+}
+
+func (x *ListGroupActivityLogsRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+func (x *ListGroupActivityLogsRequest) GetCursor() string {
+	if x != nil {
+		return x.Cursor
+	}
+	return ""
+}
+
+type ListGroupActivityLogsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Logs          []*GroupActivityLog    `protobuf:"bytes,1,rep,name=logs,proto3" json:"logs,omitempty"`
+	NextCursor    string                 `protobuf:"bytes,2,opt,name=next_cursor,json=nextCursor,proto3" json:"next_cursor,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListGroupActivityLogsResponse) Reset() {
+	*x = ListGroupActivityLogsResponse{}
+	mi := &file_user_v1_group_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListGroupActivityLogsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListGroupActivityLogsResponse) ProtoMessage() {}
+
+func (x *ListGroupActivityLogsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_group_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListGroupActivityLogsResponse.ProtoReflect.Descriptor instead.
+func (*ListGroupActivityLogsResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_group_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *ListGroupActivityLogsResponse) GetLogs() []*GroupActivityLog {
+	if x != nil {
+		return x.Logs
+	}
+	return nil
+}
+
+func (x *ListGroupActivityLogsResponse) GetNextCursor() string {
+	if x != nil {
+		return x.NextCursor
+	}
+	return ""
+}
+
 var File_user_v1_group_proto protoreflect.FileDescriptor
 
 const file_user_v1_group_proto_rawDesc = "" +
@@ -959,7 +1259,39 @@ const file_user_v1_group_proto_rawDesc = "" +
 	"\fcontent_type\x18\x03 \x01(\tR\vcontentType\x12\x12\n" +
 	"\x04data\x18\x04 \x01(\fR\x04data\"H\n" +
 	"\x19UploadGroupBannerResponse\x12+\n" +
-	"\x05group\x18\x01 \x01(\v2\x15.user.v1.GroupSummaryR\x05group2\xd6\x04\n" +
+	"\x05group\x18\x01 \x01(\v2\x15.user.v1.GroupSummaryR\x05group\"\xeb\x03\n" +
+	"\x10GroupActivityLog\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
+	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x19\n" +
+	"\bactor_id\x18\x03 \x01(\tR\aactorId\x12%\n" +
+	"\x0eactor_username\x18\x04 \x01(\tR\ractorUsername\x12,\n" +
+	"\x12actor_display_name\x18\x05 \x01(\tR\x10actorDisplayName\x12(\n" +
+	"\x10actor_avatar_url\x18\x06 \x01(\tR\x0eactorAvatarUrl\x12\x1a\n" +
+	"\bcategory\x18\a \x01(\tR\bcategory\x12\x16\n" +
+	"\x06action\x18\b \x01(\tR\x06action\x12\x1f\n" +
+	"\vtarget_type\x18\t \x01(\tR\n" +
+	"targetType\x12\x1b\n" +
+	"\ttarget_id\x18\n" +
+	" \x01(\tR\btargetId\x12\x1f\n" +
+	"\vtarget_name\x18\v \x01(\tR\n" +
+	"targetName\x12\x18\n" +
+	"\asummary\x18\f \x01(\tR\asummary\x12!\n" +
+	"\fchanges_json\x18\r \x01(\tR\vchangesJson\x12#\n" +
+	"\rmetadata_json\x18\x0e \x01(\tR\fmetadataJson\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\x0f \x01(\tR\tcreatedAt\"\xd9\x01\n" +
+	"\x1cListGroupActivityLogsRequest\x12!\n" +
+	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
+	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x19\n" +
+	"\bactor_id\x18\x03 \x01(\tR\aactorId\x12\x1a\n" +
+	"\bcategory\x18\x04 \x01(\tR\bcategory\x12\x16\n" +
+	"\x06action\x18\x05 \x01(\tR\x06action\x12\x14\n" +
+	"\x05limit\x18\x06 \x01(\x05R\x05limit\x12\x16\n" +
+	"\x06cursor\x18\a \x01(\tR\x06cursor\"o\n" +
+	"\x1dListGroupActivityLogsResponse\x12-\n" +
+	"\x04logs\x18\x01 \x03(\v2\x19.user.v1.GroupActivityLogR\x04logs\x12\x1f\n" +
+	"\vnext_cursor\x18\x02 \x01(\tR\n" +
+	"nextCursor2\xbe\x05\n" +
 	"\fGroupService\x12K\n" +
 	"\fListMyGroups\x12\x1c.user.v1.ListMyGroupsRequest\x1a\x1d.user.v1.ListMyGroupsResponse\x12H\n" +
 	"\vCreateGroup\x12\x1b.user.v1.CreateGroupRequest\x1a\x1c.user.v1.CreateGroupResponse\x12T\n" +
@@ -967,7 +1299,8 @@ const file_user_v1_group_proto_rawDesc = "" +
 	"\vDeleteGroup\x12\x1b.user.v1.DeleteGroupRequest\x1a\x1c.user.v1.DeleteGroupResponse\x12T\n" +
 	"\x0fUploadGroupIcon\x12\x1f.user.v1.UploadGroupIconRequest\x1a .user.v1.UploadGroupIconResponse\x12]\n" +
 	"\x12UpdateGroupProfile\x12\".user.v1.UpdateGroupProfileRequest\x1a#.user.v1.UpdateGroupProfileResponse\x12Z\n" +
-	"\x11UploadGroupBanner\x12!.user.v1.UploadGroupBannerRequest\x1a\".user.v1.UploadGroupBannerResponseB\x9c\x01\n" +
+	"\x11UploadGroupBanner\x12!.user.v1.UploadGroupBannerRequest\x1a\".user.v1.UploadGroupBannerResponse\x12f\n" +
+	"\x15ListGroupActivityLogs\x12%.user.v1.ListGroupActivityLogsRequest\x1a&.user.v1.ListGroupActivityLogsResponseB\x9c\x01\n" +
 	"\vcom.user.v1B\n" +
 	"GroupProtoP\x01ZDgithub.com/wichat/wichat/backend/wi-shared/models/gen/user/v1;userv1\xa2\x02\x03UXX\xaa\x02\aUser.V1\xca\x02\aUser\\V1\xe2\x02\x13User\\V1\\GPBMetadata\xea\x02\bUser::V1b\x06proto3"
 
@@ -983,23 +1316,26 @@ func file_user_v1_group_proto_rawDescGZIP() []byte {
 	return file_user_v1_group_proto_rawDescData
 }
 
-var file_user_v1_group_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_user_v1_group_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
 var file_user_v1_group_proto_goTypes = []any{
-	(*GroupSummary)(nil),               // 0: user.v1.GroupSummary
-	(*ListMyGroupsRequest)(nil),        // 1: user.v1.ListMyGroupsRequest
-	(*ListMyGroupsResponse)(nil),       // 2: user.v1.ListMyGroupsResponse
-	(*CreateGroupRequest)(nil),         // 3: user.v1.CreateGroupRequest
-	(*CreateGroupResponse)(nil),        // 4: user.v1.CreateGroupResponse
-	(*ReorderMyGroupsRequest)(nil),     // 5: user.v1.ReorderMyGroupsRequest
-	(*ReorderMyGroupsResponse)(nil),    // 6: user.v1.ReorderMyGroupsResponse
-	(*DeleteGroupRequest)(nil),         // 7: user.v1.DeleteGroupRequest
-	(*DeleteGroupResponse)(nil),        // 8: user.v1.DeleteGroupResponse
-	(*UploadGroupIconRequest)(nil),     // 9: user.v1.UploadGroupIconRequest
-	(*UploadGroupIconResponse)(nil),    // 10: user.v1.UploadGroupIconResponse
-	(*UpdateGroupProfileRequest)(nil),  // 11: user.v1.UpdateGroupProfileRequest
-	(*UpdateGroupProfileResponse)(nil), // 12: user.v1.UpdateGroupProfileResponse
-	(*UploadGroupBannerRequest)(nil),   // 13: user.v1.UploadGroupBannerRequest
-	(*UploadGroupBannerResponse)(nil),  // 14: user.v1.UploadGroupBannerResponse
+	(*GroupSummary)(nil),                  // 0: user.v1.GroupSummary
+	(*ListMyGroupsRequest)(nil),           // 1: user.v1.ListMyGroupsRequest
+	(*ListMyGroupsResponse)(nil),          // 2: user.v1.ListMyGroupsResponse
+	(*CreateGroupRequest)(nil),            // 3: user.v1.CreateGroupRequest
+	(*CreateGroupResponse)(nil),           // 4: user.v1.CreateGroupResponse
+	(*ReorderMyGroupsRequest)(nil),        // 5: user.v1.ReorderMyGroupsRequest
+	(*ReorderMyGroupsResponse)(nil),       // 6: user.v1.ReorderMyGroupsResponse
+	(*DeleteGroupRequest)(nil),            // 7: user.v1.DeleteGroupRequest
+	(*DeleteGroupResponse)(nil),           // 8: user.v1.DeleteGroupResponse
+	(*UploadGroupIconRequest)(nil),        // 9: user.v1.UploadGroupIconRequest
+	(*UploadGroupIconResponse)(nil),       // 10: user.v1.UploadGroupIconResponse
+	(*UpdateGroupProfileRequest)(nil),     // 11: user.v1.UpdateGroupProfileRequest
+	(*UpdateGroupProfileResponse)(nil),    // 12: user.v1.UpdateGroupProfileResponse
+	(*UploadGroupBannerRequest)(nil),      // 13: user.v1.UploadGroupBannerRequest
+	(*UploadGroupBannerResponse)(nil),     // 14: user.v1.UploadGroupBannerResponse
+	(*GroupActivityLog)(nil),              // 15: user.v1.GroupActivityLog
+	(*ListGroupActivityLogsRequest)(nil),  // 16: user.v1.ListGroupActivityLogsRequest
+	(*ListGroupActivityLogsResponse)(nil), // 17: user.v1.ListGroupActivityLogsResponse
 }
 var file_user_v1_group_proto_depIdxs = []int32{
 	0,  // 0: user.v1.ListMyGroupsResponse.groups:type_name -> user.v1.GroupSummary
@@ -1007,25 +1343,28 @@ var file_user_v1_group_proto_depIdxs = []int32{
 	0,  // 2: user.v1.UploadGroupIconResponse.group:type_name -> user.v1.GroupSummary
 	0,  // 3: user.v1.UpdateGroupProfileResponse.group:type_name -> user.v1.GroupSummary
 	0,  // 4: user.v1.UploadGroupBannerResponse.group:type_name -> user.v1.GroupSummary
-	1,  // 5: user.v1.GroupService.ListMyGroups:input_type -> user.v1.ListMyGroupsRequest
-	3,  // 6: user.v1.GroupService.CreateGroup:input_type -> user.v1.CreateGroupRequest
-	5,  // 7: user.v1.GroupService.ReorderMyGroups:input_type -> user.v1.ReorderMyGroupsRequest
-	7,  // 8: user.v1.GroupService.DeleteGroup:input_type -> user.v1.DeleteGroupRequest
-	9,  // 9: user.v1.GroupService.UploadGroupIcon:input_type -> user.v1.UploadGroupIconRequest
-	11, // 10: user.v1.GroupService.UpdateGroupProfile:input_type -> user.v1.UpdateGroupProfileRequest
-	13, // 11: user.v1.GroupService.UploadGroupBanner:input_type -> user.v1.UploadGroupBannerRequest
-	2,  // 12: user.v1.GroupService.ListMyGroups:output_type -> user.v1.ListMyGroupsResponse
-	4,  // 13: user.v1.GroupService.CreateGroup:output_type -> user.v1.CreateGroupResponse
-	6,  // 14: user.v1.GroupService.ReorderMyGroups:output_type -> user.v1.ReorderMyGroupsResponse
-	8,  // 15: user.v1.GroupService.DeleteGroup:output_type -> user.v1.DeleteGroupResponse
-	10, // 16: user.v1.GroupService.UploadGroupIcon:output_type -> user.v1.UploadGroupIconResponse
-	12, // 17: user.v1.GroupService.UpdateGroupProfile:output_type -> user.v1.UpdateGroupProfileResponse
-	14, // 18: user.v1.GroupService.UploadGroupBanner:output_type -> user.v1.UploadGroupBannerResponse
-	12, // [12:19] is the sub-list for method output_type
-	5,  // [5:12] is the sub-list for method input_type
-	5,  // [5:5] is the sub-list for extension type_name
-	5,  // [5:5] is the sub-list for extension extendee
-	0,  // [0:5] is the sub-list for field type_name
+	15, // 5: user.v1.ListGroupActivityLogsResponse.logs:type_name -> user.v1.GroupActivityLog
+	1,  // 6: user.v1.GroupService.ListMyGroups:input_type -> user.v1.ListMyGroupsRequest
+	3,  // 7: user.v1.GroupService.CreateGroup:input_type -> user.v1.CreateGroupRequest
+	5,  // 8: user.v1.GroupService.ReorderMyGroups:input_type -> user.v1.ReorderMyGroupsRequest
+	7,  // 9: user.v1.GroupService.DeleteGroup:input_type -> user.v1.DeleteGroupRequest
+	9,  // 10: user.v1.GroupService.UploadGroupIcon:input_type -> user.v1.UploadGroupIconRequest
+	11, // 11: user.v1.GroupService.UpdateGroupProfile:input_type -> user.v1.UpdateGroupProfileRequest
+	13, // 12: user.v1.GroupService.UploadGroupBanner:input_type -> user.v1.UploadGroupBannerRequest
+	16, // 13: user.v1.GroupService.ListGroupActivityLogs:input_type -> user.v1.ListGroupActivityLogsRequest
+	2,  // 14: user.v1.GroupService.ListMyGroups:output_type -> user.v1.ListMyGroupsResponse
+	4,  // 15: user.v1.GroupService.CreateGroup:output_type -> user.v1.CreateGroupResponse
+	6,  // 16: user.v1.GroupService.ReorderMyGroups:output_type -> user.v1.ReorderMyGroupsResponse
+	8,  // 17: user.v1.GroupService.DeleteGroup:output_type -> user.v1.DeleteGroupResponse
+	10, // 18: user.v1.GroupService.UploadGroupIcon:output_type -> user.v1.UploadGroupIconResponse
+	12, // 19: user.v1.GroupService.UpdateGroupProfile:output_type -> user.v1.UpdateGroupProfileResponse
+	14, // 20: user.v1.GroupService.UploadGroupBanner:output_type -> user.v1.UploadGroupBannerResponse
+	17, // 21: user.v1.GroupService.ListGroupActivityLogs:output_type -> user.v1.ListGroupActivityLogsResponse
+	14, // [14:22] is the sub-list for method output_type
+	6,  // [6:14] is the sub-list for method input_type
+	6,  // [6:6] is the sub-list for extension type_name
+	6,  // [6:6] is the sub-list for extension extendee
+	0,  // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_user_v1_group_proto_init() }
@@ -1039,7 +1378,7 @@ func file_user_v1_group_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_user_v1_group_proto_rawDesc), len(file_user_v1_group_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   15,
+			NumMessages:   18,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

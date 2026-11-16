@@ -19,11 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	GroupMemberService_JoinGroup_FullMethodName        = "/user.v1.GroupMemberService/JoinGroup"
-	GroupMemberService_LeaveGroup_FullMethodName       = "/user.v1.GroupMemberService/LeaveGroup"
-	GroupMemberService_ListGroupMembers_FullMethodName = "/user.v1.GroupMemberService/ListGroupMembers"
-	GroupMemberService_KickGroupMember_FullMethodName  = "/user.v1.GroupMemberService/KickGroupMember"
-	GroupMemberService_BanGroupMembers_FullMethodName  = "/user.v1.GroupMemberService/BanGroupMembers"
+	GroupMemberService_JoinGroup_FullMethodName          = "/user.v1.GroupMemberService/JoinGroup"
+	GroupMemberService_LeaveGroup_FullMethodName         = "/user.v1.GroupMemberService/LeaveGroup"
+	GroupMemberService_ListGroupMembers_FullMethodName   = "/user.v1.GroupMemberService/ListGroupMembers"
+	GroupMemberService_KickGroupMember_FullMethodName    = "/user.v1.GroupMemberService/KickGroupMember"
+	GroupMemberService_BanGroupMembers_FullMethodName    = "/user.v1.GroupMemberService/BanGroupMembers"
+	GroupMemberService_TimeoutGroupMember_FullMethodName = "/user.v1.GroupMemberService/TimeoutGroupMember"
+	GroupMemberService_ListGroupBans_FullMethodName      = "/user.v1.GroupMemberService/ListGroupBans"
+	GroupMemberService_UnbanGroupMember_FullMethodName   = "/user.v1.GroupMemberService/UnbanGroupMember"
 )
 
 // GroupMemberServiceClient is the client API for GroupMemberService service.
@@ -42,6 +45,12 @@ type GroupMemberServiceClient interface {
 	KickGroupMember(ctx context.Context, in *KickGroupMemberRequest, opts ...grpc.CallOption) (*KickGroupMemberResponse, error)
 	// BanGroupMembers bans members from a group and records reason.
 	BanGroupMembers(ctx context.Context, in *BanGroupMembersRequest, opts ...grpc.CallOption) (*BanGroupMembersResponse, error)
+	// TimeoutGroupMember sets or clears a temporary communication timeout on a member.
+	TimeoutGroupMember(ctx context.Context, in *TimeoutGroupMemberRequest, opts ...grpc.CallOption) (*TimeoutGroupMemberResponse, error)
+	// ListGroupBans pages active bans for group moderation settings.
+	ListGroupBans(ctx context.Context, in *ListGroupBansRequest, opts ...grpc.CallOption) (*ListGroupBansResponse, error)
+	// UnbanGroupMember removes an active ban for a user.
+	UnbanGroupMember(ctx context.Context, in *UnbanGroupMemberRequest, opts ...grpc.CallOption) (*UnbanGroupMemberResponse, error)
 }
 
 type groupMemberServiceClient struct {
@@ -102,6 +111,36 @@ func (c *groupMemberServiceClient) BanGroupMembers(ctx context.Context, in *BanG
 	return out, nil
 }
 
+func (c *groupMemberServiceClient) TimeoutGroupMember(ctx context.Context, in *TimeoutGroupMemberRequest, opts ...grpc.CallOption) (*TimeoutGroupMemberResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TimeoutGroupMemberResponse)
+	err := c.cc.Invoke(ctx, GroupMemberService_TimeoutGroupMember_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *groupMemberServiceClient) ListGroupBans(ctx context.Context, in *ListGroupBansRequest, opts ...grpc.CallOption) (*ListGroupBansResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListGroupBansResponse)
+	err := c.cc.Invoke(ctx, GroupMemberService_ListGroupBans_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *groupMemberServiceClient) UnbanGroupMember(ctx context.Context, in *UnbanGroupMemberRequest, opts ...grpc.CallOption) (*UnbanGroupMemberResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UnbanGroupMemberResponse)
+	err := c.cc.Invoke(ctx, GroupMemberService_UnbanGroupMember_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // GroupMemberServiceServer is the server API for GroupMemberService service.
 // All implementations must embed UnimplementedGroupMemberServiceServer
 // for forward compatibility.
@@ -118,6 +157,12 @@ type GroupMemberServiceServer interface {
 	KickGroupMember(context.Context, *KickGroupMemberRequest) (*KickGroupMemberResponse, error)
 	// BanGroupMembers bans members from a group and records reason.
 	BanGroupMembers(context.Context, *BanGroupMembersRequest) (*BanGroupMembersResponse, error)
+	// TimeoutGroupMember sets or clears a temporary communication timeout on a member.
+	TimeoutGroupMember(context.Context, *TimeoutGroupMemberRequest) (*TimeoutGroupMemberResponse, error)
+	// ListGroupBans pages active bans for group moderation settings.
+	ListGroupBans(context.Context, *ListGroupBansRequest) (*ListGroupBansResponse, error)
+	// UnbanGroupMember removes an active ban for a user.
+	UnbanGroupMember(context.Context, *UnbanGroupMemberRequest) (*UnbanGroupMemberResponse, error)
 	mustEmbedUnimplementedGroupMemberServiceServer()
 }
 
@@ -142,6 +187,15 @@ func (UnimplementedGroupMemberServiceServer) KickGroupMember(context.Context, *K
 }
 func (UnimplementedGroupMemberServiceServer) BanGroupMembers(context.Context, *BanGroupMembersRequest) (*BanGroupMembersResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method BanGroupMembers not implemented")
+}
+func (UnimplementedGroupMemberServiceServer) TimeoutGroupMember(context.Context, *TimeoutGroupMemberRequest) (*TimeoutGroupMemberResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method TimeoutGroupMember not implemented")
+}
+func (UnimplementedGroupMemberServiceServer) ListGroupBans(context.Context, *ListGroupBansRequest) (*ListGroupBansResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListGroupBans not implemented")
+}
+func (UnimplementedGroupMemberServiceServer) UnbanGroupMember(context.Context, *UnbanGroupMemberRequest) (*UnbanGroupMemberResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UnbanGroupMember not implemented")
 }
 func (UnimplementedGroupMemberServiceServer) mustEmbedUnimplementedGroupMemberServiceServer() {}
 func (UnimplementedGroupMemberServiceServer) testEmbeddedByValue()                            {}
@@ -254,6 +308,60 @@ func _GroupMemberService_BanGroupMembers_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _GroupMemberService_TimeoutGroupMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TimeoutGroupMemberRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GroupMemberServiceServer).TimeoutGroupMember(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GroupMemberService_TimeoutGroupMember_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GroupMemberServiceServer).TimeoutGroupMember(ctx, req.(*TimeoutGroupMemberRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _GroupMemberService_ListGroupBans_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListGroupBansRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GroupMemberServiceServer).ListGroupBans(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GroupMemberService_ListGroupBans_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GroupMemberServiceServer).ListGroupBans(ctx, req.(*ListGroupBansRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _GroupMemberService_UnbanGroupMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UnbanGroupMemberRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GroupMemberServiceServer).UnbanGroupMember(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GroupMemberService_UnbanGroupMember_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GroupMemberServiceServer).UnbanGroupMember(ctx, req.(*UnbanGroupMemberRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // GroupMemberService_ServiceDesc is the grpc.ServiceDesc for GroupMemberService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -280,6 +388,18 @@ var GroupMemberService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "BanGroupMembers",
 			Handler:    _GroupMemberService_BanGroupMembers_Handler,
+		},
+		{
+			MethodName: "TimeoutGroupMember",
+			Handler:    _GroupMemberService_TimeoutGroupMember_Handler,
+		},
+		{
+			MethodName: "ListGroupBans",
+			Handler:    _GroupMemberService_ListGroupBans_Handler,
+		},
+		{
+			MethodName: "UnbanGroupMember",
+			Handler:    _GroupMemberService_UnbanGroupMember_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

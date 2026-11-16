@@ -20,6 +20,10 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	ChannelService_ListGroupChannels_FullMethodName        = "/user.v1.ChannelService/ListGroupChannels"
+	ChannelService_CreateChannelCategory_FullMethodName    = "/user.v1.ChannelService/CreateChannelCategory"
+	ChannelService_CreateGroupChannel_FullMethodName       = "/user.v1.ChannelService/CreateGroupChannel"
+	ChannelService_ReorderChannelCategories_FullMethodName = "/user.v1.ChannelService/ReorderChannelCategories"
+	ChannelService_ReorderGroupChannels_FullMethodName     = "/user.v1.ChannelService/ReorderGroupChannels"
 	ChannelService_AssertGroupChannelAccess_FullMethodName = "/user.v1.ChannelService/AssertGroupChannelAccess"
 )
 
@@ -29,8 +33,16 @@ const (
 //
 // ChannelService handles channel discovery and authorization within a workspace.
 type ChannelServiceClient interface {
-	// ListGroupChannels returns channels in a group the caller belongs to.
+	// ListGroupChannels returns channels and categories in a group the caller belongs to.
 	ListGroupChannels(ctx context.Context, in *ListGroupChannelsRequest, opts ...grpc.CallOption) (*ListGroupChannelsResponse, error)
+	// CreateChannelCategory creates a new channel category in a group.
+	CreateChannelCategory(ctx context.Context, in *CreateChannelCategoryRequest, opts ...grpc.CallOption) (*CreateChannelCategoryResponse, error)
+	// CreateGroupChannel creates a new channel in a group.
+	CreateGroupChannel(ctx context.Context, in *CreateGroupChannelRequest, opts ...grpc.CallOption) (*CreateGroupChannelResponse, error)
+	// ReorderChannelCategories updates category display positions in a group.
+	ReorderChannelCategories(ctx context.Context, in *ReorderChannelCategoriesRequest, opts ...grpc.CallOption) (*ReorderChannelCategoriesResponse, error)
+	// ReorderGroupChannels updates channel display positions in a group.
+	ReorderGroupChannels(ctx context.Context, in *ReorderGroupChannelsRequest, opts ...grpc.CallOption) (*ReorderGroupChannelsResponse, error)
 	// AssertGroupChannelAccess validates membership and resolves internal channel and user ids.
 	AssertGroupChannelAccess(ctx context.Context, in *AssertGroupChannelAccessRequest, opts ...grpc.CallOption) (*AssertGroupChannelAccessResponse, error)
 }
@@ -53,6 +65,46 @@ func (c *channelServiceClient) ListGroupChannels(ctx context.Context, in *ListGr
 	return out, nil
 }
 
+func (c *channelServiceClient) CreateChannelCategory(ctx context.Context, in *CreateChannelCategoryRequest, opts ...grpc.CallOption) (*CreateChannelCategoryResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateChannelCategoryResponse)
+	err := c.cc.Invoke(ctx, ChannelService_CreateChannelCategory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *channelServiceClient) CreateGroupChannel(ctx context.Context, in *CreateGroupChannelRequest, opts ...grpc.CallOption) (*CreateGroupChannelResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateGroupChannelResponse)
+	err := c.cc.Invoke(ctx, ChannelService_CreateGroupChannel_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *channelServiceClient) ReorderChannelCategories(ctx context.Context, in *ReorderChannelCategoriesRequest, opts ...grpc.CallOption) (*ReorderChannelCategoriesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ReorderChannelCategoriesResponse)
+	err := c.cc.Invoke(ctx, ChannelService_ReorderChannelCategories_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *channelServiceClient) ReorderGroupChannels(ctx context.Context, in *ReorderGroupChannelsRequest, opts ...grpc.CallOption) (*ReorderGroupChannelsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ReorderGroupChannelsResponse)
+	err := c.cc.Invoke(ctx, ChannelService_ReorderGroupChannels_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *channelServiceClient) AssertGroupChannelAccess(ctx context.Context, in *AssertGroupChannelAccessRequest, opts ...grpc.CallOption) (*AssertGroupChannelAccessResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(AssertGroupChannelAccessResponse)
@@ -69,8 +121,16 @@ func (c *channelServiceClient) AssertGroupChannelAccess(ctx context.Context, in 
 //
 // ChannelService handles channel discovery and authorization within a workspace.
 type ChannelServiceServer interface {
-	// ListGroupChannels returns channels in a group the caller belongs to.
+	// ListGroupChannels returns channels and categories in a group the caller belongs to.
 	ListGroupChannels(context.Context, *ListGroupChannelsRequest) (*ListGroupChannelsResponse, error)
+	// CreateChannelCategory creates a new channel category in a group.
+	CreateChannelCategory(context.Context, *CreateChannelCategoryRequest) (*CreateChannelCategoryResponse, error)
+	// CreateGroupChannel creates a new channel in a group.
+	CreateGroupChannel(context.Context, *CreateGroupChannelRequest) (*CreateGroupChannelResponse, error)
+	// ReorderChannelCategories updates category display positions in a group.
+	ReorderChannelCategories(context.Context, *ReorderChannelCategoriesRequest) (*ReorderChannelCategoriesResponse, error)
+	// ReorderGroupChannels updates channel display positions in a group.
+	ReorderGroupChannels(context.Context, *ReorderGroupChannelsRequest) (*ReorderGroupChannelsResponse, error)
 	// AssertGroupChannelAccess validates membership and resolves internal channel and user ids.
 	AssertGroupChannelAccess(context.Context, *AssertGroupChannelAccessRequest) (*AssertGroupChannelAccessResponse, error)
 	mustEmbedUnimplementedChannelServiceServer()
@@ -85,6 +145,18 @@ type UnimplementedChannelServiceServer struct{}
 
 func (UnimplementedChannelServiceServer) ListGroupChannels(context.Context, *ListGroupChannelsRequest) (*ListGroupChannelsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListGroupChannels not implemented")
+}
+func (UnimplementedChannelServiceServer) CreateChannelCategory(context.Context, *CreateChannelCategoryRequest) (*CreateChannelCategoryResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateChannelCategory not implemented")
+}
+func (UnimplementedChannelServiceServer) CreateGroupChannel(context.Context, *CreateGroupChannelRequest) (*CreateGroupChannelResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateGroupChannel not implemented")
+}
+func (UnimplementedChannelServiceServer) ReorderChannelCategories(context.Context, *ReorderChannelCategoriesRequest) (*ReorderChannelCategoriesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ReorderChannelCategories not implemented")
+}
+func (UnimplementedChannelServiceServer) ReorderGroupChannels(context.Context, *ReorderGroupChannelsRequest) (*ReorderGroupChannelsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ReorderGroupChannels not implemented")
 }
 func (UnimplementedChannelServiceServer) AssertGroupChannelAccess(context.Context, *AssertGroupChannelAccessRequest) (*AssertGroupChannelAccessResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method AssertGroupChannelAccess not implemented")
@@ -128,6 +200,78 @@ func _ChannelService_ListGroupChannels_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ChannelService_CreateChannelCategory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateChannelCategoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChannelServiceServer).CreateChannelCategory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ChannelService_CreateChannelCategory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChannelServiceServer).CreateChannelCategory(ctx, req.(*CreateChannelCategoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ChannelService_CreateGroupChannel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateGroupChannelRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChannelServiceServer).CreateGroupChannel(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ChannelService_CreateGroupChannel_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChannelServiceServer).CreateGroupChannel(ctx, req.(*CreateGroupChannelRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ChannelService_ReorderChannelCategories_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReorderChannelCategoriesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChannelServiceServer).ReorderChannelCategories(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ChannelService_ReorderChannelCategories_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChannelServiceServer).ReorderChannelCategories(ctx, req.(*ReorderChannelCategoriesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ChannelService_ReorderGroupChannels_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReorderGroupChannelsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChannelServiceServer).ReorderGroupChannels(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ChannelService_ReorderGroupChannels_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChannelServiceServer).ReorderGroupChannels(ctx, req.(*ReorderGroupChannelsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ChannelService_AssertGroupChannelAccess_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(AssertGroupChannelAccessRequest)
 	if err := dec(in); err != nil {
@@ -156,6 +300,22 @@ var ChannelService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListGroupChannels",
 			Handler:    _ChannelService_ListGroupChannels_Handler,
+		},
+		{
+			MethodName: "CreateChannelCategory",
+			Handler:    _ChannelService_CreateChannelCategory_Handler,
+		},
+		{
+			MethodName: "CreateGroupChannel",
+			Handler:    _ChannelService_CreateGroupChannel_Handler,
+		},
+		{
+			MethodName: "ReorderChannelCategories",
+			Handler:    _ChannelService_ReorderChannelCategories_Handler,
+		},
+		{
+			MethodName: "ReorderGroupChannels",
+			Handler:    _ChannelService_ReorderGroupChannels_Handler,
 		},
 		{
 			MethodName: "AssertGroupChannelAccess",

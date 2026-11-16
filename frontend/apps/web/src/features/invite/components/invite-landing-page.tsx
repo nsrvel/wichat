@@ -140,7 +140,9 @@ export function InviteLandingPage({ inviteToken }: InviteLandingPageProps) {
 		<AuthShell
 			headline={headline}
 			lead={lead}
-			cardBanner={showCardBanner && previewData ? <InviteCardBanner preview={previewData} /> : undefined}
+			cardBanner={
+				showCardBanner && previewData ? <InviteCardBanner preview={previewData} /> : undefined
+			}
 		>
 			{preview.isError && !previewData ? (
 				<p className="text-center text-sm text-destructive">{translateError(t, preview.error)}</p>

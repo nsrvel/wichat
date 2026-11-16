@@ -276,9 +276,7 @@ export function AuthMfaStep({ challenge, onSuccess, onBack }: AuthMfaStepProps) 
 							render={({ field }) => (
 								<FormItem>
 									<FormLabel>
-										<FieldLabelContent required>
-											{t("login.mfa.recovery_label")}
-										</FieldLabelContent>
+										<FieldLabelContent required>{t("login.mfa.recovery_label")}</FieldLabelContent>
 									</FormLabel>
 									<FormControl>
 										<Input

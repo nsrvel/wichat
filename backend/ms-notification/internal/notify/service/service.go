@@ -50,6 +50,18 @@ func (s service) Send(ctx context.Context, in models.SendInput) error {
 	}
 }
 
+func (s service) dispatchEmail(ctx context.Context, to, template, subject, html string, devWarnArgs ...any) error {
+	if err := s.mail.SendHTML(ctx, to, subject, html); err != nil {
+		s.log.Error("smtp send failed", "err", err, "template", template, "to", to)
+		if s.devRelaxed {
+			s.log.Warn("dev: email not delivered; relaxed mode continues", devWarnArgs...)
+			return nil
+		}
+		return exception.Unavailable(exception.MsgUnavailable, nil)
+	}
+	return nil
+}
+
 func (s service) sendPasswordReset(ctx context.Context, to, locale string, vars map[string]string) error {
 	code := vars["code"]
 	displayName := vars["display_name"]
@@ -63,15 +75,7 @@ func (s service) sendPasswordReset(ctx context.Context, to, locale string, vars 
 		return exception.Internal(err)
 	}
 
-	if err := s.mail.SendHTML(ctx, to, subject, html); err != nil {
-		s.log.Error("smtp send failed", "err", err, "template", templates.TemplatePasswordReset, "to", to)
-		if s.devRelaxed {
-			s.log.Warn("dev: email not delivered; auth flow continues", "to", to)
-		}
-		return nil
-	}
-
-	return nil
+	return s.dispatchEmail(ctx, to, templates.TemplatePasswordReset, subject, html, "to", to)
 }
 
 func (s service) sendEmailCode(ctx context.Context, to, locale string, vars map[string]string) error {
@@ -87,15 +91,7 @@ func (s service) sendEmailCode(ctx context.Context, to, locale string, vars map[
 		return exception.Internal(err)
 	}
 
-	if err := s.mail.SendHTML(ctx, to, subject, html); err != nil {
-		s.log.Error("smtp send failed", "err", err, "template", templates.TemplateEmailCode, "to", to)
-		if s.devRelaxed {
-			s.log.Warn("dev: email not delivered; use OTP from log", "to", to, "code", code)
-		}
-		return nil
-	}
-
-	return nil
+	return s.dispatchEmail(ctx, to, templates.TemplateEmailCode, subject, html, "to", to, "code", code)
 }
 
 func (s service) sendGroupInvite(ctx context.Context, to, locale string, vars map[string]string) error {
@@ -111,13 +107,5 @@ func (s service) sendGroupInvite(ctx context.Context, to, locale string, vars ma
 		return exception.Internal(err)
 	}
 
-	if err := s.mail.SendHTML(ctx, to, subject, html); err != nil {
-		s.log.Error("smtp send failed", "err", err, "template", templates.TemplateGroupInvite, "to", to)
-		if s.devRelaxed {
-			s.log.Warn("dev: invite email not delivered", "to", to, "url", inviteURL)
-		}
-		return nil
-	}
-
-	return nil
+	return s.dispatchEmail(ctx, to, templates.TemplateGroupInvite, subject, html, "to", to, "url", inviteURL)
 }

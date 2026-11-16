@@ -30,12 +30,18 @@ function DeviceIcon({ platform }: { platform: string }) {
 	);
 }
 
-function splitDeviceLabel(device: DeviceSession, fallback: string): { primary: string; secondary?: string } {
+function splitDeviceLabel(
+	device: DeviceSession,
+	fallback: string,
+): { primary: string; secondary?: string } {
 	const raw = device.device_label.trim();
 	if (!raw) {
 		return { primary: device.platform ? device.platform.toUpperCase() : fallback };
 	}
-	const parts = raw.split("·").map((s) => s.trim()).filter(Boolean);
+	const parts = raw
+		.split("·")
+		.map((s) => s.trim())
+		.filter(Boolean);
 	if (parts.length >= 2) {
 		return { primary: parts[0], secondary: parts.slice(1).join(" · ") };
 	}
@@ -191,14 +197,12 @@ export function UserSettingsDevicesSection({
 				) : otherDevices.length > 0 ? (
 					<div className="space-y-3">
 						{otherDevices.map((device) => {
-							const title = splitDeviceLabel(
-								device,
-								t("user_settings.devices.unknown_device"),
-							);
+							const title = splitDeviceLabel(device, t("user_settings.devices.unknown_device"));
 							const relative = formatRelativeTime(device.last_used_at, locale);
-							const location =
-								device.location_label || t("user_settings.devices.unknown_location");
-							const label = title.secondary ? `${title.primary} • ${title.secondary}` : title.primary;
+							const location = device.location_label || t("user_settings.devices.unknown_location");
+							const label = title.secondary
+								? `${title.primary} • ${title.secondary}`
+								: title.primary;
 
 							return (
 								<div key={device.id} className="flex items-center gap-4 py-1">

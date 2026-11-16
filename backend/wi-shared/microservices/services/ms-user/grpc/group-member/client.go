@@ -16,6 +16,9 @@ type Client interface {
 	ListGroupMembers(ctx context.Context, in *userv1.ListGroupMembersRequest) (*userv1.ListGroupMembersResponse, error)
 	KickGroupMember(ctx context.Context, in *userv1.KickGroupMemberRequest) (*userv1.KickGroupMemberResponse, error)
 	BanGroupMembers(ctx context.Context, in *userv1.BanGroupMembersRequest) (*userv1.BanGroupMembersResponse, error)
+	ListGroupBans(ctx context.Context, in *userv1.ListGroupBansRequest) (*userv1.ListGroupBansResponse, error)
+	UnbanGroupMember(ctx context.Context, in *userv1.UnbanGroupMemberRequest) (*userv1.UnbanGroupMemberResponse, error)
+	TimeoutGroupMember(ctx context.Context, in *userv1.TimeoutGroupMemberRequest) (*userv1.TimeoutGroupMemberResponse, error)
 }
 
 type client struct {
@@ -68,5 +71,23 @@ func (c *client) KickGroupMember(ctx context.Context, in *userv1.KickGroupMember
 func (c *client) BanGroupMembers(ctx context.Context, in *userv1.BanGroupMembersRequest) (*userv1.BanGroupMembersResponse, error) {
 	return utils.CallUnaryResult(ctx, c.none, c.log, "groupmember.GroupMemberService/BanGroupMembers", func(callCtx context.Context) (*userv1.BanGroupMembersResponse, error) {
 		return c.stub.BanGroupMembers(callCtx, in)
+	})
+}
+
+func (c *client) TimeoutGroupMember(ctx context.Context, in *userv1.TimeoutGroupMemberRequest) (*userv1.TimeoutGroupMemberResponse, error) {
+	return utils.CallUnaryResult(ctx, c.none, c.log, "groupmember.GroupMemberService/TimeoutGroupMember", func(callCtx context.Context) (*userv1.TimeoutGroupMemberResponse, error) {
+		return c.stub.TimeoutGroupMember(callCtx, in)
+	})
+}
+
+func (c *client) ListGroupBans(ctx context.Context, in *userv1.ListGroupBansRequest) (*userv1.ListGroupBansResponse, error) {
+	return utils.CallUnaryResult(ctx, c.read, c.log, "groupmember.GroupMemberService/ListGroupBans", func(callCtx context.Context) (*userv1.ListGroupBansResponse, error) {
+		return c.stub.ListGroupBans(callCtx, in)
+	})
+}
+
+func (c *client) UnbanGroupMember(ctx context.Context, in *userv1.UnbanGroupMemberRequest) (*userv1.UnbanGroupMemberResponse, error) {
+	return utils.CallUnaryResult(ctx, c.none, c.log, "groupmember.GroupMemberService/UnbanGroupMember", func(callCtx context.Context) (*userv1.UnbanGroupMemberResponse, error) {
+		return c.stub.UnbanGroupMember(callCtx, in)
 	})
 }

@@ -16,7 +16,7 @@ import (
 // PgRepository stores group_invites rows.
 type PgRepository interface {
 	InsertInvite(ctx context.Context, row models.GroupInviteRow) error
-	FindOpenShareLink(ctx context.Context, groupID string, channelID *string, now time.Time) (models.GroupInviteRow, error)
+	FindOpenShareLink(ctx context.Context, groupID, inviterUserID string, channelID *string, now time.Time) (models.GroupInviteRow, error)
 	FindByToken(ctx context.Context, token string) (models.GroupInviteRow, error)
 	MarkRedeemed(ctx context.Context, id, userID string, now time.Time) error
 }
@@ -40,10 +40,11 @@ func (r pgRepository) InsertInvite(ctx context.Context, row models.GroupInviteRo
 	return err
 }
 
-// FindOpenShareLink returns a non-expired reusable share link for a group (and optional channel).
-func (r pgRepository) FindOpenShareLink(ctx context.Context, groupID string, channelID *string, now time.Time) (models.GroupInviteRow, error) {
+// FindOpenShareLink returns a non-expired reusable share link for a group, inviter, and optional channel.
+func (r pgRepository) FindOpenShareLink(ctx context.Context, groupID, inviterUserID string, channelID *string, now time.Time) (models.GroupInviteRow, error) {
 	q := r.db.NewSelect().Model((*models.GroupInviteRow)(nil)).
 		Where("group_id = ?", groupID).
+		Where("invited_by_user_id = ?", inviterUserID).
 		Where("kind = ?", constants.GroupInviteKindShareLink).
 		Where("redeemed_at IS NULL").
 		Where("expires_at > ?", now).

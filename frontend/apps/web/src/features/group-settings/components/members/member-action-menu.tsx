@@ -3,9 +3,10 @@
 import { ApiError } from "@wichat/api-client/api-error";
 import type { GroupMember } from "@wichat/contracts/group/member";
 import type { GroupRole } from "@wichat/contracts/group/role";
+import type { UserRelationshipKind } from "@wichat/contracts/user";
 import { Menu } from "@base-ui/react/menu";
 import { useQueryClient } from "@tanstack/react-query";
-import { Check, ChevronRight } from "lucide-react";
+import { Check, ChevronRight, Fingerprint } from "lucide-react";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -56,7 +57,14 @@ export function createMemberContextMenuState(
 type MemberActionMenuProps = {
 	groupId: string;
 	menuState: MemberActionMenuState | null;
+	relationshipKind?: UserRelationshipKind | null;
 	onCloseMenu: () => void;
+	onOpenProfile: (member: GroupMember) => void;
+	onRequestIgnore: (member: GroupMember) => void;
+	onRequestBlock: (member: GroupMember) => void;
+	onClearRelationship: (member: GroupMember, previousKind: UserRelationshipKind) => void;
+	onRequestTimeout: (member: GroupMember) => void;
+	onClearTimeout: (member: GroupMember) => void;
 	onRequestKick: (member: GroupMember) => void;
 	onRequestBan: (member: GroupMember) => void;
 };
@@ -68,7 +76,14 @@ type MemberActionMenuProps = {
 export function MemberActionMenu({
 	groupId,
 	menuState,
+	relationshipKind = null,
 	onCloseMenu,
+	onOpenProfile,
+	onRequestIgnore,
+	onRequestBlock,
+	onClearRelationship,
+	onRequestTimeout,
+	onClearTimeout,
 	onRequestKick,
 	onRequestBan,
 }: MemberActionMenuProps) {
@@ -76,6 +91,7 @@ export function MemberActionMenu({
 	const queryClient = useQueryClient();
 	const [pendingRoleId, setPendingRoleId] = useState<string | null>(null);
 	const [rolesSubmenuOpen, setRolesSubmenuOpen] = useState(false);
+	const [nowMs] = useState(() => Date.now());
 	const [submenuSide, setSubmenuSide] = useState<"right" | "left">("right");
 	const rolesTriggerWrapRef = useRef<HTMLDivElement>(null);
 
@@ -97,7 +113,7 @@ export function MemberActionMenu({
 
 	const memberName = member?.display_name.trim() || t("invite.member_name_fallback");
 	const hasRolesSubmenu = Boolean(policy?.canManageRoles && policy.assignableRoles.length > 0);
-	const hasModerationSection = Boolean(policy?.canKick || policy?.canBan);
+	const hasModerationSection = Boolean(policy?.canTimeout || policy?.canKick || policy?.canBan);
 
 	const copyText = async (value: string, toastMessage: string) => {
 		onCloseMenu();
@@ -167,25 +183,70 @@ export function MemberActionMenu({
 					<Menu.Popup className={menuPopupClass}>
 						{menuState && member && policy ? (
 							<>
-								{member.username ? (
+								<Menu.Item
+									className={menuItemClass}
+									onClick={() => {
+										onCloseMenu();
+										onOpenProfile(member);
+									}}
+								>
+									{t("group_settings.members.context_menu.profile")}
+								</Menu.Item>
+								{!policy.isSelf ? (
 									<Menu.Item
 										className={menuItemClass}
-										onClick={() =>
-											void copyText(
-												`@${member.username}`,
-												t("group_settings.members.context_menu.copied_username", {
-													username: member.username,
-												}),
-											)
-										}
+										onClick={() => {
+											onCloseMenu();
+											toast.info(t("group_settings.members.context_menu.message_coming_soon"));
+										}}
 									>
-										{t("group_settings.members.context_menu.copy_username")}
+										{t("group_settings.members.context_menu.message")}
 									</Menu.Item>
+								) : null}
+
+								{!policy.isSelf ? (
+									<>
+										<Menu.Separator className={menuSeparatorClass} />
+										<Menu.Item
+											className={menuItemClass}
+											onClick={() => {
+												onCloseMenu();
+												if (relationshipKind === "ignore") {
+													onClearRelationship(member, "ignore");
+												} else {
+													onRequestIgnore(member);
+												}
+											}}
+										>
+											{t(
+												relationshipKind === "ignore"
+													? "group_settings.members.context_menu.unignore"
+													: "group_settings.members.context_menu.ignore",
+											)}
+										</Menu.Item>
+										<Menu.Item
+											className={menuDestructiveItemClass}
+											onClick={() => {
+												onCloseMenu();
+												if (relationshipKind === "block") {
+													onClearRelationship(member, "block");
+												} else {
+													onRequestBlock(member);
+												}
+											}}
+										>
+											{t(
+												relationshipKind === "block"
+													? "group_settings.members.context_menu.unblock"
+													: "group_settings.members.context_menu.block",
+											)}
+										</Menu.Item>
+									</>
 								) : null}
 
 								{hasRolesSubmenu ? (
 									<>
-										{member.username ? <Menu.Separator className={menuSeparatorClass} /> : null}
+										<Menu.Separator className={menuSeparatorClass} />
 										<div
 											ref={rolesTriggerWrapRef}
 											className="relative"
@@ -263,7 +324,9 @@ export function MemberActionMenu({
 																		)}
 																		aria-hidden
 																	>
-																		{checked ? <Check className="size-3" strokeWidth={2.5} /> : null}
+																		{checked ? (
+																			<Check className="size-3" strokeWidth={2.5} />
+																		) : null}
 																	</span>
 																</button>
 															);
@@ -278,6 +341,31 @@ export function MemberActionMenu({
 								{hasModerationSection ? (
 									<>
 										<Menu.Separator className={menuSeparatorClass} />
+										{policy.canTimeout ? (
+											<Menu.Item
+												className={menuDestructiveItemClass}
+												onClick={() => {
+													onCloseMenu();
+													if (
+														member.timeout_until &&
+														new Date(member.timeout_until).getTime() > nowMs
+													) {
+														onClearTimeout(member);
+													} else {
+														onRequestTimeout(member);
+													}
+												}}
+											>
+												{t(
+													member.timeout_until && new Date(member.timeout_until).getTime() > nowMs
+														? "group_settings.members.context_menu.remove_timeout_member"
+														: "group_settings.members.context_menu.timeout_member",
+													{
+														name: memberName,
+													},
+												)}
+											</Menu.Item>
+										) : null}
 										{policy.canKick ? (
 											<Menu.Item
 												className={menuDestructiveItemClass}
@@ -307,21 +395,25 @@ export function MemberActionMenu({
 									</>
 								) : null}
 
-								<Menu.Separator className={menuSeparatorClass} />
-								<Menu.Item
-									className={cn(menuItemClass, "justify-between gap-2")}
-									onClick={() =>
-										void copyText(
-											member.user_id,
-											t("group_settings.members.context_menu.copied_user_id"),
-										)
-									}
-								>
-									<span>{t("group_settings.members.context_menu.copy_user_id")}</span>
-									<span className="rounded bg-muted px-1 py-0.5 font-mono text-[10px] font-semibold tracking-tight text-muted-foreground">
-										ID
-									</span>
-								</Menu.Item>
+								{member.username ? (
+									<>
+										<Menu.Separator className={menuSeparatorClass} />
+										<Menu.Item
+											className={menuItemClass}
+											onClick={() =>
+												void copyText(
+													`@${member.username}`,
+													t("group_settings.members.context_menu.copied_username", {
+														username: member.username,
+													}),
+												)
+											}
+										>
+											<Fingerprint className="size-3.5 shrink-0 opacity-45" aria-hidden />
+											<span>{t("group_settings.members.context_menu.copy_username")}</span>
+										</Menu.Item>
+									</>
+								) : null}
 							</>
 						) : null}
 					</Menu.Popup>

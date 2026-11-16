@@ -6,6 +6,7 @@ import { Search, X } from "lucide-react";
 import { useId, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { GroupMemberProfileHost } from "@/components/group/group-member-profile-host";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { OwnerCrownIcon } from "@/components/ui/owner-crown-icon";
@@ -46,6 +47,7 @@ export function RoleDetailMembersTab({
 	const searchId = useId();
 	const [search, setSearch] = useState("");
 	const [addOpen, setAddOpen] = useState(false);
+	const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
 
 	const isEveryone = role.isDefault || role.slug === "everyone";
 	const roleLabel = roleDisplayTitle(role, t);
@@ -81,8 +83,7 @@ export function RoleDetailMembersTab({
 		}
 		return assignedMembers.filter(
 			(m) =>
-				m.display_name.toLowerCase().includes(q) ||
-				(m.username ?? "").toLowerCase().includes(q),
+				m.display_name.toLowerCase().includes(q) || (m.username ?? "").toLowerCase().includes(q),
 		);
 	}, [assignedMembers, search]);
 
@@ -179,7 +180,11 @@ export function RoleDetailMembersTab({
 								key={member.user_id}
 								className="flex items-center justify-between gap-3 px-3 py-2.5 transition-colors first:rounded-t-xl last:rounded-b-xl hover:bg-background/40"
 							>
-								<div className="flex min-w-0 items-center gap-3">
+								<button
+									type="button"
+									onClick={() => setSelectedMemberId(member.user_id)}
+									className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 text-left"
+								>
 									<UserAvatar
 										src={member.avatar_url}
 										initials={userInitials(name, member.username)}
@@ -203,7 +208,7 @@ export function RoleDetailMembersTab({
 											<p className="truncate text-xs text-muted-foreground">@{member.username}</p>
 										) : null}
 									</div>
-								</div>
+								</button>
 
 								{!isEveryone && canManage ? (
 									<button
@@ -233,6 +238,12 @@ export function RoleDetailMembersTab({
 				allMembers={allMembers}
 				assignedUserIds={assignedUserIds}
 				hideRoles={hideRoles}
+			/>
+
+			<GroupMemberProfileHost
+				groupId={groupId}
+				memberId={selectedMemberId}
+				onClose={() => setSelectedMemberId(null)}
 			/>
 		</div>
 	);

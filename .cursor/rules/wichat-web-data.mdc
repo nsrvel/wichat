@@ -18,14 +18,14 @@ alwaysApply: false
 |------|---------|
 | `*.key.ts` | Stable query key strings |
 | `*.service.ts` | Async functions: call `api-client` only (no React) |
-| `*.query.ts` | `queryOptions({ queryKey, queryFn, staleTime, enabled })` |
+| `*.query.ts` | `queryOptions(...)` for snapshots/paginated tables, or `infiniteQueryOptions(...)` for cursor-paginated feeds (`next_cursor`) |
 | `*.mutation.ts` | `useMutation` hooks; **`onSuccess` → `invalidateQueries`** for affected list/detail keys |
 
 Import query helpers with `import * as authQuery from '@/services/auth/auth.query'` — no service `index.ts` barrel.
 
-**Zod:** define requests/responses in **`@wichat/contracts`**; **parse at the trust boundary** in `.service.ts` via `api` + schemas.
+**Zod:** define requests/responses in **`@wichat/contracts`** under domain subpaths (`@wichat/contracts/<domain>/<slice>`); **parse at the trust boundary** in `.service.ts` via `api` + schemas.
 
-**Forms:** **react-hook-form** + `@hookform/resolvers/zod` + shadcn Form (do not mix TanStack Form in the same app).
+**Forms:** **react-hook-form** + `@hookform/resolvers/zod` + shadcn Form (or controlled state + Zod inline field errors in compact modals — do not mix TanStack Form in the same app). Map backend `{ error: { code, params } }` through i18next (`resolveApiErrorMessage`).
 
 More copy-paste templates: `.cursor/skills/wichat-web-client/examples.md`.
 
@@ -39,10 +39,10 @@ export const Q_SESSION = 'auth-session';
 ```ts
 // services/auth/auth.service.ts
 import { api } from '@/integrations/api-client';
-import { SessionSchema, type LoginRequest } from '@/schemas/auth';
+import { LoginRequestSchema, SessionSchema, type LoginRequest } from '@wichat/contracts/auth/login';
 
 export async function login(payload: LoginRequest) {
-  return api.post('/auth/login', SessionSchema, payload);
+  return api.post('/auth/login', SessionSchema, LoginRequestSchema.parse(payload));
 }
 ```
 

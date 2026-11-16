@@ -62,6 +62,32 @@ export const ROLES_COLUMN_SIZE = {
 	},
 } as const;
 
+/** Bans table column specs using native TanStack Table sizing properties. */
+export const BANS_COLUMN_SIZE = {
+	user: {
+		size: 230,
+		minSize: 170,
+	},
+	reason: {
+		size: 210,
+		minSize: 150,
+	},
+	banned_by: {
+		size: 140,
+		minSize: 110,
+	},
+	expires: {
+		size: 140,
+		minSize: 110,
+	},
+	actions: {
+		size: 96,
+		minSize: 88,
+		maxSize: 110,
+		enableResizing: false,
+	},
+} as const;
+
 export const groupSettingsDataTableThClass =
 	"px-3 py-2.5 text-left text-[11px] font-medium tracking-normal text-muted-foreground sm:text-xs";
 

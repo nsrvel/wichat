@@ -3,6 +3,7 @@ package mock
 import (
 	"context"
 	"sort"
+	"strings"
 	"time"
 
 	groupmemberrepo "github.com/wichat/wichat/backend/ms-user/internal/group-member/repository"
@@ -146,13 +147,38 @@ func (m pgRepositoryMock) ListGroupMembersPage(
 		if displayName == "" {
 			displayName = mem.UserID
 		}
+		joinMethod := mem.JoinMethod
+		if joinMethod == "" {
+			joinMethod = constants.JoinMethodUnknown
+		}
+		var invitedByID, invitedByUsername, invitedByDisplayName string
+		if mem.InvitedByUserID != nil && *mem.InvitedByUserID != "" {
+			invitedByID = *mem.InvitedByUserID
+			if inv, ok := userMap[invitedByID]; ok {
+				invitedByUsername = inv.Username
+				invitedByDisplayName = inv.DisplayName
+			}
+		}
 		out[i] = models.GroupMemberProfile{
-			UserID:      mem.UserID,
-			DisplayName: displayName,
-			Username:    u.Username,
-			AvatarURL:   u.AvatarURL,
-			Role:        mem.Role,
-			JoinedAt:    mem.CreatedAt,
+			UserID:               mem.UserID,
+			DisplayName:          displayName,
+			Username:             u.Username,
+			AvatarURL:            u.AvatarURL,
+			BannerColor:          u.BannerColor,
+			Bio:                  u.Bio,
+			Pronouns:             u.Pronouns,
+			UserCreatedAt:        u.CreatedAt,
+			StatusNoteText:       u.StatusNoteText,
+			StatusNoteEmoji:      u.StatusNoteEmoji,
+			StatusNoteExpiresAt:  u.StatusNoteExpiresAt,
+			JoinMethod:           joinMethod,
+			InviteCode:           mem.InviteCode,
+			InvitedByUserID:      invitedByID,
+			InvitedByUsername:    invitedByUsername,
+			InvitedByDisplayName: invitedByDisplayName,
+			TimeoutUntil:         mem.TimeoutUntil,
+			Role:                 mem.Role,
+			JoinedAt:             mem.CreatedAt,
 		}
 	}
 	return out, next, nil
@@ -162,15 +188,16 @@ func (m pgRepositoryMock) IsMemberBanned(_ context.Context, groupID, userID stri
 	m.st.Lock()
 	defer m.st.Unlock()
 
+	now := time.Now().UTC()
 	for _, b := range m.st.Bans {
-		if b.GroupID == groupID && b.UserID == userID {
+		if b.GroupID == groupID && b.UserID == userID && (b.ExpiresAt == nil || b.ExpiresAt.After(now)) {
 			return true, nil
 		}
 	}
 	return false, nil
 }
 
-func (m pgRepositoryMock) BanMembers(_ context.Context, groupID string, userIDs []string, bannedBy, reason string, deleteSeconds int) (int, error) {
+func (m pgRepositoryMock) BanMembers(_ context.Context, groupID string, userIDs []string, bannedBy, reason string, deleteSeconds int, expiresAt *time.Time) (int, error) {
 	m.st.Lock()
 	defer m.st.Unlock()
 
@@ -192,7 +219,7 @@ func (m pgRepositoryMock) BanMembers(_ context.Context, groupID string, userIDs 
 			bBy = &bannedBy
 		}
 		m.st.Bans = append(m.st.Bans, models.GroupBanRow{
-			GroupID: groupID, UserID: uid, BannedBy: bBy, Reason: reason, DeleteMessageSeconds: deleteSeconds, CreatedAt: time.Now().UTC(),
+			GroupID: groupID, UserID: uid, BannedBy: bBy, Reason: reason, DeleteMessageSeconds: deleteSeconds, ExpiresAt: expiresAt, CreatedAt: time.Now().UTC(),
 		})
 
 		var filteredMembers []models.GroupMember
@@ -214,4 +241,116 @@ func (m pgRepositoryMock) BanMembers(_ context.Context, groupID string, userIDs 
 		count++
 	}
 	return count, nil
+}
+
+func (m pgRepositoryMock) ListBansPage(
+	_ context.Context,
+	groupID, search string,
+	limit int,
+	cursor *models.GroupMemberCursor,
+) ([]models.GroupBanEntry, *models.GroupMemberCursor, int, error) {
+	m.st.Lock()
+	defer m.st.Unlock()
+
+	if limit <= 0 {
+		limit = constants.DefaultMemberListLimit
+	}
+	now := time.Now().UTC()
+	q := strings.ToLower(strings.TrimSpace(search))
+
+	userByID := make(map[string]models.User, len(m.st.Users))
+	for _, u := range m.st.Users {
+		userByID[u.ID] = u
+	}
+
+	var all []models.GroupBanEntry
+	for _, b := range m.st.Bans {
+		if b.GroupID != groupID {
+			continue
+		}
+		if b.ExpiresAt != nil && !b.ExpiresAt.After(now) {
+			continue
+		}
+		u, ok := userByID[b.UserID]
+		if !ok {
+			continue
+		}
+		if q != "" && !strings.Contains(strings.ToLower(u.Username), q) &&
+			!strings.Contains(strings.ToLower(u.DisplayName), q) &&
+			!strings.Contains(strings.ToLower(b.Reason), q) {
+			continue
+		}
+		var bannedByID, bannedByUsername, bannedByDisplayName string
+		if b.BannedBy != nil {
+			bannedByID = *b.BannedBy
+			if bu, ok := userByID[bannedByID]; ok {
+				bannedByUsername = bu.Username
+				bannedByDisplayName = bu.DisplayName
+			}
+		}
+		all = append(all, models.GroupBanEntry{
+			UserID:              u.ID,
+			Username:            u.Username,
+			DisplayName:         u.DisplayName,
+			AvatarURL:           u.AvatarURL,
+			Reason:              b.Reason,
+			BannedByUserID:      bannedByID,
+			BannedByUsername:    bannedByUsername,
+			BannedByDisplayName: bannedByDisplayName,
+			ExpiresAt:           b.ExpiresAt,
+			CreatedAt:           b.CreatedAt,
+		})
+	}
+
+	sort.Slice(all, func(i, j int) bool {
+		if all[i].CreatedAt.Equal(all[j].CreatedAt) {
+			return all[i].UserID < all[j].UserID
+		}
+		return all[i].CreatedAt.After(all[j].CreatedAt)
+	})
+	total := len(all)
+
+	var filtered []models.GroupBanEntry
+	for _, item := range all {
+		if cursor != nil {
+			if item.CreatedAt.After(cursor.CreatedAt) || (item.CreatedAt.Equal(cursor.CreatedAt) && item.UserID <= cursor.UserID) {
+				continue
+			}
+		}
+		filtered = append(filtered, item)
+	}
+
+	var next *models.GroupMemberCursor
+	if len(filtered) > limit {
+		last := filtered[limit-1]
+		next = &models.GroupMemberCursor{CreatedAt: last.CreatedAt, UserID: last.UserID}
+		filtered = filtered[:limit]
+	}
+	return filtered, next, total, nil
+}
+
+func (m pgRepositoryMock) UnbanMember(_ context.Context, groupID, userID string) error {
+	m.st.Lock()
+	defer m.st.Unlock()
+
+	for i, b := range m.st.Bans {
+		if b.GroupID == groupID && b.UserID == userID {
+			m.st.Bans = append(m.st.Bans[:i], m.st.Bans[i+1:]...)
+			return nil
+		}
+	}
+	return constants.ErrNotFound
+}
+
+func (m pgRepositoryMock) UpdateGroupMemberTimeout(_ context.Context, groupID, userID string, timeoutUntil *time.Time) error {
+	m.st.Lock()
+	defer m.st.Unlock()
+
+	for i := range m.st.Members {
+		if m.st.Members[i].GroupID == groupID && m.st.Members[i].UserID == userID {
+			m.st.Members[i].TimeoutUntil = timeoutUntil
+			return nil
+		}
+	}
+	return constants.ErrNotFound
 }

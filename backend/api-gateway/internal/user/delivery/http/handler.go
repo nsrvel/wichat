@@ -49,6 +49,8 @@ type Handler interface {
 	ListActivityLogs(w http.ResponseWriter, r *http.Request)
 	GetMyPresence(w http.ResponseWriter, r *http.Request)
 	UpdateMyPresence(w http.ResponseWriter, r *http.Request)
+	ListRelationships(w http.ResponseWriter, r *http.Request)
+	SetRelationship(w http.ResponseWriter, r *http.Request)
 	WithPresenceBroadcaster(b PresenceBroadcaster) Handler
 }
 
@@ -1046,5 +1048,74 @@ func (h handler) UpdateMyPresence(w http.ResponseWriter, r *http.Request) {
 		EffectiveStatus: res.GetEffectiveStatus(),
 		IsOnline:        res.GetIsOnline(),
 		ExpiresAt:       res.GetExpiresAt(),
+	}))
+}
+
+func (h handler) ListRelationships(w http.ResponseWriter, r *http.Request) {
+	// Auth
+	token := authHttp.Bearer(r)
+	if token == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.Unauthenticated(exception.MsgUnauthorized, nil))
+		return
+	}
+
+	// Service
+	out, err := h.ms.User.GRPC.User.ListUserRelationships(r.Context(), &userv1.ListUserRelationshipsRequest{
+		AccessToken: token,
+	})
+	if err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	// Response
+	items := make([]authHttp.UserRelationshipBody, 0, len(out.GetRelationships()))
+	for _, rel := range out.GetRelationships() {
+		items = append(items, authHttp.UserRelationshipBody{
+			TargetUserID: rel.GetTargetUserId(),
+			Kind:         rel.GetKind(),
+			CreatedAt:    rel.GetCreatedAt(),
+		})
+	}
+	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(struct {
+		Relationships []authHttp.UserRelationshipBody `json:"relationships"`
+	}{Relationships: items}))
+}
+
+func (h handler) SetRelationship(w http.ResponseWriter, r *http.Request) {
+	// Auth
+	token := authHttp.Bearer(r)
+	if token == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.Unauthenticated(exception.MsgUnauthorized, nil))
+		return
+	}
+
+	// Input
+	targetUserID := strings.TrimSpace(r.PathValue("userId"))
+	if targetUserID == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "userId"}))
+		return
+	}
+	var body authHttp.SetUserRelationshipBody
+	if err := authHttp.DecodeJSON(w, r, &body); err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	// Service
+	out, err := h.ms.User.GRPC.User.SetUserRelationship(r.Context(), &userv1.SetUserRelationshipRequest{
+		AccessToken:  token,
+		TargetUserId: targetUserID,
+		Kind:         body.Kind,
+	})
+	if err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	// Response
+	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(authHttp.SetUserRelationshipResponseBody{
+		OK:   out.GetOk(),
+		Kind: out.GetKind(),
 	}))
 }

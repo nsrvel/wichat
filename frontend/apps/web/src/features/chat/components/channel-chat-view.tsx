@@ -6,6 +6,7 @@ import { ChevronDown } from "lucide-react";
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useCreateMessageMutation } from "@/services/message/message.mutation";
+import { GroupMemberProfileHost } from "@/components/group/group-member-profile-host";
 import { ChatComposer } from "@/features/chat/components/chat-composer";
 import { ChannelEmptyState } from "@/features/chat/components/channel-empty-state";
 import { ConversationHeader } from "@/features/chat/components/conversation-header";
@@ -30,6 +31,7 @@ type ChannelChatViewProps = {
 
 export function ChannelChatView({ groupId, channelId, onOpenSidebar }: ChannelChatViewProps) {
 	const { t } = useTranslation();
+	const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const bottomSentinelRef = useRef<HTMLDivElement>(null);
 	const anchorRef = useRef<{ scrollHeight: number; scrollTop: number } | null>(null);
@@ -238,6 +240,11 @@ export function ChannelChatView({ groupId, channelId, onOpenSidebar }: ChannelCh
 								ownerLabel={t("invite.role_owner")}
 								timeLabel={message.timeLabel}
 								mine={message.mine}
+								onAuthorClick={
+									groupId && message.authorId
+										? () => setSelectedMemberId(message.authorId)
+										: undefined
+								}
 								reactions={
 									message.reactions && message.reactions.length > 0 ? (
 										<MessageReactions reactions={message.reactions} />
@@ -267,6 +274,13 @@ export function ChannelChatView({ groupId, channelId, onOpenSidebar }: ChannelCh
 
 				<ChatComposer onSubmit={handleSendMessage} />
 			</div>
+			{groupId ? (
+				<GroupMemberProfileHost
+					groupId={groupId}
+					memberId={selectedMemberId}
+					onClose={() => setSelectedMemberId(null)}
+				/>
+			) : null}
 		</div>
 	);
 }

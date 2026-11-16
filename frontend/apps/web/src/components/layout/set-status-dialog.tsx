@@ -268,11 +268,7 @@ function SetStatusDialogBody({
 	);
 }
 
-export function SetStatusDialog({
-	open,
-	onOpenChange,
-	...props
-}: SetStatusDialogProps) {
+export function SetStatusDialog({ open, onOpenChange, ...props }: SetStatusDialogProps) {
 	const titleId = useId();
 
 	return (
@@ -283,11 +279,7 @@ export function SetStatusDialog({
 			titleId={titleId}
 			className="max-w-[440px]"
 		>
-			<SetStatusDialogBody
-				{...props}
-				titleId={titleId}
-				onClose={() => onOpenChange(false)}
-			/>
+			<SetStatusDialogBody {...props} titleId={titleId} onClose={() => onOpenChange(false)} />
 		</WiChatDialog>
 	);
 }

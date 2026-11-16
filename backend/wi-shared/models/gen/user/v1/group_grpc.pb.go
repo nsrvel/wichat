@@ -19,13 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	GroupService_ListMyGroups_FullMethodName       = "/user.v1.GroupService/ListMyGroups"
-	GroupService_CreateGroup_FullMethodName        = "/user.v1.GroupService/CreateGroup"
-	GroupService_ReorderMyGroups_FullMethodName    = "/user.v1.GroupService/ReorderMyGroups"
-	GroupService_DeleteGroup_FullMethodName        = "/user.v1.GroupService/DeleteGroup"
-	GroupService_UploadGroupIcon_FullMethodName    = "/user.v1.GroupService/UploadGroupIcon"
-	GroupService_UpdateGroupProfile_FullMethodName = "/user.v1.GroupService/UpdateGroupProfile"
-	GroupService_UploadGroupBanner_FullMethodName  = "/user.v1.GroupService/UploadGroupBanner"
+	GroupService_ListMyGroups_FullMethodName          = "/user.v1.GroupService/ListMyGroups"
+	GroupService_CreateGroup_FullMethodName           = "/user.v1.GroupService/CreateGroup"
+	GroupService_ReorderMyGroups_FullMethodName       = "/user.v1.GroupService/ReorderMyGroups"
+	GroupService_DeleteGroup_FullMethodName           = "/user.v1.GroupService/DeleteGroup"
+	GroupService_UploadGroupIcon_FullMethodName       = "/user.v1.GroupService/UploadGroupIcon"
+	GroupService_UpdateGroupProfile_FullMethodName    = "/user.v1.GroupService/UpdateGroupProfile"
+	GroupService_UploadGroupBanner_FullMethodName     = "/user.v1.GroupService/UploadGroupBanner"
+	GroupService_ListGroupActivityLogs_FullMethodName = "/user.v1.GroupService/ListGroupActivityLogs"
 )
 
 // GroupServiceClient is the client API for GroupService service.
@@ -48,6 +49,8 @@ type GroupServiceClient interface {
 	UpdateGroupProfile(ctx context.Context, in *UpdateGroupProfileRequest, opts ...grpc.CallOption) (*UpdateGroupProfileResponse, error)
 	// UploadGroupBanner stores a banner image and updates group_settings.banner_url.
 	UploadGroupBanner(ctx context.Context, in *UploadGroupBannerRequest, opts ...grpc.CallOption) (*UploadGroupBannerResponse, error)
+	// ListGroupActivityLogs returns paginated audit log entries for a group.
+	ListGroupActivityLogs(ctx context.Context, in *ListGroupActivityLogsRequest, opts ...grpc.CallOption) (*ListGroupActivityLogsResponse, error)
 }
 
 type groupServiceClient struct {
@@ -128,6 +131,16 @@ func (c *groupServiceClient) UploadGroupBanner(ctx context.Context, in *UploadGr
 	return out, nil
 }
 
+func (c *groupServiceClient) ListGroupActivityLogs(ctx context.Context, in *ListGroupActivityLogsRequest, opts ...grpc.CallOption) (*ListGroupActivityLogsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListGroupActivityLogsResponse)
+	err := c.cc.Invoke(ctx, GroupService_ListGroupActivityLogs_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // GroupServiceServer is the server API for GroupService service.
 // All implementations must embed UnimplementedGroupServiceServer
 // for forward compatibility.
@@ -148,6 +161,8 @@ type GroupServiceServer interface {
 	UpdateGroupProfile(context.Context, *UpdateGroupProfileRequest) (*UpdateGroupProfileResponse, error)
 	// UploadGroupBanner stores a banner image and updates group_settings.banner_url.
 	UploadGroupBanner(context.Context, *UploadGroupBannerRequest) (*UploadGroupBannerResponse, error)
+	// ListGroupActivityLogs returns paginated audit log entries for a group.
+	ListGroupActivityLogs(context.Context, *ListGroupActivityLogsRequest) (*ListGroupActivityLogsResponse, error)
 	mustEmbedUnimplementedGroupServiceServer()
 }
 
@@ -178,6 +193,9 @@ func (UnimplementedGroupServiceServer) UpdateGroupProfile(context.Context, *Upda
 }
 func (UnimplementedGroupServiceServer) UploadGroupBanner(context.Context, *UploadGroupBannerRequest) (*UploadGroupBannerResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method UploadGroupBanner not implemented")
+}
+func (UnimplementedGroupServiceServer) ListGroupActivityLogs(context.Context, *ListGroupActivityLogsRequest) (*ListGroupActivityLogsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListGroupActivityLogs not implemented")
 }
 func (UnimplementedGroupServiceServer) mustEmbedUnimplementedGroupServiceServer() {}
 func (UnimplementedGroupServiceServer) testEmbeddedByValue()                      {}
@@ -326,6 +344,24 @@ func _GroupService_UploadGroupBanner_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _GroupService_ListGroupActivityLogs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListGroupActivityLogsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GroupServiceServer).ListGroupActivityLogs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GroupService_ListGroupActivityLogs_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GroupServiceServer).ListGroupActivityLogs(ctx, req.(*ListGroupActivityLogsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // GroupService_ServiceDesc is the grpc.ServiceDesc for GroupService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -360,6 +396,10 @@ var GroupService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UploadGroupBanner",
 			Handler:    _GroupService_UploadGroupBanner_Handler,
+		},
+		{
+			MethodName: "ListGroupActivityLogs",
+			Handler:    _GroupService_ListGroupActivityLogs_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

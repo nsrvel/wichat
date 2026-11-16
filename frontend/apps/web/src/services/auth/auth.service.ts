@@ -78,11 +78,9 @@ export async function verifyLogin(payload: VerifyEmailCode) {
 export async function beginLoginWebAuthn(
 	challenge_id: string,
 ): Promise<BeginLoginWebAuthnResponse> {
-	return api.post(
-		"/auth/login/mfa/webauthn/begin",
-		BeginLoginWebAuthnResponseSchema,
-		{ challenge_id },
-	);
+	return api.post("/auth/login/mfa/webauthn/begin", BeginLoginWebAuthnResponseSchema, {
+		challenge_id,
+	});
 }
 
 export async function verifyLoginMfa(payload: VerifyLoginMfaRequest) {

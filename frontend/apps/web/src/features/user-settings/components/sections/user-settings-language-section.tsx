@@ -137,9 +137,7 @@ export function UserSettingsLanguageSection() {
 									)}
 									aria-hidden
 								>
-									{selected ? (
-										<span className="size-2 rounded-full bg-primary-foreground" />
-									) : null}
+									{selected ? <span className="size-2 rounded-full bg-primary-foreground" /> : null}
 								</span>
 								<span
 									className={cn(

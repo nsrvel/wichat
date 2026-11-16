@@ -18,12 +18,16 @@ export type CreateApiClientOptions = {
 	getBaseUrl: () => string;
 	credentials?: RequestCredentials;
 	storage: TokenStorage;
+	onGatewayUnreachable?: () => void;
+	onGatewayReachable?: () => void;
 };
 
 export function createApiClient({
 	getBaseUrl,
 	credentials = "include",
 	storage,
+	onGatewayUnreachable,
+	onGatewayReachable,
 }: CreateApiClientOptions) {
 	const getAccessToken = () => storage.get();
 	const setAccessToken = (token: string | null) => storage.set(token);
@@ -47,14 +51,22 @@ export function createApiClient({
 	}
 
 	async function fetchApi(path: string, init: RequestInit): Promise<Response> {
+		let res: Response;
 		try {
-			return await fetch(`${getBaseUrl()}${path}`, {
+			res = await fetch(`${getBaseUrl()}${path}`, {
 				...init,
 				credentials,
 			});
 		} catch {
+			onGatewayUnreachable?.();
 			throw new ApiError("error.network");
 		}
+		if (res.status === 502 || res.status === 503 || res.status === 504) {
+			onGatewayUnreachable?.();
+		} else {
+			onGatewayReachable?.();
+		}
+		return res;
 	}
 
 	async function refreshAccess(): Promise<string | null> {
@@ -62,7 +74,9 @@ export function createApiClient({
 			try {
 				const res = await fetchApi("/auth/refresh", { method: "POST" });
 				if (!res.ok) {
-					setAccessToken(null);
+					if (res.status === 401 || res.status === 403) {
+						setAccessToken(null);
+					}
 					return null;
 				}
 				const json: unknown = await res.json().catch(() => null);
@@ -78,7 +92,7 @@ export function createApiClient({
 				setAccessToken(parsed.data.access_token);
 				return parsed.data.access_token;
 			} catch {
-				setAccessToken(null);
+				// Preserve existing access token on transient network/gateway errors
 				return null;
 			}
 		});

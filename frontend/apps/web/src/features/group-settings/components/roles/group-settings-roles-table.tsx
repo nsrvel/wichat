@@ -10,7 +10,12 @@ import {
 	RoleActionMenu,
 	type RoleActionMenuState,
 } from "@/features/group-settings/components/roles/role-action-menu";
-import { groupSettingsDataTableBodyClass, groupSettingsDataTableHeadRowClass, groupSettingsDataTableRowClass, groupSettingsDataTableShellClass } from "@/features/group-settings/lib/group-settings-chrome";
+import {
+	groupSettingsDataTableBodyClass,
+	groupSettingsDataTableHeadRowClass,
+	groupSettingsDataTableRowClass,
+	groupSettingsDataTableShellClass,
+} from "@/features/group-settings/lib/group-settings-chrome";
 import {
 	dataTableColumnPercentStyle,
 	dataTableEdgeCellClass,
@@ -19,7 +24,10 @@ import {
 	groupSettingsDataTableThClass,
 	ROLES_COLUMN_SIZE,
 } from "@/features/group-settings/lib/group-settings-data-table-column-size";
-import { roleDisplayTitle, type GroupSettingsRoleRow } from "@/features/group-settings/lib/group-settings-roles-view";
+import {
+	roleDisplayTitle,
+	type GroupSettingsRoleRow,
+} from "@/features/group-settings/lib/group-settings-roles-view";
 import { cn } from "@/lib/utils";
 
 const ROLE_PAGE_SIZE = 10;

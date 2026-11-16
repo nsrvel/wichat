@@ -43,6 +43,8 @@ type fakeUser struct {
 	disableAccount           func(context.Context, *userv1.DisableAccountRequest) (*userv1.DisableAccountResponse, error)
 	deleteAccount            func(context.Context, *userv1.DeleteAccountRequest) (*userv1.DeleteAccountResponse, error)
 	listSessions             func(context.Context, *userv1.ListSessionsRequest) (*userv1.ListSessionsResponse, error)
+	listRelationships        func(context.Context, *userv1.ListUserRelationshipsRequest) (*userv1.ListUserRelationshipsResponse, error)
+	setRelationship          func(context.Context, *userv1.SetUserRelationshipRequest) (*userv1.SetUserRelationshipResponse, error)
 	revokeSession            func(context.Context, *userv1.RevokeSessionRequest) (*userv1.RevokeSessionResponse, error)
 	revokeOtherSessions      func(context.Context, *userv1.RevokeOtherSessionsRequest) (*userv1.RevokeOtherSessionsResponse, error)
 	listUserActivityLogs     func(context.Context, *userv1.ListUserActivityLogsRequest) (*userv1.ListUserActivityLogsResponse, error)
@@ -217,6 +219,20 @@ func (f fakeUser) DisableAccount(ctx context.Context, in *userv1.DisableAccountR
 func (f fakeUser) DeleteAccount(ctx context.Context, in *userv1.DeleteAccountRequest) (*userv1.DeleteAccountResponse, error) {
 	if f.deleteAccount != nil {
 		return f.deleteAccount(ctx, in)
+	}
+	return nil, status.Error(codes.Unimplemented, "error.internal")
+}
+
+func (f fakeUser) ListUserRelationships(ctx context.Context, in *userv1.ListUserRelationshipsRequest) (*userv1.ListUserRelationshipsResponse, error) {
+	if f.listRelationships != nil {
+		return f.listRelationships(ctx, in)
+	}
+	return nil, status.Error(codes.Unimplemented, "error.internal")
+}
+
+func (f fakeUser) SetUserRelationship(ctx context.Context, in *userv1.SetUserRelationshipRequest) (*userv1.SetUserRelationshipResponse, error) {
+	if f.setRelationship != nil {
+		return f.setRelationship(ctx, in)
 	}
 	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
@@ -732,5 +748,46 @@ func TestListActivityLogsForwardsQueryAndMapsEnvelope(t *testing.T) {
 	}
 	if !strings.Contains(rec.Body.String(), `"user.status_note.updated"`) || !strings.Contains(rec.Body.String(), `"next_cursor":"cur-2"`) {
 		t.Fatalf("unexpected json body: %s", rec.Body.String())
+	}
+}
+
+func TestRelationshipsEndpoints(t *testing.T) {
+	clients := &microservices.Clients{User: msUser.Service{GRPC: msUser.GRPC{
+		User: fakeUser{
+			listRelationships: func(_ context.Context, in *userv1.ListUserRelationshipsRequest) (*userv1.ListUserRelationshipsResponse, error) {
+				if in.GetAccessToken() != "tok-rel" {
+					t.Fatalf("unexpected token %q", in.GetAccessToken())
+				}
+				return &userv1.ListUserRelationshipsResponse{
+					Relationships: []*userv1.UserRelationshipEntry{
+						{TargetUserId: "u2", Kind: "ignore", CreatedAt: "2026-01-01T00:00:00Z"},
+					},
+				}, nil
+			},
+			setRelationship: func(_ context.Context, in *userv1.SetUserRelationshipRequest) (*userv1.SetUserRelationshipResponse, error) {
+				if in.GetTargetUserId() != "u2" || in.GetKind() != "ignore" {
+					t.Fatalf("unexpected req %+v", in)
+				}
+				return &userv1.SetUserRelationshipResponse{Ok: true, Kind: "ignore"}, nil
+			},
+		},
+	}}}
+	h := userdelivery.NewHandler(clients, logger.New(logger.Options{Service: "gateway-test", Env: "test", Level: "error"}))
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/users/me/relationships", nil)
+	req.Header.Set("Authorization", "Bearer tok-rel")
+	rec := httptest.NewRecorder()
+	h.ListRelationships(rec, req)
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"target_user_id":"u2"`) {
+		t.Fatalf("list relationships: %d %s", rec.Code, rec.Body.String())
+	}
+
+	putReq := httptest.NewRequest(http.MethodPut, "/api/v1/users/me/relationships/u2", strings.NewReader(`{"kind":"ignore"}`))
+	putReq.SetPathValue("userId", "u2")
+	putReq.Header.Set("Authorization", "Bearer tok-rel")
+	putRec := httptest.NewRecorder()
+	h.SetRelationship(putRec, putReq)
+	if putRec.Code != http.StatusOK || !strings.Contains(putRec.Body.String(), `"kind":"ignore"`) {
+		t.Fatalf("set relationship: %d %s", putRec.Code, putRec.Body.String())
 	}
 }

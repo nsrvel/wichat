@@ -375,3 +375,29 @@ func (s *Server) RevokeOtherSessions(ctx context.Context, req *userv1.RevokeOthe
 
 	return &userv1.RevokeOtherSessionsResponse{Ok: true}, nil
 }
+
+func (s *Server) ListUserRelationships(ctx context.Context, req *userv1.ListUserRelationshipsRequest) (*userv1.ListUserRelationshipsResponse, error) {
+	rels, err := s.svc.ListRelationships(ctx, req.GetAccessToken())
+	if err != nil {
+		return nil, responsegrpc.ToStatus(err)
+	}
+	out := make([]*userv1.UserRelationshipEntry, len(rels))
+	for i, rel := range rels {
+		out[i] = &userv1.UserRelationshipEntry{
+			TargetUserId: rel.TargetUserID,
+			Kind:         rel.Kind,
+			CreatedAt:    rel.CreatedAt.UTC().Format(time.RFC3339Nano),
+		}
+	}
+
+	return &userv1.ListUserRelationshipsResponse{Relationships: out}, nil
+}
+
+func (s *Server) SetUserRelationship(ctx context.Context, req *userv1.SetUserRelationshipRequest) (*userv1.SetUserRelationshipResponse, error) {
+	kind, err := s.svc.SetRelationship(ctx, req.GetAccessToken(), req.GetTargetUserId(), req.GetKind())
+	if err != nil {
+		return nil, responsegrpc.ToStatus(err)
+	}
+
+	return &userv1.SetUserRelationshipResponse{Ok: true, Kind: kind}, nil
+}

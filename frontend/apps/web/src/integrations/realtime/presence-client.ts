@@ -1,5 +1,12 @@
-import { RealtimePresenceUpdatedSchema, type RealtimePresenceUpdated } from "@wichat/contracts/user/presence";
+import {
+	RealtimePresenceUpdatedSchema,
+	type RealtimePresenceUpdated,
+} from "@wichat/contracts/user/presence";
 import { ensureAccessToken, getAccessToken } from "@/integrations/api-client";
+import {
+	notifyGatewayUnreachable,
+	onGatewayRecovered,
+} from "@/integrations/realtime/gateway-connection";
 import { env } from "@/lib/env";
 
 const HEARTBEAT_INTERVAL_MS = 25_000;
@@ -28,9 +35,12 @@ export function connectPresenceRealtime(options: PresenceConnectionOptions): {
 } {
 	let ws: WebSocket | null = null;
 	let closed = false;
+	let connecting = false;
+	let refreshingAuth = false;
 	let activeGroupId = options.groupId;
 	let activity: "active" | "idle" = "active";
 	let lastActivityMark = 0;
+	let lastHeartbeatSentAt = 0;
 	let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
 	let heartbeatTimer: ReturnType<typeof setInterval> | undefined;
 	let idleTimer: ReturnType<typeof setTimeout> | undefined;
@@ -43,7 +53,16 @@ export function connectPresenceRealtime(options: PresenceConnectionOptions): {
 	};
 
 	const sendHeartbeat = () => {
-		sendFrame({ type: "presence.heartbeat", activity });
+		if (!ws || ws.readyState !== WebSocket.OPEN) {
+			return;
+		}
+		lastHeartbeatSentAt = Date.now();
+		const accessToken = getAccessToken();
+		sendFrame({
+			type: "presence.heartbeat",
+			activity,
+			...(accessToken ? { access_token: accessToken } : {}),
+		});
 	};
 
 	const sendGroupSubscribe = () => {
@@ -79,30 +98,56 @@ export function connectPresenceRealtime(options: PresenceConnectionOptions): {
 		}
 	};
 
-	const onVisibilityChange = () => {
-		if (document.visibilityState === "visible") {
-			handleUserActivity();
+	const resumePresence = () => {
+		handleUserActivity();
+		if (ws && ws.readyState === WebSocket.OPEN) {
+			if (Date.now() - lastHeartbeatSentAt >= 10_000) {
+				sendHeartbeat();
+			}
+			return;
+		}
+		if (!closed && !connecting && (!ws || ws.readyState === WebSocket.CLOSED)) {
+			if (reconnectTimer) {
+				clearTimeout(reconnectTimer);
+				reconnectTimer = undefined;
+			}
+			reconnectAttempts = 0;
+			void connect();
 		}
 	};
 
-	const activityEvents = ["mousemove", "mousedown", "keydown", "touchstart", "scroll", "focus"] as const;
+	const onVisibilityChange = () => {
+		if (document.visibilityState === "visible") {
+			resumePresence();
+		}
+	};
+
+	const activityEvents = ["mousemove", "mousedown", "keydown", "touchstart", "scroll"] as const;
 	if (typeof window !== "undefined") {
 		for (const evt of activityEvents) {
 			window.addEventListener(evt, handleUserActivity, { passive: true });
 		}
+		window.addEventListener("focus", resumePresence);
+		window.addEventListener("online", resumePresence);
 		document.addEventListener("visibilitychange", onVisibilityChange);
 		scheduleIdleTimer();
 	}
 
 	const connect = async () => {
-		if (closed) {
+		if (closed || connecting) {
 			return;
 		}
+		connecting = true;
 		let token = getAccessToken();
 		if (!token) {
 			token = await ensureAccessToken();
 		}
+		if (closed) {
+			connecting = false;
+			return;
+		}
 		if (!token) {
+			connecting = false;
 			const delay = Math.min(1000 * 2 ** reconnectAttempts, 10_000);
 			reconnectAttempts++;
 			reconnectTimer = setTimeout(connect, delay);
@@ -112,11 +157,13 @@ export function connectPresenceRealtime(options: PresenceConnectionOptions): {
 		try {
 			ws = new WebSocket(realtimeWebSocketURL(token));
 		} catch {
+			connecting = false;
 			const delay = Math.min(1000 * 2 ** reconnectAttempts, 10_000);
 			reconnectAttempts++;
 			reconnectTimer = setTimeout(connect, delay);
 			return;
 		}
+		connecting = false;
 
 		ws.addEventListener("open", () => {
 			reconnectAttempts = 0;
@@ -130,7 +177,23 @@ export function connectPresenceRealtime(options: PresenceConnectionOptions): {
 
 		ws.addEventListener("message", (event) => {
 			try {
-				const parsed = RealtimePresenceUpdatedSchema.parse(JSON.parse(String(event.data)));
+				const raw = JSON.parse(String(event.data)) as { type?: string };
+				if (raw.type === "presence.auth_required") {
+					if (!refreshingAuth) {
+						refreshingAuth = true;
+						void ensureAccessToken()
+							.then((nextToken) => {
+								if (!closed && nextToken) {
+									sendHeartbeat();
+								}
+							})
+							.finally(() => {
+								refreshingAuth = false;
+							});
+					}
+					return;
+				}
+				const parsed = RealtimePresenceUpdatedSchema.parse(raw);
 				if (parsed.type === "presence.updated") {
 					options.onPresenceUpdated(parsed);
 				}
@@ -140,17 +203,37 @@ export function connectPresenceRealtime(options: PresenceConnectionOptions): {
 		});
 
 		ws.addEventListener("close", () => {
+			ws = null;
 			if (heartbeatTimer) {
 				clearInterval(heartbeatTimer);
 				heartbeatTimer = undefined;
 			}
 			if (!closed) {
+				notifyGatewayUnreachable();
 				const delay = Math.min(1000 * 2 ** reconnectAttempts, 10_000);
 				reconnectAttempts++;
-				reconnectTimer = setTimeout(connect, delay);
+				reconnectTimer = setTimeout(() => {
+					reconnectTimer = undefined;
+					void connect();
+				}, delay);
 			}
 		});
 	};
+
+	const unsubscribeRecovered = onGatewayRecovered(() => {
+		if (closed) {
+			return;
+		}
+		if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+			return;
+		}
+		if (reconnectTimer) {
+			clearTimeout(reconnectTimer);
+			reconnectTimer = undefined;
+		}
+		reconnectAttempts = 0;
+		void connect();
+	});
 
 	void connect();
 
@@ -164,6 +247,7 @@ export function connectPresenceRealtime(options: PresenceConnectionOptions): {
 		},
 		close: () => {
 			closed = true;
+			unsubscribeRecovered();
 			if (reconnectTimer) {
 				clearTimeout(reconnectTimer);
 			}
@@ -177,6 +261,8 @@ export function connectPresenceRealtime(options: PresenceConnectionOptions): {
 				for (const evt of activityEvents) {
 					window.removeEventListener(evt, handleUserActivity);
 				}
+				window.removeEventListener("focus", resumePresence);
+				window.removeEventListener("online", resumePresence);
 				document.removeEventListener("visibilitychange", onVisibilityChange);
 			}
 			ws?.close();

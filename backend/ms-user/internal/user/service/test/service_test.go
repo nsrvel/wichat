@@ -1037,3 +1037,50 @@ func TestUserActivityRecording(t *testing.T) {
 		}
 	}
 }
+
+func TestUserRelationships(t *testing.T) {
+	st := usermock.NewState()
+	authSvc, notify, _, svc, _, _ := testSupport.NewAuthService(t, st, nil)
+	ctx := context.Background()
+
+	alice := testSupport.RegisterSession(t, authSvc, notify, models.RegisterInput{
+		Email: "alice-rel@example.com", Username: "alice.rel", Password: testPassword, DisplayName: "Alice", BirthDate: "2000-01-01",
+	})
+	bob := testSupport.RegisterSession(t, authSvc, notify, models.RegisterInput{
+		Email: "bob-rel@example.com", Username: "bob.rel", Password: testPassword, DisplayName: "Bob", BirthDate: "2000-01-01",
+	})
+
+	if _, err := svc.SetRelationship(ctx, alice.AccessToken, alice.User.ID, "ignore"); err == nil {
+		t.Fatal("expected self relationship to fail")
+	}
+	if _, err := svc.SetRelationship(ctx, alice.AccessToken, bob.User.ID, "invalid"); err == nil {
+		t.Fatal("expected invalid kind to fail")
+	}
+
+	kind, err := svc.SetRelationship(ctx, alice.AccessToken, bob.User.ID, "ignore")
+	if err != nil || kind != "ignore" {
+		t.Fatalf("SetRelationship ignore: %q %v", kind, err)
+	}
+	rels, err := svc.ListRelationships(ctx, alice.AccessToken)
+	if err != nil || len(rels) != 1 || rels[0].TargetUserID != bob.User.ID || rels[0].Kind != "ignore" {
+		t.Fatalf("ListRelationships: %+v %v", rels, err)
+	}
+
+	kind, err = svc.SetRelationship(ctx, alice.AccessToken, bob.User.ID, "block")
+	if err != nil || kind != "block" {
+		t.Fatalf("SetRelationship block: %q %v", kind, err)
+	}
+	rels, err = svc.ListRelationships(ctx, alice.AccessToken)
+	if err != nil || len(rels) != 1 || rels[0].Kind != "block" {
+		t.Fatalf("ListRelationships block: %+v %v", rels, err)
+	}
+
+	kind, err = svc.SetRelationship(ctx, alice.AccessToken, bob.User.ID, "none")
+	if err != nil || kind != "none" {
+		t.Fatalf("SetRelationship none: %q %v", kind, err)
+	}
+	rels, err = svc.ListRelationships(ctx, alice.AccessToken)
+	if err != nil || len(rels) != 0 {
+		t.Fatalf("ListRelationships after clear: %+v %v", rels, err)
+	}
+}

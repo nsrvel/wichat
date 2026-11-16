@@ -72,9 +72,7 @@ export function UserProfileIndicator({
 			aria-hidden
 		>
 			{resolvedStatus === "dnd" ? <span className="h-[2px] w-1.5 rounded-full bg-card" /> : null}
-			{resolvedStatus === "invisible" ? (
-				<span className="size-1.5 rounded-full bg-card" />
-			) : null}
+			{resolvedStatus === "invisible" ? <span className="size-1.5 rounded-full bg-card" /> : null}
 		</span>
 	);
 }
@@ -112,7 +110,7 @@ export function UserAvatar({
 	const showImage = Boolean(trimmedSrc) && failedSrc !== trimmedSrc;
 
 	return (
-		<div className={cn("relative shrink-0", styles.avatarClass, className)}>
+		<div className={cn("relative shrink-0 select-none", styles.avatarClass, className)}>
 			{showImage ? (
 				/* eslint-disable-next-line @next/next/no-img-element */
 				<img
@@ -120,9 +118,10 @@ export function UserAvatar({
 					alt={alt}
 					width={styles.px}
 					height={styles.px}
+					draggable={false}
 					onError={() => setFailedSrc(trimmedSrc)}
 					className={cn(
-						"size-full rounded-full bg-card object-cover",
+						"pointer-events-none size-full rounded-full bg-card object-cover select-none",
 						ringClassName,
 						imgClassName,
 					)}

@@ -8,13 +8,18 @@ services:
     user: "0:0"
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: wichat
-      MINIO_ROOT_PASSWORD: wichatdev
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-wichat}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-wichatdev}
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
     volumes:
       - wichat-minio:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:9000/minio/health/live || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   wichat-minio:

@@ -178,9 +178,7 @@ export function EmojiTabPanel({
 	const visibleItems = useMemo(() => {
 		const minTop = scrollTop - OVERSCAN_PX;
 		const maxBottom = scrollTop + VIEWPORT_HEIGHT + OVERSCAN_PX;
-		return items.filter(
-			(item) => item.top + item.height >= minTop && item.top <= maxBottom,
-		);
+		return items.filter((item) => item.top + item.height >= minTop && item.top <= maxBottom);
 	}, [items, scrollTop]);
 
 	const scrollToSection = (key: string) => {

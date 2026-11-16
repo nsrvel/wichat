@@ -17,7 +17,7 @@ import {
 	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import Image from "next/image";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { IconRailTileButton } from "@/components/layout/shell-rail/icon-rail-tile-button";
 import { IconRailWorkspaceRow } from "@/components/layout/shell-rail/icon-rail-row";
@@ -59,6 +59,8 @@ function SortableGroupTile({
 	onPrefetchGroup,
 }: SortableGroupTileProps) {
 	const logoSrc = resolveGroupLogoUrl(group.logo_url);
+	const [failedLogoSrc, setFailedLogoSrc] = useState<string | null>(null);
+	const showLogo = Boolean(logoSrc) && failedLogoSrc !== logoSrc;
 	const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
 		id: group.id,
 	});
@@ -87,19 +89,24 @@ function SortableGroupTile({
 				>
 					<IconRailTileButton
 						variant="tile"
-						className={logoSrc ? railLogoTileClass : undefined}
+						className={showLogo ? railLogoTileClass : undefined}
 						aria-label={group.name}
 						aria-current={active ? "true" : undefined}
 						onClick={() => onNavigate(group)}
 					>
-						{logoSrc ? (
-							<Image
+						{showLogo ? (
+							/* eslint-disable-next-line @next/next/no-img-element -- Direct MinIO/object URLs avoid Next dev proxy queuing and paint synchronously from retained cache. */
+							<img
 								src={logoSrc}
 								alt=""
 								width={SHELL_RAIL_TILE_PX}
 								height={SHELL_RAIL_TILE_PX}
-								unoptimized
+								loading="eager"
+								decoding="sync"
+								fetchPriority="high"
+								data-critical-img="rail"
 								draggable={false}
+								onError={() => setFailedLogoSrc(logoSrc)}
 								className="pointer-events-none h-[var(--shell-rail-tile-size)] w-[var(--shell-rail-tile-size)] rounded-[var(--shell-rail-tile-radius)] object-cover"
 							/>
 						) : (

@@ -9,7 +9,12 @@ import { HexColorField } from "@/components/ui/color-picker";
 import { Input } from "@/components/ui/input";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { authFieldLabelClass, authInputClass } from "@/lib/form-field-styles";
-import { settingsFormFooterBarClass, settingsSectionDividerLineClass, settingsSectionDividerWrapClass, settingsSectionGapClass } from "@/lib/settings-chrome";
+import {
+	settingsFormFooterBarClass,
+	settingsSectionDividerLineClass,
+	settingsSectionDividerWrapClass,
+	settingsSectionGapClass,
+} from "@/lib/settings-chrome";
 import { UserAvatarUpload } from "@/components/user/user-avatar-upload";
 import { UserStatusNotePill } from "@/components/user/user-status-note-pill";
 import { translateError } from "@/integrations/i18n/translate-error";
@@ -127,22 +132,25 @@ export function UserSettingsProfilesSection({
 				<div className="flex flex-col">
 					<div id="user-settings-avatar">
 						<UserAvatarUpload
-						value={avatarFile}
-						onChange={(file) => {
-							setAvatarFile(file);
-							if (file) {
-								setAvatarCleared(false);
-							}
-						}}
-						avatarUrl={avatarCleared ? "" : avatarUrl}
-						initials={initials}
-						onClearExisting={() => setAvatarCleared(true)}
-					/>
+							value={avatarFile}
+							onChange={(file) => {
+								setAvatarFile(file);
+								if (file) {
+									setAvatarCleared(false);
+								}
+							}}
+							avatarUrl={avatarCleared ? "" : avatarUrl}
+							initials={initials}
+							onClearExisting={() => setAvatarCleared(true)}
+						/>
 					</div>
 
 					<div className={cn(settingsSectionGapClass, "space-y-4")}>
 						<div className="space-y-2">
-							<label htmlFor="user-settings-display-name" className={cn(authFieldLabelClass, "block")}>
+							<label
+								htmlFor="user-settings-display-name"
+								className={cn(authFieldLabelClass, "block")}
+							>
 								{t("user_settings.profiles.display_name")}
 							</label>
 							<Input
@@ -190,7 +198,10 @@ export function UserSettingsProfilesSection({
 					</div>
 
 					<div className="space-y-2">
-						<label htmlFor="user-settings-banner-color" className={cn(authFieldLabelClass, "block")}>
+						<label
+							htmlFor="user-settings-banner-color"
+							className={cn(authFieldLabelClass, "block")}
+						>
 							{t("user_settings.profiles.banner_color")}
 						</label>
 						<HexColorField
@@ -218,8 +229,7 @@ export function UserSettingsProfilesSection({
 				</div>
 
 				{/* Right column — sticky live preview card matching UserProfilePopover */}
-				<div className="space-y-2 lg:sticky lg:top-0">
-					<p className={authFieldLabelClass}>{t("user_settings.profiles.preview_label")}</p>
+				<div className="lg:sticky lg:top-0">
 					<div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
 						<div
 							className="h-[76px] transition-colors duration-150"

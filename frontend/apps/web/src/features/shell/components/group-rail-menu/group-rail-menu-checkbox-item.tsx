@@ -3,10 +3,7 @@
 import { Check } from "lucide-react";
 import type { ReactNode } from "react";
 import { useGroupMenuKit } from "@/features/shell/components/group-rail-menu/group-menu-kit";
-import {
-	menuCheckboxBoxClass,
-	menuCheckboxItemClass,
-} from "@/lib/menu-chrome";
+import { menuCheckboxBoxClass, menuCheckboxItemClass } from "@/lib/menu-chrome";
 import { cn } from "@/lib/utils";
 
 type GroupRailMenuCheckboxItemProps = {

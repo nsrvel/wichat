@@ -140,4 +140,3 @@ export function GifsTabPanel({ query, onSelectGif }: GifsTabPanelProps) {
 		</div>
 	);
 }
-

@@ -26,21 +26,23 @@ type recoveryCodeMock struct {
 
 // State is shared in-memory storage for user and auth repository mocks.
 type State struct {
-	mu            sync.Mutex
-	Users         []models.User
-	Sessions      []models.Session
-	Links         []googleLink
-	Settings      models.InstanceSettings
-	Groups        []models.Group
-	Members       []models.GroupMember
-	Invites       []models.GroupInviteRow
-	Channels      []models.Channel
-	Roles         []models.GroupRole
-	MemberRoles   []models.GroupMemberRoleRow
-	Bans          []models.GroupBanRow
-	MFATOTPs      map[string]models.MFATOTP
-	WebAuthnCreds []models.WebAuthnCredential
-	RecoveryCodes map[string][]recoveryCodeMock
+	mu                sync.Mutex
+	Users             []models.User
+	Sessions          []models.Session
+	Links             []googleLink
+	Settings          models.InstanceSettings
+	Groups            []models.Group
+	Members           []models.GroupMember
+	Invites           []models.GroupInviteRow
+	Channels          []models.Channel
+	ChannelCategories []models.ChannelCategory
+	Roles             []models.GroupRole
+	MemberRoles       []models.GroupMemberRoleRow
+	Bans              []models.GroupBanRow
+	MFATOTPs          map[string]models.MFATOTP
+	WebAuthnCreds     []models.WebAuthnCredential
+	RecoveryCodes     map[string][]recoveryCodeMock
+	Relationships     []models.UserRelationship
 }
 
 // NewState returns empty mock storage.
@@ -778,4 +780,55 @@ func (m *pgRepositoryMock) ConsumeRecoveryCode(_ context.Context, userID string,
 		}
 	}
 	return false, nil
+}
+
+func (m *pgRepositoryMock) ListRelationships(_ context.Context, userID string) ([]models.UserRelationship, error) {
+	m.st.mu.Lock()
+	defer m.st.mu.Unlock()
+
+	var out []models.UserRelationship
+	for _, rel := range m.st.Relationships {
+		if rel.UserID == userID {
+			out = append(out, rel)
+		}
+	}
+
+	return out, nil
+}
+
+func (m *pgRepositoryMock) UpsertRelationship(_ context.Context, userID, targetUserID, kind string, now time.Time) error {
+	m.st.mu.Lock()
+	defer m.st.mu.Unlock()
+
+	for i := range m.st.Relationships {
+		if m.st.Relationships[i].UserID == userID && m.st.Relationships[i].TargetUserID == targetUserID {
+			m.st.Relationships[i].Kind = kind
+			m.st.Relationships[i].CreatedAt = now
+			return nil
+		}
+	}
+	m.st.Relationships = append(m.st.Relationships, models.UserRelationship{
+		UserID:       userID,
+		TargetUserID: targetUserID,
+		Kind:         kind,
+		CreatedAt:    now,
+	})
+
+	return nil
+}
+
+func (m *pgRepositoryMock) DeleteRelationship(_ context.Context, userID, targetUserID string) error {
+	m.st.mu.Lock()
+	defer m.st.mu.Unlock()
+
+	filtered := m.st.Relationships[:0]
+	for _, rel := range m.st.Relationships {
+		if rel.UserID == userID && rel.TargetUserID == targetUserID {
+			continue
+		}
+		filtered = append(filtered, rel)
+	}
+	m.st.Relationships = filtered
+
+	return nil
 }

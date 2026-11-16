@@ -70,9 +70,7 @@ function DeviceLogoutDialogBody({
 	const revokeOthers = useRevokeOtherDevicesMutation();
 
 	const schema = z.object({
-		currentPassword: hasPassword
-			? z.string().min(1, "validation.password_required")
-			: z.string(),
+		currentPassword: hasPassword ? z.string().min(1, "validation.password_required") : z.string(),
 	});
 
 	const form = useForm<DeviceLogoutFormValues>({

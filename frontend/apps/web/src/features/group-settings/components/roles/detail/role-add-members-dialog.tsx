@@ -67,8 +67,7 @@ export function RoleAddMembersDialog({
 				return true;
 			}
 			return (
-				m.display_name.toLowerCase().includes(q) ||
-				(m.username ?? "").toLowerCase().includes(q)
+				m.display_name.toLowerCase().includes(q) || (m.username ?? "").toLowerCase().includes(q)
 			);
 		});
 	}, [allMembers, assignedUserIds, search]);
@@ -170,7 +169,9 @@ export function RoleAddMembersDialog({
 													) : null}
 												</div>
 												{member.username ? (
-													<p className="truncate text-xs text-muted-foreground">@{member.username}</p>
+													<p className="truncate text-xs text-muted-foreground">
+														@{member.username}
+													</p>
 												) : null}
 											</div>
 										</div>

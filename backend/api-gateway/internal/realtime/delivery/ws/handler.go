@@ -19,15 +19,18 @@ import (
 	"github.com/wichat/wichat/backend/wi-shared/microservices"
 	userv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/user/v1"
 	responsehttp "github.com/wichat/wichat/backend/wi-shared/response/http"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 var publicEntityID = regexp.MustCompile(`^[0-9a-f]{24}$`)
 
 type clientMessage struct {
-	Type      string `json:"type"`
-	GroupID   string `json:"group_id"`
-	ChannelID string `json:"channel_id"`
-	Activity  string `json:"activity"`
+	Type        string `json:"type"`
+	GroupID     string `json:"group_id"`
+	ChannelID   string `json:"channel_id"`
+	Activity    string `json:"activity"`
+	AccessToken string `json:"access_token,omitempty"`
 }
 
 type presenceUpdatedEvent struct {
@@ -159,18 +162,31 @@ func (h Handler) Realtime(w http.ResponseWriter, r *http.Request) {
 			if h.ms == nil {
 				continue
 			}
+			hbToken := token
+			if trimmed := strings.TrimSpace(msg.AccessToken); trimmed != "" {
+				hbToken = trimmed
+			}
 			tr, hbErr := h.ms.User.GRPC.Presence.HeartbeatPresence(connCtx, &userv1.HeartbeatPresenceRequest{
-				AccessToken: token,
+				AccessToken: hbToken,
 				ConnId:      connID,
 				Activity:    msg.Activity,
 			})
 			if hbErr != nil {
+				if status.Code(hbErr) == codes.Unauthenticated {
+					if authPayload, mErr := json.Marshal(struct {
+						Type string `json:"type"`
+					}{Type: "presence.auth_required"}); mErr == nil {
+						_ = conn.Write(connCtx, websocket.MessageText, authPayload)
+					}
+				}
 				continue
 			}
+			token = hbToken
 			userIDMu.Lock()
+			isFirstHeartbeat := authedUserID == ""
 			authedUserID = tr.GetUserId()
 			userIDMu.Unlock()
-			if tr.GetEffectiveStatus() != tr.GetPreviousStatus() {
+			if isFirstHeartbeat || tr.GetEffectiveStatus() != tr.GetPreviousStatus() {
 				if selfPayload, mErr := json.Marshal(presenceUpdatedEvent{
 					Type:           "presence.updated",
 					UserID:         tr.GetUserId(),

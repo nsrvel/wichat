@@ -3478,6 +3478,266 @@ func (x *ListUserActivityLogsResponse) GetNextCursor() string {
 	return ""
 }
 
+type UserRelationshipEntry struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	TargetUserId  string                 `protobuf:"bytes,1,opt,name=target_user_id,json=targetUserId,proto3" json:"target_user_id,omitempty"`
+	Kind          string                 `protobuf:"bytes,2,opt,name=kind,proto3" json:"kind,omitempty"`
+	CreatedAt     string                 `protobuf:"bytes,3,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UserRelationshipEntry) Reset() {
+	*x = UserRelationshipEntry{}
+	mi := &file_user_v1_user_proto_msgTypes[61]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UserRelationshipEntry) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UserRelationshipEntry) ProtoMessage() {}
+
+func (x *UserRelationshipEntry) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[61]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UserRelationshipEntry.ProtoReflect.Descriptor instead.
+func (*UserRelationshipEntry) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{61}
+}
+
+func (x *UserRelationshipEntry) GetTargetUserId() string {
+	if x != nil {
+		return x.TargetUserId
+	}
+	return ""
+}
+
+func (x *UserRelationshipEntry) GetKind() string {
+	if x != nil {
+		return x.Kind
+	}
+	return ""
+}
+
+func (x *UserRelationshipEntry) GetCreatedAt() string {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return ""
+}
+
+type ListUserRelationshipsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListUserRelationshipsRequest) Reset() {
+	*x = ListUserRelationshipsRequest{}
+	mi := &file_user_v1_user_proto_msgTypes[62]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListUserRelationshipsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListUserRelationshipsRequest) ProtoMessage() {}
+
+func (x *ListUserRelationshipsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[62]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListUserRelationshipsRequest.ProtoReflect.Descriptor instead.
+func (*ListUserRelationshipsRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{62}
+}
+
+func (x *ListUserRelationshipsRequest) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
+type ListUserRelationshipsResponse struct {
+	state         protoimpl.MessageState   `protogen:"open.v1"`
+	Relationships []*UserRelationshipEntry `protobuf:"bytes,1,rep,name=relationships,proto3" json:"relationships,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListUserRelationshipsResponse) Reset() {
+	*x = ListUserRelationshipsResponse{}
+	mi := &file_user_v1_user_proto_msgTypes[63]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListUserRelationshipsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListUserRelationshipsResponse) ProtoMessage() {}
+
+func (x *ListUserRelationshipsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[63]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListUserRelationshipsResponse.ProtoReflect.Descriptor instead.
+func (*ListUserRelationshipsResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{63}
+}
+
+func (x *ListUserRelationshipsResponse) GetRelationships() []*UserRelationshipEntry {
+	if x != nil {
+		return x.Relationships
+	}
+	return nil
+}
+
+type SetUserRelationshipRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	TargetUserId  string                 `protobuf:"bytes,2,opt,name=target_user_id,json=targetUserId,proto3" json:"target_user_id,omitempty"`
+	Kind          string                 `protobuf:"bytes,3,opt,name=kind,proto3" json:"kind,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetUserRelationshipRequest) Reset() {
+	*x = SetUserRelationshipRequest{}
+	mi := &file_user_v1_user_proto_msgTypes[64]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetUserRelationshipRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetUserRelationshipRequest) ProtoMessage() {}
+
+func (x *SetUserRelationshipRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[64]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetUserRelationshipRequest.ProtoReflect.Descriptor instead.
+func (*SetUserRelationshipRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{64}
+}
+
+func (x *SetUserRelationshipRequest) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
+func (x *SetUserRelationshipRequest) GetTargetUserId() string {
+	if x != nil {
+		return x.TargetUserId
+	}
+	return ""
+}
+
+func (x *SetUserRelationshipRequest) GetKind() string {
+	if x != nil {
+		return x.Kind
+	}
+	return ""
+}
+
+type SetUserRelationshipResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
+	Kind          string                 `protobuf:"bytes,2,opt,name=kind,proto3" json:"kind,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetUserRelationshipResponse) Reset() {
+	*x = SetUserRelationshipResponse{}
+	mi := &file_user_v1_user_proto_msgTypes[65]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetUserRelationshipResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetUserRelationshipResponse) ProtoMessage() {}
+
+func (x *SetUserRelationshipResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_user_proto_msgTypes[65]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetUserRelationshipResponse.ProtoReflect.Descriptor instead.
+func (*SetUserRelationshipResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_user_proto_rawDescGZIP(), []int{65}
+}
+
+func (x *SetUserRelationshipResponse) GetOk() bool {
+	if x != nil {
+		return x.Ok
+	}
+	return false
+}
+
+func (x *SetUserRelationshipResponse) GetKind() string {
+	if x != nil {
+		return x.Kind
+	}
+	return ""
+}
+
 var File_user_v1_user_proto protoreflect.FileDescriptor
 
 const file_user_v1_user_proto_rawDesc = "" +
@@ -3727,7 +3987,23 @@ const file_user_v1_user_proto_rawDesc = "" +
 	"\x1cListUserActivityLogsResponse\x12,\n" +
 	"\x04logs\x18\x01 \x03(\v2\x18.user.v1.UserActivityLogR\x04logs\x12\x1f\n" +
 	"\vnext_cursor\x18\x02 \x01(\tR\n" +
-	"nextCursor2\x8b\x14\n" +
+	"nextCursor\"p\n" +
+	"\x15UserRelationshipEntry\x12$\n" +
+	"\x0etarget_user_id\x18\x01 \x01(\tR\ftargetUserId\x12\x12\n" +
+	"\x04kind\x18\x02 \x01(\tR\x04kind\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\x03 \x01(\tR\tcreatedAt\"A\n" +
+	"\x1cListUserRelationshipsRequest\x12!\n" +
+	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\"e\n" +
+	"\x1dListUserRelationshipsResponse\x12D\n" +
+	"\rrelationships\x18\x01 \x03(\v2\x1e.user.v1.UserRelationshipEntryR\rrelationships\"y\n" +
+	"\x1aSetUserRelationshipRequest\x12!\n" +
+	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12$\n" +
+	"\x0etarget_user_id\x18\x02 \x01(\tR\ftargetUserId\x12\x12\n" +
+	"\x04kind\x18\x03 \x01(\tR\x04kind\"A\n" +
+	"\x1bSetUserRelationshipResponse\x12\x0e\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok\x12\x12\n" +
+	"\x04kind\x18\x02 \x01(\tR\x04kind2\xd5\x15\n" +
 	"\vUserService\x12H\n" +
 	"\vSetupStatus\x12\x1b.user.v1.SetupStatusRequest\x1a\x1c.user.v1.SetupStatusResponse\x12f\n" +
 	"\x15CompleteInstanceSetup\x12%.user.v1.CompleteInstanceSetupRequest\x1a&.user.v1.CompleteInstanceSetupResponse\x12H\n" +
@@ -3756,7 +4032,9 @@ const file_user_v1_user_proto_rawDesc = "" +
 	"\rDeleteAccount\x12\x1d.user.v1.DeleteAccountRequest\x1a\x1e.user.v1.DeleteAccountResponse\x12K\n" +
 	"\fListSessions\x12\x1c.user.v1.ListSessionsRequest\x1a\x1d.user.v1.ListSessionsResponse\x12N\n" +
 	"\rRevokeSession\x12\x1d.user.v1.RevokeSessionRequest\x1a\x1e.user.v1.RevokeSessionResponse\x12`\n" +
-	"\x13RevokeOtherSessions\x12#.user.v1.RevokeOtherSessionsRequest\x1a$.user.v1.RevokeOtherSessionsResponseB\x9b\x01\n" +
+	"\x13RevokeOtherSessions\x12#.user.v1.RevokeOtherSessionsRequest\x1a$.user.v1.RevokeOtherSessionsResponse\x12f\n" +
+	"\x15ListUserRelationships\x12%.user.v1.ListUserRelationshipsRequest\x1a&.user.v1.ListUserRelationshipsResponse\x12`\n" +
+	"\x13SetUserRelationship\x12#.user.v1.SetUserRelationshipRequest\x1a$.user.v1.SetUserRelationshipResponseB\x9b\x01\n" +
 	"\vcom.user.v1B\tUserProtoP\x01ZDgithub.com/wichat/wichat/backend/wi-shared/models/gen/user/v1;userv1\xa2\x02\x03UXX\xaa\x02\aUser.V1\xca\x02\aUser\\V1\xe2\x02\x13User\\V1\\GPBMetadata\xea\x02\bUser::V1b\x06proto3"
 
 var (
@@ -3771,7 +4049,7 @@ func file_user_v1_user_proto_rawDescGZIP() []byte {
 	return file_user_v1_user_proto_rawDescData
 }
 
-var file_user_v1_user_proto_msgTypes = make([]protoimpl.MessageInfo, 61)
+var file_user_v1_user_proto_msgTypes = make([]protoimpl.MessageInfo, 66)
 var file_user_v1_user_proto_goTypes = []any{
 	(*User)(nil),                             // 0: user.v1.User
 	(*SetupStatusRequest)(nil),               // 1: user.v1.SetupStatusRequest
@@ -3834,6 +4112,11 @@ var file_user_v1_user_proto_goTypes = []any{
 	(*UserActivityLog)(nil),                  // 58: user.v1.UserActivityLog
 	(*ListUserActivityLogsRequest)(nil),      // 59: user.v1.ListUserActivityLogsRequest
 	(*ListUserActivityLogsResponse)(nil),     // 60: user.v1.ListUserActivityLogsResponse
+	(*UserRelationshipEntry)(nil),            // 61: user.v1.UserRelationshipEntry
+	(*ListUserRelationshipsRequest)(nil),     // 62: user.v1.ListUserRelationshipsRequest
+	(*ListUserRelationshipsResponse)(nil),    // 63: user.v1.ListUserRelationshipsResponse
+	(*SetUserRelationshipRequest)(nil),       // 64: user.v1.SetUserRelationshipRequest
+	(*SetUserRelationshipResponse)(nil),      // 65: user.v1.SetUserRelationshipResponse
 }
 var file_user_v1_user_proto_depIdxs = []int32{
 	5,  // 0: user.v1.SearchUsersResponse.users:type_name -> user.v1.UserSearchHit
@@ -3848,67 +4131,72 @@ var file_user_v1_user_proto_depIdxs = []int32{
 	0,  // 9: user.v1.UpdateUserStatusNoteResponse.user:type_name -> user.v1.User
 	0,  // 10: user.v1.UpdateUserPreferencesResponse.user:type_name -> user.v1.User
 	58, // 11: user.v1.ListUserActivityLogsResponse.logs:type_name -> user.v1.UserActivityLog
-	1,  // 12: user.v1.UserService.SetupStatus:input_type -> user.v1.SetupStatusRequest
-	3,  // 13: user.v1.UserService.CompleteInstanceSetup:input_type -> user.v1.CompleteInstanceSetupRequest
-	8,  // 14: user.v1.UserService.SearchUsers:input_type -> user.v1.SearchUsersRequest
-	6,  // 15: user.v1.UserService.CheckUsername:input_type -> user.v1.CheckUsernameRequest
-	10, // 16: user.v1.UserService.UploadUserAvatar:input_type -> user.v1.UploadUserAvatarRequest
-	12, // 17: user.v1.UserService.UpdateUserProfile:input_type -> user.v1.UpdateUserProfileRequest
-	54, // 18: user.v1.UserService.UpdateUserStatusNote:input_type -> user.v1.UpdateUserStatusNoteRequest
-	56, // 19: user.v1.UserService.UpdateUserPreferences:input_type -> user.v1.UpdateUserPreferencesRequest
-	59, // 20: user.v1.UserService.ListUserActivityLogs:input_type -> user.v1.ListUserActivityLogsRequest
-	14, // 21: user.v1.UserService.UpdateUsername:input_type -> user.v1.UpdateUsernameRequest
-	16, // 22: user.v1.UserService.RequestEmailChange:input_type -> user.v1.RequestEmailChangeRequest
-	18, // 23: user.v1.UserService.VerifyEmailChange:input_type -> user.v1.VerifyEmailChangeRequest
-	20, // 24: user.v1.UserService.CompleteEmailChange:input_type -> user.v1.CompleteEmailChangeRequest
-	22, // 25: user.v1.UserService.UpdatePassword:input_type -> user.v1.UpdatePasswordRequest
-	25, // 26: user.v1.UserService.GetMFAStatus:input_type -> user.v1.GetMFAStatusRequest
-	27, // 27: user.v1.UserService.BeginTOTPSetup:input_type -> user.v1.BeginTOTPSetupRequest
-	29, // 28: user.v1.UserService.ConfirmTOTPSetup:input_type -> user.v1.ConfirmTOTPSetupRequest
-	31, // 29: user.v1.UserService.DisableTOTP:input_type -> user.v1.DisableTOTPRequest
-	33, // 30: user.v1.UserService.BeginWebAuthnRegister:input_type -> user.v1.BeginWebAuthnRegisterRequest
-	35, // 31: user.v1.UserService.FinishWebAuthnRegister:input_type -> user.v1.FinishWebAuthnRegisterRequest
-	37, // 32: user.v1.UserService.RenameWebAuthnCredential:input_type -> user.v1.RenameWebAuthnCredentialRequest
-	39, // 33: user.v1.UserService.DeleteWebAuthnCredential:input_type -> user.v1.DeleteWebAuthnCredentialRequest
-	41, // 34: user.v1.UserService.RegenerateRecoveryCodes:input_type -> user.v1.RegenerateRecoveryCodesRequest
-	43, // 35: user.v1.UserService.DisableAccount:input_type -> user.v1.DisableAccountRequest
-	45, // 36: user.v1.UserService.DeleteAccount:input_type -> user.v1.DeleteAccountRequest
-	48, // 37: user.v1.UserService.ListSessions:input_type -> user.v1.ListSessionsRequest
-	50, // 38: user.v1.UserService.RevokeSession:input_type -> user.v1.RevokeSessionRequest
-	52, // 39: user.v1.UserService.RevokeOtherSessions:input_type -> user.v1.RevokeOtherSessionsRequest
-	2,  // 40: user.v1.UserService.SetupStatus:output_type -> user.v1.SetupStatusResponse
-	4,  // 41: user.v1.UserService.CompleteInstanceSetup:output_type -> user.v1.CompleteInstanceSetupResponse
-	9,  // 42: user.v1.UserService.SearchUsers:output_type -> user.v1.SearchUsersResponse
-	7,  // 43: user.v1.UserService.CheckUsername:output_type -> user.v1.CheckUsernameResponse
-	11, // 44: user.v1.UserService.UploadUserAvatar:output_type -> user.v1.UploadUserAvatarResponse
-	13, // 45: user.v1.UserService.UpdateUserProfile:output_type -> user.v1.UpdateUserProfileResponse
-	55, // 46: user.v1.UserService.UpdateUserStatusNote:output_type -> user.v1.UpdateUserStatusNoteResponse
-	57, // 47: user.v1.UserService.UpdateUserPreferences:output_type -> user.v1.UpdateUserPreferencesResponse
-	60, // 48: user.v1.UserService.ListUserActivityLogs:output_type -> user.v1.ListUserActivityLogsResponse
-	15, // 49: user.v1.UserService.UpdateUsername:output_type -> user.v1.UpdateUsernameResponse
-	17, // 50: user.v1.UserService.RequestEmailChange:output_type -> user.v1.RequestEmailChangeResponse
-	19, // 51: user.v1.UserService.VerifyEmailChange:output_type -> user.v1.VerifyEmailChangeResponse
-	21, // 52: user.v1.UserService.CompleteEmailChange:output_type -> user.v1.CompleteEmailChangeResponse
-	23, // 53: user.v1.UserService.UpdatePassword:output_type -> user.v1.UpdatePasswordResponse
-	26, // 54: user.v1.UserService.GetMFAStatus:output_type -> user.v1.GetMFAStatusResponse
-	28, // 55: user.v1.UserService.BeginTOTPSetup:output_type -> user.v1.BeginTOTPSetupResponse
-	30, // 56: user.v1.UserService.ConfirmTOTPSetup:output_type -> user.v1.ConfirmTOTPSetupResponse
-	32, // 57: user.v1.UserService.DisableTOTP:output_type -> user.v1.DisableTOTPResponse
-	34, // 58: user.v1.UserService.BeginWebAuthnRegister:output_type -> user.v1.BeginWebAuthnRegisterResponse
-	36, // 59: user.v1.UserService.FinishWebAuthnRegister:output_type -> user.v1.FinishWebAuthnRegisterResponse
-	38, // 60: user.v1.UserService.RenameWebAuthnCredential:output_type -> user.v1.RenameWebAuthnCredentialResponse
-	40, // 61: user.v1.UserService.DeleteWebAuthnCredential:output_type -> user.v1.DeleteWebAuthnCredentialResponse
-	42, // 62: user.v1.UserService.RegenerateRecoveryCodes:output_type -> user.v1.RegenerateRecoveryCodesResponse
-	44, // 63: user.v1.UserService.DisableAccount:output_type -> user.v1.DisableAccountResponse
-	46, // 64: user.v1.UserService.DeleteAccount:output_type -> user.v1.DeleteAccountResponse
-	49, // 65: user.v1.UserService.ListSessions:output_type -> user.v1.ListSessionsResponse
-	51, // 66: user.v1.UserService.RevokeSession:output_type -> user.v1.RevokeSessionResponse
-	53, // 67: user.v1.UserService.RevokeOtherSessions:output_type -> user.v1.RevokeOtherSessionsResponse
-	40, // [40:68] is the sub-list for method output_type
-	12, // [12:40] is the sub-list for method input_type
-	12, // [12:12] is the sub-list for extension type_name
-	12, // [12:12] is the sub-list for extension extendee
-	0,  // [0:12] is the sub-list for field type_name
+	61, // 12: user.v1.ListUserRelationshipsResponse.relationships:type_name -> user.v1.UserRelationshipEntry
+	1,  // 13: user.v1.UserService.SetupStatus:input_type -> user.v1.SetupStatusRequest
+	3,  // 14: user.v1.UserService.CompleteInstanceSetup:input_type -> user.v1.CompleteInstanceSetupRequest
+	8,  // 15: user.v1.UserService.SearchUsers:input_type -> user.v1.SearchUsersRequest
+	6,  // 16: user.v1.UserService.CheckUsername:input_type -> user.v1.CheckUsernameRequest
+	10, // 17: user.v1.UserService.UploadUserAvatar:input_type -> user.v1.UploadUserAvatarRequest
+	12, // 18: user.v1.UserService.UpdateUserProfile:input_type -> user.v1.UpdateUserProfileRequest
+	54, // 19: user.v1.UserService.UpdateUserStatusNote:input_type -> user.v1.UpdateUserStatusNoteRequest
+	56, // 20: user.v1.UserService.UpdateUserPreferences:input_type -> user.v1.UpdateUserPreferencesRequest
+	59, // 21: user.v1.UserService.ListUserActivityLogs:input_type -> user.v1.ListUserActivityLogsRequest
+	14, // 22: user.v1.UserService.UpdateUsername:input_type -> user.v1.UpdateUsernameRequest
+	16, // 23: user.v1.UserService.RequestEmailChange:input_type -> user.v1.RequestEmailChangeRequest
+	18, // 24: user.v1.UserService.VerifyEmailChange:input_type -> user.v1.VerifyEmailChangeRequest
+	20, // 25: user.v1.UserService.CompleteEmailChange:input_type -> user.v1.CompleteEmailChangeRequest
+	22, // 26: user.v1.UserService.UpdatePassword:input_type -> user.v1.UpdatePasswordRequest
+	25, // 27: user.v1.UserService.GetMFAStatus:input_type -> user.v1.GetMFAStatusRequest
+	27, // 28: user.v1.UserService.BeginTOTPSetup:input_type -> user.v1.BeginTOTPSetupRequest
+	29, // 29: user.v1.UserService.ConfirmTOTPSetup:input_type -> user.v1.ConfirmTOTPSetupRequest
+	31, // 30: user.v1.UserService.DisableTOTP:input_type -> user.v1.DisableTOTPRequest
+	33, // 31: user.v1.UserService.BeginWebAuthnRegister:input_type -> user.v1.BeginWebAuthnRegisterRequest
+	35, // 32: user.v1.UserService.FinishWebAuthnRegister:input_type -> user.v1.FinishWebAuthnRegisterRequest
+	37, // 33: user.v1.UserService.RenameWebAuthnCredential:input_type -> user.v1.RenameWebAuthnCredentialRequest
+	39, // 34: user.v1.UserService.DeleteWebAuthnCredential:input_type -> user.v1.DeleteWebAuthnCredentialRequest
+	41, // 35: user.v1.UserService.RegenerateRecoveryCodes:input_type -> user.v1.RegenerateRecoveryCodesRequest
+	43, // 36: user.v1.UserService.DisableAccount:input_type -> user.v1.DisableAccountRequest
+	45, // 37: user.v1.UserService.DeleteAccount:input_type -> user.v1.DeleteAccountRequest
+	48, // 38: user.v1.UserService.ListSessions:input_type -> user.v1.ListSessionsRequest
+	50, // 39: user.v1.UserService.RevokeSession:input_type -> user.v1.RevokeSessionRequest
+	52, // 40: user.v1.UserService.RevokeOtherSessions:input_type -> user.v1.RevokeOtherSessionsRequest
+	62, // 41: user.v1.UserService.ListUserRelationships:input_type -> user.v1.ListUserRelationshipsRequest
+	64, // 42: user.v1.UserService.SetUserRelationship:input_type -> user.v1.SetUserRelationshipRequest
+	2,  // 43: user.v1.UserService.SetupStatus:output_type -> user.v1.SetupStatusResponse
+	4,  // 44: user.v1.UserService.CompleteInstanceSetup:output_type -> user.v1.CompleteInstanceSetupResponse
+	9,  // 45: user.v1.UserService.SearchUsers:output_type -> user.v1.SearchUsersResponse
+	7,  // 46: user.v1.UserService.CheckUsername:output_type -> user.v1.CheckUsernameResponse
+	11, // 47: user.v1.UserService.UploadUserAvatar:output_type -> user.v1.UploadUserAvatarResponse
+	13, // 48: user.v1.UserService.UpdateUserProfile:output_type -> user.v1.UpdateUserProfileResponse
+	55, // 49: user.v1.UserService.UpdateUserStatusNote:output_type -> user.v1.UpdateUserStatusNoteResponse
+	57, // 50: user.v1.UserService.UpdateUserPreferences:output_type -> user.v1.UpdateUserPreferencesResponse
+	60, // 51: user.v1.UserService.ListUserActivityLogs:output_type -> user.v1.ListUserActivityLogsResponse
+	15, // 52: user.v1.UserService.UpdateUsername:output_type -> user.v1.UpdateUsernameResponse
+	17, // 53: user.v1.UserService.RequestEmailChange:output_type -> user.v1.RequestEmailChangeResponse
+	19, // 54: user.v1.UserService.VerifyEmailChange:output_type -> user.v1.VerifyEmailChangeResponse
+	21, // 55: user.v1.UserService.CompleteEmailChange:output_type -> user.v1.CompleteEmailChangeResponse
+	23, // 56: user.v1.UserService.UpdatePassword:output_type -> user.v1.UpdatePasswordResponse
+	26, // 57: user.v1.UserService.GetMFAStatus:output_type -> user.v1.GetMFAStatusResponse
+	28, // 58: user.v1.UserService.BeginTOTPSetup:output_type -> user.v1.BeginTOTPSetupResponse
+	30, // 59: user.v1.UserService.ConfirmTOTPSetup:output_type -> user.v1.ConfirmTOTPSetupResponse
+	32, // 60: user.v1.UserService.DisableTOTP:output_type -> user.v1.DisableTOTPResponse
+	34, // 61: user.v1.UserService.BeginWebAuthnRegister:output_type -> user.v1.BeginWebAuthnRegisterResponse
+	36, // 62: user.v1.UserService.FinishWebAuthnRegister:output_type -> user.v1.FinishWebAuthnRegisterResponse
+	38, // 63: user.v1.UserService.RenameWebAuthnCredential:output_type -> user.v1.RenameWebAuthnCredentialResponse
+	40, // 64: user.v1.UserService.DeleteWebAuthnCredential:output_type -> user.v1.DeleteWebAuthnCredentialResponse
+	42, // 65: user.v1.UserService.RegenerateRecoveryCodes:output_type -> user.v1.RegenerateRecoveryCodesResponse
+	44, // 66: user.v1.UserService.DisableAccount:output_type -> user.v1.DisableAccountResponse
+	46, // 67: user.v1.UserService.DeleteAccount:output_type -> user.v1.DeleteAccountResponse
+	49, // 68: user.v1.UserService.ListSessions:output_type -> user.v1.ListSessionsResponse
+	51, // 69: user.v1.UserService.RevokeSession:output_type -> user.v1.RevokeSessionResponse
+	53, // 70: user.v1.UserService.RevokeOtherSessions:output_type -> user.v1.RevokeOtherSessionsResponse
+	63, // 71: user.v1.UserService.ListUserRelationships:output_type -> user.v1.ListUserRelationshipsResponse
+	65, // 72: user.v1.UserService.SetUserRelationship:output_type -> user.v1.SetUserRelationshipResponse
+	43, // [43:73] is the sub-list for method output_type
+	13, // [13:43] is the sub-list for method input_type
+	13, // [13:13] is the sub-list for extension type_name
+	13, // [13:13] is the sub-list for extension extendee
+	0,  // [0:13] is the sub-list for field type_name
 }
 
 func init() { file_user_v1_user_proto_init() }
@@ -3922,7 +4210,7 @@ func file_user_v1_user_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_user_v1_user_proto_rawDesc), len(file_user_v1_user_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   61,
+			NumMessages:   66,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

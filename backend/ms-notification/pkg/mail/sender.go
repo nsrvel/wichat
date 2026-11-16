@@ -4,10 +4,13 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/wichat/wichat/backend/ms-notification/internal/config"
 	mail "github.com/wneessen/go-mail"
 )
+
+const smtpTimeout = 10 * time.Second
 
 // Sender delivers HTML email over SMTP.
 type Sender interface {
@@ -28,6 +31,7 @@ func NewSender(cfg config.Config) (Sender, error) {
 
 	opts := []mail.Option{
 		mail.WithPort(cfg.SMTPPort),
+		mail.WithTimeout(smtpTimeout),
 		mail.WithSMTPAuth(mail.SMTPAuthPlain),
 		mail.WithUsername(cfg.SMTPUser),
 		mail.WithPassword(cfg.SMTPPassword),

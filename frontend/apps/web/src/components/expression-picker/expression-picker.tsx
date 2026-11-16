@@ -145,11 +145,7 @@ export function ExpressionPicker({
 		getRecentStickers,
 		() => EMPTY_STICKER_LIST,
 	);
-	const skinTone = useSyncExternalStore(
-		subscribeRecentExpressions,
-		getSavedSkinTone,
-		() => 0,
-	);
+	const skinTone = useSyncExternalStore(subscribeRecentExpressions, getSavedSkinTone, () => 0);
 
 	if (enabledTabs.length === 0) {
 		return null;
@@ -199,10 +195,7 @@ export function ExpressionPicker({
 			)}
 		>
 			{showTabBar ? (
-				<div
-					role="tablist"
-					className="flex items-center justify-around px-3 pt-2"
-				>
+				<div role="tablist" className="flex items-center justify-around px-3 pt-2">
 					{enabledTabs.map((tab) => {
 						const active = resolvedTab === tab;
 						return (
@@ -214,9 +207,7 @@ export function ExpressionPicker({
 								onClick={() => setTab(tab)}
 								className={cn(
 									"relative px-3 py-2 text-[13px] font-medium transition-colors",
-									active
-										? "text-foreground"
-										: "text-muted-foreground hover:text-foreground",
+									active ? "text-foreground" : "text-muted-foreground hover:text-foreground",
 								)}
 							>
 								{t(`expression.tabs.${tab}`)}
@@ -238,42 +229,42 @@ export function ExpressionPicker({
 			/>
 
 			<div className="flex min-h-0 flex-1 flex-col">
-			{resolvedTab === "all" ? (
+				{resolvedTab === "all" ? (
 					<AllTabPanel
 						query={query}
 						debouncedQuery={debouncedQuery}
 						enableEmoji={allowEmoji}
 						enableGifs={gifsAvailable}
-					enableStickers={stickersAvailable}
-					recentEmojis={recentEmojis}
-					recentStickers={recentStickers}
-					onNavigateTab={setTab}
-					onSelectEmoji={handleSelectEmoji}
-					onSelectGif={handleSelectGif}
-					onSelectSticker={handleSelectSticker}
-				/>
-			) : null}
+						enableStickers={stickersAvailable}
+						recentEmojis={recentEmojis}
+						recentStickers={recentStickers}
+						onNavigateTab={setTab}
+						onSelectEmoji={handleSelectEmoji}
+						onSelectGif={handleSelectGif}
+						onSelectSticker={handleSelectSticker}
+					/>
+				) : null}
 
-			{resolvedTab === "emoji" ? (
-				<EmojiTabPanel
-					query={query}
-					recentEmojis={recentEmojis}
-					skinTone={skinTone}
-					onSelectEmoji={handleSelectEmoji}
-				/>
-			) : null}
+				{resolvedTab === "emoji" ? (
+					<EmojiTabPanel
+						query={query}
+						recentEmojis={recentEmojis}
+						skinTone={skinTone}
+						onSelectEmoji={handleSelectEmoji}
+					/>
+				) : null}
 
-			{resolvedTab === "gifs" && gifsAvailable ? (
-				<GifsTabPanel query={debouncedQuery} onSelectGif={handleSelectGif} />
-			) : null}
+				{resolvedTab === "gifs" && gifsAvailable ? (
+					<GifsTabPanel query={debouncedQuery} onSelectGif={handleSelectGif} />
+				) : null}
 
-			{resolvedTab === "stickers" && stickersAvailable ? (
-				<StickersTabPanel
-					query={debouncedQuery}
-					recentStickers={recentStickers}
-					onSelectSticker={handleSelectSticker}
-				/>
-			) : null}
+				{resolvedTab === "stickers" && stickersAvailable ? (
+					<StickersTabPanel
+						query={debouncedQuery}
+						recentStickers={recentStickers}
+						onSelectSticker={handleSelectSticker}
+					/>
+				) : null}
 			</div>
 		</div>
 	);

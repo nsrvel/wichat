@@ -74,9 +74,14 @@ func TestMappersNilAndValues(t *testing.T) {
 		t.Fatal("group")
 	}
 
-	channels := authPb.ChannelSummaries([]models.PublicChannel{{ID: "c1", Name: "general", Type: "text"}})
-	if len(channels) != 1 || channels[0].Name != "general" {
+	channels := authPb.ChannelSummaries([]models.PublicChannel{{ID: "c1", Name: "general", Type: "text_only", CategoryID: "cat1"}})
+	if len(channels) != 1 || channels[0].Name != "general" || channels[0].CategoryId != "cat1" {
 		t.Fatal("channels")
+	}
+
+	cats := authPb.ChannelCategories([]models.PublicChannelCategory{{ID: "cat1", Name: "Text Channels", Position: 0}})
+	if len(cats) != 1 || cats[0].Name != "Text Channels" {
+		t.Fatal("categories")
 	}
 
 	groups := authPb.GroupSummaries([]models.PublicGroup{group})

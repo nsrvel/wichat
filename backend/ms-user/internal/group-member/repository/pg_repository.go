@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/uptrace/bun"
@@ -21,7 +22,10 @@ type PgRepository interface {
 	ListGroupMemberIDs(ctx context.Context, groupID string) ([]string, error)
 	ListGroupMembersPage(ctx context.Context, groupID string, limit int, cursor *models.GroupMemberCursor) ([]models.GroupMemberProfile, *models.GroupMemberCursor, error)
 	IsMemberBanned(ctx context.Context, groupID, userID string) (bool, error)
-	BanMembers(ctx context.Context, groupID string, userIDs []string, bannedBy, reason string, deleteSeconds int) (int, error)
+	BanMembers(ctx context.Context, groupID string, userIDs []string, bannedBy, reason string, deleteSeconds int, expiresAt *time.Time) (int, error)
+	ListBansPage(ctx context.Context, groupID, search string, limit int, cursor *models.GroupMemberCursor) ([]models.GroupBanEntry, *models.GroupMemberCursor, int, error)
+	UnbanMember(ctx context.Context, groupID, userID string) error
+	UpdateGroupMemberTimeout(ctx context.Context, groupID, userID string, timeoutUntil *time.Time) error
 }
 
 type pgRepository struct {
@@ -47,7 +51,7 @@ func (r pgRepository) FindGroupMember(ctx context.Context, groupID, userID strin
 	}
 
 	return models.GroupMember{
-		GroupID: row.GroupID, UserID: row.UserID, Role: row.Role, CreatedAt: row.CreatedAt,
+		GroupID: row.GroupID, UserID: row.UserID, Role: row.Role, TimeoutUntil: row.TimeoutUntil, CreatedAt: row.CreatedAt,
 	}, nil
 }
 
@@ -124,12 +128,25 @@ func (r pgRepository) ListGroupMemberIDs(ctx context.Context, groupID string) ([
 }
 
 type groupMemberJoinedRow struct {
-	UserID      string    `bun:"user_id"`
-	DisplayName string    `bun:"display_name"`
-	Username    string    `bun:"username"`
-	AvatarURL   string    `bun:"avatar_url"`
-	Role        string    `bun:"role"`
-	CreatedAt   time.Time `bun:"created_at"`
+	UserID               string     `bun:"user_id"`
+	DisplayName          string     `bun:"display_name"`
+	Username             string     `bun:"username"`
+	AvatarURL            string     `bun:"avatar_url"`
+	BannerColor          string     `bun:"banner_color"`
+	Bio                  string     `bun:"bio"`
+	Pronouns             string     `bun:"pronouns"`
+	UserCreatedAt        time.Time  `bun:"user_created_at"`
+	StatusNoteText       string     `bun:"status_note_text"`
+	StatusNoteEmoji      string     `bun:"status_note_emoji"`
+	StatusNoteExpiresAt  *time.Time `bun:"status_note_expires_at"`
+	JoinMethod           string     `bun:"join_method"`
+	InviteCode           string     `bun:"invite_code"`
+	InvitedByUserID      string     `bun:"invited_by_user_id"`
+	InvitedByUsername    string     `bun:"invited_by_username"`
+	InvitedByDisplayName string     `bun:"invited_by_display_name"`
+	TimeoutUntil         *time.Time `bun:"timeout_until"`
+	Role                 string     `bun:"role"`
+	CreatedAt            time.Time  `bun:"created_at"`
 }
 
 // ListGroupMembersPage returns members ordered by join time then user id.
@@ -148,9 +165,11 @@ func (r pgRepository) ListGroupMembersPage(
 
 	q := r.db.NewSelect().
 		TableExpr("group_members AS m").
-		ColumnExpr("m.user_id, m.role, m.created_at").
-		ColumnExpr("u.display_name, u.username, u.avatar_url").
+		ColumnExpr("m.user_id, m.role, m.created_at, m.join_method, m.invite_code, COALESCE(m.invited_by_user_id::text, '') AS invited_by_user_id, m.timeout_until").
+		ColumnExpr("u.display_name, u.username, u.avatar_url, u.banner_color, u.bio, u.pronouns, u.created_at AS user_created_at, u.status_note_text, u.status_note_emoji, u.status_note_expires_at").
+		ColumnExpr("COALESCE(inv.username, '') AS invited_by_username, COALESCE(inv.display_name, '') AS invited_by_display_name").
 		Join("JOIN users AS u ON u.id = m.user_id").
+		Join("LEFT JOIN users AS inv ON inv.id = m.invited_by_user_id").
 		Where("m.group_id = ?", groupID).
 		OrderExpr("m.created_at ASC, m.user_id ASC").
 		Limit(int64(limit + 1))
@@ -179,22 +198,35 @@ func (r pgRepository) ListGroupMembersPage(
 	out := make([]models.GroupMemberProfile, len(rows))
 	for i, row := range rows {
 		out[i] = models.GroupMemberProfile{
-			UserID:      row.UserID,
-			DisplayName: row.DisplayName,
-			Username:    row.Username,
-			AvatarURL:   row.AvatarURL,
-			Role:        row.Role,
-			JoinedAt:    row.CreatedAt,
+			UserID:               row.UserID,
+			DisplayName:          row.DisplayName,
+			Username:             row.Username,
+			AvatarURL:            row.AvatarURL,
+			BannerColor:          row.BannerColor,
+			Bio:                  row.Bio,
+			Pronouns:             row.Pronouns,
+			UserCreatedAt:        row.UserCreatedAt,
+			StatusNoteText:       row.StatusNoteText,
+			StatusNoteEmoji:      row.StatusNoteEmoji,
+			StatusNoteExpiresAt:  row.StatusNoteExpiresAt,
+			JoinMethod:           row.JoinMethod,
+			InviteCode:           row.InviteCode,
+			InvitedByUserID:      row.InvitedByUserID,
+			InvitedByUsername:    row.InvitedByUsername,
+			InvitedByDisplayName: row.InvitedByDisplayName,
+			TimeoutUntil:         row.TimeoutUntil,
+			Role:                 row.Role,
+			JoinedAt:             row.CreatedAt,
 		}
 	}
 
 	return out, next, nil
 }
 
-// IsMemberBanned checks whether a user is banned from a group.
+// IsMemberBanned checks whether a user has an active ban in a group.
 func (r pgRepository) IsMemberBanned(ctx context.Context, groupID, userID string) (bool, error) {
 	exists, err := r.db.NewSelect().Model((*models.GroupBanRow)(nil)).
-		Where("group_id = ? AND user_id = ?", groupID, userID).
+		Where("group_id = ? AND user_id = ? AND (expires_at IS NULL OR expires_at > now())", groupID, userID).
 		Exists(ctx)
 	if err != nil {
 		r.logIfInfraErr("IsMemberBanned", err)
@@ -204,7 +236,7 @@ func (r pgRepository) IsMemberBanned(ctx context.Context, groupID, userID string
 }
 
 // BanMembers records bans and removes users from group membership.
-func (r pgRepository) BanMembers(ctx context.Context, groupID string, userIDs []string, bannedBy, reason string, deleteSeconds int) (int, error) {
+func (r pgRepository) BanMembers(ctx context.Context, groupID string, userIDs []string, bannedBy, reason string, deleteSeconds int, expiresAt *time.Time) (int, error) {
 	bannedCount := 0
 	err := r.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
 		now := time.Now().UTC()
@@ -229,10 +261,11 @@ func (r pgRepository) BanMembers(ctx context.Context, groupID string, userIDs []
 				BannedBy:             bannedByPtr,
 				Reason:               reason,
 				DeleteMessageSeconds: deleteSeconds,
+				ExpiresAt:            expiresAt,
 				CreatedAt:            now,
 			}
 			if _, err := tx.NewInsert().Model(&ban).
-				On("CONFLICT (group_id, user_id) DO UPDATE SET reason = EXCLUDED.reason, delete_message_seconds = EXCLUDED.delete_message_seconds").
+				On("CONFLICT (group_id, user_id) DO UPDATE SET banned_by = EXCLUDED.banned_by, reason = EXCLUDED.reason, delete_message_seconds = EXCLUDED.delete_message_seconds, expires_at = EXCLUDED.expires_at").
 				Exec(ctx); err != nil {
 				return err
 			}
@@ -256,6 +289,118 @@ func (r pgRepository) BanMembers(ctx context.Context, groupID string, userIDs []
 		return 0, err
 	}
 	return bannedCount, nil
+}
+
+type groupBanQueryRow struct {
+	UserID              string     `bun:"user_id"`
+	Username            string     `bun:"username"`
+	DisplayName         string     `bun:"display_name"`
+	AvatarURL           string     `bun:"avatar_url"`
+	Reason              string     `bun:"reason"`
+	BannedByUserID      string     `bun:"banned_by_user_id"`
+	BannedByUsername    string     `bun:"banned_by_username"`
+	BannedByDisplayName string     `bun:"banned_by_display_name"`
+	ExpiresAt           *time.Time `bun:"expires_at"`
+	CreatedAt           time.Time  `bun:"created_at"`
+}
+
+func escapeILIKEPattern(raw string) string {
+	r := strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
+	return "%" + r.Replace(strings.TrimSpace(raw)) + "%"
+}
+
+// ListBansPage returns active group bans ordered by newest ban first with optional search.
+func (r pgRepository) ListBansPage(
+	ctx context.Context,
+	groupID, search string,
+	limit int,
+	cursor *models.GroupMemberCursor,
+) ([]models.GroupBanEntry, *models.GroupMemberCursor, int, error) {
+	if limit <= 0 {
+		limit = constants.DefaultMemberListLimit
+	}
+	if limit > constants.MaxMemberListLimit {
+		limit = constants.MaxMemberListLimit
+	}
+
+	trimmedSearch := strings.TrimSpace(search)
+	countQ := r.db.NewSelect().
+		TableExpr("group_bans AS b").
+		Join("JOIN users AS u ON u.id = b.user_id").
+		Where("b.group_id = ? AND (b.expires_at IS NULL OR b.expires_at > now())", groupID)
+	if trimmedSearch != "" {
+		pat := escapeILIKEPattern(trimmedSearch)
+		countQ = countQ.Where("(u.username ILIKE ? OR u.display_name ILIKE ? OR b.reason ILIKE ?)", pat, pat, pat)
+	}
+	total, err := countQ.Count(ctx)
+	if err != nil {
+		r.logIfInfraErr("ListBansPage.Count", err)
+		return nil, nil, 0, err
+	}
+
+	q := r.db.NewSelect().
+		TableExpr("group_bans AS b").
+		ColumnExpr("b.user_id, u.username, u.display_name, COALESCE(u.avatar_url, '') AS avatar_url, b.reason, COALESCE(b.banned_by::text, '') AS banned_by_user_id, COALESCE(bu.username, '') AS banned_by_username, COALESCE(bu.display_name, '') AS banned_by_display_name, b.expires_at, b.created_at").
+		Join("JOIN users AS u ON u.id = b.user_id").
+		Join("LEFT JOIN users AS bu ON bu.id = b.banned_by").
+		Where("b.group_id = ? AND (b.expires_at IS NULL OR b.expires_at > now())", groupID)
+	if trimmedSearch != "" {
+		pat := escapeILIKEPattern(trimmedSearch)
+		q = q.Where("(u.username ILIKE ? OR u.display_name ILIKE ? OR b.reason ILIKE ?)", pat, pat, pat)
+	}
+	if cursor != nil {
+		q = q.Where("(b.created_at < ? OR (b.created_at = ? AND b.user_id > ?))", cursor.CreatedAt, cursor.CreatedAt, cursor.UserID)
+	}
+
+	var rows []groupBanQueryRow
+	if err := q.OrderExpr("b.created_at DESC, b.user_id ASC").Limit(int64(limit+1)).Scan(ctx, &rows); err != nil {
+		r.logIfInfraErr("ListBansPage", err)
+		return nil, nil, 0, err
+	}
+
+	var next *models.GroupMemberCursor
+	if len(rows) > limit {
+		last := rows[limit-1]
+		next = &models.GroupMemberCursor{CreatedAt: last.CreatedAt, UserID: last.UserID}
+		rows = rows[:limit]
+	}
+
+	out := make([]models.GroupBanEntry, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, models.GroupBanEntry(row))
+	}
+	return out, next, int(total), nil
+}
+
+// UnbanMember removes an active ban record from a group.
+func (r pgRepository) UnbanMember(ctx context.Context, groupID, userID string) error {
+	res, err := r.db.NewDelete().Model((*models.GroupBanRow)(nil)).
+		Where("group_id = ? AND user_id = ?", groupID, userID).
+		Exec(ctx)
+	if err != nil {
+		r.logIfInfraErr("UnbanMember", err)
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return constants.ErrNotFound
+	}
+	return nil
+}
+
+// UpdateGroupMemberTimeout sets or clears timeout_until for a group member.
+func (r pgRepository) UpdateGroupMemberTimeout(ctx context.Context, groupID, userID string, timeoutUntil *time.Time) error {
+	res, err := r.db.NewUpdate().Model((*models.GroupMemberRow)(nil)).
+		Set("timeout_until = ?", timeoutUntil).
+		Where("group_id = ? AND user_id = ?", groupID, userID).
+		Exec(ctx)
+	if err != nil {
+		r.logIfInfraErr("UpdateGroupMemberTimeout", err)
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return constants.ErrNotFound
+	}
+	return nil
 }
 
 func (r pgRepository) logIfInfraErr(op string, err error) {

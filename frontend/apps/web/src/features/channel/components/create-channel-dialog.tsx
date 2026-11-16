@@ -71,6 +71,7 @@ type CreateChannelDialogProps = {
 	onOpenChange: (open: boolean) => void;
 	target: CreateChannelTarget | null;
 	onSubmitChannel?: (values: CreateChannelFormValues, target: CreateChannelTarget) => void;
+	submitting?: boolean;
 };
 
 export function CreateChannelDialog({
@@ -78,6 +79,7 @@ export function CreateChannelDialog({
 	onOpenChange,
 	target,
 	onSubmitChannel,
+	submitting = false,
 }: CreateChannelDialogProps) {
 	const { t } = useTranslation();
 	const privateSwitchId = useId();
@@ -158,14 +160,14 @@ export function CreateChannelDialog({
 						onSubmit={form.handleSubmit((values) => {
 							if (target && onSubmitChannel) {
 								onSubmitChannel(values, target);
-							} else {
-								toast.info(
-									t("channel.create_channel_dialog.preview_toast", {
-										name: values.name,
-										type: t(`channel.create_channel_dialog.types.${values.type}.label`),
-									}),
-								);
+								return;
 							}
+							toast.info(
+								t("channel.create_channel_dialog.preview_toast", {
+									name: values.name,
+									type: t(`channel.create_channel_dialog.types.${values.type}.label`),
+								}),
+							);
 							handleOpenChange(false);
 						})}
 					>
@@ -319,7 +321,7 @@ export function CreateChannelDialog({
 					primaryLabel={t("channel.create_channel_dialog.submit")}
 					primaryType="submit"
 					primaryForm={CREATE_CHANNEL_FORM_ID}
-					primaryDisabled={!canSubmit}
+					primaryDisabled={!canSubmit || submitting}
 					backClassName={cn(authSubmitGhostClass, authFormFooterButtonClass)}
 					primaryClassName={cn(authSubmitClass, authFormFooterButtonClass)}
 				/>

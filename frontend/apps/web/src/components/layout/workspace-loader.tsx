@@ -54,9 +54,7 @@ export function WorkspaceLoader({
 				/>
 			))}
 			<span
-				className={
-					showLabel ? "text-xs font-medium text-muted-foreground" : "sr-only"
-				}
+				className={showLabel ? "text-xs font-medium text-muted-foreground" : "sr-only"}
 				suppressHydrationWarning
 			>
 				{t(labelKey)}
@@ -64,4 +62,3 @@ export function WorkspaceLoader({
 		</div>
 	);
 }
-

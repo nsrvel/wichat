@@ -158,9 +158,7 @@ export function UserSettingsDialog({
 								{t(activeItem.labelKey)}
 							</h2>
 							{activeItem.subtitleKey ? (
-								<p className="mt-0.5 text-xs text-muted-foreground">
-									{t(activeItem.subtitleKey)}
-								</p>
+								<p className="mt-0.5 text-xs text-muted-foreground">{t(activeItem.subtitleKey)}</p>
 							) : null}
 						</div>
 						<button

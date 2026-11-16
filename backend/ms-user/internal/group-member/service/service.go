@@ -8,6 +8,7 @@ import (
 	"time"
 
 	authrepo "github.com/wichat/wichat/backend/ms-user/internal/auth/repository"
+	groupactivitysvc "github.com/wichat/wichat/backend/ms-user/internal/group-activity-log/service"
 	groupmemberrepo "github.com/wichat/wichat/backend/ms-user/internal/group-member/repository"
 	grouprolerepo "github.com/wichat/wichat/backend/ms-user/internal/group-role/repository"
 	grouprepo "github.com/wichat/wichat/backend/ms-user/internal/group/repository"
@@ -26,22 +27,27 @@ type Service interface {
 	JoinGroup(ctx context.Context, accessToken, groupPublicID string) error
 	LeaveGroup(ctx context.Context, accessToken, groupPublicID string) error
 	ListGroupMembers(ctx context.Context, accessToken, groupPublicID string, limit int, cursor *models.GroupMemberCursor) (*models.GroupMemberPage, error)
-	KickGroupMember(ctx context.Context, accessToken, groupPublicID, targetUserID string) error
-	BanGroupMembers(ctx context.Context, accessToken, groupPublicID string, targetUserIDs []string, reason string, deleteSeconds int) (int, error)
+	KickGroupMember(ctx context.Context, accessToken, groupPublicID, targetUserID, reason string) error
+	BanGroupMembers(ctx context.Context, accessToken, groupPublicID string, targetUserIDs []string, reason string, deleteSeconds int, durationSeconds int64) (int, error)
+	TimeoutGroupMember(ctx context.Context, accessToken, groupPublicID, targetUserID string, durationSeconds int, reason string) (*time.Time, error)
+	ListGroupBans(ctx context.Context, accessToken, groupPublicID, search string, limit int, cursor *models.GroupMemberCursor) (*models.GroupBanPage, error)
+	UnbanGroupMember(ctx context.Context, accessToken, groupPublicID, targetUserID string) error
 	WithActivityLog(r activitysvc.Recorder) Service
+	WithGroupActivityLog(r groupactivitysvc.Recorder) Service
 	WithPresence(p presencesvc.Reader) Service
 }
 
 type service struct {
-	members  groupmemberrepo.PgRepository
-	groups   grouprepo.PgRepository
-	roles    grouprolerepo.PgRepository
-	sessions authrepo.SessionRepository
-	activity activitysvc.Recorder
-	presence presencesvc.Reader
-	secret   []byte
-	log      logger.Logger
-	now      func() time.Time
+	members       groupmemberrepo.PgRepository
+	groups        grouprepo.PgRepository
+	roles         grouprolerepo.PgRepository
+	sessions      authrepo.SessionRepository
+	activity      activitysvc.Recorder
+	groupActivity groupactivitysvc.Recorder
+	presence      presencesvc.Reader
+	secret        []byte
+	log           logger.Logger
+	now           func() time.Time
 }
 
 // NewService builds group member use cases.
@@ -70,6 +76,21 @@ func NewService(
 func (s service) WithActivityLog(r activitysvc.Recorder) Service {
 	s.activity = r
 	return s
+}
+
+func (s service) WithGroupActivityLog(r groupactivitysvc.Recorder) Service {
+	s.groupActivity = r
+	return s
+}
+
+func (s service) recordGroupActivity(ctx context.Context, entry models.GroupActivityLogEntry) {
+	if s.groupActivity == nil {
+		return
+	}
+	if entry.CreatedAt.IsZero() {
+		entry.CreatedAt = s.now()
+	}
+	s.groupActivity.Record(ctx, entry)
 }
 
 func (s service) WithPresence(p presencesvc.Reader) Service {
@@ -122,10 +143,11 @@ func (s service) JoinGroup(ctx context.Context, accessToken, groupPublicID strin
 
 	now := s.now()
 	if err := s.members.InsertGroupMember(ctx, models.GroupMember{
-		GroupID:   group.ID,
-		UserID:    userID,
-		Role:      constants.GroupRoleMember,
-		CreatedAt: now,
+		GroupID:    group.ID,
+		UserID:     userID,
+		Role:       constants.GroupRoleMember,
+		JoinMethod: constants.JoinMethodOpen,
+		CreatedAt:  now,
 	}); err != nil {
 		return err
 	}
@@ -138,6 +160,17 @@ func (s service) JoinGroup(ctx context.Context, accessToken, groupPublicID strin
 		TargetID:   group.PublicID,
 		Summary:    "Joined group",
 		Metadata:   map[string]any{"group_id": group.ID, "group_name": group.Name, "via": "direct"},
+		CreatedAt:  now,
+	})
+	s.recordGroupActivity(ctx, models.GroupActivityLogEntry{
+		GroupID:    group.ID,
+		ActorID:    userID,
+		Category:   constants.GroupAuditCategoryMember,
+		Action:     constants.GroupAuditMemberJoined,
+		TargetType: constants.GroupAuditTargetMember,
+		TargetID:   userID,
+		Summary:    "Joined group",
+		Metadata:   map[string]any{"via": "direct"},
 		CreatedAt:  now,
 	})
 	return nil
@@ -189,6 +222,15 @@ func (s service) LeaveGroup(ctx context.Context, accessToken, groupPublicID stri
 		TargetID:   group.PublicID,
 		Summary:    "Left group",
 		Metadata:   map[string]any{"group_id": group.ID, "group_name": group.Name},
+	})
+	s.recordGroupActivity(ctx, models.GroupActivityLogEntry{
+		GroupID:    group.ID,
+		ActorID:    userID,
+		Category:   constants.GroupAuditCategoryMember,
+		Action:     constants.GroupAuditMemberLeft,
+		TargetType: constants.GroupAuditTargetMember,
+		TargetID:   userID,
+		Summary:    "Left group",
 	})
 	return nil
 }
@@ -261,7 +303,7 @@ func (s service) ListGroupMembers(
 	return &models.GroupMemberPage{Members: members, NextCursor: next, Total: total}, nil
 }
 
-func (s service) KickGroupMember(ctx context.Context, accessToken, groupPublicID, targetUserID string) error {
+func (s service) KickGroupMember(ctx context.Context, accessToken, groupPublicID, targetUserID, reason string) error {
 	userID, err := access.UserIDFromAccessToken(ctx, accessToken, s.secret, s.sessions, s.now())
 	if err != nil {
 		return err
@@ -269,6 +311,7 @@ func (s service) KickGroupMember(ctx context.Context, accessToken, groupPublicID
 	if userID == targetUserID {
 		return exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "user_id"})
 	}
+	_ = strings.TrimSpace(reason)
 
 	publicID, err := validator.GroupPublicID(groupPublicID)
 	if err != nil {
@@ -321,10 +364,133 @@ func (s service) KickGroupMember(ctx context.Context, accessToken, groupPublicID
 		Summary:    "Removed from group",
 		Metadata:   map[string]any{"group_id": group.ID, "group_name": group.Name},
 	})
+	kickMeta := map[string]any{}
+	if trimmedReason := strings.TrimSpace(reason); trimmedReason != "" {
+		kickMeta["reason"] = trimmedReason
+	}
+	s.recordGroupActivity(ctx, models.GroupActivityLogEntry{
+		GroupID:    group.ID,
+		ActorID:    userID,
+		Category:   constants.GroupAuditCategoryModeration,
+		Action:     constants.GroupAuditMemberKicked,
+		TargetType: constants.GroupAuditTargetMember,
+		TargetID:   targetUserID,
+		Summary:    "Kicked member",
+		Metadata:   kickMeta,
+	})
 	return nil
 }
 
-func (s service) BanGroupMembers(ctx context.Context, accessToken, groupPublicID string, targetUserIDs []string, reason string, deleteSeconds int) (int, error) {
+const maxTimeoutDurationSeconds = 604800 // 7 days
+
+func (s service) TimeoutGroupMember(
+	ctx context.Context,
+	accessToken, groupPublicID, targetUserID string,
+	durationSeconds int,
+	reason string,
+) (*time.Time, error) {
+	if durationSeconds < 0 || durationSeconds > maxTimeoutDurationSeconds {
+		return nil, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "duration_seconds"})
+	}
+	userID, err := access.UserIDFromAccessToken(ctx, accessToken, s.secret, s.sessions, s.now())
+	if err != nil {
+		return nil, err
+	}
+	if userID == targetUserID {
+		return nil, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "user_id"})
+	}
+
+	publicID, err := validator.GroupPublicID(groupPublicID)
+	if err != nil {
+		return nil, err
+	}
+	group, err := s.groups.FindGroupByPublicID(ctx, publicID)
+	if err != nil {
+		return nil, err
+	}
+	member, err := s.members.FindGroupMember(ctx, group.ID, userID)
+	if err != nil {
+		return nil, exception.PermissionDenied(exception.MsgForbidden, nil)
+	}
+	targetMember, err := s.members.FindGroupMember(ctx, group.ID, targetUserID)
+	if err != nil {
+		return nil, err
+	}
+	if targetMember.Role == constants.GroupRoleOwner {
+		return nil, exception.PermissionDenied("cannot timeout group owner", nil)
+	}
+
+	perms, err := s.roles.GetEffectivePermissions(ctx, group.ID, userID)
+	if err != nil {
+		return nil, err
+	}
+	if !access.HasPermission(member.Role == constants.GroupRoleOwner, perms, constants.PermTimeoutMembers) {
+		return nil, exception.PermissionDenied(exception.MsgForbidden, nil)
+	}
+	if member.Role != constants.GroupRoleOwner {
+		allowed, err := s.filterModeratableTargets(ctx, group.ID, userID, []string{targetUserID})
+		if err != nil {
+			return nil, err
+		}
+		if len(allowed) == 0 {
+			return nil, exception.PermissionDenied(exception.MsgForbidden, nil)
+		}
+	}
+
+	var timeoutUntil *time.Time
+	now := s.now().UTC()
+	if durationSeconds > 0 {
+		until := now.Add(time.Duration(durationSeconds) * time.Second)
+		timeoutUntil = &until
+	}
+
+	if err := s.members.UpdateGroupMemberTimeout(ctx, group.ID, targetUserID, timeoutUntil); err != nil {
+		return nil, err
+	}
+
+	summary := "Timed out member"
+	groupAction := constants.GroupAuditMemberTimedOut
+	if timeoutUntil == nil {
+		summary = "Cleared member timeout"
+		groupAction = constants.GroupAuditMemberTimeoutRemoved
+	}
+	s.recordActivity(ctx, models.UserActivityLogEntry{
+		UserID:     targetUserID,
+		ActorID:    userID,
+		Category:   constants.ActivityCategoryGroup,
+		Action:     "group.member_timed_out",
+		TargetType: constants.ActivityTargetGroup,
+		TargetID:   group.PublicID,
+		Summary:    summary,
+		Metadata: map[string]any{
+			"group_id":         group.ID,
+			"group_name":       group.Name,
+			"duration_seconds": durationSeconds,
+			"reason":           strings.TrimSpace(reason),
+		},
+		CreatedAt: now,
+	})
+	s.recordGroupActivity(ctx, models.GroupActivityLogEntry{
+		GroupID:    group.ID,
+		ActorID:    userID,
+		Category:   constants.GroupAuditCategoryModeration,
+		Action:     groupAction,
+		TargetType: constants.GroupAuditTargetMember,
+		TargetID:   targetUserID,
+		Summary:    summary,
+		Metadata: map[string]any{
+			"duration_seconds": durationSeconds,
+			"reason":           strings.TrimSpace(reason),
+		},
+		CreatedAt: now,
+	})
+	return timeoutUntil, nil
+}
+
+func (s service) BanGroupMembers(ctx context.Context, accessToken, groupPublicID string, targetUserIDs []string, reason string, deleteSeconds int, durationSeconds int64) (int, error) {
+	if durationSeconds < 0 {
+		return 0, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "duration_seconds"})
+	}
 	userID, err := access.UserIDFromAccessToken(ctx, accessToken, s.secret, s.sessions, s.now())
 	if err != nil {
 		return 0, err
@@ -370,7 +536,13 @@ func (s service) BanGroupMembers(ctx context.Context, accessToken, groupPublicID
 		validIDs = filtered
 	}
 
-	count, err := s.members.BanMembers(ctx, group.ID, validIDs, userID, reason, deleteSeconds)
+	var expiresAt *time.Time
+	if durationSeconds > 0 {
+		exp := s.now().Add(time.Duration(durationSeconds) * time.Second)
+		expiresAt = &exp
+	}
+
+	count, err := s.members.BanMembers(ctx, group.ID, validIDs, userID, strings.TrimSpace(reason), deleteSeconds, expiresAt)
 	if err != nil {
 		return 0, err
 	}
@@ -391,9 +563,106 @@ func (s service) BanGroupMembers(ctx context.Context, accessToken, groupPublicID
 				Summary:    "Banned from group",
 				Metadata:   meta,
 			})
+			s.recordGroupActivity(ctx, models.GroupActivityLogEntry{
+				GroupID:    group.ID,
+				ActorID:    userID,
+				Category:   constants.GroupAuditCategoryModeration,
+				Action:     constants.GroupAuditMemberBanned,
+				TargetType: constants.GroupAuditTargetMember,
+				TargetID:   targetID,
+				Summary:    "Banned member",
+				Metadata:   meta,
+			})
 		}
 	}
 	return count, nil
+}
+
+func (s service) requireBanManager(ctx context.Context, accessToken, groupPublicID string) (string, models.Group, error) {
+	userID, err := access.UserIDFromAccessToken(ctx, accessToken, s.secret, s.sessions, s.now())
+	if err != nil {
+		return "", models.Group{}, err
+	}
+	publicID, err := validator.GroupPublicID(groupPublicID)
+	if err != nil {
+		return "", models.Group{}, err
+	}
+	group, err := s.groups.FindGroupByPublicID(ctx, publicID)
+	if err != nil {
+		return "", models.Group{}, err
+	}
+	member, err := s.members.FindGroupMember(ctx, group.ID, userID)
+	if err != nil {
+		return "", models.Group{}, exception.PermissionDenied(exception.MsgForbidden, nil)
+	}
+	perms, err := s.roles.GetEffectivePermissions(ctx, group.ID, userID)
+	if err != nil {
+		return "", models.Group{}, err
+	}
+	if !access.HasPermission(member.Role == constants.GroupRoleOwner, perms, constants.PermBanMembers) {
+		return "", models.Group{}, exception.PermissionDenied(exception.MsgForbidden, nil)
+	}
+	return userID, group, nil
+}
+
+func (s service) ListGroupBans(
+	ctx context.Context,
+	accessToken, groupPublicID, search string,
+	limit int,
+	cursor *models.GroupMemberCursor,
+) (*models.GroupBanPage, error) {
+	_, group, err := s.requireBanManager(ctx, accessToken, groupPublicID)
+	if err != nil {
+		return nil, err
+	}
+	bans, next, total, err := s.members.ListBansPage(ctx, group.ID, search, limit, cursor)
+	if err != nil {
+		return nil, err
+	}
+	return &models.GroupBanPage{
+		Bans:       bans,
+		NextCursor: next,
+		Total:      total,
+	}, nil
+}
+
+func (s service) UnbanGroupMember(ctx context.Context, accessToken, groupPublicID, targetUserID string) error {
+	actorID, group, err := s.requireBanManager(ctx, accessToken, groupPublicID)
+	if err != nil {
+		return err
+	}
+	targetID := strings.TrimSpace(targetUserID)
+	if targetID == "" {
+		return exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "user_id"})
+	}
+	if err := s.members.UnbanMember(ctx, group.ID, targetID); err != nil {
+		if errors.Is(err, constants.ErrNotFound) {
+			return exception.NotFound(exception.MsgInvalidInput, map[string]any{"field": "user_id"})
+		}
+		return err
+	}
+	s.recordActivity(ctx, models.UserActivityLogEntry{
+		UserID:     actorID,
+		ActorID:    actorID,
+		Category:   constants.ActivityCategoryGroup,
+		Action:     "group.member_unbanned",
+		TargetType: constants.ActivityTargetGroup,
+		TargetID:   group.PublicID,
+		Summary:    "Unbanned member",
+		Metadata:   map[string]any{"group_id": group.ID, "target_user_id": targetID},
+		CreatedAt:  s.now(),
+	})
+	s.recordGroupActivity(ctx, models.GroupActivityLogEntry{
+		GroupID:    group.ID,
+		ActorID:    actorID,
+		Category:   constants.GroupAuditCategoryModeration,
+		Action:     constants.GroupAuditMemberUnbanned,
+		TargetType: constants.GroupAuditTargetMember,
+		TargetID:   targetID,
+		Summary:    "Unbanned member",
+		CreatedAt:  s.now(),
+	})
+	return nil
 }
 
 func bestCustomRolePosition(roles []models.GroupRoleSummary) int32 {

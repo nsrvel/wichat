@@ -39,6 +39,8 @@ type Client interface {
 	ListSessions(ctx context.Context, in *userv1.ListSessionsRequest) (*userv1.ListSessionsResponse, error)
 	RevokeSession(ctx context.Context, in *userv1.RevokeSessionRequest) (*userv1.RevokeSessionResponse, error)
 	RevokeOtherSessions(ctx context.Context, in *userv1.RevokeOtherSessionsRequest) (*userv1.RevokeOtherSessionsResponse, error)
+	ListUserRelationships(ctx context.Context, in *userv1.ListUserRelationshipsRequest) (*userv1.ListUserRelationshipsResponse, error)
+	SetUserRelationship(ctx context.Context, in *userv1.SetUserRelationshipRequest) (*userv1.SetUserRelationshipResponse, error)
 }
 
 type client struct {
@@ -229,5 +231,17 @@ func (c *client) RevokeSession(ctx context.Context, in *userv1.RevokeSessionRequ
 func (c *client) RevokeOtherSessions(ctx context.Context, in *userv1.RevokeOtherSessionsRequest) (*userv1.RevokeOtherSessionsResponse, error) {
 	return utils.CallUnaryResult(ctx, c.none, c.log, "user.UserService/RevokeOtherSessions", func(callCtx context.Context) (*userv1.RevokeOtherSessionsResponse, error) {
 		return c.stub.RevokeOtherSessions(callCtx, in)
+	})
+}
+
+func (c *client) ListUserRelationships(ctx context.Context, in *userv1.ListUserRelationshipsRequest) (*userv1.ListUserRelationshipsResponse, error) {
+	return utils.CallUnaryResult(ctx, c.read, c.log, "user.UserService/ListUserRelationships", func(callCtx context.Context) (*userv1.ListUserRelationshipsResponse, error) {
+		return c.stub.ListUserRelationships(callCtx, in)
+	})
+}
+
+func (c *client) SetUserRelationship(ctx context.Context, in *userv1.SetUserRelationshipRequest) (*userv1.SetUserRelationshipResponse, error) {
+	return utils.CallUnaryResult(ctx, c.none, c.log, "user.UserService/SetUserRelationship", func(callCtx context.Context) (*userv1.SetUserRelationshipResponse, error) {
+		return c.stub.SetUserRelationship(callCtx, in)
 	})
 }

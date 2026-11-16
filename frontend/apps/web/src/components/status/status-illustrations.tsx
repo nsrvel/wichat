@@ -1,11 +1,7 @@
 import Image from "next/image";
 
 export type StatusScreenVariant =
-	| "not-found"
-	| "forbidden"
-	| "unauthorized"
-	| "error"
-	| "maintenance";
+	"not-found" | "forbidden" | "unauthorized" | "error" | "maintenance";
 
 const ILLUSTRATION_ASSETS: Record<
 	StatusScreenVariant,

@@ -47,6 +47,27 @@ func TestGroupMemberGRPCServer(t *testing.T) {
 		t.Fatalf("ListGroupMembers: total=%d err=%v", listResp.GetTotal(), err)
 	}
 
+	timeoutResp, err := srv.TimeoutGroupMember(ctx, &userv1.TimeoutGroupMemberRequest{
+		AccessToken:     owner.AccessToken,
+		GroupId:         group.ID,
+		UserId:          mem.User.ID,
+		DurationSeconds: 60,
+		Reason:          "spam",
+	})
+	if err != nil || timeoutResp.GetTimeoutUntil() == "" {
+		t.Fatalf("TimeoutGroupMember set: resp=%v err=%v", timeoutResp, err)
+	}
+
+	clearResp, err := srv.TimeoutGroupMember(ctx, &userv1.TimeoutGroupMemberRequest{
+		AccessToken:     owner.AccessToken,
+		GroupId:         group.ID,
+		UserId:          mem.User.ID,
+		DurationSeconds: 0,
+	})
+	if err != nil || clearResp.GetTimeoutUntil() != "" {
+		t.Fatalf("TimeoutGroupMember clear: resp=%v err=%v", clearResp, err)
+	}
+
 	kickResp, err := srv.KickGroupMember(ctx, &userv1.KickGroupMemberRequest{
 		AccessToken: owner.AccessToken,
 		GroupId:     group.ID,
@@ -54,5 +75,30 @@ func TestGroupMemberGRPCServer(t *testing.T) {
 	})
 	if err != nil || !kickResp.GetSuccess() {
 		t.Fatalf("KickGroupMember: %v", err)
+	}
+
+	if _, err := srv.BanGroupMembers(ctx, &userv1.BanGroupMembersRequest{
+		AccessToken: owner.AccessToken,
+		GroupId:     group.ID,
+		UserIds:     []string{mem.User.ID},
+		Reason:      "spamming",
+	}); err != nil {
+		t.Fatalf("BanGroupMembers: %v", err)
+	}
+	bansResp, err := srv.ListGroupBans(ctx, &userv1.ListGroupBansRequest{
+		AccessToken: owner.AccessToken,
+		GroupId:     group.ID,
+		Search:      "spam",
+		Limit:       10,
+	})
+	if err != nil || bansResp.GetTotal() != 1 || len(bansResp.GetBans()) != 1 {
+		t.Fatalf("ListGroupBans: %+v err=%v", bansResp, err)
+	}
+	if _, err := srv.UnbanGroupMember(ctx, &userv1.UnbanGroupMemberRequest{
+		AccessToken: owner.AccessToken,
+		GroupId:     group.ID,
+		UserId:      mem.User.ID,
+	}); err != nil {
+		t.Fatalf("UnbanGroupMember: %v", err)
 	}
 }

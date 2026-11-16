@@ -39,7 +39,7 @@ func TestSendRejectsUnknownTemplate(t *testing.T) {
 	}
 }
 
-func TestSendEmailCodeSmtpFailureDoesNotError(t *testing.T) {
+func TestSendEmailCodeSmtpFailureStrictModeErrors(t *testing.T) {
 	svc := service.NewService(failingMail{}, logger.New(logger.Options{Service: "test", Env: "production", Level: "error"}), false)
 	err := svc.Send(context.Background(), models.SendInput{
 		Channel:    constants.NotificationChannelEmail,
@@ -52,8 +52,26 @@ func TestSendEmailCodeSmtpFailureDoesNotError(t *testing.T) {
 			"purpose":      "sign_up",
 		},
 	})
+	if codeOf(t, err) != string(exception.MsgUnavailable) {
+		t.Fatalf("expected unavailable on smtp failure in strict mode, got: %v", err)
+	}
+}
+
+func TestSendEmailCodeSmtpFailureDevRelaxedDoesNotError(t *testing.T) {
+	svc := service.NewService(failingMail{}, logger.New(logger.Options{Service: "test", Env: "development", Level: "error"}), true)
+	err := svc.Send(context.Background(), models.SendInput{
+		Channel:    constants.NotificationChannelEmail,
+		TemplateID: "auth.email_code",
+		Locale:     "en",
+		EmailTo:    "a@b.com",
+		Vars: map[string]string{
+			"code":         "123456",
+			"display_name": "Ada",
+			"purpose":      "sign_up",
+		},
+	})
 	if err != nil {
-		t.Fatalf("smtp failure must not fail auth notify: %v", err)
+		t.Fatalf("devRelaxed must not fail auth notify: %v", err)
 	}
 }
 

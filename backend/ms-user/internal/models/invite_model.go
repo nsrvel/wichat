@@ -4,15 +4,28 @@ import "time"
 
 // GroupMemberProfile is a member row with account fields for the share UI.
 type GroupMemberProfile struct {
-	UserID         string
-	DisplayName    string
-	Username       string
-	AvatarURL      string
-	Role           string
-	JoinedAt       time.Time
-	Roles          []GroupRoleSummary
-	IsOnline       bool
-	PresenceStatus string
+	UserID               string
+	DisplayName          string
+	Username             string
+	AvatarURL            string
+	Role                 string
+	JoinedAt             time.Time
+	Roles                []GroupRoleSummary
+	IsOnline             bool
+	PresenceStatus       string
+	BannerColor          string
+	Bio                  string
+	Pronouns             string
+	UserCreatedAt        time.Time
+	StatusNoteText       string
+	StatusNoteEmoji      string
+	StatusNoteExpiresAt  *time.Time
+	JoinMethod           string
+	InviteCode           string
+	InvitedByUserID      string
+	InvitedByUsername    string
+	InvitedByDisplayName string
+	TimeoutUntil         *time.Time
 }
 
 // GroupMemberCursor pages group_members by (created_at, user_id).

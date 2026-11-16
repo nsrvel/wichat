@@ -15,12 +15,7 @@ type PasswordInputProps = Omit<ComponentProps<typeof Input>, "type"> & {
 	hideLabel?: string;
 };
 
-export function PasswordInput({
-	showLabel,
-	hideLabel,
-	className,
-	...props
-}: PasswordInputProps) {
+export function PasswordInput({ showLabel, hideLabel, className, ...props }: PasswordInputProps) {
 	const { t } = useTranslation();
 	const [visible, setVisible] = useState(false);
 	const resolvedShowLabel = showLabel ?? t("login.show_password");
@@ -39,7 +34,11 @@ export function PasswordInput({
 				aria-label={visible ? resolvedHideLabel : resolvedShowLabel}
 				onClick={() => setVisible((current) => !current)}
 			>
-				{visible ? <EyeOff className="size-4" aria-hidden /> : <Eye className="size-4" aria-hidden />}
+				{visible ? (
+					<EyeOff className="size-4" aria-hidden />
+				) : (
+					<Eye className="size-4" aria-hidden />
+				)}
 			</button>
 		</div>
 	);

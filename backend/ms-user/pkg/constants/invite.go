@@ -6,6 +6,15 @@ const (
 	GroupInviteKindShareLink = "share_link"
 )
 
+// Group member join methods (group_members.join_method).
+const (
+	JoinMethodOwner      = "owner"
+	JoinMethodOpen       = "open"
+	JoinMethodInvite     = "invite"
+	JoinMethodInviteLink = "invite_link"
+	JoinMethodUnknown    = "unknown"
+)
+
 // GroupInviteTokenLen is the canonical share-link token length (6 random bytes, base64url).
 const GroupInviteTokenLen = 8
 

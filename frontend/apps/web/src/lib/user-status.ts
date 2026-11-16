@@ -23,9 +23,7 @@ export type UserStatusMeta = {
 		| "shell.user_dock.status_idle"
 		| "shell.user_dock.status_dnd"
 		| "shell.user_dock.status_invisible";
-	descriptionKey?:
-		| "shell.user_dock.status_dnd_desc"
-		| "shell.user_dock.status_invisible_desc";
+	descriptionKey?: "shell.user_dock.status_dnd_desc" | "shell.user_dock.status_invisible_desc";
 	dotClass: string;
 };
 
@@ -110,10 +108,7 @@ export function writeStoredUserStatus(status: UserPresenceStatus): void {
 }
 
 export function statusNoteFromUser(
-	user?: Pick<
-		User,
-		"status_note_text" | "status_note_emoji" | "status_note_expires_at"
-	> | null,
+	user?: Pick<User, "status_note_text" | "status_note_emoji" | "status_note_expires_at"> | null,
 ): StatusNote {
 	if (!user) return EMPTY_STATUS_NOTE;
 	const text = user.status_note_text?.trim().slice(0, 80) ?? "";

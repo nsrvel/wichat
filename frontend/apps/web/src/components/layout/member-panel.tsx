@@ -16,13 +16,11 @@ import {
 	User,
 	X,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
+import { GroupMemberProfileHost } from "@/components/group/group-member-profile-host";
 import { OwnerCrownIcon } from "@/components/ui/owner-crown-icon";
 import { UserAvatar } from "@/components/ui/user-avatar";
-import {
-	groupMembersForPanel,
-	resolveMemberNameColor,
-} from "@/lib/member-role-display";
+import { groupMembersForPanel, resolveMemberNameColor } from "@/lib/member-role-display";
 import type { UserPresenceStatus } from "@/lib/user-status";
 import { userInitials } from "@/lib/user-initials";
 import { myGroupsQueryOpts } from "@/services/group/group.query";
@@ -97,6 +95,7 @@ function Member({
 	dim,
 	status,
 	isOwner,
+	onClick,
 }: {
 	avatar: string;
 	name: string;
@@ -106,9 +105,10 @@ function Member({
 	dim?: boolean;
 	status?: UserPresenceStatus | "offline";
 	isOwner?: boolean;
+	onClick?: () => void;
 }) {
-	return (
-		<div className={`flex items-center gap-3 py-2 ${dim ? "opacity-50" : ""}`}>
+	const content = (
+		<>
 			<UserAvatar
 				src={avatar}
 				initials={userInitials(name)}
@@ -130,8 +130,22 @@ function Member({
 				{role ? <div className="truncate text-[13px] text-[#a1a1aa]">{role}</div> : null}
 			</div>
 			{badge ? <span className="ml-auto shrink-0">{badge}</span> : null}
-		</div>
+		</>
 	);
+
+	if (onClick) {
+		return (
+			<button
+				type="button"
+				onClick={onClick}
+				className={`-mx-1.5 flex w-[calc(100%+0.75rem)] cursor-pointer items-center gap-3 rounded-lg px-1.5 py-2 text-left transition-colors hover:bg-black/[0.04] dark:hover:bg-white/[0.05] ${dim ? "opacity-50" : ""}`}
+			>
+				{content}
+			</button>
+		);
+	}
+
+	return <div className={`flex items-center gap-3 py-2 ${dim ? "opacity-50" : ""}`}>{content}</div>;
 }
 
 export function MemberPanel({
@@ -142,6 +156,7 @@ export function MemberPanel({
 	groupId?: string;
 }) {
 	const { t } = useTranslation();
+	const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
 	const params = useParams<{ groupId?: string }>();
 	const groupId = propGroupId ?? (typeof params?.groupId === "string" ? params.groupId : "");
 	const { data: myGroups = [] } = useQuery(myGroupsQueryOpts());
@@ -252,7 +267,8 @@ export function MemberPanel({
 				</div>
 				<div className="mt-5 mb-0.5 flex items-center">
 					<h3 className="text-[15px] font-bold text-[#18181b]">
-						Members <span className="ml-1 text-[15px] font-medium text-[#a1a1aa]">{totalCount}</span>
+						Members{" "}
+						<span className="ml-1 text-[15px] font-medium text-[#a1a1aa]">{totalCount}</span>
 					</h3>
 					<div className="ml-auto flex items-center gap-0.5 text-[#52525b]">
 						<button
@@ -305,6 +321,7 @@ export function MemberPanel({
 											isOwner={member.role === "owner"}
 											status={member.presence_status}
 											dim={!member.is_online}
+											onClick={() => setSelectedMemberId(member.user_id)}
 										/>
 									);
 								})}
@@ -347,6 +364,13 @@ export function MemberPanel({
 					)}
 				</div>
 			</div>
+			{groupId ? (
+				<GroupMemberProfileHost
+					groupId={groupId}
+					memberId={selectedMemberId}
+					onClose={() => setSelectedMemberId(null)}
+				/>
+			) : null}
 		</div>
 	);
 }

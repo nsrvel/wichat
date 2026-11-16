@@ -56,9 +56,7 @@ function ChangePasswordDialogBody({
 
 	const schema = z
 		.object({
-			currentPassword: hasPassword
-				? z.string().min(1, "validation.password_required")
-				: z.string(),
+			currentPassword: hasPassword ? z.string().min(1, "validation.password_required") : z.string(),
 			newPassword: z
 				.string()
 				.min(MIN_PASSWORD_LEN, "validation.password")

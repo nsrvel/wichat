@@ -133,10 +133,7 @@ export function UserSettingsSidebar({
 
 			{/* Scrollbar sits flush at the sidebar right edge; SIDEBAR_INSET_X is on inner nav */}
 			<div className="thin-scroll flex min-h-0 flex-1 flex-col overflow-y-auto pt-1 pb-3">
-				<nav
-					className={cn("flex flex-col", SIDEBAR_INSET_X)}
-					aria-label={t("user_settings.title")}
-				>
+				<nav className={cn("flex flex-col", SIDEBAR_INSET_X)} aria-label={t("user_settings.title")}>
 					{filteredGroups.map((group, index) => (
 						<div
 							key={group.id}
@@ -221,10 +218,7 @@ export function UserSettingsSidebar({
 								type="button"
 								disabled={signingOut}
 								onClick={onSignOut}
-								className={cn(
-									sidebarRowInnerButtonClass,
-									"text-destructive disabled:opacity-50",
-								)}
+								className={cn(sidebarRowInnerButtonClass, "text-destructive disabled:opacity-50")}
 							>
 								<ChannelGlyphSlot framed={false} className="text-destructive">
 									<LogOut className={sidebarNavGlyphIconClass} strokeWidth={2} aria-hidden />

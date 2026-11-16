@@ -193,6 +193,8 @@ func ChannelSummary(c models.PublicChannel) *userv1.ChannelSummary {
 		SidebarSection: c.SidebarSection,
 		ImageUrl:       c.ImageURL,
 		IsPrivate:      c.IsPrivate,
+		CategoryId:     c.CategoryID,
+		Position:       c.Position,
 	}
 }
 
@@ -201,6 +203,26 @@ func ChannelSummaries(channels []models.PublicChannel) []*userv1.ChannelSummary 
 	out := make([]*userv1.ChannelSummary, len(channels))
 	for i, c := range channels {
 		out[i] = ChannelSummary(c)
+	}
+
+	return out
+}
+
+// ChannelCategory maps a public channel category to protobuf.
+func ChannelCategory(c models.PublicChannelCategory) *userv1.ChannelCategory {
+	return &userv1.ChannelCategory{
+		Id:        c.ID,
+		Name:      c.Name,
+		IsPrivate: c.IsPrivate,
+		Position:  c.Position,
+	}
+}
+
+// ChannelCategories maps a slice of public channel categories.
+func ChannelCategories(categories []models.PublicChannelCategory) []*userv1.ChannelCategory {
+	out := make([]*userv1.ChannelCategory, len(categories))
+	for i, c := range categories {
+		out[i] = ChannelCategory(c)
 	}
 
 	return out
@@ -239,16 +261,41 @@ func GroupMemberEntries(members []models.GroupMemberProfile) []*userv1.GroupMemb
 				presenceStatus = models.PresenceStatusOffline
 			}
 		}
+		userCreatedAt := ""
+		if !m.UserCreatedAt.IsZero() {
+			userCreatedAt = m.UserCreatedAt.UTC().Format(time.RFC3339Nano)
+		}
+		statusNoteExpiresAt := ""
+		if m.StatusNoteExpiresAt != nil && !m.StatusNoteExpiresAt.IsZero() {
+			statusNoteExpiresAt = m.StatusNoteExpiresAt.UTC().Format(time.RFC3339Nano)
+		}
+		timeoutUntil := ""
+		if m.TimeoutUntil != nil && !m.TimeoutUntil.IsZero() {
+			timeoutUntil = m.TimeoutUntil.UTC().Format(time.RFC3339Nano)
+		}
 		out[i] = &userv1.GroupMemberEntry{
-			UserId:         m.UserID,
-			DisplayName:    m.DisplayName,
-			Username:       m.Username,
-			AvatarUrl:      m.AvatarURL,
-			Role:           m.Role,
-			JoinedAt:       m.JoinedAt.UTC().Format(time.RFC3339Nano),
-			Roles:          roles,
-			IsOnline:       m.IsOnline,
-			PresenceStatus: presenceStatus,
+			UserId:               m.UserID,
+			DisplayName:          m.DisplayName,
+			Username:             m.Username,
+			AvatarUrl:            m.AvatarURL,
+			Role:                 m.Role,
+			JoinedAt:             m.JoinedAt.UTC().Format(time.RFC3339Nano),
+			Roles:                roles,
+			IsOnline:             m.IsOnline,
+			PresenceStatus:       presenceStatus,
+			BannerColor:          m.BannerColor,
+			Bio:                  m.Bio,
+			Pronouns:             m.Pronouns,
+			UserCreatedAt:        userCreatedAt,
+			StatusNoteText:       m.StatusNoteText,
+			StatusNoteEmoji:      m.StatusNoteEmoji,
+			StatusNoteExpiresAt:  statusNoteExpiresAt,
+			JoinMethod:           m.JoinMethod,
+			InviteCode:           m.InviteCode,
+			InvitedByUserId:      m.InvitedByUserID,
+			InvitedByUsername:    m.InvitedByUsername,
+			InvitedByDisplayName: m.InvitedByDisplayName,
+			TimeoutUntil:         timeoutUntil,
 		}
 	}
 

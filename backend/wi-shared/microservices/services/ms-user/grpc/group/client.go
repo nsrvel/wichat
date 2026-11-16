@@ -18,6 +18,7 @@ type Client interface {
 	UploadGroupIcon(ctx context.Context, in *userv1.UploadGroupIconRequest) (*userv1.UploadGroupIconResponse, error)
 	UpdateGroupProfile(ctx context.Context, in *userv1.UpdateGroupProfileRequest) (*userv1.UpdateGroupProfileResponse, error)
 	UploadGroupBanner(ctx context.Context, in *userv1.UploadGroupBannerRequest) (*userv1.UploadGroupBannerResponse, error)
+	ListGroupActivityLogs(ctx context.Context, in *userv1.ListGroupActivityLogsRequest) (*userv1.ListGroupActivityLogsResponse, error)
 }
 
 type client struct {
@@ -82,5 +83,11 @@ func (c *client) UpdateGroupProfile(ctx context.Context, in *userv1.UpdateGroupP
 func (c *client) UploadGroupBanner(ctx context.Context, in *userv1.UploadGroupBannerRequest) (*userv1.UploadGroupBannerResponse, error) {
 	return utils.CallUnaryResult(ctx, c.none, c.log, "group.GroupService/UploadGroupBanner", func(callCtx context.Context) (*userv1.UploadGroupBannerResponse, error) {
 		return c.stub.UploadGroupBanner(callCtx, in)
+	})
+}
+
+func (c *client) ListGroupActivityLogs(ctx context.Context, in *userv1.ListGroupActivityLogsRequest) (*userv1.ListGroupActivityLogsResponse, error) {
+	return utils.CallUnaryResult(ctx, c.read, c.log, "group.GroupService/ListGroupActivityLogs", func(callCtx context.Context) (*userv1.ListGroupActivityLogsResponse, error) {
+		return c.stub.ListGroupActivityLogs(callCtx, in)
 	})
 }

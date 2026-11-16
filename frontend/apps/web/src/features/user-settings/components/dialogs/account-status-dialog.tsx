@@ -78,9 +78,7 @@ function AccountStatusDialogBody({
 	const confirmWord = t("user_settings.account.delete_confirm_word");
 
 	const schema = z.object({
-		currentPassword: hasPassword
-			? z.string().min(1, "validation.password_required")
-			: z.string(),
+		currentPassword: hasPassword ? z.string().min(1, "validation.password_required") : z.string(),
 		confirmText: isDelete
 			? z
 					.string()
@@ -136,10 +134,7 @@ function AccountStatusDialogBody({
 						role="alert"
 						className="flex items-start gap-2.5 rounded-xl border border-border bg-muted/40 p-3.5"
 					>
-						<AlertTriangle
-							className="mt-0.5 size-4 shrink-0 text-muted-foreground"
-							aria-hidden
-						/>
+						<AlertTriangle className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
 						<p className="text-xs leading-relaxed text-muted-foreground">
 							{t("user_settings.account.owns_groups_alert_desc")}
 						</p>

@@ -18,20 +18,45 @@ import (
 	"github.com/wichat/wichat/backend/wi-shared/microservices"
 )
 
-func (s *server) buildHandler(ms *microservices.Clients, rtHub *hub.Hub) (http.Handler, error) {
+func (s *server) buildHandler(ms *microservices.Clients, rtHub *hub.Hub, monitor *microservices.HealthMonitor) (http.Handler, error) {
 	if err := middleware.ConfigureTrustedProxies(s.cfg.TrustedProxies); err != nil {
 		return nil, err
 	}
 
 	// Routes
 	mux := http.NewServeMux()
-	s.mapHandlers(mux, ms, rtHub)
+	s.mapHandlers(mux, ms, rtHub, monitor)
 
 	// Middleware
 	return middleware.CORS(s.cfg.WebOrigin, middleware.Chain(mux)), nil
 }
 
-func (s *server) mapHandlers(mux *http.ServeMux, ms *microservices.Clients, rtHub *hub.Hub) {
+// RegisterHealthRoutes registers /api/v1/healthz and /api/v1/readyz on mux.
+func RegisterHealthRoutes(mux *http.ServeMux, monitor *microservices.HealthMonitor) {
+	mux.HandleFunc("GET /api/v1/healthz", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+	})
+
+	mux.HandleFunc("GET /api/v1/readyz", func(w http.ResponseWriter, _ *http.Request) {
+		services, ready := monitor.Snapshot()
+		w.Header().Set("Content-Type", "application/json")
+		statusText := "ok"
+		if !ready {
+			statusText = "degraded"
+			w.WriteHeader(http.StatusServiceUnavailable)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"status":   statusText,
+			"services": services,
+		})
+	})
+}
+
+func (s *server) mapHandlers(mux *http.ServeMux, ms *microservices.Clients, rtHub *hub.Hub, monitor *microservices.HealthMonitor) {
+	// Health
+	RegisterHealthRoutes(mux, monitor)
+
 	// APIs
 	authdelivery.Register(mux, authdelivery.NewHandler(ms, s.log, s.cfg.SecureCookies(), s.cfg.WebOrigin, s.cfg.TurnstileSecretKey))
 	userdelivery.Register(mux, userdelivery.NewHandler(ms, s.log, s.cfg.TurnstileSiteKey).WithPresenceBroadcaster(rtHub))

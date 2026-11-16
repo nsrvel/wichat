@@ -36,7 +36,7 @@ import { TextField } from '@/components/form/text-field';
 
 - Point `package.json` `"exports"` at the **implementation file** (`provider.tsx`, `create-api-client.ts`, …), not a re-export shim.
 - Use subpath exports when consumers need another module (`@wichat/i18n/locale`, `@wichat/api-client/api-error`).
-- **`@wichat/contracts`:** `src/index.ts` is allowed only because it **defines** schemas/types in place (not a passthrough barrel).
+- **`@wichat/contracts`:** split by domain into subpath exports (`@wichat/contracts/common`, `@wichat/contracts/auth/login`, `@wichat/contracts/group/audit-log`, `@wichat/contracts/user/profile`, …) — no root `src/index.ts` barrel.
 
 ## App integrations
 

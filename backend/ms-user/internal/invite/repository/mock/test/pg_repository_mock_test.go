@@ -17,7 +17,7 @@ func TestInviteMockLifecycle(t *testing.T) {
 	ctx := context.Background()
 	now := time.Now().UTC()
 
-	row := models.GroupInviteRow{ID: "i1", Token: "abcdefgh", GroupID: "g1", Kind: constants.GroupInviteKindShareLink, ExpiresAt: now.Add(time.Hour), CreatedAt: now}
+	row := models.GroupInviteRow{ID: "i1", Token: "abcdefgh", GroupID: "g1", InvitedByUserID: "u1", Kind: constants.GroupInviteKindShareLink, ExpiresAt: now.Add(time.Hour), CreatedAt: now}
 	if err := repo.InsertInvite(ctx, row); err != nil {
 		t.Fatal(err)
 	}
@@ -30,7 +30,7 @@ func TestInviteMockLifecycle(t *testing.T) {
 		t.Fatalf("%+v %v", got, err)
 	}
 
-	open, err := repo.FindOpenShareLink(ctx, "g1", nil, now)
+	open, err := repo.FindOpenShareLink(ctx, "g1", "u1", nil, now)
 	if err != nil || open.Token != "abcdefgh" {
 		t.Fatalf("%+v %v", open, err)
 	}
@@ -49,23 +49,23 @@ func TestFindOpenShareLinkPrefersGroupWideLink(t *testing.T) {
 	ch := "ch-1"
 	st.Invites = []models.GroupInviteRow{
 		{
-			ID: "i1", Token: "12345678", GroupID: "g1", Kind: constants.GroupInviteKindShareLink,
+			ID: "i1", Token: "12345678", GroupID: "g1", InvitedByUserID: "u1", Kind: constants.GroupInviteKindShareLink,
 			ChannelID: &ch, ExpiresAt: now.Add(time.Hour), CreatedAt: now,
 		},
 		{
-			ID: "i2", Token: "87654321", GroupID: "g1", Kind: constants.GroupInviteKindShareLink,
+			ID: "i2", Token: "87654321", GroupID: "g1", InvitedByUserID: "u1", Kind: constants.GroupInviteKindShareLink,
 			ExpiresAt: now.Add(time.Hour), CreatedAt: now.Add(time.Minute),
 		},
 	}
 	repo := invitemock.NewPgRepositoryMock(st)
 	ctx := context.Background()
 
-	row, err := repo.FindOpenShareLink(ctx, "g1", nil, now)
+	row, err := repo.FindOpenShareLink(ctx, "g1", "u1", nil, now)
 	if err != nil || row.ID != "i2" {
 		t.Fatalf("%+v %v", row, err)
 	}
 
-	row, err = repo.FindOpenShareLink(ctx, "g1", &ch, now)
+	row, err = repo.FindOpenShareLink(ctx, "g1", "u1", &ch, now)
 	if err != nil || row.ChannelID == nil || *row.ChannelID != ch {
 		t.Fatalf("%+v %v", row, err)
 	}

@@ -298,18 +298,31 @@ func (x *GroupMemberRoleSummary) GetPosition() int32 {
 }
 
 type GroupMemberEntry struct {
-	state          protoimpl.MessageState    `protogen:"open.v1"`
-	UserId         string                    `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	DisplayName    string                    `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
-	Role           string                    `protobuf:"bytes,4,opt,name=role,proto3" json:"role,omitempty"`
-	JoinedAt       string                    `protobuf:"bytes,5,opt,name=joined_at,json=joinedAt,proto3" json:"joined_at,omitempty"`
-	Roles          []*GroupMemberRoleSummary `protobuf:"bytes,6,rep,name=roles,proto3" json:"roles,omitempty"`
-	Username       string                    `protobuf:"bytes,7,opt,name=username,proto3" json:"username,omitempty"`
-	AvatarUrl      string                    `protobuf:"bytes,8,opt,name=avatar_url,json=avatarUrl,proto3" json:"avatar_url,omitempty"`
-	IsOnline       bool                      `protobuf:"varint,9,opt,name=is_online,json=isOnline,proto3" json:"is_online,omitempty"`
-	PresenceStatus string                    `protobuf:"bytes,10,opt,name=presence_status,json=presenceStatus,proto3" json:"presence_status,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state                protoimpl.MessageState    `protogen:"open.v1"`
+	UserId               string                    `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	DisplayName          string                    `protobuf:"bytes,2,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	Role                 string                    `protobuf:"bytes,4,opt,name=role,proto3" json:"role,omitempty"`
+	JoinedAt             string                    `protobuf:"bytes,5,opt,name=joined_at,json=joinedAt,proto3" json:"joined_at,omitempty"`
+	Roles                []*GroupMemberRoleSummary `protobuf:"bytes,6,rep,name=roles,proto3" json:"roles,omitempty"`
+	Username             string                    `protobuf:"bytes,7,opt,name=username,proto3" json:"username,omitempty"`
+	AvatarUrl            string                    `protobuf:"bytes,8,opt,name=avatar_url,json=avatarUrl,proto3" json:"avatar_url,omitempty"`
+	IsOnline             bool                      `protobuf:"varint,9,opt,name=is_online,json=isOnline,proto3" json:"is_online,omitempty"`
+	PresenceStatus       string                    `protobuf:"bytes,10,opt,name=presence_status,json=presenceStatus,proto3" json:"presence_status,omitempty"`
+	BannerColor          string                    `protobuf:"bytes,11,opt,name=banner_color,json=bannerColor,proto3" json:"banner_color,omitempty"`
+	Bio                  string                    `protobuf:"bytes,12,opt,name=bio,proto3" json:"bio,omitempty"`
+	Pronouns             string                    `protobuf:"bytes,13,opt,name=pronouns,proto3" json:"pronouns,omitempty"`
+	UserCreatedAt        string                    `protobuf:"bytes,14,opt,name=user_created_at,json=userCreatedAt,proto3" json:"user_created_at,omitempty"`
+	StatusNoteText       string                    `protobuf:"bytes,15,opt,name=status_note_text,json=statusNoteText,proto3" json:"status_note_text,omitempty"`
+	StatusNoteEmoji      string                    `protobuf:"bytes,16,opt,name=status_note_emoji,json=statusNoteEmoji,proto3" json:"status_note_emoji,omitempty"`
+	StatusNoteExpiresAt  string                    `protobuf:"bytes,17,opt,name=status_note_expires_at,json=statusNoteExpiresAt,proto3" json:"status_note_expires_at,omitempty"`
+	JoinMethod           string                    `protobuf:"bytes,18,opt,name=join_method,json=joinMethod,proto3" json:"join_method,omitempty"`
+	InviteCode           string                    `protobuf:"bytes,19,opt,name=invite_code,json=inviteCode,proto3" json:"invite_code,omitempty"`
+	InvitedByUserId      string                    `protobuf:"bytes,20,opt,name=invited_by_user_id,json=invitedByUserId,proto3" json:"invited_by_user_id,omitempty"`
+	InvitedByUsername    string                    `protobuf:"bytes,21,opt,name=invited_by_username,json=invitedByUsername,proto3" json:"invited_by_username,omitempty"`
+	InvitedByDisplayName string                    `protobuf:"bytes,22,opt,name=invited_by_display_name,json=invitedByDisplayName,proto3" json:"invited_by_display_name,omitempty"`
+	TimeoutUntil         string                    `protobuf:"bytes,23,opt,name=timeout_until,json=timeoutUntil,proto3" json:"timeout_until,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *GroupMemberEntry) Reset() {
@@ -401,6 +414,97 @@ func (x *GroupMemberEntry) GetIsOnline() bool {
 func (x *GroupMemberEntry) GetPresenceStatus() string {
 	if x != nil {
 		return x.PresenceStatus
+	}
+	return ""
+}
+
+func (x *GroupMemberEntry) GetBannerColor() string {
+	if x != nil {
+		return x.BannerColor
+	}
+	return ""
+}
+
+func (x *GroupMemberEntry) GetBio() string {
+	if x != nil {
+		return x.Bio
+	}
+	return ""
+}
+
+func (x *GroupMemberEntry) GetPronouns() string {
+	if x != nil {
+		return x.Pronouns
+	}
+	return ""
+}
+
+func (x *GroupMemberEntry) GetUserCreatedAt() string {
+	if x != nil {
+		return x.UserCreatedAt
+	}
+	return ""
+}
+
+func (x *GroupMemberEntry) GetStatusNoteText() string {
+	if x != nil {
+		return x.StatusNoteText
+	}
+	return ""
+}
+
+func (x *GroupMemberEntry) GetStatusNoteEmoji() string {
+	if x != nil {
+		return x.StatusNoteEmoji
+	}
+	return ""
+}
+
+func (x *GroupMemberEntry) GetStatusNoteExpiresAt() string {
+	if x != nil {
+		return x.StatusNoteExpiresAt
+	}
+	return ""
+}
+
+func (x *GroupMemberEntry) GetJoinMethod() string {
+	if x != nil {
+		return x.JoinMethod
+	}
+	return ""
+}
+
+func (x *GroupMemberEntry) GetInviteCode() string {
+	if x != nil {
+		return x.InviteCode
+	}
+	return ""
+}
+
+func (x *GroupMemberEntry) GetInvitedByUserId() string {
+	if x != nil {
+		return x.InvitedByUserId
+	}
+	return ""
+}
+
+func (x *GroupMemberEntry) GetInvitedByUsername() string {
+	if x != nil {
+		return x.InvitedByUsername
+	}
+	return ""
+}
+
+func (x *GroupMemberEntry) GetInvitedByDisplayName() string {
+	if x != nil {
+		return x.InvitedByDisplayName
+	}
+	return ""
+}
+
+func (x *GroupMemberEntry) GetTimeoutUntil() string {
+	if x != nil {
+		return x.TimeoutUntil
 	}
 	return ""
 }
@@ -538,6 +642,7 @@ type KickGroupMemberRequest struct {
 	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
 	GroupId       string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
 	UserId        string                 `protobuf:"bytes,3,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Reason        string                 `protobuf:"bytes,4,opt,name=reason,proto3" json:"reason,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -593,6 +698,13 @@ func (x *KickGroupMemberRequest) GetUserId() string {
 	return ""
 }
 
+func (x *KickGroupMemberRequest) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
 type KickGroupMemberResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
@@ -644,6 +756,7 @@ type BanGroupMembersRequest struct {
 	UserIds              []string               `protobuf:"bytes,3,rep,name=user_ids,json=userIds,proto3" json:"user_ids,omitempty"`
 	Reason               string                 `protobuf:"bytes,4,opt,name=reason,proto3" json:"reason,omitempty"`
 	DeleteMessageSeconds int32                  `protobuf:"varint,5,opt,name=delete_message_seconds,json=deleteMessageSeconds,proto3" json:"delete_message_seconds,omitempty"`
+	DurationSeconds      int64                  `protobuf:"varint,6,opt,name=duration_seconds,json=durationSeconds,proto3" json:"duration_seconds,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -713,6 +826,13 @@ func (x *BanGroupMembersRequest) GetDeleteMessageSeconds() int32 {
 	return 0
 }
 
+func (x *BanGroupMembersRequest) GetDurationSeconds() int64 {
+	if x != nil {
+		return x.DurationSeconds
+	}
+	return 0
+}
+
 type BanGroupMembersResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	BannedCount   int32                  `protobuf:"varint,1,opt,name=banned_count,json=bannedCount,proto3" json:"banned_count,omitempty"`
@@ -757,6 +877,482 @@ func (x *BanGroupMembersResponse) GetBannedCount() int32 {
 	return 0
 }
 
+type TimeoutGroupMemberRequest struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	AccessToken     string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	GroupId         string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	UserId          string                 `protobuf:"bytes,3,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	DurationSeconds int32                  `protobuf:"varint,4,opt,name=duration_seconds,json=durationSeconds,proto3" json:"duration_seconds,omitempty"`
+	Reason          string                 `protobuf:"bytes,5,opt,name=reason,proto3" json:"reason,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *TimeoutGroupMemberRequest) Reset() {
+	*x = TimeoutGroupMemberRequest{}
+	mi := &file_user_v1_group_member_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TimeoutGroupMemberRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TimeoutGroupMemberRequest) ProtoMessage() {}
+
+func (x *TimeoutGroupMemberRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_group_member_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TimeoutGroupMemberRequest.ProtoReflect.Descriptor instead.
+func (*TimeoutGroupMemberRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_group_member_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *TimeoutGroupMemberRequest) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
+func (x *TimeoutGroupMemberRequest) GetGroupId() string {
+	if x != nil {
+		return x.GroupId
+	}
+	return ""
+}
+
+func (x *TimeoutGroupMemberRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *TimeoutGroupMemberRequest) GetDurationSeconds() int32 {
+	if x != nil {
+		return x.DurationSeconds
+	}
+	return 0
+}
+
+func (x *TimeoutGroupMemberRequest) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
+type TimeoutGroupMemberResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	TimeoutUntil  string                 `protobuf:"bytes,1,opt,name=timeout_until,json=timeoutUntil,proto3" json:"timeout_until,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TimeoutGroupMemberResponse) Reset() {
+	*x = TimeoutGroupMemberResponse{}
+	mi := &file_user_v1_group_member_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TimeoutGroupMemberResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TimeoutGroupMemberResponse) ProtoMessage() {}
+
+func (x *TimeoutGroupMemberResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_group_member_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TimeoutGroupMemberResponse.ProtoReflect.Descriptor instead.
+func (*TimeoutGroupMemberResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_group_member_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *TimeoutGroupMemberResponse) GetTimeoutUntil() string {
+	if x != nil {
+		return x.TimeoutUntil
+	}
+	return ""
+}
+
+type GroupBanEntry struct {
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	UserId              string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Username            string                 `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
+	DisplayName         string                 `protobuf:"bytes,3,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"`
+	AvatarUrl           string                 `protobuf:"bytes,4,opt,name=avatar_url,json=avatarUrl,proto3" json:"avatar_url,omitempty"`
+	Reason              string                 `protobuf:"bytes,5,opt,name=reason,proto3" json:"reason,omitempty"`
+	BannedByUserId      string                 `protobuf:"bytes,6,opt,name=banned_by_user_id,json=bannedByUserId,proto3" json:"banned_by_user_id,omitempty"`
+	BannedByUsername    string                 `protobuf:"bytes,7,opt,name=banned_by_username,json=bannedByUsername,proto3" json:"banned_by_username,omitempty"`
+	BannedByDisplayName string                 `protobuf:"bytes,8,opt,name=banned_by_display_name,json=bannedByDisplayName,proto3" json:"banned_by_display_name,omitempty"`
+	ExpiresAt           string                 `protobuf:"bytes,9,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
+	CreatedAt           string                 `protobuf:"bytes,10,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *GroupBanEntry) Reset() {
+	*x = GroupBanEntry{}
+	mi := &file_user_v1_group_member_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GroupBanEntry) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GroupBanEntry) ProtoMessage() {}
+
+func (x *GroupBanEntry) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_group_member_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GroupBanEntry.ProtoReflect.Descriptor instead.
+func (*GroupBanEntry) Descriptor() ([]byte, []int) {
+	return file_user_v1_group_member_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *GroupBanEntry) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *GroupBanEntry) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
+func (x *GroupBanEntry) GetDisplayName() string {
+	if x != nil {
+		return x.DisplayName
+	}
+	return ""
+}
+
+func (x *GroupBanEntry) GetAvatarUrl() string {
+	if x != nil {
+		return x.AvatarUrl
+	}
+	return ""
+}
+
+func (x *GroupBanEntry) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
+func (x *GroupBanEntry) GetBannedByUserId() string {
+	if x != nil {
+		return x.BannedByUserId
+	}
+	return ""
+}
+
+func (x *GroupBanEntry) GetBannedByUsername() string {
+	if x != nil {
+		return x.BannedByUsername
+	}
+	return ""
+}
+
+func (x *GroupBanEntry) GetBannedByDisplayName() string {
+	if x != nil {
+		return x.BannedByDisplayName
+	}
+	return ""
+}
+
+func (x *GroupBanEntry) GetExpiresAt() string {
+	if x != nil {
+		return x.ExpiresAt
+	}
+	return ""
+}
+
+func (x *GroupBanEntry) GetCreatedAt() string {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return ""
+}
+
+type ListGroupBansRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	GroupId       string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	Search        string                 `protobuf:"bytes,3,opt,name=search,proto3" json:"search,omitempty"`
+	Limit         int32                  `protobuf:"varint,4,opt,name=limit,proto3" json:"limit,omitempty"`
+	Cursor        string                 `protobuf:"bytes,5,opt,name=cursor,proto3" json:"cursor,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListGroupBansRequest) Reset() {
+	*x = ListGroupBansRequest{}
+	mi := &file_user_v1_group_member_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListGroupBansRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListGroupBansRequest) ProtoMessage() {}
+
+func (x *ListGroupBansRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_group_member_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListGroupBansRequest.ProtoReflect.Descriptor instead.
+func (*ListGroupBansRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_group_member_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *ListGroupBansRequest) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
+func (x *ListGroupBansRequest) GetGroupId() string {
+	if x != nil {
+		return x.GroupId
+	}
+	return ""
+}
+
+func (x *ListGroupBansRequest) GetSearch() string {
+	if x != nil {
+		return x.Search
+	}
+	return ""
+}
+
+func (x *ListGroupBansRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+func (x *ListGroupBansRequest) GetCursor() string {
+	if x != nil {
+		return x.Cursor
+	}
+	return ""
+}
+
+type ListGroupBansResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Bans          []*GroupBanEntry       `protobuf:"bytes,1,rep,name=bans,proto3" json:"bans,omitempty"`
+	NextCursor    string                 `protobuf:"bytes,2,opt,name=next_cursor,json=nextCursor,proto3" json:"next_cursor,omitempty"`
+	Total         int32                  `protobuf:"varint,3,opt,name=total,proto3" json:"total,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListGroupBansResponse) Reset() {
+	*x = ListGroupBansResponse{}
+	mi := &file_user_v1_group_member_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListGroupBansResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListGroupBansResponse) ProtoMessage() {}
+
+func (x *ListGroupBansResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_group_member_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListGroupBansResponse.ProtoReflect.Descriptor instead.
+func (*ListGroupBansResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_group_member_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *ListGroupBansResponse) GetBans() []*GroupBanEntry {
+	if x != nil {
+		return x.Bans
+	}
+	return nil
+}
+
+func (x *ListGroupBansResponse) GetNextCursor() string {
+	if x != nil {
+		return x.NextCursor
+	}
+	return ""
+}
+
+func (x *ListGroupBansResponse) GetTotal() int32 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
+type UnbanGroupMemberRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	GroupId       string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	UserId        string                 `protobuf:"bytes,3,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UnbanGroupMemberRequest) Reset() {
+	*x = UnbanGroupMemberRequest{}
+	mi := &file_user_v1_group_member_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UnbanGroupMemberRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UnbanGroupMemberRequest) ProtoMessage() {}
+
+func (x *UnbanGroupMemberRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_group_member_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UnbanGroupMemberRequest.ProtoReflect.Descriptor instead.
+func (*UnbanGroupMemberRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_group_member_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *UnbanGroupMemberRequest) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
+func (x *UnbanGroupMemberRequest) GetGroupId() string {
+	if x != nil {
+		return x.GroupId
+	}
+	return ""
+}
+
+func (x *UnbanGroupMemberRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type UnbanGroupMemberResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UnbanGroupMemberResponse) Reset() {
+	*x = UnbanGroupMemberResponse{}
+	mi := &file_user_v1_group_member_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UnbanGroupMemberResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UnbanGroupMemberResponse) ProtoMessage() {}
+
+func (x *UnbanGroupMemberResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_group_member_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UnbanGroupMemberResponse.ProtoReflect.Descriptor instead.
+func (*UnbanGroupMemberResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_group_member_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *UnbanGroupMemberResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
 var File_user_v1_group_member_proto protoreflect.FileDescriptor
 
 const file_user_v1_group_member_proto_rawDesc = "" +
@@ -778,7 +1374,7 @@ const file_user_v1_group_member_proto_rawDesc = "" +
 	"\x04name\x18\x03 \x01(\tR\x04name\x12\x14\n" +
 	"\x05color\x18\x04 \x01(\tR\x05color\x12\x14\n" +
 	"\x05hoist\x18\x05 \x01(\bR\x05hoist\x12\x1a\n" +
-	"\bposition\x18\x06 \x01(\x05R\bposition\"\xc4\x02\n" +
+	"\bposition\x18\x06 \x01(\x05R\bposition\"\xc3\x06\n" +
 	"\x10GroupMemberEntry\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12!\n" +
 	"\fdisplay_name\x18\x02 \x01(\tR\vdisplayName\x12\x12\n" +
@@ -790,7 +1386,22 @@ const file_user_v1_group_member_proto_rawDesc = "" +
 	"avatar_url\x18\b \x01(\tR\tavatarUrl\x12\x1b\n" +
 	"\tis_online\x18\t \x01(\bR\bisOnline\x12'\n" +
 	"\x0fpresence_status\x18\n" +
-	" \x01(\tR\x0epresenceStatusJ\x04\b\x03\x10\x04R\x05email\"\x85\x01\n" +
+	" \x01(\tR\x0epresenceStatus\x12!\n" +
+	"\fbanner_color\x18\v \x01(\tR\vbannerColor\x12\x10\n" +
+	"\x03bio\x18\f \x01(\tR\x03bio\x12\x1a\n" +
+	"\bpronouns\x18\r \x01(\tR\bpronouns\x12&\n" +
+	"\x0fuser_created_at\x18\x0e \x01(\tR\ruserCreatedAt\x12(\n" +
+	"\x10status_note_text\x18\x0f \x01(\tR\x0estatusNoteText\x12*\n" +
+	"\x11status_note_emoji\x18\x10 \x01(\tR\x0fstatusNoteEmoji\x123\n" +
+	"\x16status_note_expires_at\x18\x11 \x01(\tR\x13statusNoteExpiresAt\x12\x1f\n" +
+	"\vjoin_method\x18\x12 \x01(\tR\n" +
+	"joinMethod\x12\x1f\n" +
+	"\vinvite_code\x18\x13 \x01(\tR\n" +
+	"inviteCode\x12+\n" +
+	"\x12invited_by_user_id\x18\x14 \x01(\tR\x0finvitedByUserId\x12.\n" +
+	"\x13invited_by_username\x18\x15 \x01(\tR\x11invitedByUsername\x125\n" +
+	"\x17invited_by_display_name\x18\x16 \x01(\tR\x14invitedByDisplayName\x12#\n" +
+	"\rtimeout_until\x18\x17 \x01(\tR\ftimeoutUntilJ\x04\b\x03\x10\x04R\x05email\"\x85\x01\n" +
 	"\x17ListGroupMembersRequest\x12!\n" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
 	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x14\n" +
@@ -800,28 +1411,73 @@ const file_user_v1_group_member_proto_rawDesc = "" +
 	"\amembers\x18\x01 \x03(\v2\x19.user.v1.GroupMemberEntryR\amembers\x12\x1f\n" +
 	"\vnext_cursor\x18\x02 \x01(\tR\n" +
 	"nextCursor\x12\x14\n" +
-	"\x05total\x18\x03 \x01(\x05R\x05total\"o\n" +
+	"\x05total\x18\x03 \x01(\x05R\x05total\"\x87\x01\n" +
 	"\x16KickGroupMemberRequest\x12!\n" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
 	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x17\n" +
-	"\auser_id\x18\x03 \x01(\tR\x06userId\"3\n" +
+	"\auser_id\x18\x03 \x01(\tR\x06userId\x12\x16\n" +
+	"\x06reason\x18\x04 \x01(\tR\x06reason\"3\n" +
 	"\x17KickGroupMemberResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess\"\xbf\x01\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\"\xea\x01\n" +
 	"\x16BanGroupMembersRequest\x12!\n" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
 	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x19\n" +
 	"\buser_ids\x18\x03 \x03(\tR\auserIds\x12\x16\n" +
 	"\x06reason\x18\x04 \x01(\tR\x06reason\x124\n" +
-	"\x16delete_message_seconds\x18\x05 \x01(\x05R\x14deleteMessageSeconds\"<\n" +
+	"\x16delete_message_seconds\x18\x05 \x01(\x05R\x14deleteMessageSeconds\x12)\n" +
+	"\x10duration_seconds\x18\x06 \x01(\x03R\x0fdurationSeconds\"<\n" +
 	"\x17BanGroupMembersResponse\x12!\n" +
-	"\fbanned_count\x18\x01 \x01(\x05R\vbannedCount2\xa4\x03\n" +
+	"\fbanned_count\x18\x01 \x01(\x05R\vbannedCount\"\xb5\x01\n" +
+	"\x19TimeoutGroupMemberRequest\x12!\n" +
+	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
+	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x17\n" +
+	"\auser_id\x18\x03 \x01(\tR\x06userId\x12)\n" +
+	"\x10duration_seconds\x18\x04 \x01(\x05R\x0fdurationSeconds\x12\x16\n" +
+	"\x06reason\x18\x05 \x01(\tR\x06reason\"A\n" +
+	"\x1aTimeoutGroupMemberResponse\x12#\n" +
+	"\rtimeout_until\x18\x01 \x01(\tR\ftimeoutUntil\"\xea\x02\n" +
+	"\rGroupBanEntry\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1a\n" +
+	"\busername\x18\x02 \x01(\tR\busername\x12!\n" +
+	"\fdisplay_name\x18\x03 \x01(\tR\vdisplayName\x12\x1d\n" +
+	"\n" +
+	"avatar_url\x18\x04 \x01(\tR\tavatarUrl\x12\x16\n" +
+	"\x06reason\x18\x05 \x01(\tR\x06reason\x12)\n" +
+	"\x11banned_by_user_id\x18\x06 \x01(\tR\x0ebannedByUserId\x12,\n" +
+	"\x12banned_by_username\x18\a \x01(\tR\x10bannedByUsername\x123\n" +
+	"\x16banned_by_display_name\x18\b \x01(\tR\x13bannedByDisplayName\x12\x1d\n" +
+	"\n" +
+	"expires_at\x18\t \x01(\tR\texpiresAt\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\n" +
+	" \x01(\tR\tcreatedAt\"\x9a\x01\n" +
+	"\x14ListGroupBansRequest\x12!\n" +
+	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
+	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x16\n" +
+	"\x06search\x18\x03 \x01(\tR\x06search\x12\x14\n" +
+	"\x05limit\x18\x04 \x01(\x05R\x05limit\x12\x16\n" +
+	"\x06cursor\x18\x05 \x01(\tR\x06cursor\"z\n" +
+	"\x15ListGroupBansResponse\x12*\n" +
+	"\x04bans\x18\x01 \x03(\v2\x16.user.v1.GroupBanEntryR\x04bans\x12\x1f\n" +
+	"\vnext_cursor\x18\x02 \x01(\tR\n" +
+	"nextCursor\x12\x14\n" +
+	"\x05total\x18\x03 \x01(\x05R\x05total\"p\n" +
+	"\x17UnbanGroupMemberRequest\x12!\n" +
+	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
+	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x17\n" +
+	"\auser_id\x18\x03 \x01(\tR\x06userId\"4\n" +
+	"\x18UnbanGroupMemberResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess2\xac\x05\n" +
 	"\x12GroupMemberService\x12B\n" +
 	"\tJoinGroup\x12\x19.user.v1.JoinGroupRequest\x1a\x1a.user.v1.JoinGroupResponse\x12E\n" +
 	"\n" +
 	"LeaveGroup\x12\x1a.user.v1.LeaveGroupRequest\x1a\x1b.user.v1.LeaveGroupResponse\x12W\n" +
 	"\x10ListGroupMembers\x12 .user.v1.ListGroupMembersRequest\x1a!.user.v1.ListGroupMembersResponse\x12T\n" +
 	"\x0fKickGroupMember\x12\x1f.user.v1.KickGroupMemberRequest\x1a .user.v1.KickGroupMemberResponse\x12T\n" +
-	"\x0fBanGroupMembers\x12\x1f.user.v1.BanGroupMembersRequest\x1a .user.v1.BanGroupMembersResponseB\xa2\x01\n" +
+	"\x0fBanGroupMembers\x12\x1f.user.v1.BanGroupMembersRequest\x1a .user.v1.BanGroupMembersResponse\x12]\n" +
+	"\x12TimeoutGroupMember\x12\".user.v1.TimeoutGroupMemberRequest\x1a#.user.v1.TimeoutGroupMemberResponse\x12N\n" +
+	"\rListGroupBans\x12\x1d.user.v1.ListGroupBansRequest\x1a\x1e.user.v1.ListGroupBansResponse\x12W\n" +
+	"\x10UnbanGroupMember\x12 .user.v1.UnbanGroupMemberRequest\x1a!.user.v1.UnbanGroupMemberResponseB\xa2\x01\n" +
 	"\vcom.user.v1B\x10GroupMemberProtoP\x01ZDgithub.com/wichat/wichat/backend/wi-shared/models/gen/user/v1;userv1\xa2\x02\x03UXX\xaa\x02\aUser.V1\xca\x02\aUser\\V1\xe2\x02\x13User\\V1\\GPBMetadata\xea\x02\bUser::V1b\x06proto3"
 
 var (
@@ -836,39 +1492,53 @@ func file_user_v1_group_member_proto_rawDescGZIP() []byte {
 	return file_user_v1_group_member_proto_rawDescData
 }
 
-var file_user_v1_group_member_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_user_v1_group_member_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
 var file_user_v1_group_member_proto_goTypes = []any{
-	(*JoinGroupRequest)(nil),         // 0: user.v1.JoinGroupRequest
-	(*JoinGroupResponse)(nil),        // 1: user.v1.JoinGroupResponse
-	(*LeaveGroupRequest)(nil),        // 2: user.v1.LeaveGroupRequest
-	(*LeaveGroupResponse)(nil),       // 3: user.v1.LeaveGroupResponse
-	(*GroupMemberRoleSummary)(nil),   // 4: user.v1.GroupMemberRoleSummary
-	(*GroupMemberEntry)(nil),         // 5: user.v1.GroupMemberEntry
-	(*ListGroupMembersRequest)(nil),  // 6: user.v1.ListGroupMembersRequest
-	(*ListGroupMembersResponse)(nil), // 7: user.v1.ListGroupMembersResponse
-	(*KickGroupMemberRequest)(nil),   // 8: user.v1.KickGroupMemberRequest
-	(*KickGroupMemberResponse)(nil),  // 9: user.v1.KickGroupMemberResponse
-	(*BanGroupMembersRequest)(nil),   // 10: user.v1.BanGroupMembersRequest
-	(*BanGroupMembersResponse)(nil),  // 11: user.v1.BanGroupMembersResponse
+	(*JoinGroupRequest)(nil),           // 0: user.v1.JoinGroupRequest
+	(*JoinGroupResponse)(nil),          // 1: user.v1.JoinGroupResponse
+	(*LeaveGroupRequest)(nil),          // 2: user.v1.LeaveGroupRequest
+	(*LeaveGroupResponse)(nil),         // 3: user.v1.LeaveGroupResponse
+	(*GroupMemberRoleSummary)(nil),     // 4: user.v1.GroupMemberRoleSummary
+	(*GroupMemberEntry)(nil),           // 5: user.v1.GroupMemberEntry
+	(*ListGroupMembersRequest)(nil),    // 6: user.v1.ListGroupMembersRequest
+	(*ListGroupMembersResponse)(nil),   // 7: user.v1.ListGroupMembersResponse
+	(*KickGroupMemberRequest)(nil),     // 8: user.v1.KickGroupMemberRequest
+	(*KickGroupMemberResponse)(nil),    // 9: user.v1.KickGroupMemberResponse
+	(*BanGroupMembersRequest)(nil),     // 10: user.v1.BanGroupMembersRequest
+	(*BanGroupMembersResponse)(nil),    // 11: user.v1.BanGroupMembersResponse
+	(*TimeoutGroupMemberRequest)(nil),  // 12: user.v1.TimeoutGroupMemberRequest
+	(*TimeoutGroupMemberResponse)(nil), // 13: user.v1.TimeoutGroupMemberResponse
+	(*GroupBanEntry)(nil),              // 14: user.v1.GroupBanEntry
+	(*ListGroupBansRequest)(nil),       // 15: user.v1.ListGroupBansRequest
+	(*ListGroupBansResponse)(nil),      // 16: user.v1.ListGroupBansResponse
+	(*UnbanGroupMemberRequest)(nil),    // 17: user.v1.UnbanGroupMemberRequest
+	(*UnbanGroupMemberResponse)(nil),   // 18: user.v1.UnbanGroupMemberResponse
 }
 var file_user_v1_group_member_proto_depIdxs = []int32{
 	4,  // 0: user.v1.GroupMemberEntry.roles:type_name -> user.v1.GroupMemberRoleSummary
 	5,  // 1: user.v1.ListGroupMembersResponse.members:type_name -> user.v1.GroupMemberEntry
-	0,  // 2: user.v1.GroupMemberService.JoinGroup:input_type -> user.v1.JoinGroupRequest
-	2,  // 3: user.v1.GroupMemberService.LeaveGroup:input_type -> user.v1.LeaveGroupRequest
-	6,  // 4: user.v1.GroupMemberService.ListGroupMembers:input_type -> user.v1.ListGroupMembersRequest
-	8,  // 5: user.v1.GroupMemberService.KickGroupMember:input_type -> user.v1.KickGroupMemberRequest
-	10, // 6: user.v1.GroupMemberService.BanGroupMembers:input_type -> user.v1.BanGroupMembersRequest
-	1,  // 7: user.v1.GroupMemberService.JoinGroup:output_type -> user.v1.JoinGroupResponse
-	3,  // 8: user.v1.GroupMemberService.LeaveGroup:output_type -> user.v1.LeaveGroupResponse
-	7,  // 9: user.v1.GroupMemberService.ListGroupMembers:output_type -> user.v1.ListGroupMembersResponse
-	9,  // 10: user.v1.GroupMemberService.KickGroupMember:output_type -> user.v1.KickGroupMemberResponse
-	11, // 11: user.v1.GroupMemberService.BanGroupMembers:output_type -> user.v1.BanGroupMembersResponse
-	7,  // [7:12] is the sub-list for method output_type
-	2,  // [2:7] is the sub-list for method input_type
-	2,  // [2:2] is the sub-list for extension type_name
-	2,  // [2:2] is the sub-list for extension extendee
-	0,  // [0:2] is the sub-list for field type_name
+	14, // 2: user.v1.ListGroupBansResponse.bans:type_name -> user.v1.GroupBanEntry
+	0,  // 3: user.v1.GroupMemberService.JoinGroup:input_type -> user.v1.JoinGroupRequest
+	2,  // 4: user.v1.GroupMemberService.LeaveGroup:input_type -> user.v1.LeaveGroupRequest
+	6,  // 5: user.v1.GroupMemberService.ListGroupMembers:input_type -> user.v1.ListGroupMembersRequest
+	8,  // 6: user.v1.GroupMemberService.KickGroupMember:input_type -> user.v1.KickGroupMemberRequest
+	10, // 7: user.v1.GroupMemberService.BanGroupMembers:input_type -> user.v1.BanGroupMembersRequest
+	12, // 8: user.v1.GroupMemberService.TimeoutGroupMember:input_type -> user.v1.TimeoutGroupMemberRequest
+	15, // 9: user.v1.GroupMemberService.ListGroupBans:input_type -> user.v1.ListGroupBansRequest
+	17, // 10: user.v1.GroupMemberService.UnbanGroupMember:input_type -> user.v1.UnbanGroupMemberRequest
+	1,  // 11: user.v1.GroupMemberService.JoinGroup:output_type -> user.v1.JoinGroupResponse
+	3,  // 12: user.v1.GroupMemberService.LeaveGroup:output_type -> user.v1.LeaveGroupResponse
+	7,  // 13: user.v1.GroupMemberService.ListGroupMembers:output_type -> user.v1.ListGroupMembersResponse
+	9,  // 14: user.v1.GroupMemberService.KickGroupMember:output_type -> user.v1.KickGroupMemberResponse
+	11, // 15: user.v1.GroupMemberService.BanGroupMembers:output_type -> user.v1.BanGroupMembersResponse
+	13, // 16: user.v1.GroupMemberService.TimeoutGroupMember:output_type -> user.v1.TimeoutGroupMemberResponse
+	16, // 17: user.v1.GroupMemberService.ListGroupBans:output_type -> user.v1.ListGroupBansResponse
+	18, // 18: user.v1.GroupMemberService.UnbanGroupMember:output_type -> user.v1.UnbanGroupMemberResponse
+	11, // [11:19] is the sub-list for method output_type
+	3,  // [3:11] is the sub-list for method input_type
+	3,  // [3:3] is the sub-list for extension type_name
+	3,  // [3:3] is the sub-list for extension extendee
+	0,  // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_user_v1_group_member_proto_init() }
@@ -882,7 +1552,7 @@ func file_user_v1_group_member_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_user_v1_group_member_proto_rawDesc), len(file_user_v1_group_member_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   12,
+			NumMessages:   19,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

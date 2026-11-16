@@ -8,11 +8,7 @@ import { GroupRailMoveSubmenu } from "@/features/shell/components/group-rail-men
 import { GroupRailMuteSubmenu } from "@/features/shell/components/group-rail-menu/group-rail-mute-submenu";
 import { GroupRailNotificationSettingsSubmenu } from "@/features/shell/components/group-rail-menu/group-rail-notification-settings-submenu";
 import { useGroupMenuKit } from "@/features/shell/components/group-rail-menu/group-menu-kit";
-import {
-	menuDestructiveItemClass,
-	menuItemClass,
-	menuSeparatorClass,
-} from "@/lib/menu-chrome";
+import { menuDestructiveItemClass, menuItemClass, menuSeparatorClass } from "@/lib/menu-chrome";
 import type { useGroupMenuController } from "@/features/shell/components/group-rail-menu/use-group-menu-controller";
 
 type GroupMenuContentProps = {

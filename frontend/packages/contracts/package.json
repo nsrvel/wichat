@@ -15,6 +15,7 @@
     "./group": "./src/group/group.ts",
     "./group/member": "./src/group/group-member.ts",
     "./group/role": "./src/group/group-role.ts",
+    "./group/audit-log": "./src/group/group-audit-log.ts",
     "./group/invite": "./src/group/invite.ts",
     "./chat/channel": "./src/chat/channel.ts",
     "./chat/message": "./src/chat/message.ts"

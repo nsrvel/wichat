@@ -15,6 +15,12 @@ alwaysApply: false
 3. New `pg_repository.go` → add `repository/mock/pg_repository_mock.go` in the same slice (Redis: miniredis only).
 4. Proto mappers live in `pkg/auth-pb/` (`authPb`), not generic `pkg/converter/`.
 
+## Domain modularity, audit & hierarchy
+
+- **`ms-user` domains** (`user`, `group`, `group-role`, `group-member`, `invite`, `channel`, `user-activity-log`, `group-activity-log`): each owns `internal/<domain>/{repository,service,delivery}/` and `test/` 1:1.
+- **Activity & audit logs:** mutations record structured events via `user-activity-log` / `group-activity-log` using constants in `pkg/constants/activity_log.go`, cursor pagination `(created_at, id)`, and RBAC gates (`view_audit_log` or owner).
+- **Moderation & role hierarchy:** kick, ban, timeout, and role assignment actions must enforce target role hierarchy against the actor's highest role and protect group owners.
+
 ## Ratchet
 
 When adding tests, raise the module's `.coverage-min` toward 90 — do not lower floors.

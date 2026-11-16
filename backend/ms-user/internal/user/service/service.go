@@ -66,6 +66,8 @@ type Service interface {
 	ListSessions(ctx context.Context, accessToken string) ([]models.Session, string, error)
 	RevokeSession(ctx context.Context, accessToken, sessionID, currentPassword string) error
 	RevokeOtherSessions(ctx context.Context, accessToken, currentPassword string) error
+	ListRelationships(ctx context.Context, accessToken string) ([]models.UserRelationship, error)
+	SetRelationship(ctx context.Context, accessToken, targetUserID, kind string) (string, error)
 	WithActivityLog(r activitysvc.Recorder) Service
 }
 
@@ -1587,4 +1589,49 @@ func toWebAuthnLibCredentials(creds []models.WebAuthnCredential) []webauthn.Cred
 		}
 	}
 	return out
+}
+
+func (s service) ListRelationships(ctx context.Context, accessToken string) ([]models.UserRelationship, error) {
+	now := s.now()
+	userID, err := access.UserIDFromAccessToken(ctx, accessToken, s.secret, s.sessions, now)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.users.ListRelationships(ctx, userID)
+}
+
+func (s service) SetRelationship(ctx context.Context, accessToken, targetUserID, kind string) (string, error) {
+	now := s.now()
+	userID, err := access.UserIDFromAccessToken(ctx, accessToken, s.secret, s.sessions, now)
+	if err != nil {
+		return "", err
+	}
+
+	targetUserID = strings.TrimSpace(targetUserID)
+	if targetUserID == "" || targetUserID == userID {
+		return "", exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "target_user_id"})
+	}
+
+	kind = strings.TrimSpace(strings.ToLower(kind))
+	switch kind {
+	case "none":
+		if err := s.users.DeleteRelationship(ctx, userID, targetUserID); err != nil {
+			return "", err
+		}
+		return "none", nil
+	case "ignore", "block":
+		if _, err := s.users.FindUserByID(ctx, targetUserID); err != nil {
+			if errors.Is(err, constants.ErrNotFound) {
+				return "", exception.NotFound(exception.MsgInvalidInput, map[string]any{"field": "target_user_id"})
+			}
+			return "", err
+		}
+		if err := s.users.UpsertRelationship(ctx, userID, targetUserID, kind, now); err != nil {
+			return "", err
+		}
+		return kind, nil
+	default:
+		return "", exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "kind"})
+	}
 }

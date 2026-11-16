@@ -1,6 +1,9 @@
 package config
 
 import (
+	"fmt"
+	"strings"
+
 	sharedconfig "github.com/wichat/wichat/backend/wi-shared/config"
 )
 
@@ -55,4 +58,23 @@ func Load(envFile string) (Config, error) {
 // ListenAddr returns the address for net.Listen (e.g. ":3001").
 func (c Config) ListenAddr() string {
 	return sharedconfig.ListenAddress(c.Port)
+}
+
+// Validate enforces production safety invariants when Env is not development.
+func (c Config) Validate() error {
+	if strings.EqualFold(strings.TrimSpace(c.Env), "development") {
+		return nil
+	}
+	origin := strings.ToLower(strings.TrimSpace(c.WebOrigin))
+	if !strings.HasPrefix(origin, "https://") {
+		return fmt.Errorf("WEB_ORIGIN must use https:// when ENV=%s", c.Env)
+	}
+	mfaKey := strings.TrimSpace(c.MFAEncryptionKey)
+	if len(mfaKey) < 32 {
+		return fmt.Errorf("MFA_ENCRYPTION_KEY must be at least 32 characters when ENV=%s", c.Env)
+	}
+	if mfaKey == c.AuthJWTSecret {
+		return fmt.Errorf("MFA_ENCRYPTION_KEY must be distinct from AUTH_JWT_SECRET when ENV=%s", c.Env)
+	}
+	return nil
 }

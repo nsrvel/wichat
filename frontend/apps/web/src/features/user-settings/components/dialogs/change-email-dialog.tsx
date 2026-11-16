@@ -268,7 +268,9 @@ function ChangeEmailDialogBody({
 									onClick={() => setReason(opt)}
 									className={cn(
 										"flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left text-sm transition-colors hover:bg-muted/40",
-										selected ? "bg-muted/35 text-foreground" : "text-muted-foreground hover:text-foreground",
+										selected
+											? "bg-muted/35 text-foreground"
+											: "text-muted-foreground hover:text-foreground",
 									)}
 								>
 									<span

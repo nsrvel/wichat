@@ -16,7 +16,12 @@ import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { AuthEmailOtpStep } from "@/features/auth/components/auth-email-otp-step";
 import { TurnstileWidget } from "@/features/auth/components/turnstile-widget";
-import { authFieldLabelClass, authFormClass, authInputClass, authSubmitClass } from "@/lib/form-field-styles";
+import {
+	authFieldLabelClass,
+	authFormClass,
+	authInputClass,
+	authSubmitClass,
+} from "@/lib/form-field-styles";
 import { resendRateLimitCooldownSec } from "@/features/auth/lib/resend-cooldown";
 import { translateError } from "@/integrations/i18n/translate-error";
 import { birthPartsDefaults, formatBirthDate, refineMinAgeBirth } from "@/lib/auth-validators";
@@ -79,9 +84,10 @@ export function RegisterForm() {
 	const [resendCooldown, setResendCooldown] = useState(0);
 	const [turnstileToken, setTurnstileToken] = useState("");
 	const [turnstileResetKey, setTurnstileResetKey] = useState(0);
-	const [usernameCheck, setUsernameCheck] = useState<
-		{ query: string; result: UsernameCheckState } | null
-	>(null);
+	const [usernameCheck, setUsernameCheck] = useState<{
+		query: string;
+		result: UsernameCheckState;
+	} | null>(null);
 	const form = useForm<RegisterFormValues>({
 		resolver: zodResolver(RegisterFormSchema),
 		defaultValues: {

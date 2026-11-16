@@ -23,9 +23,8 @@ type client struct {
 
 // New wraps an existing gRPC connection.
 func New(conn *grpc.ClientConn, settings utils.Settings, log logger.Logger) Client {
-	breaker := utils.NewBreaker(settings)
-	read := utils.CallConfigFromSettings(settings, utils.RetryIdempotent)
-	read.Breaker = breaker
+	// Health probes must not retry inside CallUnary or be gated by a circuit breaker.
+	read := utils.CallConfigFromSettings(settings, utils.RetryNone)
 
 	return &client{
 		stub: chatv1.NewGeneralServiceClient(conn),

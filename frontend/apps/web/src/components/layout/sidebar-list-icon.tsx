@@ -121,7 +121,8 @@ export function SidebarListAvatar({
 				alt={alt}
 				width={px}
 				height={px}
-				className="size-full object-cover"
+				draggable={false}
+				className="pointer-events-none size-full object-cover select-none"
 				unoptimized={staticAsset}
 				loading={staticAsset ? "eager" : "lazy"}
 			/>

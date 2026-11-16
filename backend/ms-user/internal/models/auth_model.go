@@ -377,3 +377,11 @@ type WebAuthnRegisterBegin struct {
 	ChallengeID string
 	OptionsJSON string
 }
+
+// UserRelationship represents a user's ignore or block entry against another user.
+type UserRelationship struct {
+	UserID       string
+	TargetUserID string
+	Kind         string
+	CreatedAt    time.Time
+}

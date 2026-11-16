@@ -2,10 +2,13 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Q_GROUP_CHANNELS } from "@/services/channel/channel.key";
-import { Q_MY_GROUPS } from "@/services/group/group.key";
+import { groupBanKeys, Q_MY_GROUPS } from "@/services/group/group.key";
 import { groupRoleKeys } from "@/services/group-role/group-role.key";
 import { Q_INVITE_MEMBERS } from "@/services/invite/invite.query";
-import type { BanGroupMembersRequest } from "@wichat/contracts/group/member";
+import type {
+	BanGroupMembersRequest,
+	TimeoutGroupMemberRequest,
+} from "@wichat/contracts/group/member";
 import type { Group } from "@wichat/contracts/group";
 import {
 	banGroupMembers,
@@ -16,6 +19,8 @@ import {
 	leaveGroup,
 	reorderMyGroups,
 	saveGroupProfile,
+	timeoutGroupMember,
+	unbanGroupMember,
 	type SaveGroupProfileInput,
 } from "@/services/group/group.service";
 
@@ -117,7 +122,8 @@ export function useDeleteGroupMutation() {
 export function useKickGroupMemberMutation(groupId: string) {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: (userId: string) => kickGroupMember(groupId, userId),
+		mutationFn: ({ userId, reason }: { userId: string; reason?: string }) =>
+			kickGroupMember(groupId, userId, reason),
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: [Q_INVITE_MEMBERS, groupId] });
 			void queryClient.invalidateQueries({ queryKey: groupRoleKeys.list(groupId) });
@@ -133,7 +139,29 @@ export function useBanGroupMembersMutation(groupId: string) {
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: [Q_INVITE_MEMBERS, groupId] });
 			void queryClient.invalidateQueries({ queryKey: groupRoleKeys.list(groupId) });
+			void queryClient.invalidateQueries({ queryKey: groupBanKeys.all(groupId) });
 			void queryClient.invalidateQueries({ queryKey: [Q_MY_GROUPS] });
+		},
+	});
+}
+
+export function useUnbanGroupMemberMutation(groupId: string) {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: (userId: string) => unbanGroupMember(groupId, userId),
+		onSuccess: () => {
+			void queryClient.invalidateQueries({ queryKey: groupBanKeys.all(groupId) });
+		},
+	});
+}
+
+export function useTimeoutGroupMemberMutation(groupId: string) {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: ({ userId, ...payload }: TimeoutGroupMemberRequest & { userId: string }) =>
+			timeoutGroupMember(groupId, userId, payload),
+		onSuccess: () => {
+			void queryClient.invalidateQueries({ queryKey: [Q_INVITE_MEMBERS, groupId] });
 		},
 	});
 }

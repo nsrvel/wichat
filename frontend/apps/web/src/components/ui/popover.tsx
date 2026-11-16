@@ -13,11 +13,7 @@ type PopoverProps = {
 
 export function Popover({ open, defaultOpen, onOpenChange, children }: PopoverProps) {
 	return (
-		<PopoverPrimitive.Root
-			open={open}
-			defaultOpen={defaultOpen}
-			onOpenChange={onOpenChange}
-		>
+		<PopoverPrimitive.Root open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange}>
 			{children}
 		</PopoverPrimitive.Root>
 	);
@@ -73,4 +69,3 @@ export function PopoverContent({
 		</PopoverPrimitive.Portal>
 	);
 }
-

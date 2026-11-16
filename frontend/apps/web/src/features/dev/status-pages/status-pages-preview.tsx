@@ -45,10 +45,7 @@ export function StatusPagesPreview() {
 				})}
 			</div>
 
-			<StatusScreen
-				variant={variant}
-				onRetry={() => toast.info("Retry action triggered")}
-			/>
+			<StatusScreen variant={variant} onRetry={() => toast.info("Retry action triggered")} />
 		</div>
 	);
 }

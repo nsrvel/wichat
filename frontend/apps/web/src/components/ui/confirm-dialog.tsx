@@ -9,7 +9,11 @@ import {
 	WiChatDialogHeader,
 	wichatDialogSubtitleClass,
 } from "@/components/ui/wichat-dialog";
-import { authSubmitClass, authSubmitGhostClass, authSubmitShapeClass } from "@/lib/form-field-styles";
+import {
+	authSubmitClass,
+	authSubmitGhostClass,
+	authSubmitShapeClass,
+} from "@/lib/form-field-styles";
 import { cn } from "@/lib/utils";
 
 const confirmDialogFooterButtonClass = "w-auto min-w-[7.5rem] max-w-[55%] shrink-0 px-8";

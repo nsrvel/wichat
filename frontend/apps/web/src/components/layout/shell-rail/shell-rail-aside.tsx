@@ -30,7 +30,7 @@ export function shellRailColumnClass(open: boolean) {
 /** `group/rail` on the aside — inner rows use `shellRailAsideInnerClass`. */
 export function shellRailAsideClass(className?: string) {
 	return cn(
-		"group/rail flex h-full min-h-0 w-[var(--shell-rail-width)] flex-col gap-3 overflow-hidden bg-shell-rail pt-3",
+		"group/rail flex h-full min-h-0 w-[var(--shell-rail-width)] flex-col gap-3 overflow-x-hidden overflow-y-auto overscroll-contain bg-shell-rail pt-3 pb-20 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
 		"transition-[padding-bottom,visibility]",
 		shellRailMotion,
 		"data-[state=open]:visible",

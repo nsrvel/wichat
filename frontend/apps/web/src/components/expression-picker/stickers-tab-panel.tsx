@@ -97,13 +97,9 @@ export function StickersTabPanel({
 						{topStickers.length > 0 ? (
 							<div>
 								<p className="mb-2 text-xs font-semibold text-foreground">
-									{recentStickers.length > 0
-										? t("expression.recent")
-										: "Popular"}
+									{recentStickers.length > 0 ? t("expression.recent") : "Popular"}
 								</p>
-								<div className="grid grid-cols-4 gap-2">
-									{topStickers.map(renderStickerTile)}
-								</div>
+								<div className="grid grid-cols-4 gap-2">{topStickers.map(renderStickerTile)}</div>
 							</div>
 						) : null}
 

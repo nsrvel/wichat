@@ -1,7 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { patchMemberListPresence } from "@/hooks/use-presence-sync";
 import { setAccessToken } from "@/integrations/api-client";
 import { Q_SESSION } from "@/services/auth/auth.key";
-import { Q_MY_DEVICES, Q_MY_MFA, Q_MY_PRESENCE } from "@/services/user/user.key";
+import {
+	Q_MY_DEVICES,
+	Q_MY_MFA,
+	Q_MY_PRESENCE,
+	Q_USER_RELATIONSHIPS,
+} from "@/services/user/user.key";
 import {
 	beginTotpSetup,
 	beginWebAuthnRegister,
@@ -18,6 +24,7 @@ import {
 	revokeMyDevice,
 	revokeOtherDevices,
 	saveMyProfile,
+	setUserRelationship,
 	updateMyPassword,
 	updateMyPreferences,
 	updateMyPresence,
@@ -273,7 +280,23 @@ export function useUpdateMyPresenceMutation() {
 		mutationFn: updateMyPresence,
 		onSuccess: (res) => {
 			queryClient.setQueryData([Q_MY_PRESENCE], res);
+			const sessionUser = queryClient.getQueryData<User>([Q_SESSION]);
+			if (sessionUser?.id) {
+				patchMemberListPresence(queryClient, sessionUser.id, {
+					is_online: res.is_online,
+					presence_status: res.effective_status,
+				});
+			}
 		},
 	});
 }
 
+export function useSetUserRelationshipMutation() {
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: setUserRelationship,
+		onSuccess: () => {
+			void queryClient.invalidateQueries({ queryKey: [Q_USER_RELATIONSHIPS] });
+		},
+	});
+}

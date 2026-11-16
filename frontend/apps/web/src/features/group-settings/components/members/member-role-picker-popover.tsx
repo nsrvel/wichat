@@ -26,6 +26,7 @@ type MemberRolePickerPopoverProps = {
 	assignableRoleIds: ReadonlySet<string>;
 	canManageRoles: boolean;
 	hideRoles: boolean;
+	alwaysShowAdd?: boolean;
 };
 
 /**
@@ -40,6 +41,7 @@ export function MemberRolePickerPopover({
 	assignableRoleIds,
 	canManageRoles,
 	hideRoles,
+	alwaysShowAdd = false,
 }: MemberRolePickerPopoverProps) {
 	const { t } = useTranslation();
 	const queryClient = useQueryClient();
@@ -207,7 +209,8 @@ export function MemberRolePickerPopover({
 										className={cn(
 											"inline-flex size-6 shrink-0 items-center justify-center rounded-full border border-border/75 bg-muted/45 text-muted-foreground transition-all",
 											"hover:border-border hover:bg-sidebar-accent hover:text-foreground",
-											"opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100",
+											!alwaysShowAdd &&
+												"opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100",
 											open && "border-border bg-sidebar-accent text-foreground opacity-100",
 										)}
 									>

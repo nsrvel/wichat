@@ -11,11 +11,7 @@ import type {
 	MembersSortKey,
 } from "@/features/group-settings/lib/group-settings-members-view";
 import { MenuRadioControl } from "@/components/ui/menu-radio-control";
-import {
-	menuPopupClass,
-	menuPositionerClass,
-	menuRadioItemClass,
-} from "@/lib/menu-chrome";
+import { menuPopupClass, menuPositionerClass, menuRadioItemClass } from "@/lib/menu-chrome";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 

@@ -49,11 +49,7 @@ type TotpSetupDialogProps = {
 	onRecoveryCodes: (codes: string[]) => void;
 };
 
-export function TotpSetupDialog({
-	open,
-	onOpenChange,
-	onRecoveryCodes,
-}: TotpSetupDialogProps) {
+export function TotpSetupDialog({ open, onOpenChange, onRecoveryCodes }: TotpSetupDialogProps) {
 	const { t } = useTranslation();
 	const titleId = useId();
 	const [step, setStep] = useState<0 | 1 | 2>(0);

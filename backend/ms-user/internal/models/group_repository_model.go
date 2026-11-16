@@ -38,18 +38,28 @@ type GroupSettingsRow struct {
 type GroupMemberRow struct {
 	bun.BaseModel `bun:"table:group_members"`
 
-	GroupID      string    `bun:"group_id,pk,type:uuid"`
-	UserID       string    `bun:"user_id,pk,type:uuid"`
-	Role         string    `bun:"role"`
-	RailPosition *int      `bun:"rail_position"`
-	CreatedAt    time.Time `bun:"created_at"`
+	GroupID         string     `bun:"group_id,pk,type:uuid"`
+	UserID          string     `bun:"user_id,pk,type:uuid"`
+	Role            string     `bun:"role"`
+	RailPosition    *int       `bun:"rail_position"`
+	JoinMethod      string     `bun:"join_method"`
+	InviteCode      string     `bun:"invite_code"`
+	InvitedByUserID *string    `bun:"invited_by_user_id,type:uuid"`
+	TimeoutUntil    *time.Time `bun:"timeout_until"`
+	CreatedAt       time.Time  `bun:"created_at"`
 }
 
 // GroupMemberRowFrom maps domain membership to a Bun row.
 func GroupMemberRowFrom(m GroupMember) GroupMemberRow {
+	joinMethod := m.JoinMethod
+	if joinMethod == "" {
+		joinMethod = "unknown"
+	}
 	return GroupMemberRow{
 		GroupID: m.GroupID, UserID: m.UserID, Role: m.Role,
-		RailPosition: m.RailPosition, CreatedAt: m.CreatedAt,
+		RailPosition: m.RailPosition, JoinMethod: joinMethod,
+		InviteCode: m.InviteCode, InvitedByUserID: m.InvitedByUserID,
+		TimeoutUntil: m.TimeoutUntil, CreatedAt: m.CreatedAt,
 	}
 }
 
@@ -87,10 +97,11 @@ type GroupMemberRoleRow struct {
 type GroupBanRow struct {
 	bun.BaseModel `bun:"table:group_bans"`
 
-	GroupID              string    `bun:"group_id,pk,type:uuid"`
-	UserID               string    `bun:"user_id,pk,type:uuid"`
-	BannedBy             *string   `bun:"banned_by,type:uuid"`
-	Reason               string    `bun:"reason"`
-	DeleteMessageSeconds int       `bun:"delete_message_seconds"`
-	CreatedAt            time.Time `bun:"created_at"`
+	GroupID              string     `bun:"group_id,pk,type:uuid"`
+	UserID               string     `bun:"user_id,pk,type:uuid"`
+	BannedBy             *string    `bun:"banned_by,type:uuid"`
+	Reason               string     `bun:"reason"`
+	DeleteMessageSeconds int        `bun:"delete_message_seconds"`
+	ExpiresAt            *time.Time `bun:"expires_at"`
+	CreatedAt            time.Time  `bun:"created_at"`
 }

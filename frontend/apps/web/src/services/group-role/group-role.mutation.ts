@@ -123,7 +123,9 @@ export function useUpdateGroupHideRolesMutation(groupId: string) {
 		mutationFn: (hideRoles: boolean) => updateGroupHideRoles(groupId, hideRoles),
 		onMutate: async (nextHide) => {
 			await queryClient.cancelQueries({ queryKey: groupRoleKeys.list(groupId) });
-			const previous = queryClient.getQueryData<GroupRolesListResponse>(groupRoleKeys.list(groupId));
+			const previous = queryClient.getQueryData<GroupRolesListResponse>(
+				groupRoleKeys.list(groupId),
+			);
 			queryClient.setQueryData<GroupRolesListResponse>(groupRoleKeys.list(groupId), (prev) =>
 				prev ? { ...prev, hide_roles: nextHide } : prev,
 			);

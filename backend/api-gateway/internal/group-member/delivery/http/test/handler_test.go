@@ -19,9 +19,12 @@ import (
 const testGroupPublicID = "507f1f77bcf86cd799439011"
 
 type fakeGroupMember struct {
-	joinGroup       func(context.Context, *userv1.JoinGroupRequest) (*userv1.JoinGroupResponse, error)
-	kickGroupMember func(context.Context, *userv1.KickGroupMemberRequest) (*userv1.KickGroupMemberResponse, error)
-	banGroupMembers func(context.Context, *userv1.BanGroupMembersRequest) (*userv1.BanGroupMembersResponse, error)
+	joinGroup          func(context.Context, *userv1.JoinGroupRequest) (*userv1.JoinGroupResponse, error)
+	kickGroupMember    func(context.Context, *userv1.KickGroupMemberRequest) (*userv1.KickGroupMemberResponse, error)
+	banGroupMembers    func(context.Context, *userv1.BanGroupMembersRequest) (*userv1.BanGroupMembersResponse, error)
+	listGroupBans      func(context.Context, *userv1.ListGroupBansRequest) (*userv1.ListGroupBansResponse, error)
+	unbanGroupMember   func(context.Context, *userv1.UnbanGroupMemberRequest) (*userv1.UnbanGroupMemberResponse, error)
+	timeoutGroupMember func(context.Context, *userv1.TimeoutGroupMemberRequest) (*userv1.TimeoutGroupMemberResponse, error)
 }
 
 func (f fakeGroupMember) JoinGroup(ctx context.Context, in *userv1.JoinGroupRequest) (*userv1.JoinGroupResponse, error) {
@@ -50,6 +53,27 @@ func (f fakeGroupMember) KickGroupMember(ctx context.Context, in *userv1.KickGro
 func (f fakeGroupMember) BanGroupMembers(ctx context.Context, in *userv1.BanGroupMembersRequest) (*userv1.BanGroupMembersResponse, error) {
 	if f.banGroupMembers != nil {
 		return f.banGroupMembers(ctx, in)
+	}
+	return nil, status.Error(codes.Unimplemented, "error.internal")
+}
+
+func (f fakeGroupMember) TimeoutGroupMember(ctx context.Context, in *userv1.TimeoutGroupMemberRequest) (*userv1.TimeoutGroupMemberResponse, error) {
+	if f.timeoutGroupMember != nil {
+		return f.timeoutGroupMember(ctx, in)
+	}
+	return nil, status.Error(codes.Unimplemented, "error.internal")
+}
+
+func (f fakeGroupMember) ListGroupBans(ctx context.Context, in *userv1.ListGroupBansRequest) (*userv1.ListGroupBansResponse, error) {
+	if f.listGroupBans != nil {
+		return f.listGroupBans(ctx, in)
+	}
+	return nil, status.Error(codes.Unimplemented, "error.internal")
+}
+
+func (f fakeGroupMember) UnbanGroupMember(ctx context.Context, in *userv1.UnbanGroupMemberRequest) (*userv1.UnbanGroupMemberResponse, error) {
+	if f.unbanGroupMember != nil {
+		return f.unbanGroupMember(ctx, in)
 	}
 	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
@@ -132,5 +156,75 @@ func TestBanGroupMembersWithBearer(t *testing.T) {
 
 	if rec.Code != http.StatusOK || gotReason != "spam" || gotCount != 2 || gotDeleteSeconds != 3600 {
 		t.Fatalf("status %d reason %q count %d del %d body %s", rec.Code, gotReason, gotCount, gotDeleteSeconds, rec.Body.String())
+	}
+}
+
+func TestTimeoutGroupMemberWithBearer(t *testing.T) {
+	var gotDuration int32
+	var gotReason, gotUserID string
+	clients := &microservices.Clients{User: msUser.Service{GRPC: msUser.GRPC{
+		GroupMember: fakeGroupMember{
+			timeoutGroupMember: func(_ context.Context, in *userv1.TimeoutGroupMemberRequest) (*userv1.TimeoutGroupMemberResponse, error) {
+				gotDuration = in.GetDurationSeconds()
+				gotReason = in.GetReason()
+				gotUserID = in.GetUserId()
+				return &userv1.TimeoutGroupMemberResponse{TimeoutUntil: "2026-11-15T12:00:00Z"}, nil
+			},
+		},
+	}}}
+	handler := groupmemberdelivery.NewHandler(clients, logger.New(logger.Options{Service: "gateway-test", Env: "test", Level: "error"}))
+
+	req := httptest.NewRequest(
+		http.MethodPut,
+		"/api/v1/groups/"+testGroupPublicID+"/members/u1/timeout",
+		strings.NewReader(`{"duration_seconds":60,"reason":" spam "}`),
+	)
+	req.SetPathValue("id", testGroupPublicID)
+	req.SetPathValue("userId", "u1")
+	req.Header.Set("Authorization", "Bearer access-token")
+	rec := httptest.NewRecorder()
+	handler.TimeoutGroupMember(rec, req)
+
+	if rec.Code != http.StatusOK || gotDuration != 60 || gotReason != "spam" || gotUserID != "u1" {
+		t.Fatalf("status %d dur %d reason %q uid %q body %s", rec.Code, gotDuration, gotReason, gotUserID, rec.Body.String())
+	}
+}
+
+func TestListAndUnbanGroupMembersWithBearer(t *testing.T) {
+	var gotSearch, gotUnbanUID string
+	clients := &microservices.Clients{User: msUser.Service{GRPC: msUser.GRPC{
+		GroupMember: fakeGroupMember{
+			listGroupBans: func(_ context.Context, in *userv1.ListGroupBansRequest) (*userv1.ListGroupBansResponse, error) {
+				gotSearch = in.GetSearch()
+				return &userv1.ListGroupBansResponse{
+					Bans:  []*userv1.GroupBanEntry{{UserId: "u1", Username: "alice", Reason: "spam"}},
+					Total: 1,
+				}, nil
+			},
+			unbanGroupMember: func(_ context.Context, in *userv1.UnbanGroupMemberRequest) (*userv1.UnbanGroupMemberResponse, error) {
+				gotUnbanUID = in.GetUserId()
+				return &userv1.UnbanGroupMemberResponse{Success: true}, nil
+			},
+		},
+	}}}
+	handler := groupmemberdelivery.NewHandler(clients, logger.New(logger.Options{Service: "gateway-test", Env: "test", Level: "error"}))
+
+	listReq := httptest.NewRequest(http.MethodGet, "/api/v1/groups/"+testGroupPublicID+"/bans?search=ali", nil)
+	listReq.SetPathValue("id", testGroupPublicID)
+	listReq.Header.Set("Authorization", "Bearer access-token")
+	listRec := httptest.NewRecorder()
+	handler.ListGroupBans(listRec, listReq)
+	if listRec.Code != http.StatusOK || gotSearch != "ali" {
+		t.Fatalf("list status %d search %q body %s", listRec.Code, gotSearch, listRec.Body.String())
+	}
+
+	unbanReq := httptest.NewRequest(http.MethodDelete, "/api/v1/groups/"+testGroupPublicID+"/bans/u1", nil)
+	unbanReq.SetPathValue("id", testGroupPublicID)
+	unbanReq.SetPathValue("userId", "u1")
+	unbanReq.Header.Set("Authorization", "Bearer access-token")
+	unbanRec := httptest.NewRecorder()
+	handler.UnbanGroupMember(unbanRec, unbanReq)
+	if unbanRec.Code != http.StatusOK || gotUnbanUID != "u1" {
+		t.Fatalf("unban status %d uid %q body %s", unbanRec.Code, gotUnbanUID, unbanRec.Body.String())
 	}
 }

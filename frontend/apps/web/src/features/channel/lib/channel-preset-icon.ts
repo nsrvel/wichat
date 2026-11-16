@@ -6,13 +6,13 @@ export type ResolveChannelIconInput = {
 };
 
 const LEGACY_KIND: Record<string, string> = {
-	public: "text_and_voice",
-	private: "text_and_voice",
+	public: "text_only",
+	private: "text_only",
+	text_and_voice: "text_only",
 };
 
 const KIND_DEFAULT_PRESET: Record<string, string> = {
 	broadcast: "bell",
-	text_and_voice: "chat",
 	text_only: "chat",
 	forum: "chat",
 	voice_only: "mic",

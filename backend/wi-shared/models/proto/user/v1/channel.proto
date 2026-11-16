@@ -6,10 +6,26 @@ option go_package = "github.com/wichat/wichat/backend/wi-shared/models/gen/user/
 
 // ChannelService handles channel discovery and authorization within a workspace.
 service ChannelService {
-  // ListGroupChannels returns channels in a group the caller belongs to.
+  // ListGroupChannels returns channels and categories in a group the caller belongs to.
   rpc ListGroupChannels(ListGroupChannelsRequest) returns (ListGroupChannelsResponse);
+  // CreateChannelCategory creates a new channel category in a group.
+  rpc CreateChannelCategory(CreateChannelCategoryRequest) returns (CreateChannelCategoryResponse);
+  // CreateGroupChannel creates a new channel in a group.
+  rpc CreateGroupChannel(CreateGroupChannelRequest) returns (CreateGroupChannelResponse);
+  // ReorderChannelCategories updates category display positions in a group.
+  rpc ReorderChannelCategories(ReorderChannelCategoriesRequest) returns (ReorderChannelCategoriesResponse);
+  // ReorderGroupChannels updates channel display positions in a group.
+  rpc ReorderGroupChannels(ReorderGroupChannelsRequest) returns (ReorderGroupChannelsResponse);
   // AssertGroupChannelAccess validates membership and resolves internal channel and user ids.
   rpc AssertGroupChannelAccess(AssertGroupChannelAccessRequest) returns (AssertGroupChannelAccessResponse);
+}
+
+// ChannelCategory is category metadata for grouping channels in the sidebar.
+message ChannelCategory {
+  string id = 1;
+  string name = 2;
+  bool is_private = 3;
+  int32 position = 4;
 }
 
 // ChannelSummary is channel metadata for the sidebar.
@@ -23,6 +39,10 @@ message ChannelSummary {
   string image_url = 5;
   // Group channel visibility; always false when type is dm.
   bool is_private = 6;
+  // Optional category public id (empty when uncategorized, e.g. favorites).
+  string category_id = 7;
+  // Display order position within its category/section.
+  int32 position = 8;
 }
 
 message ListGroupChannelsRequest {
@@ -32,6 +52,53 @@ message ListGroupChannelsRequest {
 
 message ListGroupChannelsResponse {
   repeated ChannelSummary channels = 1;
+  repeated ChannelCategory categories = 2;
+}
+
+message CreateChannelCategoryRequest {
+  string access_token = 1;
+  string group_id = 2;
+  string name = 3;
+  bool is_private = 4;
+}
+
+message CreateChannelCategoryResponse {
+  ChannelCategory category = 1;
+}
+
+message CreateGroupChannelRequest {
+  string access_token = 1;
+  string group_id = 2;
+  string name = 3;
+  string type = 4;
+  string category_id = 5;
+  bool is_private = 6;
+}
+
+message CreateGroupChannelResponse {
+  ChannelSummary channel = 1;
+}
+
+message ReorderChannelCategoriesRequest {
+  string access_token = 1;
+  string group_id = 2;
+  repeated string category_ids = 3;
+}
+
+message ReorderChannelCategoriesResponse {
+  bool ok = 1;
+}
+
+message ReorderGroupChannelsRequest {
+  string access_token = 1;
+  string group_id = 2;
+  repeated string channel_ids = 3;
+  string category_id = 4;
+  string sidebar_section = 5;
+}
+
+message ReorderGroupChannelsResponse {
+  bool ok = 1;
 }
 
 message AssertGroupChannelAccessRequest {

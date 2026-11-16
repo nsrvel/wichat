@@ -9,6 +9,7 @@ import (
 	"unicode/utf8"
 
 	authrepo "github.com/wichat/wichat/backend/ms-user/internal/auth/repository"
+	groupactivitysvc "github.com/wichat/wichat/backend/ms-user/internal/group-activity-log/service"
 	groupmemberrepo "github.com/wichat/wichat/backend/ms-user/internal/group-member/repository"
 	grouprolerepo "github.com/wichat/wichat/backend/ms-user/internal/group-role/repository"
 	grouprepo "github.com/wichat/wichat/backend/ms-user/internal/group/repository"
@@ -33,16 +34,18 @@ type Service interface {
 	RemoveGroupRoleMember(ctx context.Context, accessToken, groupPublicID, rolePublicID, targetUserID string) (*models.GroupRole, error)
 	UpdateGroupHideRoles(ctx context.Context, accessToken, groupPublicID string, hideRoles bool) (bool, error)
 	GetEffectivePermissions(ctx context.Context, groupID, userID string) ([]string, error)
+	WithGroupActivityLog(r groupactivitysvc.Recorder) Service
 }
 
 type service struct {
-	roles    grouprolerepo.PgRepository
-	groups   grouprepo.PgRepository
-	members  groupmemberrepo.PgRepository
-	sessions authrepo.SessionRepository
-	secret   []byte
-	log      logger.Logger
-	now      func() time.Time
+	roles         grouprolerepo.PgRepository
+	groups        grouprepo.PgRepository
+	members       groupmemberrepo.PgRepository
+	sessions      authrepo.SessionRepository
+	groupActivity groupactivitysvc.Recorder
+	secret        []byte
+	log           logger.Logger
+	now           func() time.Time
 }
 
 // NewService builds group role use cases.
@@ -66,6 +69,21 @@ func NewService(
 		log:      log,
 		now:      func() time.Time { return time.Now().UTC() },
 	}
+}
+
+func (s service) WithGroupActivityLog(r groupactivitysvc.Recorder) Service {
+	s.groupActivity = r
+	return s
+}
+
+func (s service) recordGroupActivity(ctx context.Context, entry models.GroupActivityLogEntry) {
+	if s.groupActivity == nil {
+		return
+	}
+	if entry.CreatedAt.IsZero() {
+		entry.CreatedAt = s.now()
+	}
+	s.groupActivity.Record(ctx, entry)
 }
 
 func (s service) requireGroupMember(ctx context.Context, accessToken, groupPublicID string) (string, models.Group, models.GroupMember, error) {
@@ -128,7 +146,7 @@ func (s service) ListGroupRolesWithSettings(ctx context.Context, accessToken, gr
 }
 
 func (s service) CreateGroupRole(ctx context.Context, accessToken, groupPublicID, rawName string) (*models.GroupRole, error) {
-	_, group, _, _, err := s.requireRoleManager(ctx, accessToken, groupPublicID)
+	actorID, group, _, _, err := s.requireRoleManager(ctx, accessToken, groupPublicID)
 	if err != nil {
 		return nil, err
 	}
@@ -144,13 +162,29 @@ func (s service) CreateGroupRole(ctx context.Context, accessToken, groupPublicID
 	if err != nil {
 		return nil, err
 	}
+	s.recordGroupActivity(ctx, models.GroupActivityLogEntry{
+		GroupID:    group.ID,
+		ActorID:    actorID,
+		Category:   constants.GroupAuditCategoryRole,
+		Action:     constants.GroupAuditRoleCreated,
+		TargetType: constants.GroupAuditTargetRole,
+		TargetID:   role.ID,
+		TargetName: role.Name,
+		Summary:    "Created role",
+		Metadata:   map[string]any{"role_name": role.Name},
+	})
 	return &role, nil
 }
 
 func (s service) UpdateGroupRole(ctx context.Context, accessToken, groupPublicID, rolePublicID string, patch models.GroupRolePatch) (*models.GroupRole, error) {
-	_, group, member, callerPerms, err := s.requireRoleManager(ctx, accessToken, groupPublicID)
+	actorID, group, member, callerPerms, err := s.requireRoleManager(ctx, accessToken, groupPublicID)
 	if err != nil {
 		return nil, err
+	}
+
+	existing, err := s.roles.FindRoleByID(ctx, group.ID, rolePublicID)
+	if err != nil {
+		return nil, mapRoleErr(err)
 	}
 
 	if patch.Name != nil {
@@ -172,10 +206,6 @@ func (s service) UpdateGroupRole(ctx context.Context, accessToken, groupPublicID
 		if err != nil {
 			return nil, err
 		}
-		existing, err := s.roles.FindRoleByID(ctx, group.ID, rolePublicID)
-		if err != nil {
-			return nil, mapRoleErr(err)
-		}
 		callerIsAdmin := member.Role == constants.GroupRoleOwner || slices.Contains(callerPerms, constants.PermAdministrator)
 		if !callerIsAdmin && (slices.Contains(validPerms, constants.PermAdministrator) != slices.Contains(existing.Permissions, constants.PermAdministrator)) {
 			return nil, exception.PermissionDenied(exception.MsgForbidden, nil)
@@ -187,11 +217,41 @@ func (s service) UpdateGroupRole(ctx context.Context, accessToken, groupPublicID
 	if err != nil {
 		return nil, mapRoleErr(err)
 	}
+
+	changes := map[string]models.ActivityFieldChange{}
+	if existing.Name != role.Name {
+		changes["name"] = models.ActivityFieldChange{Old: existing.Name, New: role.Name}
+	}
+	if existing.Color != role.Color {
+		changes["color"] = models.ActivityFieldChange{Old: existing.Color, New: role.Color}
+	}
+	if existing.Hoist != role.Hoist {
+		changes["hoist"] = models.ActivityFieldChange{Old: existing.Hoist, New: role.Hoist}
+	}
+	if existing.Mentionable != role.Mentionable {
+		changes["mentionable"] = models.ActivityFieldChange{Old: existing.Mentionable, New: role.Mentionable}
+	}
+	if patch.Permissions != nil && !slices.Equal(existing.Permissions, role.Permissions) {
+		changes["permissions"] = models.ActivityFieldChange{Old: len(existing.Permissions), New: len(role.Permissions)}
+	}
+
+	s.recordGroupActivity(ctx, models.GroupActivityLogEntry{
+		GroupID:    group.ID,
+		ActorID:    actorID,
+		Category:   constants.GroupAuditCategoryRole,
+		Action:     constants.GroupAuditRoleUpdated,
+		TargetType: constants.GroupAuditTargetRole,
+		TargetID:   role.ID,
+		TargetName: role.Name,
+		Summary:    "Updated role",
+		Changes:    changes,
+		Metadata:   map[string]any{"role_name": role.Name},
+	})
 	return &role, nil
 }
 
 func (s service) DuplicateGroupRole(ctx context.Context, accessToken, groupPublicID, rolePublicID string) (*models.GroupRole, error) {
-	_, group, member, callerPerms, err := s.requireRoleManager(ctx, accessToken, groupPublicID)
+	actorID, group, member, callerPerms, err := s.requireRoleManager(ctx, accessToken, groupPublicID)
 	if err != nil {
 		return nil, err
 	}
@@ -214,13 +274,28 @@ func (s service) DuplicateGroupRole(ctx context.Context, accessToken, groupPubli
 	if err != nil {
 		return nil, err
 	}
+	s.recordGroupActivity(ctx, models.GroupActivityLogEntry{
+		GroupID:    group.ID,
+		ActorID:    actorID,
+		Category:   constants.GroupAuditCategoryRole,
+		Action:     constants.GroupAuditRoleDuplicated,
+		TargetType: constants.GroupAuditTargetRole,
+		TargetID:   role.ID,
+		TargetName: role.Name,
+		Summary:    "Duplicated role",
+		Metadata:   map[string]any{"source_role_name": source.Name, "role_name": role.Name},
+	})
 	return &role, nil
 }
 
 func (s service) DeleteGroupRole(ctx context.Context, accessToken, groupPublicID, rolePublicID string) error {
-	_, group, _, _, err := s.requireRoleManager(ctx, accessToken, groupPublicID)
+	actorID, group, _, _, err := s.requireRoleManager(ctx, accessToken, groupPublicID)
 	if err != nil {
 		return err
+	}
+	existing, err := s.roles.FindRoleByID(ctx, group.ID, rolePublicID)
+	if err != nil {
+		return mapRoleErr(err)
 	}
 	if err := s.roles.DeleteRole(ctx, group.ID, rolePublicID); err != nil {
 		if errors.Is(err, constants.ErrConflict) {
@@ -228,6 +303,17 @@ func (s service) DeleteGroupRole(ctx context.Context, accessToken, groupPublicID
 		}
 		return mapRoleErr(err)
 	}
+	s.recordGroupActivity(ctx, models.GroupActivityLogEntry{
+		GroupID:    group.ID,
+		ActorID:    actorID,
+		Category:   constants.GroupAuditCategoryRole,
+		Action:     constants.GroupAuditRoleDeleted,
+		TargetType: constants.GroupAuditTargetRole,
+		TargetID:   existing.ID,
+		TargetName: existing.Name,
+		Summary:    "Deleted role",
+		Metadata:   map[string]any{"role_name": existing.Name},
+	})
 	return nil
 }
 
@@ -244,7 +330,7 @@ func (s service) ListGroupRoleMembers(ctx context.Context, accessToken, groupPub
 }
 
 func (s service) AddGroupRoleMembers(ctx context.Context, accessToken, groupPublicID, rolePublicID string, userIDs []string) (*models.GroupRole, error) {
-	_, group, _, _, err := s.requireRoleManager(ctx, accessToken, groupPublicID)
+	actorID, group, _, _, err := s.requireRoleManager(ctx, accessToken, groupPublicID)
 	if err != nil {
 		return nil, err
 	}
@@ -255,11 +341,24 @@ func (s service) AddGroupRoleMembers(ctx context.Context, accessToken, groupPubl
 	if err != nil {
 		return nil, mapRoleErr(err)
 	}
+	for _, uid := range userIDs {
+		s.recordGroupActivity(ctx, models.GroupActivityLogEntry{
+			GroupID:    group.ID,
+			ActorID:    actorID,
+			Category:   constants.GroupAuditCategoryRole,
+			Action:     constants.GroupAuditMemberRoleAdded,
+			TargetType: constants.GroupAuditTargetMember,
+			TargetID:   uid,
+			TargetName: role.Name,
+			Summary:    "Added role to member",
+			Metadata:   map[string]any{"role_id": role.ID, "role_name": role.Name},
+		})
+	}
 	return &role, nil
 }
 
 func (s service) RemoveGroupRoleMember(ctx context.Context, accessToken, groupPublicID, rolePublicID, targetUserID string) (*models.GroupRole, error) {
-	_, group, _, _, err := s.requireRoleManager(ctx, accessToken, groupPublicID)
+	actorID, group, _, _, err := s.requireRoleManager(ctx, accessToken, groupPublicID)
 	if err != nil {
 		return nil, err
 	}
@@ -273,11 +372,22 @@ func (s service) RemoveGroupRoleMember(ctx context.Context, accessToken, groupPu
 	if err != nil {
 		return nil, mapRoleErr(err)
 	}
+	s.recordGroupActivity(ctx, models.GroupActivityLogEntry{
+		GroupID:    group.ID,
+		ActorID:    actorID,
+		Category:   constants.GroupAuditCategoryRole,
+		Action:     constants.GroupAuditMemberRoleRemoved,
+		TargetType: constants.GroupAuditTargetMember,
+		TargetID:   targetUserID,
+		TargetName: role.Name,
+		Summary:    "Removed role from member",
+		Metadata:   map[string]any{"role_id": role.ID, "role_name": role.Name},
+	})
 	return &role, nil
 }
 
 func (s service) UpdateGroupHideRoles(ctx context.Context, accessToken, groupPublicID string, hideRoles bool) (bool, error) {
-	_, group, _, _, err := s.requireRoleManager(ctx, accessToken, groupPublicID)
+	actorID, group, _, _, err := s.requireRoleManager(ctx, accessToken, groupPublicID)
 	if err != nil {
 		return false, err
 	}
@@ -285,6 +395,17 @@ func (s service) UpdateGroupHideRoles(ctx context.Context, accessToken, groupPub
 	if err != nil {
 		return false, mapRoleErr(err)
 	}
+	s.recordGroupActivity(ctx, models.GroupActivityLogEntry{
+		GroupID:    group.ID,
+		ActorID:    actorID,
+		Category:   constants.GroupAuditCategoryProfile,
+		Action:     constants.GroupAuditGroupHideRolesUpdated,
+		TargetType: constants.GroupAuditTargetGroup,
+		TargetID:   group.PublicID,
+		TargetName: group.Name,
+		Summary:    "Updated hide roles setting",
+		Changes:    map[string]models.ActivityFieldChange{"hide_roles": {Old: group.HideRoles, New: updated}},
+	})
 	return updated, nil
 }
 

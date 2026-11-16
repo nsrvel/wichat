@@ -49,7 +49,7 @@ export function WiChatDialog({
 	return (
 		<div
 			className={cn(
-				"fixed inset-0 grid place-items-center p-4 sm:p-6",
+				"fixed inset-0 flex items-center justify-center p-4 sm:p-6",
 				elevated ? "z-[70]" : "z-50",
 			)}
 		>
@@ -65,7 +65,7 @@ export function WiChatDialog({
 				aria-labelledby={titleId}
 				className={cn(
 					groupOnboardingCardShellClass,
-					"relative z-10 flex h-auto w-full max-h-[90vh] flex-col overflow-hidden",
+					"relative z-10 flex h-auto min-h-0 w-full max-h-[90dvh] flex-col overflow-hidden",
 					className,
 				)}
 			>
@@ -101,6 +101,7 @@ export function WiChatDialogStepCarousel({
 	const trackWidthPercent = count * 100;
 	const panelWidthPercent = count === 0 ? 100 : 100 / count;
 	const translatePercent = safeIndex * panelWidthPercent;
+	const carouselRef = useRef<HTMLDivElement | null>(null);
 	const panelRefs = useRef<(HTMLDivElement | null)[]>([]);
 	const [viewportHeight, setViewportHeight] = useState<number | undefined>(undefined);
 
@@ -110,12 +111,21 @@ export function WiChatDialogStepCarousel({
 			return;
 		}
 
-		const raw = el.scrollHeight;
+		const childrenHeight = Array.from(el.children).reduce(
+			(sum, child) => sum + (child as HTMLElement).scrollHeight,
+			0,
+		);
+		const raw = childrenHeight > 0 ? childrenHeight : el.scrollHeight;
 		if (raw <= 0) {
 			return;
 		}
 
-		const maxPx = Math.floor(window.innerHeight * 0.9) - 32;
+		const dialogEl = carouselRef.current?.closest('[role="dialog"]') as HTMLElement | null;
+		const dialogStyle = dialogEl ? getComputedStyle(dialogEl) : null;
+		const padY = dialogStyle
+			? parseFloat(dialogStyle.paddingTop) + parseFloat(dialogStyle.paddingBottom)
+			: 72;
+		const maxPx = Math.max(200, Math.floor(window.innerHeight * 0.9) - padY);
 		setViewportHeight(Math.min(raw, maxPx));
 	}, [safeIndex]);
 
@@ -143,11 +153,15 @@ export function WiChatDialogStepCarousel({
 
 	return (
 		<div
-			className={cn("w-full overflow-clip", className)}
+			ref={carouselRef}
+			className={cn("min-h-0 w-full shrink overflow-x-clip", className)}
 			style={viewportHeight === undefined ? undefined : { height: viewportHeight }}
 		>
 			<div
-				className={cn("flex items-start transition-transform", shellStepMotionClass)}
+				className={cn(
+					"flex h-full min-h-0 items-stretch transition-transform",
+					shellStepMotionClass,
+				)}
 				style={{
 					width: `${trackWidthPercent}%`,
 					transform: `translateX(-${translatePercent}%)`,
@@ -159,7 +173,7 @@ export function WiChatDialogStepCarousel({
 						ref={(node) => {
 							panelRefs.current[index] = node;
 						}}
-						className="flex min-w-0 shrink-0 flex-col"
+						className="flex h-full min-h-0 min-w-0 shrink-0 flex-col"
 						style={{ width: `${panelWidthPercent}%` }}
 						aria-hidden={index !== safeIndex}
 						{...(index !== safeIndex ? { inert: true as const } : {})}
@@ -200,14 +214,16 @@ export function WiChatDialogHeader({
 type WiChatDialogBodyProps = {
 	children: ReactNode;
 	className?: string;
+	/** Apply horizontal auth-card inset padding (set `false` for full-bleed banners). */
+	insetX?: boolean;
 };
 
-export function WiChatDialogBody({ children, className }: WiChatDialogBodyProps) {
+export function WiChatDialogBody({ children, className, insetX = true }: WiChatDialogBodyProps) {
 	return (
 		<div
 			className={cn(
-				authCardInsetXClass,
-				"overlay-scroll min-h-0 overflow-y-auto overscroll-contain",
+				insetX && authCardInsetXClass,
+				"overlay-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain",
 				className,
 			)}
 		>

@@ -114,8 +114,9 @@ export function GroupSettingsSidebar({
 	const isOwner = target.role === "owner" || currentGroup?.role === "owner";
 	const canSeeRoles = isOwner || hasGroupPermission(currentGroup, "manage_roles");
 	const canSeeMembers =
-		isOwner ||
-		hasAnyGroupPermission(currentGroup, ["kick_members", "ban_members", "manage_roles"]);
+		isOwner || hasAnyGroupPermission(currentGroup, ["kick_members", "ban_members", "manage_roles"]);
+	const canSeeBans = isOwner || hasGroupPermission(currentGroup, "ban_members");
+	const canSeeAuditLogs = isOwner || hasGroupPermission(currentGroup, "view_audit_log");
 
 	const handleDeleteConfirm = () => {
 		deleteGroupMutation.mutate(target.groupId, {
@@ -172,6 +173,12 @@ export function GroupSettingsSidebar({
 												}
 												if (item.id === "roles") {
 													return canSeeRoles;
+												}
+												if (item.id === "bans") {
+													return canSeeBans;
+												}
+												if (item.id === "audit_logs") {
+													return canSeeAuditLogs;
 												}
 												return true;
 											})

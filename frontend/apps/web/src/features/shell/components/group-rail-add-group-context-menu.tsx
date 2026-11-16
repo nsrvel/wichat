@@ -3,11 +3,7 @@
 import { ContextMenu } from "@base-ui/react/context-menu";
 import { useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import {
-	menuItemClass,
-	menuPopupClass,
-	menuPositionerClass,
-} from "@/lib/menu-chrome";
+import { menuItemClass, menuPopupClass, menuPositionerClass } from "@/lib/menu-chrome";
 import { WICHAT_CONTEXT_MENU_ATTR } from "@/lib/context-menu-chrome";
 
 type GroupRailAddGroupContextMenuProps = {

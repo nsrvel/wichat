@@ -55,7 +55,7 @@ func NewConsumer(cfg Config, log logger.Logger) (Consumer, error) {
 }
 
 func (c consumer) Read(ctx context.Context) (Incoming, error) {
-	m, err := c.reader.ReadMessage(ctx)
+	m, err := c.reader.FetchMessage(ctx)
 	if err != nil {
 		return Incoming{}, err
 	}

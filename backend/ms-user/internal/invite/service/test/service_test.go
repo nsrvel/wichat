@@ -333,7 +333,7 @@ func TestGetInviteLinkWithChannel(t *testing.T) {
 	_, groups, sessions := testSupport.TestRepos(st)
 	chSvc := channelservice.NewService(testSupport.ChannelRepo(st), groups, groupmembermock.NewPgRepositoryMock(st), grouprolemock.NewPgRepositoryMock(st), sessions, []byte(testSupport.TestJWTSecret),
 		logger.New(logger.Options{Service: "t", Env: "test", Level: "error"}))
-	channels, err := chSvc.ListGroupChannels(ctx, owner.AccessToken, created.ID)
+	channels, _, err := chSvc.ListGroupChannels(ctx, owner.AccessToken, created.ID)
 	if err != nil || len(channels) == 0 {
 		t.Fatal(err)
 	}
@@ -768,5 +768,76 @@ func TestSendGroupInvitesAddsByUserID(t *testing.T) {
 	})
 	if err != nil || res.Added != 1 || res.Skipped != 2 {
 		t.Fatalf("%+v %v", res, err)
+	}
+}
+
+func TestPerUserShareLinkAndJoinAttribution(t *testing.T) {
+	st := usermock.NewState()
+	authSvc, notify, _, _, groupSvc, _ := testSupport.NewAuthService(t, st, nil)
+	ctx := context.Background()
+
+	owner := testSupport.RegisterSession(t, authSvc, notify, testSupportRegisterInput("owner-link@example.com"))
+	inviter2 := testSupport.RegisterSession(t, authSvc, notify, testSupportRegisterInput("inviter2-link@example.com"))
+	joiner := testSupport.RegisterSession(t, authSvc, notify, testSupportRegisterInput("joiner-link@example.com"))
+
+	created, err := groupSvc.CreateGroup(ctx, owner.AccessToken, "AttrGroup")
+	if err != nil {
+		t.Fatalf("CreateGroup: %v", err)
+	}
+
+	svc := newInviteService(t, st)
+	if _, err := svc.SendGroupInvites(ctx, owner.AccessToken, models.SendGroupInvitesInput{
+		GroupPublicID: created.ID,
+		UserIDs:       []string{inviter2.User.ID},
+	}); err != nil {
+		t.Fatalf("SendGroupInvites: %v", err)
+	}
+
+	// Grant create_invite on @everyone so inviter2 can generate their own share link.
+	st.Lock()
+	for i := range st.Roles {
+		if st.Roles[i].Slug == constants.RoleSlugEveryone {
+			st.Roles[i].Permissions = append(st.Roles[i].Permissions, constants.PermCreateInvite)
+		}
+	}
+	st.Unlock()
+
+	ownerLink, err := svc.GetInviteLink(ctx, owner.AccessToken, created.ID, "")
+	if err != nil {
+		t.Fatalf("owner GetInviteLink: %v", err)
+	}
+	inviter2Link, err := svc.GetInviteLink(ctx, inviter2.AccessToken, created.ID, "")
+	if err != nil {
+		t.Fatalf("inviter2 GetInviteLink: %v", err)
+	}
+	if ownerLink.Token == "" || inviter2Link.Token == "" || ownerLink.Token == inviter2Link.Token {
+		t.Fatalf("expected distinct per-user share links, got owner=%q inviter2=%q", ownerLink.Token, inviter2Link.Token)
+	}
+
+	if _, err := svc.RedeemInvite(ctx, joiner.AccessToken, inviter2Link.Token); err != nil {
+		t.Fatalf("RedeemInvite: %v", err)
+	}
+
+	var found *models.GroupMember
+	st.Lock()
+	for i := range st.Members {
+		if st.Members[i].UserID == joiner.User.ID {
+			m := st.Members[i]
+			found = &m
+			break
+		}
+	}
+	st.Unlock()
+	if found == nil {
+		t.Fatal("expected joiner in st.Members")
+	}
+	if found.JoinMethod != constants.JoinMethodInviteLink {
+		t.Fatalf("expected join_method=%q, got %q", constants.JoinMethodInviteLink, found.JoinMethod)
+	}
+	if found.InviteCode != inviter2Link.Token {
+		t.Fatalf("expected invite_code=%q, got %q", inviter2Link.Token, found.InviteCode)
+	}
+	if found.InvitedByUserID == nil || *found.InvitedByUserID != inviter2.User.ID {
+		t.Fatalf("expected invited_by_user_id=%q, got %v", inviter2.User.ID, found.InvitedByUserID)
 	}
 }

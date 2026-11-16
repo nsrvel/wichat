@@ -260,6 +260,10 @@
 		user-select: text;
 		-webkit-user-select: text;
 	}
+	img {
+		-webkit-user-drag: none;
+		user-select: none;
+	}
 }
 
 /* Shared scrollbars (shell, chat, settings) — opt-in via class, never on `*` */

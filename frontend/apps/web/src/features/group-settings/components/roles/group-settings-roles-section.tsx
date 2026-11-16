@@ -47,10 +47,7 @@ export function GroupSettingsRolesSection({ target }: GroupSettingsRolesSectionP
 	const [pageIndex, setPageIndex] = useState(1);
 
 	const { data: myGroups = [] } = useQuery(myGroupsQueryOpts());
-	const currentGroup = useMemo(
-		() => myGroups.find((g) => g.id === groupId),
-		[groupId, myGroups],
-	);
+	const currentGroup = useMemo(() => myGroups.find((g) => g.id === groupId), [groupId, myGroups]);
 
 	const isOwner = currentGroup?.role === "owner" || target.role === "owner";
 	const effectivePerms = useMemo(
@@ -60,9 +57,7 @@ export function GroupSettingsRolesSection({ target }: GroupSettingsRolesSectionP
 
 	const canGrantAdministrator = isOwner || effectivePerms.includes("administrator");
 	const canManage =
-		isOwner ||
-		effectivePerms.includes("administrator") ||
-		effectivePerms.includes("manage_roles");
+		isOwner || effectivePerms.includes("administrator") || effectivePerms.includes("manage_roles");
 
 	const rolesQuery = useQuery(groupRolesQueryOpts(groupId));
 	const membersQuery = useQuery({

@@ -1,7 +1,10 @@
 import {
 	AccountActionRequestSchema,
 	CompleteEmailChangeRequestSchema,
+	ListUserRelationshipsSchema,
 	RequestEmailChangeRequestSchema,
+	SetUserRelationshipRequestSchema,
+	SetUserRelationshipResponseSchema,
 	UpdatePasswordRequestSchema,
 	UpdateUsernameRequestSchema,
 	UpdateUserProfileRequestSchema,
@@ -12,13 +15,16 @@ import {
 	VerifyEmailChangeResponseSchema,
 	type AccountActionRequest,
 	type CompleteEmailChangeRequest,
+	type ListUserRelationships,
 	type RequestEmailChangeRequest,
+	type SetUserRelationshipResponse,
 	type UpdatePasswordRequest,
 	type UpdateUsernameRequest,
 	type UpdateUserProfileRequest,
 	type UpdateUserPreferencesRequest,
 	type UpdateUserStatusNoteRequest,
 	type User,
+	type UserRelationshipKind,
 	type VerifyEmailChangeRequest,
 	type VerifyEmailChangeResponse,
 } from "@wichat/contracts/user";
@@ -119,9 +125,7 @@ export async function getMyMfaStatus(): Promise<MfaStatus> {
 	return api.get("/users/me/mfa", MfaStatusSchema);
 }
 
-export async function beginTotpSetup(
-	current_password: string,
-): Promise<BeginTotpSetupResponse> {
+export async function beginTotpSetup(current_password: string): Promise<BeginTotpSetupResponse> {
 	return api.post("/users/me/mfa/totp/begin", BeginTotpSetupResponseSchema, {
 		current_password,
 	});
@@ -134,9 +138,7 @@ export async function confirmTotpSetup(body: {
 	return api.post("/users/me/mfa/totp/confirm", RecoveryCodesResponseSchema, body);
 }
 
-export async function disableTotp(
-	current_password: string,
-): Promise<{ ok: boolean }> {
+export async function disableTotp(current_password: string): Promise<{ ok: boolean }> {
 	return api.delete("/users/me/mfa/totp", OkSchema, { current_password });
 }
 
@@ -144,28 +146,17 @@ export async function beginWebAuthnRegister(body: {
 	current_password: string;
 	name: string;
 }): Promise<BeginWebAuthnRegisterResponse> {
-	return api.post(
-		"/users/me/mfa/security-keys/begin",
-		BeginWebAuthnRegisterResponseSchema,
-		body,
-	);
+	return api.post("/users/me/mfa/security-keys/begin", BeginWebAuthnRegisterResponseSchema, body);
 }
 
 export async function finishWebAuthnRegister(body: {
 	challenge_id: string;
 	credential: unknown;
 }): Promise<FinishWebAuthnRegisterResponse> {
-	return api.post(
-		"/users/me/mfa/security-keys/finish",
-		FinishWebAuthnRegisterResponseSchema,
-		body,
-	);
+	return api.post("/users/me/mfa/security-keys/finish", FinishWebAuthnRegisterResponseSchema, body);
 }
 
-export async function renameSecurityKey(body: {
-	id: string;
-	name: string;
-}): Promise<SecurityKey> {
+export async function renameSecurityKey(body: { id: string; name: string }): Promise<SecurityKey> {
 	return api.patch(
 		`/users/me/mfa/security-keys/${encodeURIComponent(body.id)}`,
 		SecurityKeySchema,
@@ -177,21 +168,17 @@ export async function deleteSecurityKey(body: {
 	id: string;
 	current_password: string;
 }): Promise<{ ok: boolean }> {
-	return api.delete(
-		`/users/me/mfa/security-keys/${encodeURIComponent(body.id)}`,
-		OkSchema,
-		{ current_password: body.current_password },
-	);
+	return api.delete(`/users/me/mfa/security-keys/${encodeURIComponent(body.id)}`, OkSchema, {
+		current_password: body.current_password,
+	});
 }
 
 export async function regenerateRecoveryCodes(
 	current_password: string,
 ): Promise<RecoveryCodesResponse> {
-	return api.post(
-		"/users/me/mfa/recovery-codes/regenerate",
-		RecoveryCodesResponseSchema,
-		{ current_password },
-	);
+	return api.post("/users/me/mfa/recovery-codes/regenerate", RecoveryCodesResponseSchema, {
+		current_password,
+	});
 }
 
 export async function disableMyAccount(body: AccountActionRequest): Promise<{ ok: boolean }> {
@@ -227,10 +214,23 @@ export async function getMyPresence(): Promise<MyPresenceResponse> {
 	return api.get("/users/me/presence", MyPresenceResponseSchema);
 }
 
-export async function updateMyPresence(
-	body: UpdateMyPresenceRequest,
-): Promise<MyPresenceResponse> {
+export async function updateMyPresence(body: UpdateMyPresenceRequest): Promise<MyPresenceResponse> {
 	const payload = UpdateMyPresenceRequestSchema.parse(body);
 	return api.put("/users/me/presence", MyPresenceResponseSchema, payload);
 }
 
+export async function listUserRelationships(): Promise<ListUserRelationships> {
+	return api.get("/users/me/relationships", ListUserRelationshipsSchema);
+}
+
+export async function setUserRelationship(body: {
+	targetUserId: string;
+	kind: UserRelationshipKind;
+}): Promise<SetUserRelationshipResponse> {
+	const payload = SetUserRelationshipRequestSchema.parse({ kind: body.kind });
+	return api.put(
+		`/users/me/relationships/${encodeURIComponent(body.targetUserId)}`,
+		SetUserRelationshipResponseSchema,
+		payload,
+	);
+}

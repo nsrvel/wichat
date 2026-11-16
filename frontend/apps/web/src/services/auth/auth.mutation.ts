@@ -1,8 +1,10 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { setAccessToken } from "@/integrations/api-client";
 import { Q_INSTANCE_POLICY, Q_SESSION } from "@/services/auth/auth.key";
+import { Q_APP_BOOTSTRAP } from "@/services/auth/bootstrap-app";
 import { Q_MY_GROUPS } from "@/services/group/group.key";
 import { prefetchMyGroups } from "@/services/group/prefetch-my-groups";
 import {
@@ -103,12 +105,15 @@ export function useForgotPasswordResetMutation() {
 
 export function useLogoutMutation() {
 	const queryClient = useQueryClient();
+	const router = useRouter();
 	return useMutation({
 		mutationFn: logout,
 		onSettled: () => {
 			setAccessToken(null);
+			queryClient.setQueryData([Q_APP_BOOTSTRAP], null);
 			queryClient.removeQueries({ queryKey: [Q_SESSION] });
 			queryClient.removeQueries({ queryKey: [Q_MY_GROUPS] });
+			router.replace("/sign-in");
 		},
 	});
 }

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/backoff"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
 )
@@ -24,8 +25,17 @@ func Dial(target string, opts DialOptions, extra ...grpc.DialOption) (*grpc.Clie
 		return nil, fmt.Errorf("microservices/utils/grpc: dial target is empty")
 	}
 
-	dialOpts := make([]grpc.DialOption, 0, len(extra)+4)
+	dialOpts := make([]grpc.DialOption, 0, len(extra)+5)
 	dialOpts = append(dialOpts, extra...)
+	dialOpts = append(dialOpts, grpc.WithConnectParams(grpc.ConnectParams{
+		Backoff: backoff.Config{
+			BaseDelay:  200 * time.Millisecond,
+			Multiplier: 1.6,
+			Jitter:     0.2,
+			MaxDelay:   3 * time.Second,
+		},
+		MinConnectTimeout: 3 * time.Second,
+	}))
 	dialOpts = append(dialOpts, grpc.WithKeepaliveParams(keepalive.ClientParameters{
 		Time:                30 * time.Second,
 		Timeout:             5 * time.Second,

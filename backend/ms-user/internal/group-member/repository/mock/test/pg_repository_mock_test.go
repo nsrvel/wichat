@@ -44,7 +44,7 @@ func TestPgRepositoryMock(t *testing.T) {
 		t.Fatalf("expected 1 remaining member, got %d", len(page2))
 	}
 
-	bannedCount, err := m.BanMembers(ctx, groupID, []string{ownerID, memID}, ownerID, "spam", 0)
+	bannedCount, err := m.BanMembers(ctx, groupID, []string{ownerID, memID}, ownerID, "spam", 0, nil)
 	if err != nil || bannedCount != 1 {
 		t.Fatalf("expected 1 banned (owner skipped), got %d, err %v", bannedCount, err)
 	}
@@ -52,5 +52,17 @@ func TestPgRepositoryMock(t *testing.T) {
 	banned, _ := m.IsMemberBanned(ctx, groupID, memID)
 	if !banned {
 		t.Fatalf("expected member to be banned")
+	}
+
+	bans, _, total, err := m.ListBansPage(ctx, groupID, "spam", 10, nil)
+	if err != nil || total != 1 || len(bans) != 1 || bans[0].UserID != memID {
+		t.Fatalf("ListBansPage: len=%d total=%d err=%v", len(bans), total, err)
+	}
+
+	if err := m.UnbanMember(ctx, groupID, memID); err != nil {
+		t.Fatalf("UnbanMember: %v", err)
+	}
+	if err := m.UnbanMember(ctx, groupID, memID); err == nil {
+		t.Fatalf("expected ErrNotFound on duplicate unban")
 	}
 }

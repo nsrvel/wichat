@@ -1,7 +1,6 @@
 "use client";
 
 import type { GroupMember } from "@wichat/contracts/group/member";
-import { Ellipsis } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -10,10 +9,6 @@ import { RoleDetailDisplayTab } from "@/features/group-settings/components/roles
 import { RoleDetailMembersTab } from "@/features/group-settings/components/roles/detail/role-detail-members-tab";
 import { RoleDetailPermissionsTab } from "@/features/group-settings/components/roles/detail/role-detail-permissions-tab";
 import { RoleDetailSidebar } from "@/features/group-settings/components/roles/detail/role-detail-sidebar";
-import {
-	RoleActionMenu,
-	type RoleActionMenuState,
-} from "@/features/group-settings/components/roles/role-action-menu";
 import {
 	groupSettingsFormFooterFloatAlignClass,
 	groupSettingsFormFooterFloatColumnClass,
@@ -73,7 +68,6 @@ export function GroupSettingsRoleDetailSection({
 }: GroupSettingsRoleDetailSectionProps) {
 	const { t } = useTranslation();
 	const [activeTab, setActiveTab] = useState<GroupSettingsRoleDetailTab>("display");
-	const [menuState, setMenuState] = useState<RoleActionMenuState | null>(null);
 	const updateMutation = useUpdateGroupRoleMutation(groupId);
 
 	const roleLabel = roleDisplayTitle(role, t);
@@ -198,21 +192,6 @@ export function GroupSettingsRoleDetailSection({
 								<h2 className={cn(groupSettingsSectionTitleClass, "truncate")}>
 									{t("group_settings.roles.detail.edit_title", { name: roleLabel })}
 								</h2>
-								<button
-									type="button"
-									aria-label={t("group_settings.roles.detail.more_actions_aria")}
-									aria-expanded={menuState !== null}
-									onClick={(event) => {
-										setMenuState({
-											role,
-											anchor: event.currentTarget,
-											align: "end",
-										});
-									}}
-									className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-								>
-									<Ellipsis className="size-5" strokeWidth={2} aria-hidden />
-								</button>
 							</div>
 
 							{/* Tab bar */}
@@ -327,19 +306,6 @@ export function GroupSettingsRoleDetailSection({
 					</div>
 				</div>
 			) : null}
-
-			<RoleActionMenu
-				groupId={groupId}
-				menuState={menuState}
-				onCloseMenu={() => setMenuState(null)}
-				canManage={canManage}
-				onDuplicated={onSelectRole}
-				onDeleted={(deletedId) => {
-					if (deletedId === role.id) {
-						onBack();
-					}
-				}}
-			/>
 		</div>
 	);
 }

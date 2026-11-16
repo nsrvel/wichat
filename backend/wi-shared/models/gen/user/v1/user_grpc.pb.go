@@ -47,6 +47,8 @@ const (
 	UserService_ListSessions_FullMethodName             = "/user.v1.UserService/ListSessions"
 	UserService_RevokeSession_FullMethodName            = "/user.v1.UserService/RevokeSession"
 	UserService_RevokeOtherSessions_FullMethodName      = "/user.v1.UserService/RevokeOtherSessions"
+	UserService_ListUserRelationships_FullMethodName    = "/user.v1.UserService/ListUserRelationships"
+	UserService_SetUserRelationship_FullMethodName      = "/user.v1.UserService/SetUserRelationship"
 )
 
 // UserServiceClient is the client API for UserService service.
@@ -111,6 +113,10 @@ type UserServiceClient interface {
 	RevokeSession(ctx context.Context, in *RevokeSessionRequest, opts ...grpc.CallOption) (*RevokeSessionResponse, error)
 	// RevokeOtherSessions revokes all active sessions except the caller's current session.
 	RevokeOtherSessions(ctx context.Context, in *RevokeOtherSessionsRequest, opts ...grpc.CallOption) (*RevokeOtherSessionsResponse, error)
+	// ListUserRelationships returns the caller's ignored and blocked user relationships.
+	ListUserRelationships(ctx context.Context, in *ListUserRelationshipsRequest, opts ...grpc.CallOption) (*ListUserRelationshipsResponse, error)
+	// SetUserRelationship sets or clears an ignore/block relationship for a target user.
+	SetUserRelationship(ctx context.Context, in *SetUserRelationshipRequest, opts ...grpc.CallOption) (*SetUserRelationshipResponse, error)
 }
 
 type userServiceClient struct {
@@ -401,6 +407,26 @@ func (c *userServiceClient) RevokeOtherSessions(ctx context.Context, in *RevokeO
 	return out, nil
 }
 
+func (c *userServiceClient) ListUserRelationships(ctx context.Context, in *ListUserRelationshipsRequest, opts ...grpc.CallOption) (*ListUserRelationshipsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListUserRelationshipsResponse)
+	err := c.cc.Invoke(ctx, UserService_ListUserRelationships_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) SetUserRelationship(ctx context.Context, in *SetUserRelationshipRequest, opts ...grpc.CallOption) (*SetUserRelationshipResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SetUserRelationshipResponse)
+	err := c.cc.Invoke(ctx, UserService_SetUserRelationship_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UserServiceServer is the server API for UserService service.
 // All implementations must embed UnimplementedUserServiceServer
 // for forward compatibility.
@@ -463,6 +489,10 @@ type UserServiceServer interface {
 	RevokeSession(context.Context, *RevokeSessionRequest) (*RevokeSessionResponse, error)
 	// RevokeOtherSessions revokes all active sessions except the caller's current session.
 	RevokeOtherSessions(context.Context, *RevokeOtherSessionsRequest) (*RevokeOtherSessionsResponse, error)
+	// ListUserRelationships returns the caller's ignored and blocked user relationships.
+	ListUserRelationships(context.Context, *ListUserRelationshipsRequest) (*ListUserRelationshipsResponse, error)
+	// SetUserRelationship sets or clears an ignore/block relationship for a target user.
+	SetUserRelationship(context.Context, *SetUserRelationshipRequest) (*SetUserRelationshipResponse, error)
 	mustEmbedUnimplementedUserServiceServer()
 }
 
@@ -556,6 +586,12 @@ func (UnimplementedUserServiceServer) RevokeSession(context.Context, *RevokeSess
 }
 func (UnimplementedUserServiceServer) RevokeOtherSessions(context.Context, *RevokeOtherSessionsRequest) (*RevokeOtherSessionsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RevokeOtherSessions not implemented")
+}
+func (UnimplementedUserServiceServer) ListUserRelationships(context.Context, *ListUserRelationshipsRequest) (*ListUserRelationshipsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListUserRelationships not implemented")
+}
+func (UnimplementedUserServiceServer) SetUserRelationship(context.Context, *SetUserRelationshipRequest) (*SetUserRelationshipResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetUserRelationship not implemented")
 }
 func (UnimplementedUserServiceServer) mustEmbedUnimplementedUserServiceServer() {}
 func (UnimplementedUserServiceServer) testEmbeddedByValue()                     {}
@@ -1082,6 +1118,42 @@ func _UserService_RevokeOtherSessions_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserService_ListUserRelationships_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListUserRelationshipsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).ListUserRelationships(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_ListUserRelationships_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).ListUserRelationships(ctx, req.(*ListUserRelationshipsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_SetUserRelationship_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetUserRelationshipRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).SetUserRelationship(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_SetUserRelationship_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).SetUserRelationship(ctx, req.(*SetUserRelationshipRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // UserService_ServiceDesc is the grpc.ServiceDesc for UserService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1200,6 +1272,14 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RevokeOtherSessions",
 			Handler:    _UserService_RevokeOtherSessions_Handler,
+		},
+		{
+			MethodName: "ListUserRelationships",
+			Handler:    _UserService_ListUserRelationships_Handler,
+		},
+		{
+			MethodName: "SetUserRelationship",
+			Handler:    _UserService_SetUserRelationship_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

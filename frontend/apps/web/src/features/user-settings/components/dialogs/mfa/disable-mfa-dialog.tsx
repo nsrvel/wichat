@@ -108,8 +108,7 @@ export function PasswordConfirmDialog({
 							primaryClassName={cn(
 								authSubmitClass,
 								authFormFooterButtonClass,
-								destructive &&
-									"bg-destructive text-destructive-foreground hover:bg-destructive/90",
+								destructive && "bg-destructive text-destructive-foreground hover:bg-destructive/90",
 							)}
 						/>
 					</WiChatDialogFooter>

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	searchrepo "github.com/wichat/wichat/backend/ms-chat/internal/search/repository"
 	chatEvents "github.com/wichat/wichat/backend/wi-shared/chat-events"
@@ -30,6 +31,8 @@ func NewSearchIndexer(consumer wikafka.Consumer, repo searchrepo.EsRepository, l
 	return searchIndexer{consumer: consumer, repo: repo, log: log}
 }
 
+var errInvalidEventPayload = errors.New("invalid event payload")
+
 func (s searchIndexer) Run(ctx context.Context) error {
 	if err := s.repo.EnsureIndex(ctx); err != nil {
 		return fmt.Errorf("search index: %w", err)
@@ -46,8 +49,18 @@ func (s searchIndexer) Run(ctx context.Context) error {
 			return err
 		}
 
-		if err := s.handle(ctx, in); err != nil {
-			s.log.Error("search indexer handle", "err", err)
+		if err := s.handleWithRetry(ctx, in); err != nil {
+			if errors.Is(err, context.Canceled) || ctx.Err() != nil {
+				return nil
+			}
+			if errors.Is(err, errInvalidEventPayload) {
+				// Poison-pill JSON: log and commit offset so the partition is not wedged.
+				s.log.Error("search indexer poison payload", "err", err)
+			} else {
+				// Transient ES failure: skip commit so Kafka redelivers instead of dropping the event.
+				s.log.Error("search indexer handle failed after retries; skipping commit", "err", err)
+				continue
+			}
 		}
 
 		if err := s.consumer.Commit(ctx, in); err != nil {
@@ -56,12 +69,34 @@ func (s searchIndexer) Run(ctx context.Context) error {
 	}
 }
 
+func (s searchIndexer) handleWithRetry(ctx context.Context, in wikafka.Incoming) error {
+	backoffs := []time.Duration{100 * time.Millisecond, 500 * time.Millisecond, 1500 * time.Millisecond}
+	var err error
+	for attempt := 0; attempt <= len(backoffs); attempt++ {
+		err = s.handle(ctx, in)
+		if err == nil || errors.Is(err, errInvalidEventPayload) {
+			return err
+		}
+		if attempt == len(backoffs) {
+			break
+		}
+		timer := time.NewTimer(backoffs[attempt])
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return ctx.Err()
+		case <-timer.C:
+		}
+	}
+	return err
+}
+
 func (s searchIndexer) handle(ctx context.Context, in wikafka.Incoming) error {
 	var head struct {
 		Type string `json:"type"`
 	}
 	if err := json.Unmarshal(in.Value, &head); err != nil {
-		return err
+		return fmt.Errorf("%w: %w", errInvalidEventPayload, err)
 	}
 	if strings.TrimSpace(head.Type) != chatEvents.TypeMessageCreated {
 		return nil
@@ -69,7 +104,7 @@ func (s searchIndexer) handle(ctx context.Context, in wikafka.Incoming) error {
 
 	var ev chatEvents.MessageCreated
 	if err := json.Unmarshal(in.Value, &ev); err != nil {
-		return err
+		return fmt.Errorf("%w: %w", errInvalidEventPayload, err)
 	}
 
 	doc := elasticsearch.MessageDoc{

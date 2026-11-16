@@ -15,11 +15,7 @@ import { useTranslation } from "react-i18next";
 import { GroupRailMenuCheckboxItem } from "@/features/shell/components/group-rail-menu/group-rail-menu-checkbox-item";
 import { GroupRailNotificationSettingsSubmenu } from "@/features/shell/components/group-rail-menu/group-rail-notification-settings-submenu";
 import { useGroupMenuKit } from "@/features/shell/components/group-rail-menu/group-menu-kit";
-import {
-	menuDestructiveItemClass,
-	menuItemClass,
-	menuSeparatorClass,
-} from "@/lib/menu-chrome";
+import { menuDestructiveItemClass, menuItemClass, menuSeparatorClass } from "@/lib/menu-chrome";
 import { useCreateCategoryDialog } from "@/features/channel/create-category-dialog-provider";
 import { useCreateChannelDialog } from "@/features/channel/create-channel-dialog-provider";
 import { useGroupSettings } from "@/features/group-settings/group-settings-provider";

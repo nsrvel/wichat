@@ -28,10 +28,7 @@ export function RoleDetailPermissionsTab({
 	const [search, setSearch] = useState("");
 
 	const editable = canManage;
-	const hasAnyEnabled = useMemo(
-		() => Object.values(permissions).some(Boolean),
-		[permissions],
-	);
+	const hasAnyEnabled = useMemo(() => Object.values(permissions).some(Boolean), [permissions]);
 
 	const filteredGroups = useMemo(() => {
 		const q = search.trim().toLowerCase();
@@ -118,7 +115,9 @@ export function RoleDetailPermissionsTab({
 											</div>
 											<SettingsToggle
 												checked={checked}
-												disabled={!editable || (item.id === "administrator" && !canGrantAdministrator)}
+												disabled={
+													!editable || (item.id === "administrator" && !canGrantAdministrator)
+												}
 												onCheckedChange={(next) =>
 													onPermissionsChange({
 														...permissions,

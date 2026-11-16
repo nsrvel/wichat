@@ -19,8 +19,8 @@ type GroupSettingsMembersPaginationProps = {
 	onPrev: () => void;
 	onNext: () => void;
 	onGoToPage: (page: number) => void;
-	/** Default `members` — use `roles` on the roles settings table. */
-	variant?: "members" | "roles";
+	/** Default `members` — use `roles` or `bans` on those settings tables. */
+	variant?: "members" | "roles" | "bans";
 };
 
 function buildPageWindow(current: number, totalPages: number): number[] {
@@ -47,14 +47,8 @@ export function GroupSettingsMembersPagination({
 	variant = "members",
 }: GroupSettingsMembersPaginationProps) {
 	const { t } = useTranslation();
-	const paginationLabelKey =
-		variant === "roles"
-			? "group_settings.roles.pagination_label"
-			: "group_settings.members.pagination_label";
-	const paginationShowingKey =
-		variant === "roles"
-			? "group_settings.roles.pagination_showing"
-			: "group_settings.members.pagination_showing";
+	const paginationLabelKey = `group_settings.${variant}.pagination_label` as const;
+	const paginationShowingKey = `group_settings.${variant}.pagination_showing` as const;
 
 	const totalPages = Math.max(1, Math.ceil(total / pageSize));
 	const showingCount = pageRowCount;

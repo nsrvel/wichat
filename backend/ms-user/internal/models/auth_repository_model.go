@@ -234,3 +234,13 @@ type MFARecoveryCodeRow struct {
 	UsedAt    *time.Time `bun:"used_at"`
 	CreatedAt time.Time  `bun:"created_at"`
 }
+
+// UserRelationshipRow maps user_relationships for Bun.
+type UserRelationshipRow struct {
+	bun.BaseModel `bun:"table:user_relationships"`
+
+	UserID       string    `bun:"user_id,pk,type:uuid"`
+	TargetUserID string    `bun:"target_user_id,pk,type:uuid"`
+	Kind         string    `bun:"kind"`
+	CreatedAt    time.Time `bun:"created_at"`
+}

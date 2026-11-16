@@ -21,10 +21,12 @@ import (
 	searchrepo "github.com/wichat/wichat/backend/ms-chat/internal/search/repository"
 	"github.com/wichat/wichat/backend/wi-shared/infra/elasticsearch"
 	wikafka "github.com/wichat/wichat/backend/wi-shared/infra/kafka"
+	"github.com/wichat/wichat/backend/wi-shared/microservices"
 	msUser "github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-user"
 	"github.com/wichat/wichat/backend/wi-shared/microservices/utils"
 	msgrpc "github.com/wichat/wichat/backend/wi-shared/microservices/utils/grpc"
 	chatv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/chat/v1"
+	userv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/user/v1"
 )
 
 const serveShutdownTimeout = 5 * time.Second
@@ -136,10 +138,36 @@ func (s *server) Run(ctx context.Context) error {
 	chatv1.RegisterGeneralServiceServer(grpcSrv, generalgrpc.NewServer("ms-chat"))
 
 	// Listen
-	errCh := make(chan error, 2)
+	go microservices.NewHealthMonitor(s.log, microservices.HealthTarget{
+		Name: "ms-user",
+		Conn: userConn,
+		Check: func(probeCtx context.Context) error {
+			_, hErr := userGRPC.General.Health(probeCtx, &userv1.HealthRequest{})
+			return hErr
+		},
+	}).Run(ctx)
+
+	errCh := make(chan error, 1)
 	go func() {
-		if err := searchIndexer.Run(ctx); err != nil {
-			errCh <- fmt.Errorf("search indexer: %w", err)
+		delay := 2 * time.Second
+		const maxDelay = 10 * time.Second
+		for {
+			err := searchIndexer.Run(ctx)
+			if err == nil || ctx.Err() != nil {
+				return
+			}
+			s.log.Warn("search indexer stopped; retrying", "err", err, "retry_in", delay.String())
+			timer := time.NewTimer(delay)
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+				return
+			case <-timer.C:
+			}
+			delay *= 2
+			if delay > maxDelay {
+				delay = maxDelay
+			}
 		}
 	}()
 

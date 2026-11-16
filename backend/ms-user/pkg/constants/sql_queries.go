@@ -28,7 +28,7 @@ const (
 		FROM groups AS g
 		JOIN group_settings AS s ON s.group_id = g.id
 		JOIN group_members AS m ON m.group_id = g.id
-		LEFT JOIN channels AS ch ON ch.group_id = g.id AND lower(ch.name) = 'general'
+		LEFT JOIN channels AS ch ON ch.group_id = g.id AND lower(ch.name) = 'general' AND ch.type = 'text_only'
 		WHERE m.user_id = ?
 		ORDER BY m.rail_position ASC NULLS LAST, s.name ASC`
 )

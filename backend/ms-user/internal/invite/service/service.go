@@ -10,6 +10,7 @@ import (
 
 	authrepo "github.com/wichat/wichat/backend/ms-user/internal/auth/repository"
 	channelrepo "github.com/wichat/wichat/backend/ms-user/internal/channel/repository"
+	groupactivitysvc "github.com/wichat/wichat/backend/ms-user/internal/group-activity-log/service"
 	groupmemberrepo "github.com/wichat/wichat/backend/ms-user/internal/group-member/repository"
 	grouprolerepo "github.com/wichat/wichat/backend/ms-user/internal/group-role/repository"
 	grouprepo "github.com/wichat/wichat/backend/ms-user/internal/group/repository"
@@ -40,6 +41,7 @@ type Service interface {
 	PreviewInvite(ctx context.Context, inviteToken string) (*models.InvitePreviewResult, error)
 	RedeemInvite(ctx context.Context, accessToken, inviteToken string) (*models.RedeemInviteResult, error)
 	WithActivityLog(r activitysvc.Recorder) Service
+	WithGroupActivityLog(r groupactivitysvc.Recorder) Service
 	WithPresence(p presencesvc.Reader) Service
 }
 
@@ -53,6 +55,7 @@ type service struct {
 	sessions         authrepo.SessionRepository
 	notify           Notifier
 	activity         activitysvc.Recorder
+	groupActivity    groupactivitysvc.Recorder
 	presence         presencesvc.Reader
 	secret           []byte
 	webBase          string
@@ -101,6 +104,21 @@ func (s service) WithActivityLog(r activitysvc.Recorder) Service {
 	return s
 }
 
+func (s service) WithGroupActivityLog(r groupactivitysvc.Recorder) Service {
+	s.groupActivity = r
+	return s
+}
+
+func (s service) recordGroupActivity(ctx context.Context, entry models.GroupActivityLogEntry) {
+	if s.groupActivity == nil {
+		return
+	}
+	if entry.CreatedAt.IsZero() {
+		entry.CreatedAt = s.now()
+	}
+	s.groupActivity.Record(ctx, entry)
+}
+
 func (s service) WithPresence(p presencesvc.Reader) Service {
 	s.presence = p
 	return s
@@ -141,7 +159,7 @@ func (s service) GetInviteLink(
 	}
 
 	now := s.now()
-	row, err := s.invites.FindOpenShareLink(ctx, group.ID, channelID, now)
+	row, err := s.invites.FindOpenShareLink(ctx, group.ID, member.UserID, channelID, now)
 	if err != nil && !errors.Is(err, constants.ErrNotFound) {
 		return nil, err
 	}
@@ -172,6 +190,18 @@ func (s service) GetInviteLink(
 		if err := s.invites.InsertInvite(ctx, row); err != nil {
 			return nil, err
 		}
+		s.recordGroupActivity(ctx, models.GroupActivityLogEntry{
+			GroupID:    group.ID,
+			ActorID:    userID,
+			Category:   constants.GroupAuditCategoryInvite,
+			Action:     constants.GroupAuditInviteCreated,
+			TargetType: constants.GroupAuditTargetInvite,
+			TargetID:   row.Token,
+			TargetName: row.Token,
+			Summary:    "Created invite link",
+			Metadata:   map[string]any{"code": row.Token},
+			CreatedAt:  now,
+		})
 	}
 
 	return &models.InviteLinkResult{Token: row.Token, ExpiresAt: row.ExpiresAt}, nil
@@ -249,7 +279,8 @@ func (s service) SendGroupInvites(
 		}
 
 		if err := s.members.InsertGroupMember(ctx, models.GroupMember{
-			GroupID: group.ID, UserID: id, Role: constants.GroupRoleMember, CreatedAt: now,
+			GroupID: group.ID, UserID: id, Role: constants.GroupRoleMember,
+			JoinMethod: constants.JoinMethodInvite, InvitedByUserID: &inviterID, CreatedAt: now,
 		}); err != nil {
 			if errors.Is(err, constants.ErrConflict) {
 				out.Skipped++
@@ -282,7 +313,8 @@ func (s service) SendGroupInvites(
 				return nil, err
 			}
 			if err := s.members.InsertGroupMember(ctx, models.GroupMember{
-				GroupID: group.ID, UserID: user.ID, Role: constants.GroupRoleMember, CreatedAt: now,
+				GroupID: group.ID, UserID: user.ID, Role: constants.GroupRoleMember,
+				JoinMethod: constants.JoinMethodInvite, InvitedByUserID: &inviterID, CreatedAt: now,
 			}); err != nil {
 				if errors.Is(err, constants.ErrConflict) {
 					out.Skipped++
@@ -329,6 +361,19 @@ func (s service) SendGroupInvites(
 			s.log.Error("invite email failed", "err", err, "to", email)
 		}
 		out.Emailed++
+	}
+
+	if out.Added > 0 || out.Emailed > 0 {
+		s.recordGroupActivity(ctx, models.GroupActivityLogEntry{
+			GroupID:    group.ID,
+			ActorID:    inviterID,
+			Category:   constants.GroupAuditCategoryInvite,
+			Action:     constants.GroupAuditInviteSent,
+			TargetType: constants.GroupAuditTargetInvite,
+			Summary:    "Sent group invites",
+			Metadata:   map[string]any{"added": out.Added, "emailed": out.Emailed},
+			CreatedAt:  now,
+		})
 	}
 
 	return out, nil
@@ -470,8 +515,19 @@ func (s service) RedeemInvite(ctx context.Context, accessToken, inviteToken stri
 		if !errors.Is(err, constants.ErrNotFound) {
 			return nil, err
 		}
+		joinMethod := constants.JoinMethodInvite
+		inviteCode := ""
+		if row.Kind == constants.GroupInviteKindShareLink {
+			joinMethod = constants.JoinMethodInviteLink
+			inviteCode = row.Token
+		}
+		var invitedBy *string
+		if row.InvitedByUserID != "" {
+			invitedBy = &row.InvitedByUserID
+		}
 		if err := s.members.InsertGroupMember(ctx, models.GroupMember{
-			GroupID: group.ID, UserID: userID, Role: constants.GroupRoleMember, CreatedAt: now,
+			GroupID: group.ID, UserID: userID, Role: constants.GroupRoleMember,
+			JoinMethod: joinMethod, InviteCode: inviteCode, InvitedByUserID: invitedBy, CreatedAt: now,
 		}); err != nil && !errors.Is(err, constants.ErrConflict) {
 			return nil, err
 		}
@@ -496,6 +552,20 @@ func (s service) RedeemInvite(ctx context.Context, accessToken, inviteToken stri
 			Metadata: map[string]any{
 				"group_id":    group.ID,
 				"group_name":  group.Name,
+				"via":         "invite",
+				"invite_kind": row.Kind,
+			},
+			CreatedAt: now,
+		})
+		s.recordGroupActivity(ctx, models.GroupActivityLogEntry{
+			GroupID:    group.ID,
+			ActorID:    userID,
+			Category:   constants.GroupAuditCategoryMember,
+			Action:     constants.GroupAuditMemberJoined,
+			TargetType: constants.GroupAuditTargetMember,
+			TargetID:   userID,
+			Summary:    "Joined group via invite",
+			Metadata: map[string]any{
 				"via":         "invite",
 				"invite_kind": row.Kind,
 			},

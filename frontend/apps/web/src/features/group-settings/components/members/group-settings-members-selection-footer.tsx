@@ -2,7 +2,12 @@
 
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { groupSettingsFormFooterFloatAlignClass, groupSettingsFormFooterFloatColumnClass, groupSettingsFormFooterFloatShellClass, groupSettingsMainInnerClass } from "@/features/group-settings/lib/group-settings-chrome";
+import {
+	groupSettingsFormFooterFloatAlignClass,
+	groupSettingsFormFooterFloatColumnClass,
+	groupSettingsFormFooterFloatShellClass,
+	groupSettingsMainInnerClass,
+} from "@/features/group-settings/lib/group-settings-chrome";
 import { settingsFormFooterBarClass } from "@/lib/settings-chrome";
 import { cn } from "@/lib/utils";
 

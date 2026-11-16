@@ -114,11 +114,7 @@ function mapKlipyItems(raw: KlipyItem[], fallbackTitle: string): MediaExpression
 			item.file?.hd?.gif ??
 			item.file?.sm?.webp ??
 			item.file?.sm?.gif;
-		const preview =
-			item.file?.sm?.webp ??
-			item.file?.sm?.gif ??
-			item.file?.md?.webp ??
-			full;
+		const preview = item.file?.sm?.webp ?? item.file?.sm?.gif ?? item.file?.md?.webp ?? full;
 		if (!full?.url || !preview?.url) {
 			continue;
 		}

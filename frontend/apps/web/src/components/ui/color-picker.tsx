@@ -32,7 +32,10 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } {
 }
 
 function rgbToHex(r: number, g: number, b: number): string {
-	const toByte = (n: number) => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, "0");
+	const toByte = (n: number) =>
+		Math.max(0, Math.min(255, Math.round(n)))
+			.toString(16)
+			.padStart(2, "0");
 	return `#${toByte(r)}${toByte(g)}${toByte(b)}`.toUpperCase();
 }
 

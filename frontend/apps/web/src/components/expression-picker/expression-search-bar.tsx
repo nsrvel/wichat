@@ -111,8 +111,7 @@ export function ExpressionSearchBar({
 										}}
 										className={cn(
 											"flex size-8 items-center justify-center rounded-md text-[18px] leading-none transition-colors hover:bg-accent",
-											selected &&
-												"bg-primary/15 ring-1 ring-primary/50",
+											selected && "bg-primary/15 ring-1 ring-primary/50",
 										)}
 									>
 										{option.sample}

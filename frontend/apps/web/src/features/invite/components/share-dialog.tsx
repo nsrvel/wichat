@@ -60,9 +60,7 @@ export function ShareDialog({ open, onOpenChange, target }: ShareDialogProps) {
 	const { data: myGroups = [] } = useQuery({ ...myGroupsQueryOpts(), enabled: open });
 	const currentGroup = myGroups.find((g) => g.id === groupId);
 	const hideRoles = currentGroup?.hide_roles ?? false;
-	const canInviteAndCopy = currentGroup
-		? hasGroupPermission(currentGroup, "create_invite")
-		: false;
+	const canInviteAndCopy = currentGroup ? hasGroupPermission(currentGroup, "create_invite") : false;
 
 	const membersQuery = useQuery({
 		...groupMembersQueryOpts(groupId!, cursor),

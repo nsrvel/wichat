@@ -7,7 +7,12 @@ import { z } from "zod";
 import { PasswordField } from "@/components/form/password-field";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
-import { authFieldLabelClass, authFormClass, authInputClass, authSubmitClass } from "@/lib/form-field-styles";
+import {
+	authFieldLabelClass,
+	authFormClass,
+	authInputClass,
+	authSubmitClass,
+} from "@/lib/form-field-styles";
 import { translateError } from "@/integrations/i18n/translate-error";
 
 const ForgotPasswordNewPasswordSchema = z

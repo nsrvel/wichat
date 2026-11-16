@@ -247,7 +247,7 @@ export function CustomSelect({
 	const focused = isOpen;
 
 	const listboxClassName =
-		"thin-scroll z-50 max-h-[min(14rem,50dvh)] min-w-0 overflow-y-auto rounded-[10px] border border-border bg-popover p-1 text-popover-foreground shadow-elevated-lg sm:max-h-60 sm:rounded-xl sm:p-1.5";
+		"thin-scroll z-[80] max-h-[min(14rem,50dvh)] min-w-0 overflow-y-auto rounded-[10px] border border-border bg-popover p-1 text-popover-foreground shadow-elevated-lg sm:max-h-60 sm:rounded-xl sm:p-1.5";
 
 	const listbox = isOpen ? (
 		<div
@@ -265,9 +265,8 @@ export function CustomSelect({
 							left: menuPosition.left,
 							width: menuPosition.width,
 							transform: menuAlign === "end" ? "translateX(-100%)" : undefined,
-							scrollbarWidth: "thin",
 						}
-					: { scrollbarWidth: "thin" }
+					: undefined
 			}
 		>
 			{options.map((opt) => {

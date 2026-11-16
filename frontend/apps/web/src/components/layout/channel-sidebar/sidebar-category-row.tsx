@@ -1,12 +1,12 @@
 "use client";
 
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Plus } from "lucide-react";
 import {
 	sidebarCategoryInnerButtonClass,
-	sidebarRowMoreRailClass,
+	sidebarRowPersistentActionClass,
 	sidebarRowShellClass,
 } from "@/components/layout/channel-sidebar/sidebar-nav-styles";
-import { SidebarMoreMenu } from "@/components/layout/sidebar-more-menu";
+import { Button } from "@/components/ui/button";
 import { sidebarListIconSlotSizeClass } from "@/components/layout/sidebar-list-icon";
 import { cn } from "@/lib/utils";
 
@@ -14,21 +14,23 @@ export type SidebarCategoryRowProps = {
 	title: string;
 	open: boolean;
 	onToggle: () => void;
-	menuId: string;
-	activeMenuId: string | null;
-	onActiveMenuIdChange: (id: string | null) => void;
+	onAddClick?: () => void;
+	addLabel?: string;
+	/** @deprecated Retained only for legacy demo sidebar compatibility; unused. */
+	menuId?: string;
+	/** @deprecated Retained only for legacy demo sidebar compatibility; unused. */
+	activeMenuId?: string | null;
+	/** @deprecated Retained only for legacy demo sidebar compatibility; unused. */
+	onActiveMenuIdChange?: (id: string | null) => void;
 };
 
 export function SidebarCategoryRow({
 	title,
 	open,
 	onToggle,
-	menuId,
-	activeMenuId,
-	onActiveMenuIdChange,
+	onAddClick,
+	addLabel = "Create Channel",
 }: SidebarCategoryRowProps) {
-	const menuOpen = activeMenuId === menuId;
-
 	return (
 		<div className={sidebarRowShellClass}>
 			<button
@@ -53,17 +55,27 @@ export function SidebarCategoryRow({
 						strokeWidth={2.2}
 					/>
 				</span>
-				<span className="min-w-0 flex-1 truncate text-xs font-medium text-muted-foreground lg:text-[13px] group-hover/row:font-semibold">
+				<span className="min-w-0 flex-1 truncate text-xs font-medium text-muted-foreground transition-colors group-hover/row:text-foreground lg:text-[13px]">
 					{title}
 				</span>
 			</button>
-			<div className={cn(sidebarRowMoreRailClass(menuOpen), "group-hover/cat:opacity-100")}>
-				<SidebarMoreMenu
-					id={menuId}
-					activeId={activeMenuId}
-					onActiveIdChange={onActiveMenuIdChange}
-				/>
-			</div>
+			{onAddClick ? (
+				<div className={sidebarRowPersistentActionClass}>
+					<Button
+						type="button"
+						variant="ghost"
+						size="icon-sm"
+						aria-label={addLabel}
+						className="size-6 shrink-0 rounded-md p-0 text-muted-foreground hover:text-foreground"
+						onClick={(event) => {
+							event.stopPropagation();
+							onAddClick();
+						}}
+					>
+						<Plus className="size-3.5" aria-hidden />
+					</Button>
+				</div>
+			) : null}
 		</div>
 	);
 }

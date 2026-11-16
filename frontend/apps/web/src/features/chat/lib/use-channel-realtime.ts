@@ -32,6 +32,11 @@ export function useChannelRealtime(
 				);
 				onMessageReceived?.();
 			},
+			onReconnect: () => {
+				void queryClient.invalidateQueries({
+					queryKey: [Q_CHANNEL_MESSAGES, groupId, channelId],
+				});
+			},
 		});
 	}, [groupId, channelId, queryClient, sessionUser?.id, onMessageReceived]);
 }

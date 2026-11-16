@@ -11,11 +11,7 @@ import {
 	searchEmojisInCatalog,
 	type EmojiCatalog,
 } from "@/lib/expressions/emoji-catalog";
-import type {
-	ExpressionTab,
-	GifEntry,
-	StickerEntry,
-} from "@/lib/expressions/expression-types";
+import type { ExpressionTab, GifEntry, StickerEntry } from "@/lib/expressions/expression-types";
 import { useExpressionMediaQuery } from "@/services/expression/expression.query";
 
 type AllTabPanelProps = {
@@ -109,11 +105,7 @@ export function AllTabPanel({
 	const stickerAvailable =
 		enableStickers &&
 		!stickersQuery.isError &&
-		Boolean(
-			stickersQuery.data?.configured &&
-				stickersQuery.data?.ok &&
-				stickerPreview.length > 0,
-		);
+		Boolean(stickersQuery.data?.configured && stickersQuery.data?.ok && stickerPreview.length > 0);
 
 	const activeProvider =
 		(gifAvailable ? gifsQuery.data?.provider : undefined) ??
@@ -158,9 +150,7 @@ export function AllTabPanel({
 				{gifAvailable ? (
 					<section>
 						<div className="mb-1.5 flex items-center justify-between">
-							<h3 className="text-xs font-semibold text-foreground">
-								{t("expression.tabs.gifs")}
-							</h3>
+							<h3 className="text-xs font-semibold text-foreground">{t("expression.tabs.gifs")}</h3>
 							<button
 								type="button"
 								onClick={() => onNavigateTab("gifs")}

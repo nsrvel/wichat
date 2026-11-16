@@ -57,3 +57,45 @@ const (
 	DefaultActivityLogLimit = 30
 	MaxActivityLogLimit     = 100
 )
+
+// Group activity log categories.
+const (
+	GroupAuditCategoryProfile    = "group"
+	GroupAuditCategoryMember     = "member"
+	GroupAuditCategoryRole       = "role"
+	GroupAuditCategoryModeration = "moderation"
+	GroupAuditCategoryInvite     = "invite"
+)
+
+// Canonical group activity log actions.
+const (
+	GroupAuditGroupCreated          = "group.created"
+	GroupAuditGroupProfileUpdated   = "group.profile.updated"
+	GroupAuditGroupIconUpdated      = "group.icon.updated"
+	GroupAuditGroupBannerUpdated    = "group.banner.updated"
+	GroupAuditGroupHideRolesUpdated = "group.settings.hide_roles_updated"
+	GroupAuditGroupDeleted          = "group.deleted"
+	GroupAuditMemberJoined          = "group.member.joined"
+	GroupAuditMemberLeft            = "group.member.left"
+	GroupAuditMemberKicked          = "group.member.kicked"
+	GroupAuditMemberBanned          = "group.member.banned"
+	GroupAuditMemberUnbanned        = "group.member.unbanned"
+	GroupAuditMemberTimedOut        = "group.member.timed_out"
+	GroupAuditMemberTimeoutRemoved  = "group.member.timeout_removed"
+	GroupAuditRoleCreated           = "group.role.created"
+	GroupAuditRoleUpdated           = "group.role.updated"
+	GroupAuditRoleDuplicated        = "group.role.duplicated"
+	GroupAuditRoleDeleted           = "group.role.deleted"
+	GroupAuditMemberRoleAdded       = "group.member.role_added"
+	GroupAuditMemberRoleRemoved     = "group.member.role_removed"
+	GroupAuditInviteCreated         = "group.invite.created"
+	GroupAuditInviteSent            = "group.invite.sent"
+)
+
+// Group activity target types.
+const (
+	GroupAuditTargetGroup  = "group"
+	GroupAuditTargetMember = "member"
+	GroupAuditTargetRole   = "role"
+	GroupAuditTargetInvite = "invite"
+)

@@ -35,7 +35,7 @@ func (p messageCreatedPublisher) PublishMessageCreated(ctx context.Context, grou
 		return err
 	}
 
-	if err := p.producer.Publish(ctx, p.topic, []byte(msg.ID), raw); err != nil {
+	if err := p.producer.Publish(ctx, p.topic, []byte(channelPublicID), raw); err != nil {
 		p.log.Error("kafka publish message.created", "topic", p.topic, "err", err)
 		return err
 	}

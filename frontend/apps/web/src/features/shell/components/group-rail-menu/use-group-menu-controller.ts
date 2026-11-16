@@ -31,12 +31,7 @@ export function useGroupMenuController({ group, activeGroupId }: UseGroupMenuCon
 	const canInvite = hasGroupPermission(group, "create_invite");
 	const canOpenSettings =
 		group.role === "owner" ||
-		hasAnyGroupPermission(group, [
-			"manage_group",
-			"manage_roles",
-			"kick_members",
-			"ban_members",
-		]);
+		hasAnyGroupPermission(group, ["manage_group", "manage_roles", "kick_members", "ban_members"]);
 	const canManageChannels = hasGroupPermission(group, "manage_channels");
 	const manage = canOpenSettings || canManageChannels;
 	const showMemberLeave = isGroupMember(group.role);

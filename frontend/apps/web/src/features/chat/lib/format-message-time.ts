@@ -1,8 +1,4 @@
-import {
-	readStoredTimeFormat,
-	resolveHour12,
-	type TimeFormatPreference,
-} from "@/lib/time-format";
+import { readStoredTimeFormat, resolveHour12, type TimeFormatPreference } from "@/lib/time-format";
 
 export function formatMessageTimeLabel(
 	iso: string,

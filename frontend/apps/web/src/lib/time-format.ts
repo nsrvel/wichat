@@ -49,11 +49,7 @@ export function writeStoredTimeFormat(value: TimeFormatPreference): void {
 }
 
 export function useTimeFormatPreference(): TimeFormatPreference {
-	return useSyncExternalStore(
-		subscribeTimeFormat,
-		readStoredTimeFormat,
-		() => "auto" as const,
-	);
+	return useSyncExternalStore(subscribeTimeFormat, readStoredTimeFormat, () => "auto" as const);
 }
 
 export function resolveHour12(preference: TimeFormatPreference): boolean | undefined {

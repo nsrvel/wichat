@@ -33,7 +33,6 @@ import {
 	CHANNEL_SIDEBAR_MIN_WIDTH,
 	useResizableSidebarWidth,
 } from "@/hooks/use-resizable-sidebar-width";
-import { cn } from "@/lib/utils";
 import { useMyGroupsQuery } from "@/hooks/use-my-groups-query";
 
 type ChannelSidebarProps = {
@@ -91,197 +90,203 @@ export function ChannelSidebar({
 					<WorkspaceSidebarFilter className="min-w-0 flex-1 border-0 p-0" />
 				</div>
 			)}
-			<div className={cn("flex min-h-0 flex-1 flex-col", SIDEBAR_INSET_X)}>
-				{layout === "full" ? <WorkspaceSidebarFilter /> : null}
+			<div className="flex min-h-0 flex-1 flex-col">
+				{layout === "full" ? (
+					<div className={SIDEBAR_INSET_X}>
+						<WorkspaceSidebarFilter />
+					</div>
+				) : null}
 				<div className="thin-scroll flex-1 overflow-y-auto">
-					<div className="group/cat">
-						<SidebarCategoryRow
-							title="Quick views"
-							open={quickViewsOpen}
-							onToggle={() => setQuickViewsOpen((o) => !o)}
-							menuId="cat-quick-views"
-							activeMenuId={activeMenuId}
-							onActiveMenuIdChange={setActiveMenuId}
-						/>
-						{quickViewsOpen ? (
-							<nav className={sidebarNestedListClass}>
-								<SidebarNavItem
-									menuId="qv-mentions"
-									activeMenuId={activeMenuId}
-									onActiveMenuIdChange={setActiveMenuId}
-									icon={<AtSign className={sidebarNavGlyphIconClass} strokeWidth={2} />}
-									label="Mentions"
-								/>
-								<SidebarNavItem
-									menuId="qv-discover"
-									activeMenuId={activeMenuId}
-									onActiveMenuIdChange={setActiveMenuId}
-									icon={<Compass className={sidebarNavGlyphIconClass} strokeWidth={2} />}
-									label="Discover"
-								/>
-								<SidebarNavItem
-									menuId="qv-drafts"
-									activeMenuId={activeMenuId}
-									onActiveMenuIdChange={setActiveMenuId}
-									icon={<FileText className={sidebarNavGlyphIconClass} strokeWidth={2} />}
-									label="Drafts"
-								/>
-							</nav>
-						) : null}
-					</div>
-					<div className="group/cat mt-2">
-						<SidebarCategoryRow
-							title="Favorites"
-							open={favoritesOpen}
-							onToggle={() => setFavoritesOpen((o) => !o)}
-							menuId="cat-favorites"
-							activeMenuId={activeMenuId}
-							onActiveMenuIdChange={setActiveMenuId}
-						/>
-						{favoritesOpen ? (
-							<div className={sidebarNestedListClass}>
-								<SidebarFavoriteDmRow
-									menuId="fav-self-dm"
-									activeMenuId={activeMenuId}
-									onActiveMenuIdChange={setActiveMenuId}
-									avatarSrc="/avatars/demo/marvell.png"
-									label="ⱮąɾѵҽӀӀ"
-									selected={isActive("fav-self-dm")}
-									onSelect={selectNav("fav-self-dm", "ⱮąɾѵҽӀӀ", "dm")}
-								/>
-								<SidebarChannelRow
-									menuId="fav-announcements"
-									activeMenuId={activeMenuId}
-									onActiveMenuIdChange={setActiveMenuId}
-									icon={<ChannelListIcon type="broadcast" channelName="Announcements" />}
-									label="Announcements"
-									selected={isActive("fav-announcements")}
-									onSelect={selectNav("fav-announcements", "Announcements", "channel")}
-								/>
-								<SidebarChannelRow
-									menuId="fav-deployment-production"
-									activeMenuId={activeMenuId}
-									onActiveMenuIdChange={setActiveMenuId}
-									icon={<ChannelGlyphSlot>{channelNavBellIcon}</ChannelGlyphSlot>}
-									label="Deployment Production"
-									selected={isActive("fav-deployment-production")}
-									onSelect={selectNav(
-										"fav-deployment-production",
-										"Deployment Production",
-										"channel",
-									)}
-								/>
-								<SidebarChannelRow
-									menuId="fav-deployment-staging"
-									activeMenuId={activeMenuId}
-									onActiveMenuIdChange={setActiveMenuId}
-									icon={<ChannelGlyphSlot>{channelNavBellIcon}</ChannelGlyphSlot>}
-									label="Deployment Staging"
-									selected={isActive("fav-deployment-staging")}
-									onSelect={selectNav("fav-deployment-staging", "Deployment Staging", "channel")}
-								/>
-								<SidebarChannelRow
-									menuId="fav-release-notes"
-									activeMenuId={activeMenuId}
-									onActiveMenuIdChange={setActiveMenuId}
-									icon={<ChannelGlyphSlot>{channelNavHashIcon}</ChannelGlyphSlot>}
-									label="Release Notes"
-									selected={isActive("fav-release-notes")}
-									onSelect={selectNav("fav-release-notes", "Release Notes", "channel")}
-								/>
-							</div>
-						) : null}
-					</div>
-					<div className="group/cat mt-2">
-						<SidebarCategoryRow
-							title="Channels"
-							open={channelsOpen}
-							onToggle={() => setChannelsOpen((o) => !o)}
-							menuId="cat-channels"
-							activeMenuId={activeMenuId}
-							onActiveMenuIdChange={setActiveMenuId}
-						/>
-						{channelsOpen ? (
-							<div className={sidebarNestedListClass}>
-								<SidebarChannelRow
-									menuId="ch-infra"
-									activeMenuId={activeMenuId}
-									onActiveMenuIdChange={setActiveMenuId}
-									icon={<ChannelGlyphSlot>{channelNavInfraIcon}</ChannelGlyphSlot>}
-									label="Infra"
-									selected={isActive("ch-infra")}
-									onSelect={selectNav("ch-infra", "Infra", "channel")}
-								/>
-								<SidebarChannelRow
-									menuId="ch-wichat"
-									activeMenuId={activeMenuId}
-									onActiveMenuIdChange={setActiveMenuId}
-									icon={<ChannelGlyphSlot>{channelNavWichatIcon}</ChannelGlyphSlot>}
-									label="WiChat"
-									selected={isActive("ch-wichat")}
-									onSelect={selectNav("ch-wichat", "WiChat", "channel")}
-								/>
-								<SidebarChannelRow
-									menuId="ch-wicloud"
-									activeMenuId={activeMenuId}
-									onActiveMenuIdChange={setActiveMenuId}
-									icon={<ChannelGlyphSlot>{channelNavWicloudIcon}</ChannelGlyphSlot>}
-									label="WiCloud"
-									selected={isActive("ch-wicloud")}
-									onSelect={selectNav("ch-wicloud", "WiCloud", "channel")}
-								/>
-								<SidebarChannelRow
-									menuId="ch-witask"
-									activeMenuId={activeMenuId}
-									onActiveMenuIdChange={setActiveMenuId}
-									icon={<ChannelGlyphSlot>{channelNavWitaskIcon}</ChannelGlyphSlot>}
-									label="WiTask"
-									selected={isActive("ch-witask")}
-									onSelect={selectNav("ch-witask", "WiTask", "channel")}
-								/>
-								<SidebarChannelRow
-									menuId="ch-winobar"
-									activeMenuId={activeMenuId}
-									onActiveMenuIdChange={setActiveMenuId}
-									icon={<ChannelGlyphSlot>{channelNavWinobarIcon}</ChannelGlyphSlot>}
-									label="WiNobar"
-									selected={isActive("ch-winobar")}
-									onSelect={selectNav("ch-winobar", "WiNobar", "channel")}
-								/>
-							</div>
-						) : null}
-					</div>
-					<div className="group/cat mt-2">
-						<SidebarCategoryRow
-							title="Chats"
-							open={chatsOpen}
-							onToggle={() => setChatsOpen((o) => !o)}
-							menuId="cat-chats"
-							activeMenuId={activeMenuId}
-							onActiveMenuIdChange={setActiveMenuId}
-						/>
-						{chatsOpen ? (
-							<div className={sidebarNestedListClass}>
-								<SidebarChannelRow
-									menuId="chat-dm-koh-yadi"
-									activeMenuId={activeMenuId}
-									onActiveMenuIdChange={setActiveMenuId}
-									icon={<SidebarListAvatar src="/avatars/demo/koh-yadi.jpg" alt="Koh Yadi" />}
-									label="Koh Yadi"
-									selected={isActive("chat-dm-koh-yadi")}
-									onSelect={selectNav("chat-dm-koh-yadi", "Koh Yadi", "dm")}
-								/>
-								<SidebarChannelRow
-									menuId="chat-dm-koh-yanto"
-									activeMenuId={activeMenuId}
-									onActiveMenuIdChange={setActiveMenuId}
-									icon={<SidebarListAvatar src="/avatars/demo/koh-yanto.jpg" alt="Koh Yanto" />}
-									label="Koh Yanto"
-									selected={isActive("chat-dm-koh-yanto")}
-									onSelect={selectNav("chat-dm-koh-yanto", "Koh Yanto", "dm")}
-								/>
-							</div>
-						) : null}
+					<div className={SIDEBAR_INSET_X}>
+						<div className="group/cat">
+							<SidebarCategoryRow
+								title="Quick views"
+								open={quickViewsOpen}
+								onToggle={() => setQuickViewsOpen((o) => !o)}
+								menuId="cat-quick-views"
+								activeMenuId={activeMenuId}
+								onActiveMenuIdChange={setActiveMenuId}
+							/>
+							{quickViewsOpen ? (
+								<nav className={sidebarNestedListClass}>
+									<SidebarNavItem
+										menuId="qv-mentions"
+										activeMenuId={activeMenuId}
+										onActiveMenuIdChange={setActiveMenuId}
+										icon={<AtSign className={sidebarNavGlyphIconClass} strokeWidth={2} />}
+										label="Mentions"
+									/>
+									<SidebarNavItem
+										menuId="qv-discover"
+										activeMenuId={activeMenuId}
+										onActiveMenuIdChange={setActiveMenuId}
+										icon={<Compass className={sidebarNavGlyphIconClass} strokeWidth={2} />}
+										label="Discover"
+									/>
+									<SidebarNavItem
+										menuId="qv-drafts"
+										activeMenuId={activeMenuId}
+										onActiveMenuIdChange={setActiveMenuId}
+										icon={<FileText className={sidebarNavGlyphIconClass} strokeWidth={2} />}
+										label="Drafts"
+									/>
+								</nav>
+							) : null}
+						</div>
+						<div className="group/cat mt-2">
+							<SidebarCategoryRow
+								title="Favorites"
+								open={favoritesOpen}
+								onToggle={() => setFavoritesOpen((o) => !o)}
+								menuId="cat-favorites"
+								activeMenuId={activeMenuId}
+								onActiveMenuIdChange={setActiveMenuId}
+							/>
+							{favoritesOpen ? (
+								<div className={sidebarNestedListClass}>
+									<SidebarFavoriteDmRow
+										menuId="fav-self-dm"
+										activeMenuId={activeMenuId}
+										onActiveMenuIdChange={setActiveMenuId}
+										avatarSrc="/avatars/demo/marvell.png"
+										label="ⱮąɾѵҽӀӀ"
+										selected={isActive("fav-self-dm")}
+										onSelect={selectNav("fav-self-dm", "ⱮąɾѵҽӀӀ", "dm")}
+									/>
+									<SidebarChannelRow
+										menuId="fav-announcements"
+										activeMenuId={activeMenuId}
+										onActiveMenuIdChange={setActiveMenuId}
+										icon={<ChannelListIcon type="broadcast" channelName="Announcements" />}
+										label="Announcements"
+										selected={isActive("fav-announcements")}
+										onSelect={selectNav("fav-announcements", "Announcements", "channel")}
+									/>
+									<SidebarChannelRow
+										menuId="fav-deployment-production"
+										activeMenuId={activeMenuId}
+										onActiveMenuIdChange={setActiveMenuId}
+										icon={<ChannelGlyphSlot>{channelNavBellIcon}</ChannelGlyphSlot>}
+										label="Deployment Production"
+										selected={isActive("fav-deployment-production")}
+										onSelect={selectNav(
+											"fav-deployment-production",
+											"Deployment Production",
+											"channel",
+										)}
+									/>
+									<SidebarChannelRow
+										menuId="fav-deployment-staging"
+										activeMenuId={activeMenuId}
+										onActiveMenuIdChange={setActiveMenuId}
+										icon={<ChannelGlyphSlot>{channelNavBellIcon}</ChannelGlyphSlot>}
+										label="Deployment Staging"
+										selected={isActive("fav-deployment-staging")}
+										onSelect={selectNav("fav-deployment-staging", "Deployment Staging", "channel")}
+									/>
+									<SidebarChannelRow
+										menuId="fav-release-notes"
+										activeMenuId={activeMenuId}
+										onActiveMenuIdChange={setActiveMenuId}
+										icon={<ChannelGlyphSlot>{channelNavHashIcon}</ChannelGlyphSlot>}
+										label="Release Notes"
+										selected={isActive("fav-release-notes")}
+										onSelect={selectNav("fav-release-notes", "Release Notes", "channel")}
+									/>
+								</div>
+							) : null}
+						</div>
+						<div className="group/cat mt-2">
+							<SidebarCategoryRow
+								title="Channels"
+								open={channelsOpen}
+								onToggle={() => setChannelsOpen((o) => !o)}
+								menuId="cat-channels"
+								activeMenuId={activeMenuId}
+								onActiveMenuIdChange={setActiveMenuId}
+							/>
+							{channelsOpen ? (
+								<div className={sidebarNestedListClass}>
+									<SidebarChannelRow
+										menuId="ch-infra"
+										activeMenuId={activeMenuId}
+										onActiveMenuIdChange={setActiveMenuId}
+										icon={<ChannelGlyphSlot>{channelNavInfraIcon}</ChannelGlyphSlot>}
+										label="Infra"
+										selected={isActive("ch-infra")}
+										onSelect={selectNav("ch-infra", "Infra", "channel")}
+									/>
+									<SidebarChannelRow
+										menuId="ch-wichat"
+										activeMenuId={activeMenuId}
+										onActiveMenuIdChange={setActiveMenuId}
+										icon={<ChannelGlyphSlot>{channelNavWichatIcon}</ChannelGlyphSlot>}
+										label="WiChat"
+										selected={isActive("ch-wichat")}
+										onSelect={selectNav("ch-wichat", "WiChat", "channel")}
+									/>
+									<SidebarChannelRow
+										menuId="ch-wicloud"
+										activeMenuId={activeMenuId}
+										onActiveMenuIdChange={setActiveMenuId}
+										icon={<ChannelGlyphSlot>{channelNavWicloudIcon}</ChannelGlyphSlot>}
+										label="WiCloud"
+										selected={isActive("ch-wicloud")}
+										onSelect={selectNav("ch-wicloud", "WiCloud", "channel")}
+									/>
+									<SidebarChannelRow
+										menuId="ch-witask"
+										activeMenuId={activeMenuId}
+										onActiveMenuIdChange={setActiveMenuId}
+										icon={<ChannelGlyphSlot>{channelNavWitaskIcon}</ChannelGlyphSlot>}
+										label="WiTask"
+										selected={isActive("ch-witask")}
+										onSelect={selectNav("ch-witask", "WiTask", "channel")}
+									/>
+									<SidebarChannelRow
+										menuId="ch-winobar"
+										activeMenuId={activeMenuId}
+										onActiveMenuIdChange={setActiveMenuId}
+										icon={<ChannelGlyphSlot>{channelNavWinobarIcon}</ChannelGlyphSlot>}
+										label="WiNobar"
+										selected={isActive("ch-winobar")}
+										onSelect={selectNav("ch-winobar", "WiNobar", "channel")}
+									/>
+								</div>
+							) : null}
+						</div>
+						<div className="group/cat mt-2">
+							<SidebarCategoryRow
+								title="Chats"
+								open={chatsOpen}
+								onToggle={() => setChatsOpen((o) => !o)}
+								menuId="cat-chats"
+								activeMenuId={activeMenuId}
+								onActiveMenuIdChange={setActiveMenuId}
+							/>
+							{chatsOpen ? (
+								<div className={sidebarNestedListClass}>
+									<SidebarChannelRow
+										menuId="chat-dm-koh-yadi"
+										activeMenuId={activeMenuId}
+										onActiveMenuIdChange={setActiveMenuId}
+										icon={<SidebarListAvatar src="/avatars/demo/koh-yadi.jpg" alt="Koh Yadi" />}
+										label="Koh Yadi"
+										selected={isActive("chat-dm-koh-yadi")}
+										onSelect={selectNav("chat-dm-koh-yadi", "Koh Yadi", "dm")}
+									/>
+									<SidebarChannelRow
+										menuId="chat-dm-koh-yanto"
+										activeMenuId={activeMenuId}
+										onActiveMenuIdChange={setActiveMenuId}
+										icon={<SidebarListAvatar src="/avatars/demo/koh-yanto.jpg" alt="Koh Yanto" />}
+										label="Koh Yanto"
+										selected={isActive("chat-dm-koh-yanto")}
+										onSelect={selectNav("chat-dm-koh-yanto", "Koh Yanto", "dm")}
+									/>
+								</div>
+							) : null}
+						</div>
 					</div>
 				</div>
 			</div>

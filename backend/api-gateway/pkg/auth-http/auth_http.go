@@ -305,11 +305,58 @@ type ChannelBody struct {
 	SidebarSection string `json:"sidebar_section"`
 	ImageURL       string `json:"image_url"`
 	IsPrivate      bool   `json:"is_private"`
+	CategoryID     string `json:"category_id"`
+	Position       int    `json:"position"`
 }
 
-// ChannelsListBody wraps a channel list.
+// ChannelCategoryBody is category metadata in JSON responses.
+type ChannelCategoryBody struct {
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	IsPrivate bool   `json:"is_private"`
+	Position  int    `json:"position"`
+}
+
+// CreateChannelCategoryBody is POST /api/v1/groups/{id}/categories.
+type CreateChannelCategoryBody struct {
+	Name      string `json:"name"`
+	IsPrivate bool   `json:"is_private"`
+}
+
+// CreateGroupChannelBody is POST /api/v1/groups/{id}/channels.
+type CreateGroupChannelBody struct {
+	Name       string  `json:"name"`
+	Type       string  `json:"type"`
+	CategoryID *string `json:"category_id,omitempty"`
+	IsPrivate  bool    `json:"is_private"`
+}
+
+// ChannelResponse wraps a single created channel.
+type ChannelResponse struct {
+	Channel ChannelBody `json:"channel"`
+}
+
+// ReorderChannelCategoriesBody is PUT /api/v1/groups/{id}/categories/order.
+type ReorderChannelCategoriesBody struct {
+	CategoryIDs []string `json:"category_ids"`
+}
+
+// ReorderGroupChannelsBody is PUT /api/v1/groups/{id}/channels/order.
+type ReorderGroupChannelsBody struct {
+	ChannelIDs     []string `json:"channel_ids"`
+	CategoryID     string   `json:"category_id,omitempty"`
+	SidebarSection string   `json:"sidebar_section,omitempty"`
+}
+
+// ChannelCategoryResponse wraps a single created category.
+type ChannelCategoryResponse struct {
+	Category ChannelCategoryBody `json:"category"`
+}
+
+// ChannelsListBody wraps a channel and category list.
 type ChannelsListBody struct {
-	Channels []ChannelBody `json:"channels"`
+	Channels   []ChannelBody         `json:"channels"`
+	Categories []ChannelCategoryBody `json:"categories"`
 }
 
 // GroupsListBody wraps a group list.
@@ -339,15 +386,28 @@ type GroupMemberRoleSummaryBody struct {
 
 // GroupMemberBody is one row in the share access list.
 type GroupMemberBody struct {
-	UserID         string                       `json:"user_id"`
-	DisplayName    string                       `json:"display_name"`
-	Username       string                       `json:"username"`
-	AvatarURL      string                       `json:"avatar_url"`
-	Role           string                       `json:"role"`
-	JoinedAt       string                       `json:"joined_at"`
-	Roles          []GroupMemberRoleSummaryBody `json:"roles,omitempty"`
-	IsOnline       bool                         `json:"is_online"`
-	PresenceStatus string                       `json:"presence_status"`
+	UserID               string                       `json:"user_id"`
+	DisplayName          string                       `json:"display_name"`
+	Username             string                       `json:"username"`
+	AvatarURL            string                       `json:"avatar_url"`
+	Role                 string                       `json:"role"`
+	JoinedAt             string                       `json:"joined_at"`
+	Roles                []GroupMemberRoleSummaryBody `json:"roles,omitempty"`
+	IsOnline             bool                         `json:"is_online"`
+	PresenceStatus       string                       `json:"presence_status"`
+	BannerColor          string                       `json:"banner_color,omitempty"`
+	Bio                  string                       `json:"bio,omitempty"`
+	Pronouns             string                       `json:"pronouns,omitempty"`
+	UserCreatedAt        string                       `json:"user_created_at,omitempty"`
+	StatusNoteText       string                       `json:"status_note_text,omitempty"`
+	StatusNoteEmoji      string                       `json:"status_note_emoji,omitempty"`
+	StatusNoteExpiresAt  string                       `json:"status_note_expires_at,omitempty"`
+	JoinMethod           string                       `json:"join_method,omitempty"`
+	InviteCode           string                       `json:"invite_code,omitempty"`
+	InvitedByUserID      string                       `json:"invited_by_user_id,omitempty"`
+	InvitedByUsername    string                       `json:"invited_by_username,omitempty"`
+	InvitedByDisplayName string                       `json:"invited_by_display_name,omitempty"`
+	TimeoutUntil         string                       `json:"timeout_until,omitempty"`
 }
 
 // MyPresenceBody is GET/PUT /api/v1/users/me/presence.
@@ -613,7 +673,33 @@ func ChannelFromPB(c *userv1.ChannelSummary) ChannelBody {
 		SidebarSection: c.GetSidebarSection(),
 		ImageURL:       c.GetImageUrl(),
 		IsPrivate:      c.GetIsPrivate(),
+		CategoryID:     c.GetCategoryId(),
+		Position:       int(c.GetPosition()),
 	}
+}
+
+// ChannelCategoryFromPB maps a channel category proto to JSON.
+func ChannelCategoryFromPB(c *userv1.ChannelCategory) ChannelCategoryBody {
+	if c == nil {
+		return ChannelCategoryBody{}
+	}
+
+	return ChannelCategoryBody{
+		ID:        c.GetId(),
+		Name:      c.GetName(),
+		IsPrivate: c.GetIsPrivate(),
+		Position:  int(c.GetPosition()),
+	}
+}
+
+// ChannelCategoriesFromPB maps channel category protos to JSON bodies.
+func ChannelCategoriesFromPB(categories []*userv1.ChannelCategory) []ChannelCategoryBody {
+	out := make([]ChannelCategoryBody, len(categories))
+	for i, c := range categories {
+		out[i] = ChannelCategoryFromPB(c)
+	}
+
+	return out
 }
 
 // ChannelsFromPB maps channel summary protos to JSON bodies.
@@ -667,15 +753,28 @@ func GroupMembersFromPB(members []*userv1.GroupMemberEntry) []GroupMemberBody {
 			}
 		}
 		out[i] = GroupMemberBody{
-			UserID:         m.GetUserId(),
-			DisplayName:    m.GetDisplayName(),
-			Username:       m.GetUsername(),
-			AvatarURL:      m.GetAvatarUrl(),
-			Role:           m.GetRole(),
-			JoinedAt:       m.GetJoinedAt(),
-			Roles:          roles,
-			IsOnline:       m.GetIsOnline(),
-			PresenceStatus: presenceStatus,
+			UserID:               m.GetUserId(),
+			DisplayName:          m.GetDisplayName(),
+			Username:             m.GetUsername(),
+			AvatarURL:            m.GetAvatarUrl(),
+			Role:                 m.GetRole(),
+			JoinedAt:             m.GetJoinedAt(),
+			Roles:                roles,
+			IsOnline:             m.GetIsOnline(),
+			PresenceStatus:       presenceStatus,
+			BannerColor:          m.GetBannerColor(),
+			Bio:                  m.GetBio(),
+			Pronouns:             m.GetPronouns(),
+			UserCreatedAt:        m.GetUserCreatedAt(),
+			StatusNoteText:       m.GetStatusNoteText(),
+			StatusNoteEmoji:      m.GetStatusNoteEmoji(),
+			StatusNoteExpiresAt:  m.GetStatusNoteExpiresAt(),
+			JoinMethod:           m.GetJoinMethod(),
+			InviteCode:           m.GetInviteCode(),
+			InvitedByUserID:      m.GetInvitedByUserId(),
+			InvitedByUsername:    m.GetInvitedByUsername(),
+			InvitedByDisplayName: m.GetInvitedByDisplayName(),
+			TimeoutUntil:         m.GetTimeoutUntil(),
 		}
 	}
 
@@ -887,4 +986,77 @@ func UserActivityLogsFromPB(logs []*userv1.UserActivityLog) []UserActivityLogBod
 		})
 	}
 	return out
+}
+
+// GroupActivityLogBody is the JSON representation of a group audit log event.
+type GroupActivityLogBody struct {
+	ID               string          `json:"id"`
+	GroupID          string          `json:"group_id"`
+	ActorID          string          `json:"actor_id"`
+	ActorUsername    string          `json:"actor_username"`
+	ActorDisplayName string          `json:"actor_display_name"`
+	ActorAvatarURL   string          `json:"actor_avatar_url"`
+	Category         string          `json:"category"`
+	Action           string          `json:"action"`
+	TargetType       string          `json:"target_type"`
+	TargetID         string          `json:"target_id"`
+	TargetName       string          `json:"target_name"`
+	Summary          string          `json:"summary"`
+	Changes          json.RawMessage `json:"changes"`
+	Metadata         json.RawMessage `json:"metadata"`
+	CreatedAt        string          `json:"created_at"`
+}
+
+// GroupActivityLogsFromPB maps proto GroupActivityLog items to JSON bodies.
+func GroupActivityLogsFromPB(logs []*userv1.GroupActivityLog) []GroupActivityLogBody {
+	out := make([]GroupActivityLogBody, 0, len(logs))
+	for _, entry := range logs {
+		if entry == nil {
+			continue
+		}
+		changes := json.RawMessage("{}")
+		if raw := strings.TrimSpace(entry.GetChangesJson()); raw != "" {
+			changes = json.RawMessage(raw)
+		}
+		meta := json.RawMessage("{}")
+		if raw := strings.TrimSpace(entry.GetMetadataJson()); raw != "" {
+			meta = json.RawMessage(raw)
+		}
+		out = append(out, GroupActivityLogBody{
+			ID:               entry.GetId(),
+			GroupID:          entry.GetGroupId(),
+			ActorID:          entry.GetActorId(),
+			ActorUsername:    entry.GetActorUsername(),
+			ActorDisplayName: entry.GetActorDisplayName(),
+			ActorAvatarURL:   entry.GetActorAvatarUrl(),
+			Category:         entry.GetCategory(),
+			Action:           entry.GetAction(),
+			TargetType:       entry.GetTargetType(),
+			TargetID:         entry.GetTargetId(),
+			TargetName:       entry.GetTargetName(),
+			Summary:          entry.GetSummary(),
+			Changes:          changes,
+			Metadata:         meta,
+			CreatedAt:        entry.GetCreatedAt(),
+		})
+	}
+	return out
+}
+
+// UserRelationshipBody is one ignore/block relationship entry.
+type UserRelationshipBody struct {
+	TargetUserID string `json:"target_user_id"`
+	Kind         string `json:"kind"`
+	CreatedAt    string `json:"created_at"`
+}
+
+// SetUserRelationshipBody is PUT /api/v1/users/me/relationships/{userId}.
+type SetUserRelationshipBody struct {
+	Kind string `json:"kind"`
+}
+
+// SetUserRelationshipResponseBody is the response for PUT /api/v1/users/me/relationships/{userId}.
+type SetUserRelationshipResponseBody struct {
+	OK   bool   `json:"ok"`
+	Kind string `json:"kind"`
 }

@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 export const menuPositionerClass = "z-[100] outline-none";
 
 export const menuPopupClass = cn(
-	"z-[100] w-max min-w-[13rem] max-w-[14.5rem] rounded-lg border border-border bg-card px-2 py-2.5 text-[13px] font-medium leading-snug",
+	"thin-scroll z-[100] w-max min-w-[13rem] max-w-[14.5rem] rounded-lg border border-border bg-card px-2 py-2.5 text-[13px] font-medium leading-snug",
 	"text-card-foreground shadow-elevated outline-none",
 );
 

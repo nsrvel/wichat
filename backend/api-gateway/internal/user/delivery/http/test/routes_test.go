@@ -40,6 +40,8 @@ func (userRouteStub) RevokeOtherDevices(http.ResponseWriter, *http.Request)     
 func (userRouteStub) ListActivityLogs(http.ResponseWriter, *http.Request)         {}
 func (userRouteStub) GetMyPresence(http.ResponseWriter, *http.Request)            {}
 func (userRouteStub) UpdateMyPresence(http.ResponseWriter, *http.Request)         {}
+func (userRouteStub) ListRelationships(http.ResponseWriter, *http.Request)        {}
+func (userRouteStub) SetRelationship(http.ResponseWriter, *http.Request)          {}
 func (s userRouteStub) WithPresenceBroadcaster(userhttp.PresenceBroadcaster) userhttp.Handler {
 	return s
 }

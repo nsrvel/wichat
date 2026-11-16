@@ -133,11 +133,7 @@ export function TurnstileWidget({ siteKey, resetKey = 0, onToken }: TurnstileWid
 		<div
 			ref={outerRef}
 			className="my-2 w-0 min-w-full overflow-hidden"
-			style={
-				scale < 1
-					? { height: `${Math.round(TURNSTILE_BASE_HEIGHT * scale)}px` }
-					: undefined
-			}
+			style={scale < 1 ? { height: `${Math.round(TURNSTILE_BASE_HEIGHT * scale)}px` } : undefined}
 		>
 			<div
 				ref={containerRef}

@@ -5,7 +5,10 @@ import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { roleDisplayTitle, type GroupSettingsRoleRow } from "@/features/group-settings/lib/group-settings-roles-view";
+import {
+	roleDisplayTitle,
+	type GroupSettingsRoleRow,
+} from "@/features/group-settings/lib/group-settings-roles-view";
 import { ApiError } from "@wichat/api-client/api-error";
 import {
 	menuDestructiveItemClass,
@@ -112,7 +115,10 @@ export function RoleActionMenu({
 							{menuState ? (
 								<>
 									<Menu.Item
-										className={cn(menuItemClass, "disabled:pointer-events-none disabled:opacity-45")}
+										className={cn(
+											menuItemClass,
+											"disabled:pointer-events-none disabled:opacity-45",
+										)}
 										disabled={!canManage || duplicateMutation.isPending}
 										onClick={() => void handleDuplicate(menuState.role)}
 									>

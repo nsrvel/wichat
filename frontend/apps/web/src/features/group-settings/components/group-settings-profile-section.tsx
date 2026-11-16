@@ -235,114 +235,115 @@ function GroupSettingsProfileForm({ target }: GroupSettingsProfileSectionProps) 
 							>
 								<fieldset disabled={!canManageGroup} className="contents">
 									<GroupIconUpload
-									value={iconFile}
-									onChange={(file) => {
-										setIconFile(file);
-										if (file) {
-											setExistingLogoCleared(false);
-										}
-									}}
-									displayName={watchedName || target.groupName}
-									logoUrl={existingLogoCleared ? "" : target.logoUrl}
-									onClearExistingLogo={() => setExistingLogoCleared(true)}
-								/>
+										value={iconFile}
+										onChange={(file) => {
+											setIconFile(file);
+											if (file) {
+												setExistingLogoCleared(false);
+											}
+										}}
+										displayName={watchedName || target.groupName}
+										logoUrl={existingLogoCleared ? "" : target.logoUrl}
+										onClearExistingLogo={() => setExistingLogoCleared(true)}
+									/>
 
-								<div className={settingsSectionGapClass}>
-									<TextField
+									<div className={settingsSectionGapClass}>
+										<TextField
+											control={form.control}
+											name="name"
+											label={t("group.home.name")}
+											placeholder={t("group.home.name_placeholder")}
+											autoComplete="organization"
+											required
+											labelClassName={authFieldLabelClass}
+											inputClassName={authInputClass}
+										/>
+									</div>
+
+									<div className={settingsSectionDividerWrapClass} role="presentation">
+										<div className={settingsSectionDividerLineClass} />
+									</div>
+
+									<div className="space-y-2">
+										<label
+											htmlFor="group-settings-banner-color"
+											className={cn(authFieldLabelClass, "block")}
+										>
+											{t("group_settings.profile.banner_color")}
+										</label>
+										<HexColorField
+											id="group-settings-banner-color"
+											value={bannerColor}
+											onChange={setBannerColor}
+											defaultColor={DEFAULT_BANNER_COLOR}
+											resetLabel={t("group_settings.profile.banner_color_reset")}
+											pickerAriaLabel={t("group_settings.profile.banner_color")}
+											inputClassName={authInputClass}
+										/>
+									</div>
+
+									<div className={settingsSectionDividerWrapClass} role="presentation">
+										<div className={settingsSectionDividerLineClass} />
+									</div>
+
+									<FormField
 										control={form.control}
-										name="name"
-										label={t("group.home.name")}
-										placeholder={t("group.home.name_placeholder")}
-										autoComplete="organization"
-										required
-										labelClassName={authFieldLabelClass}
-										inputClassName={authInputClass}
-									/>
-								</div>
-
-								<div className={settingsSectionDividerWrapClass} role="presentation">
-									<div className={settingsSectionDividerLineClass} />
-								</div>
-
-								<div className="space-y-2">
-									<label
-										htmlFor="group-settings-banner-color"
-										className={cn(authFieldLabelClass, "block")}
-									>
-										{t("group_settings.profile.banner_color")}
-									</label>
-									<HexColorField
-										id="group-settings-banner-color"
-										value={bannerColor}
-										onChange={setBannerColor}
-										defaultColor={DEFAULT_BANNER_COLOR}
-										resetLabel={t("group_settings.profile.banner_color_reset")}
-										pickerAriaLabel={t("group_settings.profile.banner_color")}
-										inputClassName={authInputClass}
-									/>
-								</div>
-
-								<div className={settingsSectionDividerWrapClass} role="presentation">
-									<div className={settingsSectionDividerLineClass} />
-								</div>
-
-								<FormField
-									control={form.control}
-									name="description"
-									render={({ field }) => (
-										<FormItem>
-											<FormLabel className={authFieldLabelClass}>
-												<FieldLabelContent>
-													{t("group_settings.profile.description_label")}
-												</FieldLabelContent>
-											</FormLabel>
-											<FormControl>
-												<textarea
-													{...field}
-													rows={4}
-													className={descriptionInputClass}
-													placeholder={t("group_settings.profile.description_placeholder")}
-												/>
-											</FormControl>
-											<FormMessage />
-										</FormItem>
-									)}
-								/>
-
-								<div className={settingsSectionDividerWrapClass} role="presentation">
-									<div className={settingsSectionDividerLineClass} />
-								</div>
-
-								<FormField
-									control={form.control}
-									name="is_private"
-									render={({ field }) => (
-										<FormItem className="flex-row items-center justify-between gap-8 sm:gap-10">
-											<div className="flex min-w-0 flex-1 flex-col gap-1">
-												<FormLabel className={cn(authFieldLabelClass, "cursor-default capitalize")}>
+										name="description"
+										render={({ field }) => (
+											<FormItem>
+												<FormLabel className={authFieldLabelClass}>
 													<FieldLabelContent>
-														{t("group_settings.profile.is_private_label")}
+														{t("group_settings.profile.description_label")}
 													</FieldLabelContent>
 												</FormLabel>
-												<p className="text-xs leading-relaxed text-muted-foreground">
-													{t("group_settings.profile.is_private_hint")}
-												</p>
-											</div>
-											<FormControl className="shrink-0">
-												<SettingsToggle
-													checked={field.value}
-													onCheckedChange={field.onChange}
-													aria-label={t("group_settings.profile.is_private_label")}
-												/>
-											</FormControl>
-										</FormItem>
-									)}
-								/>
+												<FormControl>
+													<textarea
+														{...field}
+														rows={4}
+														className={descriptionInputClass}
+														placeholder={t("group_settings.profile.description_placeholder")}
+													/>
+												</FormControl>
+												<FormMessage />
+											</FormItem>
+										)}
+									/>
+
+									<div className={settingsSectionDividerWrapClass} role="presentation">
+										<div className={settingsSectionDividerLineClass} />
+									</div>
+
+									<FormField
+										control={form.control}
+										name="is_private"
+										render={({ field }) => (
+											<FormItem className="flex-row items-center justify-between gap-8 sm:gap-10">
+												<div className="flex min-w-0 flex-1 flex-col gap-1">
+													<FormLabel
+														className={cn(authFieldLabelClass, "cursor-default capitalize")}
+													>
+														<FieldLabelContent>
+															{t("group_settings.profile.is_private_label")}
+														</FieldLabelContent>
+													</FormLabel>
+													<p className="text-xs leading-relaxed text-muted-foreground">
+														{t("group_settings.profile.is_private_hint")}
+													</p>
+												</div>
+												<FormControl className="shrink-0">
+													<SettingsToggle
+														checked={field.value}
+														onCheckedChange={field.onChange}
+														aria-label={t("group_settings.profile.is_private_label")}
+													/>
+												</FormControl>
+											</FormItem>
+										)}
+									/>
 								</fieldset>
 							</form>
 
-							<div className="space-y-2 lg:sticky lg:top-0">
-								<p className={authFieldLabelClass}>{t("user_settings.profiles.preview_label")}</p>
+							<div className="lg:sticky lg:top-0">
 								<GroupProfileCardPreview
 									groupName={watchedName || target.groupName}
 									description={watchedDescription ?? ""}

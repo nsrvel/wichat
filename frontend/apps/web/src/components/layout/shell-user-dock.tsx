@@ -56,7 +56,7 @@ export function ShellUserDock() {
 	const activeGroupId = typeof params?.groupId === "string" ? params.groupId : undefined;
 	const { railOpen, sidebarWidth } = useShellChrome();
 	const { data: user } = useQuery(sessionQueryOpts());
-	usePresenceSync(activeGroupId, Boolean(user));
+	usePresenceSync(activeGroupId, Boolean(user), user?.id);
 	const myPresenceQuery = useQuery({
 		...myPresenceQueryOptions(),
 		enabled: Boolean(user),
@@ -84,9 +84,12 @@ export function ShellUserDock() {
 	useEffect(() => {
 		if (!statusNote.expiresAt) return;
 		const delayMs = Math.max(0, statusNote.expiresAt - Date.now());
-		const timer = window.setTimeout(() => {
-			setExpiryTick((prev) => prev + 1);
-		}, Math.min(delayMs, 2_147_483_647));
+		const timer = window.setTimeout(
+			() => {
+				setExpiryTick((prev) => prev + 1);
+			},
+			Math.min(delayMs, 2_147_483_647),
+		);
 		return () => window.clearTimeout(timer);
 	}, [statusNote.expiresAt]);
 
@@ -119,8 +122,7 @@ export function ShellUserDock() {
 		await updateStatusNote.mutateAsync({
 			text: nextNote.text,
 			emoji: nextNote.emoji,
-			expires_at:
-				nextNote.expiresAt !== null ? new Date(nextNote.expiresAt).toISOString() : null,
+			expires_at: nextNote.expiresAt !== null ? new Date(nextNote.expiresAt).toISOString() : null,
 		});
 	};
 
@@ -135,8 +137,7 @@ export function ShellUserDock() {
 	const displayName = user?.display_name?.trim() || user?.username?.trim() || "WiChat User";
 	const initials = initialsForName(displayName);
 	const secondaryText =
-		statusNoteLabel ||
-		(user?.username ? `@${user.username}` : t("shell.user_dock.status_online"));
+		statusNoteLabel || (user?.username ? `@${user.username}` : t("shell.user_dock.status_online"));
 	const avatarUrl = user?.avatar_url?.trim() || "";
 
 	return (
@@ -145,74 +146,74 @@ export function ShellUserDock() {
 				className="pointer-events-none fixed bottom-0 left-0 z-50 box-border hidden p-2 transition-[width] duration-200 ease-out lg:block"
 				style={{ width: dockWidth }}
 			>
-			<div
-				className={cn(
-					"pointer-events-auto w-full min-w-0 overflow-hidden rounded-xl border border-chat-surface-border shadow-[var(--shadow-elevated)]",
-					dockSurfaceClass,
-				)}
-			>
-				<div className="flex h-[52px] min-w-0 items-center gap-1 px-2">
-					<UserProfilePopover
-						user={user}
-						displayName={displayName}
-						initials={initials}
-						status={status}
-						onStatusChange={handleStatusChange}
-						statusNote={statusNote}
-						widthPx={popoverWidth}
-						onOpenSetStatus={() => setStatusDialogOpen(true)}
-						onOpenEditProfile={() => {
-							setSettingsTab("profiles");
-							setSettingsOpen(true);
-						}}
-						onClearStatusNote={handleClearStatusNote}
-						trigger={
-							<UserProfileButton
-								displayName={displayName}
-								secondaryText={secondaryText}
-								avatarUrl={avatarUrl}
-								initials={initials}
-								status={status}
-								statusRingClassName="ring-chat-surface"
-								aria-label={t("shell.user_dock.open_profile")}
-							/>
-						}
-					/>
-					<div className="flex shrink-0 items-center gap-0.5">
-						<WorkspaceSplitIconControl
-							mainAriaLabel={muted ? "Unmute microphone" : "Mute microphone"}
-							optionsAriaLabel="Microphone options"
-							mainActive={muted}
-							onMainClick={() => setMuted((prev) => !prev)}
-						>
-							{muted ? (
-								<MicOff className={workspaceHeaderIconClass} strokeWidth={2} />
-							) : (
-								<Mic className={workspaceHeaderIconClass} strokeWidth={2} />
-							)}
-						</WorkspaceSplitIconControl>
-						<WorkspaceSplitIconControl
-							mainAriaLabel={deafened ? "Undeafen" : "Deafen"}
-							optionsAriaLabel="Headphone options"
-							mainActive={deafened}
-							onMainClick={() => setDeafened((prev) => !prev)}
-						>
-							<Headphones className={workspaceHeaderIconClass} strokeWidth={2} />
-						</WorkspaceSplitIconControl>
-						<WorkspaceHeaderIconButton
-							aria-label="User settings"
-							onClick={() => {
-								setSettingsTab("account");
+				<div
+					className={cn(
+						"pointer-events-auto w-full min-w-0 overflow-hidden rounded-xl border border-chat-surface-border shadow-[var(--shadow-elevated)]",
+						dockSurfaceClass,
+					)}
+				>
+					<div className="flex h-[52px] min-w-0 items-center gap-1 px-2">
+						<UserProfilePopover
+							user={user}
+							displayName={displayName}
+							initials={initials}
+							status={status}
+							onStatusChange={handleStatusChange}
+							statusNote={statusNote}
+							widthPx={popoverWidth}
+							onOpenSetStatus={() => setStatusDialogOpen(true)}
+							onOpenEditProfile={() => {
+								setSettingsTab("profiles");
 								setSettingsOpen(true);
 							}}
-						>
-							<Settings className={workspaceHeaderIconClass} strokeWidth={2} />
-						</WorkspaceHeaderIconButton>
+							onClearStatusNote={handleClearStatusNote}
+							trigger={
+								<UserProfileButton
+									displayName={displayName}
+									secondaryText={secondaryText}
+									avatarUrl={avatarUrl}
+									initials={initials}
+									status={status}
+									statusRingClassName="ring-chat-surface"
+									aria-label={t("shell.user_dock.open_profile")}
+								/>
+							}
+						/>
+						<div className="flex shrink-0 items-center gap-0.5">
+							<WorkspaceSplitIconControl
+								mainAriaLabel={muted ? "Unmute microphone" : "Mute microphone"}
+								optionsAriaLabel="Microphone options"
+								mainActive={muted}
+								onMainClick={() => setMuted((prev) => !prev)}
+							>
+								{muted ? (
+									<MicOff className={workspaceHeaderIconClass} strokeWidth={2} />
+								) : (
+									<Mic className={workspaceHeaderIconClass} strokeWidth={2} />
+								)}
+							</WorkspaceSplitIconControl>
+							<WorkspaceSplitIconControl
+								mainAriaLabel={deafened ? "Undeafen" : "Deafen"}
+								optionsAriaLabel="Headphone options"
+								mainActive={deafened}
+								onMainClick={() => setDeafened((prev) => !prev)}
+							>
+								<Headphones className={workspaceHeaderIconClass} strokeWidth={2} />
+							</WorkspaceSplitIconControl>
+							<WorkspaceHeaderIconButton
+								aria-label="User settings"
+								onClick={() => {
+									setSettingsTab("account");
+									setSettingsOpen(true);
+								}}
+							>
+								<Settings className={workspaceHeaderIconClass} strokeWidth={2} />
+							</WorkspaceHeaderIconButton>
+						</div>
 					</div>
 				</div>
 			</div>
-		</div>
-		<SetStatusDialog
+			<SetStatusDialog
 				open={statusDialogOpen}
 				onOpenChange={setStatusDialogOpen}
 				displayName={displayName}
@@ -239,4 +240,3 @@ export function ShellUserDock() {
 		</>
 	);
 }
-

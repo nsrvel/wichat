@@ -44,4 +44,6 @@ func Register(mux *http.ServeMux, h Handler) {
 	mux.Handle("GET /api/v1/users/me/activity-logs", profileLimit.Wrap(http.HandlerFunc(h.ListActivityLogs)))
 	mux.Handle("GET /api/v1/users/me/presence", profileLimit.Wrap(http.HandlerFunc(h.GetMyPresence)))
 	mux.Handle("PUT /api/v1/users/me/presence", profileLimit.Wrap(http.HandlerFunc(h.UpdateMyPresence)))
+	mux.Handle("GET /api/v1/users/me/relationships", profileLimit.Wrap(http.HandlerFunc(h.ListRelationships)))
+	mux.Handle("PUT /api/v1/users/me/relationships/{userId}", profileLimit.Wrap(http.HandlerFunc(h.SetRelationship)))
 }

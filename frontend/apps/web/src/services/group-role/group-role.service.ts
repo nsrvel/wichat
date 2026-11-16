@@ -24,15 +24,26 @@ export async function listGroupRoles(groupId: string) {
 	return api.get(rolesBase(groupId), GroupRolesListResponseSchema);
 }
 
-export async function createGroupRole(groupId: string, payload: CreateGroupRoleRequest = { name: "new role" }) {
+export async function createGroupRole(
+	groupId: string,
+	payload: CreateGroupRoleRequest = { name: "new role" },
+) {
 	const body = CreateGroupRoleRequestSchema.parse(payload);
 	const res = await api.post(rolesBase(groupId), GroupRoleResponseSchema, body);
 	return res.role;
 }
 
-export async function updateGroupRole(groupId: string, roleId: string, payload: UpdateGroupRoleRequest) {
+export async function updateGroupRole(
+	groupId: string,
+	roleId: string,
+	payload: UpdateGroupRoleRequest,
+) {
 	const body = UpdateGroupRoleRequestSchema.parse(payload);
-	const res = await api.patch(`${rolesBase(groupId)}/${encodeURIComponent(roleId)}`, GroupRoleResponseSchema, body);
+	const res = await api.patch(
+		`${rolesBase(groupId)}/${encodeURIComponent(roleId)}`,
+		GroupRoleResponseSchema,
+		body,
+	);
 	return res.role;
 }
 
@@ -81,6 +92,10 @@ export async function removeGroupRoleMember(groupId: string, roleId: string, use
 
 export async function updateGroupHideRoles(groupId: string, hideRoles: boolean) {
 	const body = UpdateGroupHideRolesRequestSchema.parse({ hide_roles: hideRoles });
-	const res = await api.patch(`${rolesBase(groupId)}/settings`, UpdateGroupHideRolesResponseSchema, body);
+	const res = await api.patch(
+		`${rolesBase(groupId)}/settings`,
+		UpdateGroupHideRolesResponseSchema,
+		body,
+	);
 	return res.hide_roles;
 }

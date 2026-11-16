@@ -279,4 +279,18 @@ func TestUserGRPCServer(t *testing.T) {
 	if err != nil || len(logsResp.GetLogs()) == 0 {
 		t.Fatalf("ListUserActivityLogs: %+v %v", logsResp, err)
 	}
+
+	other := testSupport.RegisterSession(t, authSvc, notify, models.RegisterInput{
+		Email: "rel-other@example.com", Username: "rel.other", Password: "correct-horse-battery", DisplayName: "RelOther", BirthDate: "2000-01-01",
+	})
+	if setResp, err := srv.SetUserRelationship(ctx, &userv1.SetUserRelationshipRequest{
+		AccessToken: owner.AccessToken, TargetUserId: other.User.ID, Kind: "ignore",
+	}); err != nil || !setResp.GetOk() || setResp.GetKind() != "ignore" {
+		t.Fatalf("SetUserRelationship: %+v %v", setResp, err)
+	}
+	if relResp, err := srv.ListUserRelationships(ctx, &userv1.ListUserRelationshipsRequest{
+		AccessToken: owner.AccessToken,
+	}); err != nil || len(relResp.GetRelationships()) != 1 || relResp.GetRelationships()[0].GetTargetUserId() != other.User.ID {
+		t.Fatalf("ListUserRelationships: %+v %v", relResp, err)
+	}
 }

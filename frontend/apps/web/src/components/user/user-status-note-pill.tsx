@@ -2,6 +2,7 @@
 
 import { Plus, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { cn } from "@/lib/utils";
 
 type UserStatusNotePillProps = {
 	label?: string;
@@ -23,7 +24,13 @@ export function UserStatusNotePill({ label, onEdit, onClear }: UserStatusNotePil
 
 	return (
 		<div className="min-w-0 flex-1">
-			<div className="inline-flex w-fit max-w-full items-center gap-1.5 rounded-2xl bg-muted px-3.5 py-2.5 text-xs text-muted-foreground shadow-[0_6px_16px_rgba(0,0,0,0.28)] transition-colors hover:bg-muted/85 hover:text-foreground">
+			<div
+				className={cn(
+					"inline-flex w-fit max-w-full items-center gap-1.5 rounded-2xl bg-muted px-3.5 py-2.5 text-xs shadow-[0_6px_16px_rgba(0,0,0,0.28)]",
+					trimmed ? "text-card-foreground" : "text-muted-foreground",
+					onEdit ? "transition-colors hover:bg-muted/85 hover:text-foreground" : null,
+				)}
+			>
 				{onEdit ? (
 					<button
 						type="button"
@@ -49,4 +56,3 @@ export function UserStatusNotePill({ label, onEdit, onClear }: UserStatusNotePil
 		</div>
 	);
 }
-

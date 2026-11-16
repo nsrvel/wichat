@@ -71,6 +71,25 @@ func (c Config) SecureCookies() bool {
 	return !strings.EqualFold(strings.TrimSpace(c.Env), "development")
 }
 
+// Validate enforces production safety invariants when Env is not development.
+func (c Config) Validate() error {
+	if !c.SecureCookies() {
+		return nil
+	}
+	origin := strings.ToLower(strings.TrimSpace(c.WebOrigin))
+	if !strings.HasPrefix(origin, "https://") {
+		return fmt.Errorf("WEB_ORIGIN must use https:// when ENV=%s", c.Env)
+	}
+	secret := strings.TrimSpace(c.TurnstileSecretKey)
+	if secret == "" {
+		return fmt.Errorf("TURNSTILE_SECRET_KEY is required when ENV=%s", c.Env)
+	}
+	if strings.HasPrefix(secret, "1x0000") || strings.HasPrefix(secret, "2x0000") || strings.HasPrefix(secret, "3x0000") {
+		return fmt.Errorf("TURNSTILE_SECRET_KEY must not use Cloudflare test keys when ENV=%s", c.Env)
+	}
+	return nil
+}
+
 // RealtimeKafkaGroupID is a per-instance consumer group for broadcast fanout.
 func (c Config) RealtimeKafkaGroupID() string {
 	prefix := strings.TrimSpace(c.KafkaRealtimeConsumerGroup)

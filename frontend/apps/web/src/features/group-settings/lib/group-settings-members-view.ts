@@ -1,11 +1,10 @@
-import { GroupMemberSchema } from "@wichat/contracts/group/member";
+import { GroupMemberSchema, type MemberJoinMethod } from "@wichat/contracts/group/member";
 import type { z } from "zod";
 import { parseUtcIso } from "@/features/group-settings/lib/group-settings-members-format";
 
 type GroupMember = z.infer<typeof GroupMemberSchema>;
 
-/** How a user entered the group — API will supply this later. */
-export type MemberJoinMethod = "invite" | "invite_link" | "open" | "unknown";
+export type { MemberJoinMethod };
 
 export type MembersSortKey =
 	| "name_asc"
@@ -42,8 +41,8 @@ export function toMemberRow(member: GroupMember): GroupSettingsMemberRow {
 	return {
 		member,
 		memberSinceAt: member.joined_at,
-		joinedWiChatAt: null,
-		joinMethod: "unknown",
+		joinedWiChatAt: member.user_created_at || null,
+		joinMethod: member.join_method ?? "unknown",
 		roles: [member.role],
 		lastUpdatedAt: member.joined_at,
 	};

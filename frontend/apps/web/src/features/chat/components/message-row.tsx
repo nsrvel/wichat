@@ -14,6 +14,7 @@ type MessageRowProps = {
 	ownerLabel?: string;
 	timeLabel?: string;
 	mine?: boolean;
+	onAuthorClick?: () => void;
 	children: ReactNode;
 	reactions?: ReactNode;
 };
@@ -27,6 +28,7 @@ export const MessageRow = memo(function MessageRow({
 	ownerLabel = "Owner",
 	timeLabel,
 	mine = false,
+	onAuthorClick,
 	children,
 	reactions,
 }: MessageRowProps) {
@@ -55,25 +57,51 @@ export const MessageRow = memo(function MessageRow({
 		);
 	}
 
+	const avatarNode = (
+		<UserAvatar
+			src={authorAvatarUrl}
+			alt={authorDisplayName}
+			initials={userInitials(authorDisplayName)}
+			size="sm"
+			status={authorPresenceStatus}
+			statusRingClassName="ring-chat-surface"
+			className={onAuthorClick ? undefined : "mt-0.5"}
+		/>
+	);
+
 	return (
 		<article className="flex gap-2.5 [content-visibility:auto] [contain-intrinsic-size:auto_68px]">
-			<UserAvatar
-				src={authorAvatarUrl}
-				alt={authorDisplayName}
-				initials={userInitials(authorDisplayName)}
-				size="sm"
-				status={authorPresenceStatus}
-				statusRingClassName="ring-chat-surface"
-				className="mt-0.5"
-			/>
+			{onAuthorClick ? (
+				<button
+					type="button"
+					onClick={onAuthorClick}
+					aria-label={authorDisplayName}
+					className="mt-0.5 h-fit shrink-0 cursor-pointer rounded-full transition-opacity hover:opacity-85"
+				>
+					{avatarNode}
+				</button>
+			) : (
+				avatarNode
+			)}
 			<div className="min-w-0 max-w-[min(88%,34rem)]">
 				<div className="mb-1 flex items-center gap-1.5 px-0.5">
-					<span
-						className="text-[13px] font-semibold text-foreground"
-						style={authorNameColor ? { color: authorNameColor } : undefined}
-					>
-						{authorDisplayName}
-					</span>
+					{onAuthorClick ? (
+						<button
+							type="button"
+							onClick={onAuthorClick}
+							className="cursor-pointer text-[13px] font-semibold text-foreground hover:underline"
+							style={authorNameColor ? { color: authorNameColor } : undefined}
+						>
+							{authorDisplayName}
+						</button>
+					) : (
+						<span
+							className="text-[13px] font-semibold text-foreground"
+							style={authorNameColor ? { color: authorNameColor } : undefined}
+						>
+							{authorDisplayName}
+						</span>
+					)}
 					{authorIsOwner ? <OwnerCrownIcon label={ownerLabel} /> : null}
 					{timeLabel ? (
 						<span className="ml-0.5 text-[11px] text-muted-foreground">{timeLabel}</span>

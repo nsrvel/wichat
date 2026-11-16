@@ -26,6 +26,9 @@ When a directory accumulates many siblings, **cluster files that belong to the s
 |-------------------|--------|
 | `components/layout/shell-rail-track.tsx`, `shell-rail-aside.tsx`, `icon-rail.tsx`, … (flat) | `components/layout/shell-rail/` (track, aside, icon tiles, rows) |
 | `features/shell/shell-group-rail.tsx` + more shell chrome | `features/shell/components/` or `features/shell/rail/` when the set grows |
+| `features/group-settings/components/` (roles, members, bans, audit-logs) | `features/group-settings/components/{roles,members,bans,audit-logs}/` |
+| `packages/contracts/src/` (flat domain schemas) | `packages/contracts/src/{auth,chat,group,user}/` + `common.ts` |
+| `apps/web/e2e/` (flat specs) | `apps/web/e2e/{fixtures,members}/` |
 
 ## When moving
 

@@ -302,7 +302,7 @@ func (r pgRepository) ListRolesForMembers(ctx context.Context, groupID string, u
 
 	var rows []memberRoleRow
 	query := `
-		SELECT gmr.user_id, gr.id, gr.slug, gr.name, gr.color, gr.hoist, gr.position
+		SELECT gmr.user_id, gr.public_id AS id, gr.slug, gr.name, gr.color, gr.hoist, gr.position
 		FROM group_member_roles gmr
 		JOIN group_roles gr ON gr.id = gmr.role_id AND gr.group_id = gmr.group_id
 		WHERE gmr.group_id = ? AND gmr.user_id IN (?)

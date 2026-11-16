@@ -21,6 +21,9 @@ export function sidebarRowMoreRailClass(menuOpen: boolean) {
 	);
 }
 
+export const sidebarRowPersistentActionClass =
+	"absolute top-0 right-0 z-[1] flex h-full w-8 items-center justify-end pr-0.5";
+
 export const sidebarRowInnerButtonClass = cn(
 	"flex h-11 w-full min-w-0 items-center gap-3 rounded-md px-2.5 lg:gap-2 lg:px-1.5",
 	SIDEBAR_ROW_LG_H,
@@ -28,7 +31,7 @@ export const sidebarRowInnerButtonClass = cn(
 
 /** Category header: same row height, chevron flush left (items indent via nested list). */
 export const sidebarCategoryInnerButtonClass = cn(
-	"flex h-11 w-full min-w-0 flex-1 items-center gap-1 rounded-md pl-0.5 pr-2.5",
+	"flex h-11 w-full min-w-0 flex-1 items-center gap-1 rounded-md pl-0.5 pr-8",
 	SIDEBAR_ROW_LG_H,
 );
 

@@ -9,4 +9,3 @@ export const settingsSectionDividerWrapClass = "py-5 sm:py-6";
 export const settingsSectionDividerLineClass = "border-t border-border";
 
 export const settingsSectionGapClass = "pt-5 sm:pt-6";
-

@@ -20,6 +20,8 @@ import (
 	channelrepo "github.com/wichat/wichat/backend/ms-user/internal/channel/repository"
 	channelservice "github.com/wichat/wichat/backend/ms-user/internal/channel/service"
 	generalgrpc "github.com/wichat/wichat/backend/ms-user/internal/general/delivery/grpc"
+	groupactivityrepo "github.com/wichat/wichat/backend/ms-user/internal/group-activity-log/repository"
+	groupactivityservice "github.com/wichat/wichat/backend/ms-user/internal/group-activity-log/service"
 	groupmembergrpc "github.com/wichat/wichat/backend/ms-user/internal/group-member/delivery/grpc"
 	groupmemberrepo "github.com/wichat/wichat/backend/ms-user/internal/group-member/repository"
 	groupmemberservice "github.com/wichat/wichat/backend/ms-user/internal/group-member/service"
@@ -43,9 +45,11 @@ import (
 	"github.com/wichat/wichat/backend/ms-user/pkg/mfa"
 	googleoauth "github.com/wichat/wichat/backend/ms-user/pkg/oauth"
 	"github.com/wichat/wichat/backend/wi-shared/infra/minio"
+	"github.com/wichat/wichat/backend/wi-shared/microservices"
 	msNotification "github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-notification"
 	"github.com/wichat/wichat/backend/wi-shared/microservices/utils"
 	msgrpc "github.com/wichat/wichat/backend/wi-shared/microservices/utils/grpc"
+	notificationv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/notification/v1"
 	userv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/user/v1"
 	"google.golang.org/grpc"
 )
@@ -59,6 +63,9 @@ func (s *server) Run(ctx context.Context) error {
 	}
 	if len(s.cfg.AuthJWTSecret) < 32 {
 		return errors.New("AUTH_JWT_SECRET must be at least 32 characters")
+	}
+	if err := s.cfg.Validate(); err != nil {
+		return err
 	}
 
 	sqldb, err := sql.Open("pgx", s.cfg.DatabaseURL)
@@ -98,7 +105,16 @@ func (s *server) Run(ctx context.Context) error {
 			return fmt.Errorf("ms-notification dial: %w", err)
 		}
 		defer func() { _ = notifConn.Close() }()
-		notifyClient = msNotification.NewGRPC(notifConn, utils.DefaultSettings, s.log).Notify
+		notifGRPC := msNotification.NewGRPC(notifConn, utils.DefaultSettings, s.log)
+		notifyClient = notifGRPC.Notify
+		go microservices.NewHealthMonitor(s.log, microservices.HealthTarget{
+			Name: "ms-notification",
+			Conn: notifConn,
+			Check: func(probeCtx context.Context) error {
+				_, hErr := notifGRPC.General.Health(probeCtx, &notificationv1.HealthRequest{})
+				return hErr
+			},
+		}).Run(ctx)
 	}
 
 	// Repositories
@@ -148,15 +164,17 @@ func (s *server) Run(ctx context.Context) error {
 	presenceSvc := presenceservice.NewService(presenceRepo, groupPg, authSessions, secret, s.log)
 	activityRepo := activityrepo.NewPgRepository(db)
 	activitySvc := activityservice.NewService(activityRepo, authSessions, secret, s.log)
+	groupActivityRepo := groupactivityrepo.NewPgRepository(db)
+	groupActivitySvc := groupactivityservice.NewService(groupActivityRepo, groupPg, groupMemberPg, groupRolePg, authSessions, secret, s.log)
 	userSvc := userservice.NewServiceWithMFA(userPg, groupPg, groupMemberPg, userMinio, authSessions, authRefresh, emailAuthStore, emailChangeStore, userMFAStore, wa, mfaKey, notifyClient, secret, s.log).WithActivityLog(activitySvc)
 	channelSvc := channelservice.NewService(channelPg, groupPg, groupMemberPg, groupRolePg, authSessions, secret, s.log)
-	groupSvc := groupservice.NewService(groupPg, groupMemberPg, groupRolePg, channelSvc, userPg, groupMinio, authSessions, secret, s.log).WithActivityLog(activitySvc)
-	groupMemberSvc := groupmemberservice.NewService(groupMemberPg, groupPg, groupRolePg, authSessions, secret, s.log).WithActivityLog(activitySvc).WithPresence(presenceSvc)
-	groupRoleSvc := grouproleservice.NewService(groupRolePg, groupPg, groupMemberPg, authSessions, secret, s.log)
+	groupSvc := groupservice.NewService(groupPg, groupMemberPg, groupRolePg, channelSvc, userPg, groupMinio, authSessions, secret, s.log).WithActivityLog(activitySvc).WithGroupActivityLog(groupActivitySvc)
+	groupMemberSvc := groupmemberservice.NewService(groupMemberPg, groupPg, groupRolePg, authSessions, secret, s.log).WithActivityLog(activitySvc).WithGroupActivityLog(groupActivitySvc).WithPresence(presenceSvc)
+	groupRoleSvc := grouproleservice.NewService(groupRolePg, groupPg, groupMemberPg, authSessions, secret, s.log).WithGroupActivityLog(groupActivitySvc)
 	inviteSvc := inviteservice.NewService(
 		groupPg, groupMemberPg, groupRolePg, channelPg, invitePg, userPg, authSessions, notifyClient, secret,
 		s.cfg.WebOrigin, s.cfg.MinioPublicBaseURL, s.log,
-	).WithActivityLog(activitySvc).WithPresence(presenceSvc)
+	).WithActivityLog(activitySvc).WithGroupActivityLog(groupActivitySvc).WithPresence(presenceSvc)
 	authSvc, err := authservice.NewService(userPg, authSessions, authRefresh, secret, s.log, googleoauth.Config{
 		ClientID:     s.cfg.GoogleClientID,
 		ClientSecret: s.cfg.GoogleClientSecret,
@@ -181,7 +199,7 @@ func (s *server) Run(ctx context.Context) error {
 	grpcSrv := newGRPCServer(s.log)
 	userv1.RegisterAuthServiceServer(grpcSrv, authgrpc.NewServer(authSvc))
 	userv1.RegisterUserServiceServer(grpcSrv, usergrpc.NewServer(userSvc).WithActivityLog(activitySvc))
-	userv1.RegisterGroupServiceServer(grpcSrv, groupgrpc.NewServer(groupSvc))
+	userv1.RegisterGroupServiceServer(grpcSrv, groupgrpc.NewServer(groupSvc).WithGroupActivityLog(groupActivitySvc))
 	userv1.RegisterGroupMemberServiceServer(grpcSrv, groupmembergrpc.NewServer(groupMemberSvc))
 	userv1.RegisterGroupRoleServiceServer(grpcSrv, grouprolegrpc.NewServer(groupRoleSvc))
 	userv1.RegisterInviteServiceServer(grpcSrv, invitegrpc.NewServer(inviteSvc))

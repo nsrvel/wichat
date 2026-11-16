@@ -15,7 +15,13 @@ import { Form } from "@/components/ui/form";
 import { AuthEmailOtpStep } from "@/features/auth/components/auth-email-otp-step";
 import { AuthMfaStep } from "@/features/auth/components/auth-mfa-step";
 import { TurnstileWidget } from "@/features/auth/components/turnstile-widget";
-import { authFieldLabelClass, authFormClass, authInputClass, authFieldLinkClass, authSubmitClass } from "@/lib/form-field-styles";
+import {
+	authFieldLabelClass,
+	authFormClass,
+	authInputClass,
+	authFieldLinkClass,
+	authSubmitClass,
+} from "@/lib/form-field-styles";
 import { resendRateLimitCooldownSec } from "@/features/auth/lib/resend-cooldown";
 import { translateError } from "@/integrations/i18n/translate-error";
 import {

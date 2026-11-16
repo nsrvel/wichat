@@ -65,9 +65,34 @@ func (g Group) Public() PublicGroup {
 
 // GroupMember links a user to a group with a preset role.
 type GroupMember struct {
-	GroupID      string
-	UserID       string
-	Role         string
-	RailPosition *int
-	CreatedAt    time.Time
+	GroupID         string
+	UserID          string
+	Role            string
+	RailPosition    *int
+	JoinMethod      string
+	InviteCode      string
+	InvitedByUserID *string
+	TimeoutUntil    *time.Time
+	CreatedAt       time.Time
+}
+
+// GroupBanEntry is a hydrated active ban record for group moderation settings.
+type GroupBanEntry struct {
+	UserID              string
+	Username            string
+	DisplayName         string
+	AvatarURL           string
+	Reason              string
+	BannedByUserID      string
+	BannedByUsername    string
+	BannedByDisplayName string
+	ExpiresAt           *time.Time
+	CreatedAt           time.Time
+}
+
+// GroupBanPage is a keyset-paginated slice of active group bans.
+type GroupBanPage struct {
+	Bans       []GroupBanEntry
+	NextCursor *GroupMemberCursor
+	Total      int
 }

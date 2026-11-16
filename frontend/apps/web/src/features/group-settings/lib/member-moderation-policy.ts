@@ -5,6 +5,7 @@ import { hasGroupPermission, type GroupPermissionSubject } from "@/lib/group-per
 export type MemberModerationPolicy = {
 	isSelf: boolean;
 	targetIsOwner: boolean;
+	canTimeout: boolean;
 	canKick: boolean;
 	canBan: boolean;
 	canManageRoles: boolean;
@@ -73,10 +74,12 @@ export function getMemberModerationPolicy(params: {
 			(targetBestPosition === Number.POSITIVE_INFINITY ||
 				actorBestRolePosition < targetBestPosition));
 
+	const hasTimeoutPerm = hasGroupPermission(actorGroup, "timeout_members");
 	const hasKickPerm = hasGroupPermission(actorGroup, "kick_members");
 	const hasBanPerm = hasGroupPermission(actorGroup, "ban_members");
 	const hasManageRolesPerm = hasGroupPermission(actorGroup, "manage_roles");
 
+	const canTimeout = !isSelf && !targetIsOwner && hasTimeoutPerm && outranksTarget;
 	const canKick = !isSelf && !targetIsOwner && hasKickPerm && outranksTarget;
 	const canBan = !isSelf && !targetIsOwner && hasBanPerm && outranksTarget;
 	const canManageRoles = hasManageRolesPerm && (actorIsOwner || !targetIsOwner);
@@ -94,6 +97,7 @@ export function getMemberModerationPolicy(params: {
 	return {
 		isSelf,
 		targetIsOwner,
+		canTimeout,
 		canKick,
 		canBan,
 		canManageRoles,

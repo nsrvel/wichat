@@ -70,10 +70,13 @@ func TestCreateGroupWithOwnerAndList(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ListByGroupID: %v", err)
 	}
-	if len(listed) != 2 {
-		t.Fatalf("channels after create: got %d want 2: %+v", len(listed), listed)
+	if len(listed) != 3 {
+		t.Fatalf("channels after create: got %d want 3: %+v", len(listed), listed)
 	}
-	names := map[string]struct{}{listed[0].Name: {}, listed[1].Name: {}}
+	names := map[string]struct{}{}
+	for _, ch := range listed {
+		names[ch.Name] = struct{}{}
+	}
 	if _, ok := names[constants.DefaultChannelName]; !ok {
 		t.Fatalf("missing %q: %+v", constants.DefaultChannelName, listed)
 	}
@@ -83,7 +86,7 @@ func TestCreateGroupWithOwnerAndList(t *testing.T) {
 	for _, ch := range listed {
 		switch ch.Name {
 		case constants.DefaultChannelName:
-			if ch.Type != constants.ChannelKindTextAndVoice {
+			if ch.Type != constants.ChannelKindTextOnly && ch.Type != constants.ChannelKindVoiceOnly {
 				t.Fatalf("general type: %+v", ch)
 			}
 			if ch.IsPrivate {
@@ -106,6 +109,15 @@ func TestCreateGroupWithOwnerAndList(t *testing.T) {
 				t.Fatalf("announcements image_url: %+v", ch)
 			}
 		}
+	}
+
+	cats, err := channels.ListCategoriesByGroupID(ctx, groupID)
+	if err != nil || len(cats) != 2 {
+		t.Fatalf("ListCategoriesByGroupID: %+v err %v", cats, err)
+	}
+	createdCat, err := channels.CreateCategory(ctx, groupID, "Engineering", true, ownerID, now)
+	if err != nil || createdCat.Name != "Engineering" || !createdCat.IsPrivate {
+		t.Fatalf("CreateCategory: %+v err %v", createdCat, err)
 	}
 
 	mine, err := groups.ListGroupsForUser(ctx, ownerID)

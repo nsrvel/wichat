@@ -17,6 +17,10 @@ import (
 const httpShutdownTimeout = 5 * time.Second
 
 func (s *server) Run(ctx context.Context) error {
+	if err := s.cfg.Validate(); err != nil {
+		return err
+	}
+
 	// User service
 	ms, err := microservices.Open(microservices.Config{
 		Log:              s.log,
@@ -53,9 +57,10 @@ func (s *server) Run(ctx context.Context) error {
 	// Realtime hub
 	rtHub := hub.New()
 	fanout := kafkaconsumers.NewRealtimeFanout(kafkaConsumer, rtHub, s.log)
+	monitor := ms.StartHealthMonitor(ctx, s.log)
 
 	// Handler
-	handler, err := s.buildHandler(ms, rtHub)
+	handler, err := s.buildHandler(ms, rtHub, monitor)
 	if err != nil {
 		return err
 	}
@@ -69,11 +74,9 @@ func (s *server) Run(ctx context.Context) error {
 	}
 
 	// Listen
-	errCh := make(chan error, 2)
+	errCh := make(chan error, 1)
 	go func() {
-		if err := fanout.Run(ctx); err != nil {
-			errCh <- fmt.Errorf("realtime fanout: %w", err)
-		}
+		runWithBackoff(ctx, s.log, "realtime fanout", fanout.Run)
 	}()
 
 	go func() {
@@ -98,5 +101,30 @@ func (s *server) Run(ctx context.Context) error {
 	case err := <-errCh:
 		shutdown()
 		return err
+	}
+}
+
+func runWithBackoff(ctx context.Context, log interface{ Warn(string, ...any) }, name string, fn func(context.Context) error) {
+	delay := 2 * time.Second
+	const maxDelay = 10 * time.Second
+	for {
+		err := fn(ctx)
+		if err == nil || ctx.Err() != nil {
+			return
+		}
+		if log != nil {
+			log.Warn(name+" stopped; retrying", "err", err, "retry_in", delay.String())
+		}
+		timer := time.NewTimer(delay)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return
+		case <-timer.C:
+		}
+		delay *= 2
+		if delay > maxDelay {
+			delay = maxDelay
+		}
 	}
 }

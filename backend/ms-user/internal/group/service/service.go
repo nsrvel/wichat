@@ -8,6 +8,7 @@ import (
 
 	authrepo "github.com/wichat/wichat/backend/ms-user/internal/auth/repository"
 	channelservice "github.com/wichat/wichat/backend/ms-user/internal/channel/service"
+	groupactivitysvc "github.com/wichat/wichat/backend/ms-user/internal/group-activity-log/service"
 	groupmemberrepo "github.com/wichat/wichat/backend/ms-user/internal/group-member/repository"
 	grouprolerepo "github.com/wichat/wichat/backend/ms-user/internal/group-role/repository"
 	grouprepo "github.com/wichat/wichat/backend/ms-user/internal/group/repository"
@@ -43,20 +44,22 @@ type Service interface {
 	) (*models.PublicGroup, error)
 	UploadGroupBanner(ctx context.Context, accessToken, groupPublicID, contentType string, body io.Reader, size int64) (*models.PublicGroup, error)
 	WithActivityLog(r activitysvc.Recorder) Service
+	WithGroupActivityLog(r groupactivitysvc.Recorder) Service
 }
 
 type service struct {
-	groups   grouprepo.PgRepository
-	members  groupmemberrepo.PgRepository
-	roles    grouprolerepo.PgRepository
-	channels channelservice.Service
-	users    userrepo.PgRepository
-	objects  grouprepo.MinioRepository
-	sessions authrepo.SessionRepository
-	activity activitysvc.Recorder
-	secret   []byte
-	log      logger.Logger
-	now      func() time.Time
+	groups        grouprepo.PgRepository
+	members       groupmemberrepo.PgRepository
+	roles         grouprolerepo.PgRepository
+	channels      channelservice.Service
+	users         userrepo.PgRepository
+	objects       grouprepo.MinioRepository
+	sessions      authrepo.SessionRepository
+	activity      activitysvc.Recorder
+	groupActivity groupactivitysvc.Recorder
+	secret        []byte
+	log           logger.Logger
+	now           func() time.Time
 }
 
 // NewService builds group use cases.
@@ -91,6 +94,21 @@ func NewService(
 func (s service) WithActivityLog(r activitysvc.Recorder) Service {
 	s.activity = r
 	return s
+}
+
+func (s service) WithGroupActivityLog(r groupactivitysvc.Recorder) Service {
+	s.groupActivity = r
+	return s
+}
+
+func (s service) recordGroupActivity(ctx context.Context, entry models.GroupActivityLogEntry) {
+	if s.groupActivity == nil {
+		return
+	}
+	if entry.CreatedAt.IsZero() {
+		entry.CreatedAt = s.now()
+	}
+	s.groupActivity.Record(ctx, entry)
 }
 
 func (s service) recordActivity(ctx context.Context, entry models.UserActivityLogEntry) {
@@ -161,10 +179,11 @@ func (s service) CreateGroup(ctx context.Context, accessToken, name string) (*mo
 			UpdatedAt: now,
 		}
 		member = models.GroupMember{
-			GroupID:   groupID,
-			UserID:    userID,
-			Role:      constants.GroupRoleOwner,
-			CreatedAt: now,
+			GroupID:    groupID,
+			UserID:     userID,
+			Role:       constants.GroupRoleOwner,
+			JoinMethod: constants.JoinMethodOwner,
+			CreatedAt:  now,
 		}
 		err = s.groups.CreateGroupWithOwner(ctx, group, member)
 		if err == nil {
@@ -205,6 +224,18 @@ func (s service) CreateGroup(ctx context.Context, accessToken, name string) (*mo
 		TargetID:   saved.PublicID,
 		Summary:    "Created group",
 		Metadata:   map[string]any{"group_id": saved.ID, "group_name": saved.Name},
+		CreatedAt:  now,
+	})
+	s.recordGroupActivity(ctx, models.GroupActivityLogEntry{
+		GroupID:    saved.ID,
+		ActorID:    userID,
+		Category:   constants.GroupAuditCategoryProfile,
+		Action:     constants.GroupAuditGroupCreated,
+		TargetType: constants.GroupAuditTargetGroup,
+		TargetID:   saved.PublicID,
+		TargetName: saved.Name,
+		Summary:    "Created group",
+		Metadata:   map[string]any{"group_name": saved.Name},
 		CreatedAt:  now,
 	})
 	return &pub, nil
@@ -373,6 +404,18 @@ func (s service) UploadGroupIcon(
 	pub := saved.Public()
 	pub.Role = member.Role
 
+	s.recordGroupActivity(ctx, models.GroupActivityLogEntry{
+		GroupID:    group.ID,
+		ActorID:    userID,
+		Category:   constants.GroupAuditCategoryProfile,
+		Action:     constants.GroupAuditGroupIconUpdated,
+		TargetType: constants.GroupAuditTargetGroup,
+		TargetID:   saved.PublicID,
+		TargetName: saved.Name,
+		Summary:    "Updated group icon",
+		CreatedAt:  now,
+	})
+
 	return &pub, nil
 }
 
@@ -479,6 +522,39 @@ func (s service) UpdateGroupProfile(
 	pub := saved.Public()
 	pub.Role = member.Role
 
+	changes := map[string]models.ActivityFieldChange{}
+	if group.Name != saved.Name {
+		changes["name"] = models.ActivityFieldChange{Old: group.Name, New: saved.Name}
+	}
+	if group.Description != saved.Description {
+		changes["description"] = models.ActivityFieldChange{Old: group.Description, New: saved.Description}
+	}
+	if group.IsPrivate != saved.IsPrivate {
+		changes["is_private"] = models.ActivityFieldChange{Old: group.IsPrivate, New: saved.IsPrivate}
+	}
+	if group.BannerColor != saved.BannerColor {
+		changes["banner_color"] = models.ActivityFieldChange{Old: group.BannerColor, New: saved.BannerColor}
+	}
+	if clearLogo && group.LogoURL != "" {
+		changes["logo"] = models.ActivityFieldChange{Old: "set", New: "cleared"}
+	}
+	if removeBannerObject && group.BannerURL != "" {
+		changes["banner_image"] = models.ActivityFieldChange{Old: "set", New: "cleared"}
+	}
+
+	s.recordGroupActivity(ctx, models.GroupActivityLogEntry{
+		GroupID:    group.ID,
+		ActorID:    userID,
+		Category:   constants.GroupAuditCategoryProfile,
+		Action:     constants.GroupAuditGroupProfileUpdated,
+		TargetType: constants.GroupAuditTargetGroup,
+		TargetID:   saved.PublicID,
+		TargetName: saved.Name,
+		Summary:    "Updated group profile",
+		Changes:    changes,
+		CreatedAt:  now,
+	})
+
 	return &pub, nil
 }
 
@@ -562,6 +638,18 @@ func (s service) UploadGroupBanner(
 
 	pub := saved.Public()
 	pub.Role = member.Role
+
+	s.recordGroupActivity(ctx, models.GroupActivityLogEntry{
+		GroupID:    group.ID,
+		ActorID:    userID,
+		Category:   constants.GroupAuditCategoryProfile,
+		Action:     constants.GroupAuditGroupBannerUpdated,
+		TargetType: constants.GroupAuditTargetGroup,
+		TargetID:   saved.PublicID,
+		TargetName: saved.Name,
+		Summary:    "Updated group banner",
+		CreatedAt:  now,
+	})
 
 	return &pub, nil
 }

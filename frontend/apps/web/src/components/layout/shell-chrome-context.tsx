@@ -1,13 +1,6 @@
 "use client";
 
-import {
-	createContext,
-	useCallback,
-	useContext,
-	useMemo,
-	useState,
-	type ReactNode,
-} from "react";
+import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
 import { SHELL_RAIL_WIDTH_PX } from "@/components/layout/shell-rail/shell-rail-metrics";
 import { CHANNEL_SIDEBAR_MIN_WIDTH } from "@/hooks/use-resizable-sidebar-width";
 

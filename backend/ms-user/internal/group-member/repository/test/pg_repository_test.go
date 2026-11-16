@@ -65,7 +65,7 @@ func TestGroupMemberPgRepository(t *testing.T) {
 		t.Fatalf("ListGroupMembersPage: %d, err %v", len(page), err)
 	}
 
-	bannedCount, err := members.BanMembers(ctx, groupID, []string{memberID}, ownerID, "spam", 0)
+	bannedCount, err := members.BanMembers(ctx, groupID, []string{memberID}, ownerID, "spam", 0, nil)
 	if err != nil || bannedCount != 1 {
 		t.Fatalf("BanMembers: %d, err %v", bannedCount, err)
 	}
@@ -73,6 +73,18 @@ func TestGroupMemberPgRepository(t *testing.T) {
 	banned, err := members.IsMemberBanned(ctx, groupID, memberID)
 	if err != nil || !banned {
 		t.Fatalf("IsMemberBanned: %v, err %v", banned, err)
+	}
+
+	bans, _, total, err := members.ListBansPage(ctx, groupID, "spam", 10, nil)
+	if err != nil || total != 1 || len(bans) != 1 || bans[0].UserID != memberID {
+		t.Fatalf("ListBansPage: len=%d total=%d err=%v", len(bans), total, err)
+	}
+
+	if err := members.UnbanMember(ctx, groupID, memberID); err != nil {
+		t.Fatalf("UnbanMember: %v", err)
+	}
+	if err := members.UnbanMember(ctx, groupID, memberID); err == nil {
+		t.Fatalf("expected error on duplicate unban")
 	}
 }
 

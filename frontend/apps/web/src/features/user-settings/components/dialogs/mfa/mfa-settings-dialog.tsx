@@ -59,10 +59,7 @@ function formatDate(iso?: string): string {
 	return d.toLocaleDateString();
 }
 
-export function MfaSettingsDialog({
-	open,
-	onOpenChange,
-}: MfaSettingsDialogProps) {
+export function MfaSettingsDialog({ open, onOpenChange }: MfaSettingsDialogProps) {
 	const { t } = useTranslation();
 	const titleId = useId();
 	const renameTitleId = useId();
@@ -76,12 +73,8 @@ export function MfaSettingsDialog({
 	const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null);
 	const [disableTotpOpen, setDisableTotpOpen] = useState(false);
 	const [regenCodesOpen, setRegenCodesOpen] = useState(false);
-	const [deleteKeyTarget, setDeleteKeyTarget] = useState<SecurityKey | null>(
-		null,
-	);
-	const [renameKeyTarget, setRenameKeyTarget] = useState<SecurityKey | null>(
-		null,
-	);
+	const [deleteKeyTarget, setDeleteKeyTarget] = useState<SecurityKey | null>(null);
+	const [renameKeyTarget, setRenameKeyTarget] = useState<SecurityKey | null>(null);
 	const renameForm = useForm<z.infer<typeof RenameSecurityKeySchema>>({
 		resolver: zodResolver(RenameSecurityKeySchema),
 		defaultValues: { name: "" },
@@ -92,8 +85,7 @@ export function MfaSettingsDialog({
 	const renameKey = useRenameSecurityKeyMutation();
 	const regenCodes = useRegenerateRecoveryCodesMutation();
 
-	const hasAnyMfa =
-		Boolean(status?.totp_enabled) || (status?.security_keys.length ?? 0) > 0;
+	const hasAnyMfa = Boolean(status?.totp_enabled) || (status?.security_keys.length ?? 0) > 0;
 
 	return (
 		<>
@@ -155,9 +147,7 @@ export function MfaSettingsDialog({
 										<div className="flex min-w-0 items-center gap-3">
 											<KeyRound className="h-4 w-4 shrink-0 text-muted-foreground" />
 											<div className="min-w-0">
-												<p className="truncate text-sm font-medium text-foreground">
-													{key.name}
-												</p>
+												<p className="truncate text-sm font-medium text-foreground">{key.name}</p>
 												<p className="text-xs text-muted-foreground">
 													{t("user_settings.account.mfa_modal.key_added_at", {
 														date: formatDate(key.created_at),
@@ -314,9 +304,7 @@ export function MfaSettingsDialog({
 				onConfirm={(currentPassword) => {
 					disableTotp.mutate(currentPassword, {
 						onSuccess: () => {
-							toast.success(
-								t("user_settings.account.mfa_modal.totp_disabled_success"),
-							);
+							toast.success(t("user_settings.account.mfa_modal.totp_disabled_success"));
 							setDisableTotpOpen(false);
 						},
 					});
@@ -346,9 +334,7 @@ export function MfaSettingsDialog({
 						{ id: deleteKeyTarget.id, current_password: currentPassword },
 						{
 							onSuccess: () => {
-								toast.success(
-									t("user_settings.account.mfa_modal.remove_key_success"),
-								);
+								toast.success(t("user_settings.account.mfa_modal.remove_key_success"));
 								setDeleteKeyTarget(null);
 							},
 						},
@@ -399,9 +385,7 @@ export function MfaSettingsDialog({
 								{ id: renameKeyTarget.id, name },
 								{
 									onSuccess: () => {
-										toast.success(
-											t("user_settings.account.mfa_modal.rename_key_success"),
-										);
+										toast.success(t("user_settings.account.mfa_modal.rename_key_success"));
 										setRenameKeyTarget(null);
 									},
 									onError: (err) => {
@@ -440,4 +424,3 @@ export function MfaSettingsDialog({
 		</>
 	);
 }
-

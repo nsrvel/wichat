@@ -38,10 +38,7 @@ export function GroupSettingsMemberRoleBadge({
 
 	return (
 		<span
-			className={cn(
-				baseClass,
-				!showDot && "border-border/75 bg-muted/55 text-foreground/90",
-			)}
+			className={cn(baseClass, !showDot && "border-border/75 bg-muted/55 text-foreground/90")}
 			style={
 				showDot && color
 					? {

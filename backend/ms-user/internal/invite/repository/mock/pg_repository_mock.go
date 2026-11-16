@@ -34,14 +34,14 @@ func (m pgRepositoryMock) InsertInvite(_ context.Context, row models.GroupInvite
 	return nil
 }
 
-func (m pgRepositoryMock) FindOpenShareLink(_ context.Context, groupID string, channelID *string, now time.Time) (models.GroupInviteRow, error) {
+func (m pgRepositoryMock) FindOpenShareLink(_ context.Context, groupID, inviterUserID string, channelID *string, now time.Time) (models.GroupInviteRow, error) {
 	m.st.Lock()
 	defer m.st.Unlock()
 
 	var best models.GroupInviteRow
 	found := false
 	for _, row := range m.st.Invites {
-		if row.GroupID != groupID || row.Kind != constants.GroupInviteKindShareLink {
+		if row.GroupID != groupID || row.InvitedByUserID != inviterUserID || row.Kind != constants.GroupInviteKindShareLink {
 			continue
 		}
 		if row.RedeemedAt != nil || !row.ExpiresAt.After(now) {

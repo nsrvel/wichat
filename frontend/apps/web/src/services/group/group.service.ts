@@ -1,7 +1,12 @@
+import { GroupActivityLogsPageSchema } from "@wichat/contracts/group/audit-log";
 import {
 	BanGroupMembersRequestSchema,
 	BanGroupMembersResponseSchema,
+	GroupBansPageSchema,
+	TimeoutGroupMemberRequestSchema,
+	TimeoutGroupMemberResponseSchema,
 	type BanGroupMembersRequest,
+	type TimeoutGroupMemberRequest,
 } from "@wichat/contracts/group/member";
 import {
 	CreateGroupRequestSchema,
@@ -102,17 +107,95 @@ export async function saveGroupProfile(groupId: string, input: SaveGroupProfileI
 	return group;
 }
 
-export async function kickGroupMember(groupId: string, userId: string) {
+export async function kickGroupMember(groupId: string, userId: string, reason = "") {
 	return api.post(
 		`/groups/${encodeURIComponent(groupId)}/members/${encodeURIComponent(userId)}/kick`,
 		OkSchema,
-		{},
+		{ reason },
 	);
 }
 
 export async function banGroupMembers(groupId: string, input: BanGroupMembersRequest) {
 	const payload = BanGroupMembersRequestSchema.parse(input);
-	return api.post(`/groups/${encodeURIComponent(groupId)}/bans`, BanGroupMembersResponseSchema, payload);
+	return api.post(
+		`/groups/${encodeURIComponent(groupId)}/bans`,
+		BanGroupMembersResponseSchema,
+		payload,
+	);
 }
 
-export type { BanGroupMembersRequest, Group, UpdateGroupProfileBody };
+export async function timeoutGroupMember(
+	groupId: string,
+	userId: string,
+	input: TimeoutGroupMemberRequest,
+) {
+	const payload = TimeoutGroupMemberRequestSchema.parse(input);
+	return api.put(
+		`/groups/${encodeURIComponent(groupId)}/members/${encodeURIComponent(userId)}/timeout`,
+		TimeoutGroupMemberResponseSchema,
+		payload,
+	);
+}
+
+export async function listGroupBans(
+	groupId: string,
+	params?: { search?: string; limit?: number; cursor?: string },
+) {
+	const qs = new URLSearchParams();
+	if (params?.search?.trim()) {
+		qs.set("search", params.search.trim());
+	}
+	if (params?.limit) {
+		qs.set("limit", String(params.limit));
+	}
+	if (params?.cursor) {
+		qs.set("cursor", params.cursor);
+	}
+	const query = qs.toString();
+	return api.get(
+		`/groups/${encodeURIComponent(groupId)}/bans${query ? `?${query}` : ""}`,
+		GroupBansPageSchema,
+	);
+}
+
+export async function unbanGroupMember(groupId: string, userId: string) {
+	return api.delete(
+		`/groups/${encodeURIComponent(groupId)}/bans/${encodeURIComponent(userId)}`,
+		OkSchema,
+	);
+}
+
+export async function listGroupAuditLogs(
+	groupId: string,
+	params?: {
+		actorId?: string;
+		category?: string;
+		action?: string;
+		limit?: number;
+		cursor?: string;
+	},
+) {
+	const qs = new URLSearchParams();
+	if (params?.actorId?.trim()) {
+		qs.set("actor_id", params.actorId.trim());
+	}
+	if (params?.category?.trim()) {
+		qs.set("category", params.category.trim());
+	}
+	if (params?.action?.trim()) {
+		qs.set("action", params.action.trim());
+	}
+	if (params?.limit) {
+		qs.set("limit", String(params.limit));
+	}
+	if (params?.cursor) {
+		qs.set("cursor", params.cursor);
+	}
+	const query = qs.toString();
+	return api.get(
+		`/groups/${encodeURIComponent(groupId)}/audit-logs${query ? `?${query}` : ""}`,
+		GroupActivityLogsPageSchema,
+	);
+}
+
+export type { BanGroupMembersRequest, Group, TimeoutGroupMemberRequest, UpdateGroupProfileBody };

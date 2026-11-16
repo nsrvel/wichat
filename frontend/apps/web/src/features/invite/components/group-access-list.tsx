@@ -23,6 +23,7 @@ type GroupAccessListProps = {
 	hasNext: boolean;
 	onPrev: () => void;
 	onNext: () => void;
+	onSelectMember?: (member: Member) => void;
 };
 
 function MemberAvatar({
@@ -75,6 +76,7 @@ export function GroupAccessList({
 	hasNext,
 	onPrev,
 	onNext,
+	onSelectMember,
 }: GroupAccessListProps) {
 	const { t } = useTranslation();
 	const filter = filterQuery.trim().toLowerCase();
@@ -106,11 +108,8 @@ export function GroupAccessList({
 
 	const renderMemberRow = (member: Member) => {
 		const nameColor = resolveMemberNameColor(member.roles, hideRoles);
-		return (
-			<li
-				key={member.user_id}
-				className="flex items-center gap-3 px-3 py-2.5 first:rounded-t-xl last:rounded-b-xl"
-			>
+		const rowBody = (
+			<>
 				<MemberAvatar
 					displayName={member.display_name}
 					username={member.username}
@@ -127,9 +126,7 @@ export function GroupAccessList({
 						>
 							{member.display_name.trim() || t("invite.member_name_fallback")}
 						</p>
-						{member.role === "owner" ? (
-							<OwnerCrownIcon label={t("invite.role_owner")} />
-						) : null}
+						{member.role === "owner" ? <OwnerCrownIcon label={t("invite.role_owner")} /> : null}
 					</div>
 					{member.username ? (
 						<p
@@ -140,6 +137,22 @@ export function GroupAccessList({
 						</p>
 					) : null}
 				</div>
+			</>
+		);
+
+		return (
+			<li key={member.user_id} className="first:rounded-t-xl last:rounded-b-xl">
+				{onSelectMember ? (
+					<button
+						type="button"
+						onClick={() => onSelectMember(member)}
+						className="flex w-full cursor-pointer items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-background/40"
+					>
+						{rowBody}
+					</button>
+				) : (
+					<div className="flex items-center gap-3 px-3 py-2.5">{rowBody}</div>
+				)}
 			</li>
 		);
 	};

@@ -38,7 +38,8 @@ export function StatusScreen({
 }: StatusScreenProps) {
 	const { t } = useTranslation();
 	const key = VARIANT_KEY[variant];
-	const hasPrimaryOverride = (variant === "error" && Boolean(onRetry)) || variant === "unauthorized";
+	const hasPrimaryOverride =
+		(variant === "error" && Boolean(onRetry)) || variant === "unauthorized";
 
 	return (
 		<main
@@ -74,7 +75,10 @@ export function StatusScreen({
 							{t(`status_pages.${key}.description`)}
 						</p>
 
-						<div key={variant} className="mt-6 flex flex-wrap items-center justify-center gap-2.5 md:justify-start">
+						<div
+							key={variant}
+							className="mt-6 flex flex-wrap items-center justify-center gap-2.5 md:justify-start"
+						>
 							{variant === "error" && onRetry ? (
 								<Button
 									type="button"

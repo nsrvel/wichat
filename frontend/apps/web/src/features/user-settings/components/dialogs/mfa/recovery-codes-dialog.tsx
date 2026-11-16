@@ -88,11 +88,7 @@ export function RecoveryCodesDialog({ open, codes, onClose }: RecoveryCodesDialo
 						className="w-full text-[13px]"
 						onClick={() => void handleCopyAll()}
 					>
-						{copied ? (
-							<Check className="mr-1.5 size-4" />
-						) : (
-							<Copy className="mr-1.5 size-4" />
-						)}
+						{copied ? <Check className="mr-1.5 size-4" /> : <Copy className="mr-1.5 size-4" />}
 						{copied
 							? t("user_settings.account.mfa_modal.totp_copied")
 							: t("user_settings.account.mfa_modal.recovery_copy_all")}
