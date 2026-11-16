@@ -1,6 +1,5 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect, useSyncExternalStore, type ReactNode } from "react";
 import { WorkspaceLoader } from "@/components/layout/workspace-loader";
@@ -10,8 +9,6 @@ import {
 	subscribeGatewayStatus,
 } from "@/integrations/realtime/gateway-connection";
 import { APP_HOME_PATH } from "@/lib/app-routes";
-import * as channelQuery from "@/services/channel/channel.query";
-import { groupMembersQueryOpts } from "@/services/invite/invite.query";
 
 const getServerSnapshot = () => "connected" as const;
 
@@ -23,11 +20,6 @@ type Props = {
 export function ShellMembershipGate({ groupId, children }: Props) {
 	const router = useRouter();
 	const myGroups = useMyGroupsQuery();
-	const channelsQuery = useQuery(channelQuery.groupChannelsQueryOpts(groupId));
-	const membersQuery = useQuery({
-		...groupMembersQueryOpts(groupId, ""),
-		enabled: Boolean(groupId),
-	});
 	const gatewayStatus = useSyncExternalStore(
 		subscribeGatewayStatus,
 		getGatewayStatus,
@@ -54,14 +46,5 @@ export function ShellMembershipGate({ groupId, children }: Props) {
 		return <WorkspaceLoader />;
 	}
 
-	const showLoadingOverlay =
-		(channelsQuery.isPending && !channelsQuery.data) ||
-		(membersQuery.isPending && !membersQuery.data);
-
-	return (
-		<>
-			{children}
-			{showLoadingOverlay ? <WorkspaceLoader className="fixed inset-0 z-[100]" /> : null}
-		</>
-	);
+	return children;
 }
