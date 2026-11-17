@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useCallback, useMemo } from "react";
 import {
 	flattenInfiniteChannelMessages,
 	type ChannelMessage,
@@ -25,26 +25,38 @@ export function useChannelMessages(groupId: string, channelId: string): UseChann
 	const timeFormat = useTimeFormatPreference();
 	const currentUserId = sessionUser?.id ?? "";
 
-	const rawMessages = flattenInfiniteChannelMessages(query.data);
-	const messages: ChannelMessage[] = rawMessages.map((msg) => ({
-		id: msg.id,
-		authorId: msg.author_id,
-		authorDisplayName: msg.author_display_name,
-		authorAvatarUrl: msg.author_avatar_url ?? "",
-		createdAt: msg.created_at,
-		editedAt: msg.edited_at || undefined,
-		isPinned: msg.is_pinned ?? false,
-		replyTo: msg.reply_to ?? null,
-		bodyPlain: msg.body,
-		mine: msg.mine || (Boolean(currentUserId) && msg.author_id === currentUserId),
-		reactions: (msg.reactions ?? []).map((r) => ({
-			emoji: r.emoji,
-			count: r.count,
-			active: Boolean(currentUserId) && r.user_ids.includes(currentUserId),
-			userIds: r.user_ids,
-		})),
-		timeLabel: formatMessageTimeLabel(msg.created_at, timeFormat),
-	}));
+	const messages = useMemo<ChannelMessage[]>(() => {
+		const rawMessages = flattenInfiniteChannelMessages(query.data);
+		return rawMessages.map((msg) => ({
+			id: msg.id,
+			authorId: msg.author_id,
+			authorDisplayName: msg.author_display_name,
+			authorAvatarUrl: msg.author_avatar_url ?? "",
+			createdAt: msg.created_at,
+			editedAt: msg.edited_at || undefined,
+			isPinned: msg.is_pinned ?? false,
+			replyTo: msg.reply_to ?? null,
+			bodyPlain: msg.body,
+			mine: msg.mine || (Boolean(currentUserId) && msg.author_id === currentUserId),
+			reactions: (msg.reactions ?? []).map((r) => ({
+				emoji: r.emoji,
+				count: r.count,
+				active: Boolean(currentUserId) && r.user_ids.includes(currentUserId),
+				userIds: r.user_ids,
+			})),
+			timeLabel: formatMessageTimeLabel(msg.created_at, timeFormat),
+		}));
+	}, [query.data, currentUserId, timeFormat]);
+
+	const fetchOlderMessages = useCallback(() => {
+		if (query.hasNextPage && !query.isFetchingNextPage) {
+			void query.fetchNextPage();
+		}
+	}, [query]);
+
+	const refetch = useCallback(() => {
+		void query.refetch();
+	}, [query]);
 
 	return {
 		messages,
@@ -52,13 +64,7 @@ export function useChannelMessages(groupId: string, channelId: string): UseChann
 		isError: query.isError,
 		hasOlderMessages: Boolean(query.hasNextPage),
 		isFetchingOlderMessages: query.isFetchingNextPage,
-		fetchOlderMessages: () => {
-			if (query.hasNextPage && !query.isFetchingNextPage) {
-				void query.fetchNextPage();
-			}
-		},
-		refetch: () => {
-			void query.refetch();
-		},
+		fetchOlderMessages,
+		refetch,
 	};
 }

@@ -21,7 +21,7 @@ import {
 	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { type Channel, creatableChannelKindSchema } from "@wichat/contracts/chat/channel";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AtSign, Compass, FileText, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -40,6 +40,7 @@ import {
 import { sidebarNavGlyphIconClass } from "@/components/layout/sidebar-list-icon";
 import { SortableCategoryItem } from "@/features/channel-category/components/sortable-category-item";
 import { SortableChannelRow } from "@/features/channel/components/sortable-channel-list";
+import { prefetchChannelMessages } from "@/services/message/message.query";
 import { formatChannelDisplayName } from "@/features/channel/lib/channel-display";
 import { useCategorySettings } from "@/features/channel-category/category-settings/category-settings-provider";
 import { useChannelSettings } from "@/features/channel/channel-settings/channel-settings-provider";
@@ -186,6 +187,7 @@ export function ProductionChannelSidebar({
 			},
 		);
 	};
+	const queryClient = useQueryClient();
 	const renderChannelRow = (
 		ch: Channel,
 		index: number,
@@ -205,6 +207,11 @@ export function ProductionChannelSidebar({
 			activeMenuId={activeMenuId}
 			onActiveMenuIdChange={setActiveMenuId}
 			onSelect={() => router.push(channelPath(groupId, ch.id))}
+			onPrefetch={
+				ch.type === "text" || ch.type === "broadcast"
+					? () => prefetchChannelMessages(queryClient, groupId, ch.id)
+					: undefined
+			}
 			onInvite={() =>
 				openInvite({
 					scope: "channel",

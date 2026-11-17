@@ -43,7 +43,7 @@ func (r pgRepository) baseMessageSelect(rows *[]models.MessageListRow) *bun.Sele
 	return r.db.NewSelect().Model(rows).
 		ColumnExpr("m.id, m.public_id, m.channel_id, m.author_id, m.reply_to_id, m.body, m.created_at, m.edited_at, m.is_pinned, m.pinned_at, m.pinned_by").
 		ColumnExpr("u.display_name AS author_display_name, COALESCE(u.avatar_url, '') AS author_avatar_url").
-		ColumnExpr("rm.public_id AS reply_public_id, rm.author_id AS reply_author_id, ru.display_name AS reply_author_name, rm.body AS reply_body").
+		ColumnExpr("rm.public_id AS reply_public_id, rm.author_id AS reply_author_id, ru.display_name AS reply_author_name, LEFT(rm.body, 200) AS reply_body").
 		Join("JOIN users AS u ON u.id = m.author_id").
 		Join("LEFT JOIN messages AS rm ON rm.id = m.reply_to_id").
 		Join("LEFT JOIN users AS ru ON ru.id = rm.author_id")
@@ -55,38 +55,33 @@ func (r pgRepository) loadReactionsByMessageIDs(ctx context.Context, messageIDs 
 		return out, nil
 	}
 
-	var rows []models.MessageReactionRow
-	if err := r.db.NewSelect().Model(&rows).
+	type reactionAggRow struct {
+		MessageID string   `bun:"message_id"`
+		Emoji     string   `bun:"emoji"`
+		Count     int32    `bun:"count"`
+		UserIDs   []string `bun:"user_ids,array"`
+	}
+
+	var rows []reactionAggRow
+	if err := r.db.NewSelect().
+		TableExpr("message_reactions AS mr").
+		ColumnExpr("mr.message_id").
+		ColumnExpr("mr.emoji").
+		ColumnExpr("COUNT(*)::int AS count").
+		ColumnExpr("ARRAY_AGG(mr.user_id::text ORDER BY mr.created_at ASC) AS user_ids").
 		Where("mr.message_id IN (?)", bun.List(messageIDs)).
-		OrderExpr("mr.created_at ASC").
-		Scan(ctx); err != nil {
+		GroupExpr("mr.message_id, mr.emoji").
+		OrderExpr("MIN(mr.created_at) ASC").
+		Scan(ctx, &rows); err != nil {
 		return nil, err
 	}
 
-	byMsgEmoji := make(map[string]map[string]*models.MessageReactionSummary)
-	order := make(map[string][]string)
 	for _, row := range rows {
-		m, ok := byMsgEmoji[row.MessageID]
-		if !ok {
-			m = make(map[string]*models.MessageReactionSummary)
-			byMsgEmoji[row.MessageID] = m
-		}
-		summary, exists := m[row.Emoji]
-		if !exists {
-			summary = &models.MessageReactionSummary{Emoji: row.Emoji}
-			m[row.Emoji] = summary
-			order[row.MessageID] = append(order[row.MessageID], row.Emoji)
-		}
-		summary.Count++
-		summary.UserIDs = append(summary.UserIDs, row.UserID)
-	}
-
-	for msgID, emojis := range order {
-		list := make([]models.MessageReactionSummary, 0, len(emojis))
-		for _, emoji := range emojis {
-			list = append(list, *byMsgEmoji[msgID][emoji])
-		}
-		out[msgID] = list
+		out[row.MessageID] = append(out[row.MessageID], models.MessageReactionSummary{
+			Emoji:   row.Emoji,
+			Count:   row.Count,
+			UserIDs: row.UserIDs,
+		})
 	}
 
 	return out, nil

@@ -360,7 +360,10 @@ export function loadSpreadsheetPreview(
 	return task;
 }
 
-async function readUpToBytes(res: Response, maxBytes: number): Promise<{ bytes: Uint8Array; truncated: boolean }> {
+async function readUpToBytes(
+	res: Response,
+	maxBytes: number,
+): Promise<{ bytes: Uint8Array; truncated: boolean }> {
 	if (!res.body) {
 		const buf = await res.arrayBuffer();
 		return {

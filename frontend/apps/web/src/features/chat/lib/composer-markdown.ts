@@ -22,6 +22,28 @@ function applyMarks(text: string, marks: JSONContent["marks"]): string {
 			case "underline":
 				out = `<u>${out}</u>`;
 				break;
+			case "highlight": {
+				const color = typeof mark.attrs?.color === "string" ? mark.attrs.color : "";
+				if (color) {
+					out = `<mark data-hl="${color}">${out}</mark>`;
+				}
+				break;
+			}
+			case "textColor": {
+				const color = typeof mark.attrs?.color === "string" ? mark.attrs.color : "";
+				if (color) {
+					out = `<span data-color="${color}">${out}</span>`;
+				}
+				break;
+			}
+			case "fontSize": {
+				const size =
+					mark.attrs?.size === "large" || mark.attrs?.size === "small" ? mark.attrs.size : "";
+				if (size) {
+					out = `<span data-size="${size}">${out}</span>`;
+				}
+				break;
+			}
 			case "link": {
 				const href = typeof mark.attrs?.href === "string" ? mark.attrs.href : "";
 				if (href) {
@@ -101,10 +123,14 @@ export function hasInlineReplyBlock(markdown: string): boolean {
 	return markdown.includes("```wichat-reply\n");
 }
 
+const INLINE_STYLE_TAGS_RE =
+	/<\/?(?:u|mark(?:\s+data-hl="[a-z]+")?|span(?:\s+data-(?:color="[a-z]+"|size="(?:large|small)"))?)>/g;
+
 export function stripInlineReplyBlocks(markdown: string): string {
 	return markdown
 		.replace(INLINE_REPLY_FENCE_RE, "")
 		.replace(INLINE_ATTACHMENT_FENCE_RE, "")
+		.replace(INLINE_STYLE_TAGS_RE, "")
 		.replace(/\n{3,}/g, "\n\n")
 		.trim();
 }
@@ -245,6 +271,62 @@ export function serializeTipTapToMarkdown(doc: JSONContent): {
 	};
 }
 
+type TipTapMark = NonNullable<JSONContent["marks"]>[number];
+
+const INLINE_TOKEN_RE =
+	/(<u>|<\/u>|<mark data-hl="[a-z]+">|<\/mark>|<span data-color="[a-z]+">|<span data-size="(?:large|small)">|<\/span>)/g;
+
+function parseStyledLineToNodes(line: string): JSONContent[] {
+	const nodes: JSONContent[] = [];
+	const markStack: Array<{ tag: "u" | "mark" | "span"; mark: TipTapMark }> = [];
+	let lastIndex = 0;
+
+	for (const match of line.matchAll(INLINE_TOKEN_RE)) {
+		const token = match[0];
+		const idx = match.index ?? 0;
+		if (idx > lastIndex) {
+			const text = line.slice(lastIndex, idx);
+			if (text.length > 0) {
+				const marks = markStack.map((item) => item.mark);
+				nodes.push(marks.length > 0 ? { type: "text", text, marks } : { type: "text", text });
+			}
+		}
+
+		if (token === "<u>") {
+			markStack.push({ tag: "u", mark: { type: "underline" } });
+		} else if (token.startsWith("<mark data-hl=")) {
+			const color = token.slice(15, -2);
+			markStack.push({ tag: "mark", mark: { type: "highlight", attrs: { color } } });
+		} else if (token.startsWith("<span data-color=")) {
+			const color = token.slice(18, -2);
+			markStack.push({ tag: "span", mark: { type: "textColor", attrs: { color } } });
+		} else if (token.startsWith("<span data-size=")) {
+			const size = token.slice(17, -2);
+			markStack.push({ tag: "span", mark: { type: "fontSize", attrs: { size } } });
+		} else if (token === "</u>" || token === "</mark>" || token === "</span>") {
+			const targetTag = token === "</u>" ? "u" : token === "</mark>" ? "mark" : "span";
+			for (let i = markStack.length - 1; i >= 0; i -= 1) {
+				if (markStack[i]?.tag === targetTag) {
+					markStack.splice(i, 1);
+					break;
+				}
+			}
+		}
+
+		lastIndex = idx + token.length;
+	}
+
+	if (lastIndex < line.length) {
+		const text = line.slice(lastIndex);
+		if (text.length > 0) {
+			const marks = markStack.map((item) => item.mark);
+			nodes.push(marks.length > 0 ? { type: "text", text, marks } : { type: "text", text });
+		}
+	}
+
+	return nodes;
+}
+
 function paragraphFromText(text: string): JSONContent {
 	const lines = text.split("\n");
 	const content: JSONContent[] = [];
@@ -253,7 +335,7 @@ function paragraphFromText(text: string): JSONContent {
 			content.push({ type: "hardBreak" });
 		}
 		if (line.length > 0) {
-			content.push({ type: "text", text: line });
+			content.push(...parseStyledLineToNodes(line));
 		}
 	});
 	return content.length > 0 ? { type: "paragraph", content } : { type: "paragraph" };
@@ -277,7 +359,18 @@ export function markdownToTipTapContent(markdown: string): JSONContent {
 			return;
 		}
 		for (const para of cleaned.split(/\n{2,}/)) {
-			content.push(paragraphFromText(para));
+			const lines = para.split("\n");
+			if (lines.every((line) => line.startsWith("> ") || line === ">")) {
+				const quoteText = lines
+					.map((line) => (line.startsWith("> ") ? line.slice(2) : ""))
+					.join("\n");
+				content.push({
+					type: "blockquote",
+					content: [paragraphFromText(quoteText)],
+				});
+			} else {
+				content.push(paragraphFromText(para));
+			}
 		}
 	};
 

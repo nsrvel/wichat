@@ -9,6 +9,7 @@ import {
 	Check,
 	Code,
 	Code2,
+	Highlighter,
 	Italic,
 	Link2,
 	List,
@@ -25,9 +26,18 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ExpressionPickerPopover } from "@/components/expression-picker/expression-picker-popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { AttachmentBlockNode } from "@/features/chat/components/composer-attachment-node";
 import { ReplyQuoteNode } from "@/features/chat/components/composer-reply-node";
 import { clearComposerFiles, registerComposerFile } from "@/features/chat/lib/attachment-preview";
+import {
+	FontSizeMark,
+	HIGHLIGHT_COLORS,
+	HighlightMark,
+	TEXT_COLORS,
+	TEXT_COLOR_MAP,
+	TextColorMark,
+} from "@/features/chat/lib/composer-text-marks";
 import {
 	hasInlineReplyBlock,
 	markdownToTipTapContent,
@@ -127,6 +137,9 @@ export function ChatComposer({
 	const [hasPendingOrErroredAttachment, setHasPendingOrErroredAttachment] = useState(false);
 	const [isDragOver, setIsDragOver] = useState(false);
 	const [attachmentNotice, setAttachmentNotice] = useState("");
+	const [highlightOpen, setHighlightOpen] = useState(false);
+	const [textColorOpen, setTextColorOpen] = useState(false);
+	const [fontSizeOpen, setFontSizeOpen] = useState(false);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const pendingFilesRef = useRef<Map<string, File>>(new Map());
 	const onUploadFileRef = useRef(onUploadFile);
@@ -223,6 +236,9 @@ export function ChatComposer({
 			}),
 			ReplyQuoteNode,
 			AttachmentBlockNode,
+			HighlightMark,
+			TextColorMark,
+			FontSizeMark,
 		],
 		editorProps: {
 			attributes: {
@@ -648,7 +664,7 @@ export function ChatComposer({
 							aria-hidden={!showFormatting || disabled}
 						>
 							<div className="overflow-hidden">
-								<div className="flex flex-wrap items-center justify-between gap-1 border-b border-border/60 px-2.5 py-1.5">
+								<div className="flex flex-wrap items-center justify-between gap-1 px-2.5 py-1.5">
 									<div className="flex flex-wrap items-center gap-0.5">
 										<button
 											type="button"
@@ -677,7 +693,10 @@ export function ChatComposer({
 										>
 											<Underline className="size-3.5" />
 										</button>
-										<span className="mx-1 h-4 w-px bg-border/70" aria-hidden />
+										<span
+											className="mx-1.5 h-4 w-[1.5px] rounded-full bg-foreground/20"
+											aria-hidden
+										/>
 										<button
 											type="button"
 											onClick={() => editor?.chain().focus().toggleBulletList().run()}
@@ -696,7 +715,188 @@ export function ChatComposer({
 										>
 											<ListOrdered className="size-3.5" />
 										</button>
-										<span className="mx-1 h-4 w-px bg-border/70" aria-hidden />
+										<span
+											className="mx-1.5 h-4 w-[1.5px] rounded-full bg-foreground/20"
+											aria-hidden
+										/>
+										<Popover open={highlightOpen} onOpenChange={setHighlightOpen}>
+											<PopoverTrigger
+												render={
+													<button
+														type="button"
+														className={toolbarBtnClass(Boolean(editor?.isActive("highlight")))}
+														title={t("chat.toolbar_highlight")}
+														aria-label={t("chat.toolbar_highlight")}
+													>
+														<Highlighter className="size-3.5" />
+													</button>
+												}
+											/>
+											<PopoverContent
+												side="top"
+												align="center"
+												sideOffset={8}
+												className="w-auto p-2.5"
+											>
+												<button
+													type="button"
+													onClick={() => {
+														editor?.chain().focus().unsetHighlightColor().run();
+														setHighlightOpen(false);
+													}}
+													className="mb-2 w-full rounded-lg border border-border/80 px-2.5 py-1.5 text-center text-xs font-medium text-foreground transition hover:bg-muted"
+												>
+													{t("chat.toolbar_no_highlight")}
+												</button>
+												<div className="grid grid-cols-4 gap-2">
+													{HIGHLIGHT_COLORS.map((swatch) => {
+														const isSelected =
+															editor?.getAttributes("highlight").color === swatch.key;
+														return (
+															<button
+																key={swatch.key}
+																type="button"
+																onClick={() => {
+																	editor?.chain().focus().setHighlightColor(swatch.key).run();
+																	setHighlightOpen(false);
+																}}
+																title={swatch.label}
+																aria-label={swatch.label}
+																className={cn(
+																	"size-6 rounded-md border border-white/10 transition hover:scale-110",
+																	isSelected &&
+																		"ring-2 ring-primary ring-offset-1 ring-offset-popover",
+																)}
+																style={{ backgroundColor: swatch.color }}
+															/>
+														);
+													})}
+												</div>
+											</PopoverContent>
+										</Popover>
+
+										<Popover open={textColorOpen} onOpenChange={setTextColorOpen}>
+											<PopoverTrigger
+												render={
+													<button
+														type="button"
+														className={toolbarBtnClass(Boolean(editor?.isActive("textColor")))}
+														title={t("chat.toolbar_font_color")}
+														aria-label={t("chat.toolbar_font_color")}
+													>
+														<span className="flex flex-col items-center leading-none">
+															<span className="text-[11px] font-semibold leading-none">A</span>
+															<span
+																className="mt-0.5 h-[2.5px] w-3.5 rounded-full"
+																style={{
+																	backgroundColor:
+																		TEXT_COLOR_MAP[
+																			String(editor?.getAttributes("textColor").color ?? "")
+																		] ?? "currentColor",
+																}}
+															/>
+														</span>
+													</button>
+												}
+											/>
+											<PopoverContent
+												side="top"
+												align="center"
+												sideOffset={8}
+												className="w-auto p-2.5"
+											>
+												<button
+													type="button"
+													onClick={() => {
+														editor?.chain().focus().unsetTextColor().run();
+														setTextColorOpen(false);
+													}}
+													className="mb-2 w-full rounded-lg border border-border/80 px-2.5 py-1.5 text-center text-xs font-medium text-foreground transition hover:bg-muted"
+												>
+													{t("chat.toolbar_automatic")}
+												</button>
+												<div className="grid grid-cols-4 gap-2">
+													{TEXT_COLORS.map((swatch) => {
+														const isSelected =
+															editor?.getAttributes("textColor").color === swatch.key;
+														return (
+															<button
+																key={swatch.key}
+																type="button"
+																onClick={() => {
+																	editor?.chain().focus().setTextColor(swatch.key).run();
+																	setTextColorOpen(false);
+																}}
+																title={swatch.label}
+																aria-label={swatch.label}
+																className={cn(
+																	"size-6 rounded-md border border-white/10 transition hover:scale-110",
+																	isSelected &&
+																		"ring-2 ring-primary ring-offset-1 ring-offset-popover",
+																)}
+																style={{ backgroundColor: swatch.color }}
+															/>
+														);
+													})}
+												</div>
+											</PopoverContent>
+										</Popover>
+
+										<Popover open={fontSizeOpen} onOpenChange={setFontSizeOpen}>
+											<PopoverTrigger
+												render={
+													<button
+														type="button"
+														className={toolbarBtnClass(Boolean(editor?.isActive("fontSize")))}
+														title={t("chat.toolbar_font_size")}
+														aria-label={t("chat.toolbar_font_size")}
+													>
+														<span className="text-[11px] font-semibold tracking-tighter">
+															<span className="text-[9.5px]">A</span>A
+														</span>
+													</button>
+												}
+											/>
+											<PopoverContent side="top" align="center" sideOffset={8} className="w-28 p-1">
+												{(
+													[
+														{ key: "large", labelKey: "chat.font_size_large" },
+														{ key: "medium", labelKey: "chat.font_size_medium" },
+														{ key: "small", labelKey: "chat.font_size_small" },
+													] as const
+												).map((item) => {
+													const currentSize = editor?.getAttributes("fontSize").size as
+														string | undefined;
+													const active =
+														item.key === "medium" ? !currentSize : currentSize === item.key;
+													return (
+														<button
+															key={item.key}
+															type="button"
+															onClick={() => {
+																if (item.key === "medium") {
+																	editor?.chain().focus().unsetFontSize().run();
+																} else {
+																	editor?.chain().focus().setFontSize(item.key).run();
+																}
+																setFontSizeOpen(false);
+															}}
+															className={cn(
+																"flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-left text-xs transition hover:bg-muted",
+																active ? "font-semibold text-primary" : "text-foreground",
+															)}
+														>
+															<span>{t(item.labelKey)}</span>
+															{active ? <Check className="size-3" /> : null}
+														</button>
+													);
+												})}
+											</PopoverContent>
+										</Popover>
+										<span
+											className="mx-1.5 h-4 w-[1.5px] rounded-full bg-foreground/20"
+											aria-hidden
+										/>
 										<button
 											type="button"
 											onClick={() => editor?.chain().focus().toggleBlockquote().run()}

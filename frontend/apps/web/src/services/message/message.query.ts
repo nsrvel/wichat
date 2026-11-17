@@ -1,4 +1,4 @@
-import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
+import { infiniteQueryOptions, queryOptions, type QueryClient } from "@tanstack/react-query";
 import { isPublicEntityId } from "@wichat/contracts/common";
 import { Q_CHANNEL_MESSAGES, Q_PINNED_MESSAGES } from "@/services/message/message.key";
 import {
@@ -22,10 +22,22 @@ export function channelMessagesQueryOpts(groupId: string, channelId: string) {
 			}
 			return lastPage.messages[0]?.created_at;
 		},
+		maxPages: 10,
 		enabled: isPublicEntityId(groupId) && isPublicEntityId(channelId),
 		staleTime: 30_000,
-		refetchOnWindowFocus: true,
+		refetchOnWindowFocus: false,
 	});
+}
+
+export function prefetchChannelMessages(
+	queryClient: QueryClient,
+	groupId: string,
+	channelId: string,
+) {
+	if (!isPublicEntityId(groupId) || !isPublicEntityId(channelId)) {
+		return;
+	}
+	void queryClient.prefetchInfiniteQuery(channelMessagesQueryOpts(groupId, channelId));
 }
 
 export function pinnedChannelMessagesQueryOpts(groupId: string, channelId: string) {

@@ -11,21 +11,15 @@ import { toast } from "sonner";
 import { GroupMemberProfileHost } from "@/components/group/group-member-profile-host";
 import { toChannelShellNavTarget } from "@/features/channel/lib/channel-shell-nav-target";
 import { ChannelEmptyState } from "@/features/chat/components/channel-empty-state";
+import { ChannelMessageItem } from "@/features/chat/components/channel-message-item";
 import { ChatComposer } from "@/features/chat/components/chat-composer";
 import { ConversationHeader } from "@/features/chat/components/conversation-header";
-import { MessageActionBar } from "@/features/chat/components/message-action-bar";
-import { MessageBody } from "@/features/chat/components/message-body";
-import {
-	MessageBubbleContextMenu,
-	type MessageMenuActionProps,
-} from "@/features/chat/components/message-context-menu";
 import { MessageList } from "@/features/chat/components/message-list";
-import { MessageReactions } from "@/features/chat/components/message-reactions";
-import { MessageRow } from "@/features/chat/components/message-row";
 import { PinnedMessagesPopover } from "@/features/chat/components/pinned-messages-popover";
+import type { ChannelMessage } from "@/features/chat/lib/channel-message";
 import { groupTimelineItems } from "@/features/chat/lib/group-timeline-items";
 import { useChannelMessages } from "@/features/chat/lib/use-channel-messages";
-import { hasInlineReplyBlock, stripInlineReplyBlocks } from "@/features/chat/lib/composer-markdown";
+import { stripInlineReplyBlocks } from "@/features/chat/lib/composer-markdown";
 import { useChannelRealtime } from "@/features/chat/lib/use-channel-realtime";
 import { useChatScroller } from "@/features/chat/lib/use-chat-scroller";
 import { translateError } from "@/integrations/i18n/translate-error";
@@ -276,6 +270,79 @@ export function ChannelChatView({ groupId, channelId, onOpenSidebar }: ChannelCh
 		[memberById, sessionUser],
 	);
 
+	const handleReplyMessage = useCallback(
+		(message: ChannelMessage) => {
+			setReplyState({
+				channelId,
+				preview: {
+					id: message.id,
+					author_id: message.authorId,
+					author_display_name: message.authorDisplayName,
+					body_preview: stripInlineReplyBlocks(message.bodyPlain).slice(0, 120),
+				},
+				timeLabel: message.timeLabel,
+			});
+		},
+		[channelId],
+	);
+
+	const handleStartEdit = useCallback(
+		(messageId: string) => {
+			setEditingState({ channelId, messageId });
+		},
+		[channelId],
+	);
+
+	const handleSaveEdit = useCallback(
+		(messageId: string, nextBody: string) => {
+			setEditingState(null);
+			updateMessage.mutate(
+				{ groupId, channelId, messageId, body: nextBody },
+				{ onError: (err) => toast.error(translateError(t, err)) },
+			);
+		},
+		[channelId, groupId, t, updateMessage],
+	);
+
+	const handleCancelEdit = useCallback(() => {
+		setEditingState(null);
+	}, []);
+
+	const handleTogglePin = useCallback(
+		(messageId: string, nextPinned: boolean) => {
+			pinMessage.mutate(
+				{ groupId, channelId, messageId, pinned: nextPinned },
+				{ onError: (err) => toast.error(translateError(t, err)) },
+			);
+		},
+		[channelId, groupId, pinMessage, t],
+	);
+
+	const handleDeleteMessage = useCallback(
+		(messageId: string) => {
+			deleteMessage.mutate(
+				{ groupId, channelId, messageId },
+				{ onError: (err) => toast.error(translateError(t, err)) },
+			);
+		},
+		[channelId, deleteMessage, groupId, t],
+	);
+
+	const handleToggleReaction = useCallback(
+		(messageId: string, emoji: string) => {
+			toggleReaction.mutate(
+				{ groupId, channelId, messageId, emoji },
+				{ onError: (err) => toast.error(translateError(t, err)) },
+			);
+		},
+		[channelId, groupId, t, toggleReaction],
+	);
+
+	const handleSelectMember = useMemo(
+		() => (groupId ? (memberId: string) => setSelectedMemberId(memberId) : undefined),
+		[groupId],
+	);
+
 	const handleSendMessage = useCallback(
 		(body: string) => {
 			prepareForSend();
@@ -456,130 +523,35 @@ export function ChannelChatView({ groupId, channelId, onOpenSidebar }: ChannelCh
 										? resolveMemberNameColor(member.roles, hideRoles)
 										: undefined;
 									const authorIsOwner = member?.role === "owner";
-									const isOpt = message.id.startsWith("opt_");
 									const isMine = Boolean(message.mine);
 									const canDelete = isMine || canManageMessages;
-									const menuActions: MessageMenuActionProps = {
-										isMine,
-										isPinned: Boolean(message.isPinned),
-										canPin,
-										canDelete,
-										onReply: () =>
-											setReplyState({
-												channelId,
-												preview: {
-													id: message.id,
-													author_id: message.authorId,
-													author_display_name: message.authorDisplayName,
-													body_preview: stripInlineReplyBlocks(message.bodyPlain).slice(0, 120),
-												},
-												timeLabel: message.timeLabel,
-											}),
-										onEdit: isMine
-											? () => setEditingState({ channelId, messageId: message.id })
-											: undefined,
-										onTogglePin: canPin
-											? () =>
-													pinMessage.mutate(
-														{
-															groupId,
-															channelId,
-															messageId: message.id,
-															pinned: !message.isPinned,
-														},
-														{ onError: (err) => toast.error(translateError(t, err)) },
-													)
-											: undefined,
-										onCopy: () => {
-											const plain = stripInlineReplyBlocks(message.bodyPlain);
-											if (plain) {
-												void navigator.clipboard.writeText(plain);
-											}
-										},
-										onDelete: canDelete
-											? () =>
-													deleteMessage.mutate(
-														{ groupId, channelId, messageId: message.id },
-														{ onError: (err) => toast.error(translateError(t, err)) },
-													)
-											: undefined,
-									};
 
 									return (
-										<MessageRow
+										<ChannelMessageItem
 											key={item.key}
-											messageId={message.id}
+											message={message}
+											compact={item.compact}
 											authorAvatarUrl={message.authorAvatarUrl || member?.avatar_url || ""}
-											authorDisplayName={message.authorDisplayName}
 											authorNameColor={authorNameColor}
 											authorIsOwner={authorIsOwner}
 											authorPresenceStatus={member?.presence_status}
 											ownerLabel={t("invite.role_owner")}
-											timeLabel={message.timeLabel}
-											mine={isMine}
-											edited={Boolean(message.editedAt)}
-											isPinned={Boolean(message.isPinned)}
 											highlighted={highlightedMessageId === message.id}
-											compact={item.compact}
-											replyTo={message.replyTo}
-											hasInlineReply={hasInlineReplyBlock(message.bodyPlain)}
-											onReplyClick={handleJumpToMessage}
 											isEditing={editingMessageId === message.id}
-											initialEditText={message.bodyPlain}
-											onSaveEdit={(nextBody) => {
-												setEditingState(null);
-												updateMessage.mutate(
-													{ groupId, channelId, messageId: message.id, body: nextBody },
-													{ onError: (err) => toast.error(translateError(t, err)) },
-												);
-											}}
-											onCancelEdit={() => setEditingState(null)}
-											onAuthorClick={
-												groupId && message.authorId
-													? () => setSelectedMemberId(message.authorId)
-													: undefined
-											}
-											renderBubbleWrapper={
-												!isOpt
-													? (bubble) => (
-															<MessageBubbleContextMenu {...menuActions}>
-																{bubble}
-															</MessageBubbleContextMenu>
-														)
-													: undefined
-											}
-											actionBar={
-												!isOpt ? (
-													<MessageActionBar
-														{...menuActions}
-														canReact={canReact}
-														onReact={(emoji) =>
-															toggleReaction.mutate(
-																{ groupId, channelId, messageId: message.id, emoji },
-																{ onError: (err) => toast.error(translateError(t, err)) },
-															)
-														}
-													/>
-												) : undefined
-											}
-											reactions={
-												message.reactions && message.reactions.length > 0 ? (
-													<MessageReactions
-														reactions={message.reactions}
-														showAdd={canReact}
-														resolveReactor={resolveReactor}
-														onToggleReaction={(emoji) =>
-															toggleReaction.mutate(
-																{ groupId, channelId, messageId: message.id, emoji },
-																{ onError: (err) => toast.error(translateError(t, err)) },
-															)
-														}
-													/>
-												) : undefined
-											}
-										>
-											<MessageBody text={message.bodyPlain} onReplyClick={handleJumpToMessage} />
-										</MessageRow>
+											canReact={canReact}
+											canPin={canPin}
+											canDelete={canDelete}
+											onReply={handleReplyMessage}
+											onStartEdit={handleStartEdit}
+											onSaveEdit={handleSaveEdit}
+											onCancelEdit={handleCancelEdit}
+											onTogglePin={handleTogglePin}
+											onDelete={handleDeleteMessage}
+											onToggleReaction={handleToggleReaction}
+											onJumpToMessage={handleJumpToMessage}
+											onSelectMember={handleSelectMember}
+											resolveReactor={resolveReactor}
+										/>
 									);
 								})}
 							</MessageList>

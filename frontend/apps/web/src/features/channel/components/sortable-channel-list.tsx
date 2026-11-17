@@ -37,6 +37,7 @@ export type SortableChannelRowProps = {
 	activeMenuId: string | null;
 	onActiveMenuIdChange: (id: string | null) => void;
 	onSelect: () => void;
+	onPrefetch?: () => void;
 	onInvite?: () => void;
 	onMoveToCategory?: (targetCategoryId: string | null) => void;
 	onMoveToFirstInCategory?: () => void;
@@ -59,6 +60,7 @@ export function SortableChannelRow({
 	activeMenuId,
 	onActiveMenuIdChange,
 	onSelect,
+	onPrefetch,
 	onInvite,
 	onMoveToCategory,
 	onMoveToFirstInCategory,
@@ -85,6 +87,8 @@ export function SortableChannelRow({
 			ref={setNodeRef}
 			style={style}
 			className={disabled ? undefined : "touch-none"}
+			onMouseEnter={onPrefetch}
+			onFocus={onPrefetch}
 			{...(disabled ? {} : attributes)}
 			{...(disabled ? {} : listeners)}
 		>
