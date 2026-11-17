@@ -19,6 +19,9 @@ function applyMarks(text: string, marks: JSONContent["marks"]): string {
 			case "strike":
 				out = `~~${out}~~`;
 				break;
+			case "underline":
+				out = `<u>${out}</u>`;
+				break;
 			case "link": {
 				const href = typeof mark.attrs?.href === "string" ? mark.attrs.href : "";
 				if (href) {

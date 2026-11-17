@@ -16,6 +16,7 @@ import {
 	parseInlineReplyPayload,
 	type InlineAttachmentPayload,
 } from "@/features/chat/lib/composer-markdown";
+import { remarkUnderline } from "@/features/chat/lib/remark-underline";
 import { resolvePublicObjectUrl } from "@/lib/public-object-url";
 import { cn } from "@/lib/utils";
 
@@ -150,7 +151,7 @@ function AttachmentPreview({
 	);
 }
 
-const REMARK_PLUGINS = [remarkGfm];
+const REMARK_PLUGINS = [remarkGfm, remarkUnderline];
 
 export const MessageBody = memo(function MessageBody({
 	text,
@@ -234,7 +235,7 @@ export const MessageBody = memo(function MessageBody({
 	return (
 		<div
 			className={cn(
-				"select-text break-words text-[14.5px] leading-[1.55] text-foreground [&_blockquote]:my-1.5 [&_blockquote]:border-l-2 [&_blockquote]:border-primary/60 [&_blockquote]:pl-3 [&_blockquote]:text-muted-foreground [&_h1]:mt-2 [&_h1]:text-base [&_h1]:font-bold [&_h2]:mt-2 [&_h2]:text-[15px] [&_h2]:font-semibold [&_h3]:mt-1.5 [&_h3]:text-sm [&_h3]:font-semibold [&_li]:my-0.5 [&_ol]:my-1.5 [&_ol]:list-decimal [&_ol]:pl-5 [&_p+p]:mt-2 [&_table]:my-2 [&_table]:w-full [&_table]:border-collapse [&_table]:text-xs [&_td]:border [&_td]:border-border [&_td]:px-2.5 [&_td]:py-1 [&_th]:border [&_th]:border-border [&_th]:bg-muted/60 [&_th]:px-2.5 [&_th]:py-1 [&_th]:text-left [&_th]:font-semibold [&_ul]:my-1.5 [&_ul]:list-disc [&_ul]:pl-5",
+				"select-text break-words text-[14.5px] leading-[1.55] text-foreground [&_blockquote]:my-1.5 [&_blockquote]:border-l-2 [&_blockquote]:border-primary/60 [&_blockquote]:pl-3 [&_blockquote]:text-muted-foreground [&_h1]:mt-2 [&_h1]:text-base [&_h1]:font-bold [&_h2]:mt-2 [&_h2]:text-[15px] [&_h2]:font-semibold [&_h3]:mt-1.5 [&_h3]:text-sm [&_h3]:font-semibold [&_li]:my-0.5 [&_ol]:my-1.5 [&_ol]:list-decimal [&_ol]:pl-5 [&_p+p]:mt-2 [&_table]:my-2 [&_table]:w-full [&_table]:border-collapse [&_table]:text-xs [&_td]:border [&_td]:border-border [&_td]:px-2.5 [&_td]:py-1 [&_th]:border [&_th]:border-border [&_th]:bg-muted/60 [&_th]:px-2.5 [&_th]:py-1 [&_th]:text-left [&_th]:font-semibold [&_u]:underline [&_u]:underline-offset-2 [&_ul]:my-1.5 [&_ul]:list-disc [&_ul]:pl-5",
 				className,
 			)}
 			data-wichat-selectable="true"

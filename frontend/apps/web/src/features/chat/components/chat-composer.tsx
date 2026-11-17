@@ -17,8 +17,8 @@ import {
 	Quote,
 	Send,
 	Smile,
-	Strikethrough,
 	Trash2,
+	Underline,
 	Upload,
 	X,
 } from "lucide-react";
@@ -670,12 +670,12 @@ export function ChatComposer({
 										</button>
 										<button
 											type="button"
-											onClick={() => editor?.chain().focus().toggleStrike().run()}
-											className={toolbarBtnClass(Boolean(editor?.isActive("strike")))}
-											title={t("chat.toolbar_strike")}
-											aria-label={t("chat.toolbar_strike")}
+											onClick={() => editor?.chain().focus().toggleUnderline().run()}
+											className={toolbarBtnClass(Boolean(editor?.isActive("underline")))}
+											title={`${t("chat.toolbar_underline")} (⌘U)`}
+											aria-label={t("chat.toolbar_underline")}
 										>
-											<Strikethrough className="size-3.5" />
+											<Underline className="size-3.5" />
 										</button>
 										<span className="mx-1 h-4 w-px bg-border/70" aria-hidden />
 										<button
