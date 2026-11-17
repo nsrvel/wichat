@@ -27,6 +27,7 @@ func (s *server) Run(ctx context.Context) error {
 		Settings:         s.cfg.Microservices,
 		UserAddr:         s.cfg.UserHost,
 		ChatAddr:         s.cfg.ChatHost,
+		CoreAddr:         s.cfg.CoreHost,
 		NotificationAddr: s.cfg.NotificationHost,
 	})
 	if err != nil {

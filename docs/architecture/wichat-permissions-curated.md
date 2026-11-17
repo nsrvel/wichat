@@ -73,6 +73,7 @@ Permissions dibagi menjadi dua tier:
 | `mute_members`       | **Mute Members**         | Allows members to server-mute other members in voice channels.                                          | Core         | Baseline moderation (§6.8) via `ms-core` → LiveKit.   |
 | `deafen_members`     | **Deafen Members**       | Allows members to server-deafen other members in voice channels.                                        | Core         | Baseline moderation (§6.8) via `ms-core` → LiveKit.   |
 | `move_members`       | **Move Members**         | Allows members to disconnect or move other members between voice channels they have access to.          | Next Feature | Kontrol perpindahan room LiveKit.                     |
+| `record_call`        | **Record Call**          | Allows members to start and stop LiveKit Egress call recordings in voice-capable channels.              | Voice v1     | Gate rekaman panggilan (default: Owner/Admin).        |
 
 ---
 

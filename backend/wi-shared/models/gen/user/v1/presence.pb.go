@@ -465,6 +465,110 @@ func (x *GetMyPresenceResponse) GetExpiresAt() string {
 	return ""
 }
 
+type SetVoiceActivityStatusRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	UserId         string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	ActivityStatus string                 `protobuf:"bytes,2,opt,name=activity_status,json=activityStatus,proto3" json:"activity_status,omitempty"` // "" to clear | "In a call" | "In a meeting"
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *SetVoiceActivityStatusRequest) Reset() {
+	*x = SetVoiceActivityStatusRequest{}
+	mi := &file_user_v1_presence_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetVoiceActivityStatusRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetVoiceActivityStatusRequest) ProtoMessage() {}
+
+func (x *SetVoiceActivityStatusRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_presence_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetVoiceActivityStatusRequest.ProtoReflect.Descriptor instead.
+func (*SetVoiceActivityStatusRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_presence_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *SetVoiceActivityStatusRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *SetVoiceActivityStatusRequest) GetActivityStatus() string {
+	if x != nil {
+		return x.ActivityStatus
+	}
+	return ""
+}
+
+type SetVoiceActivityStatusResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
+	GroupIds      []string               `protobuf:"bytes,2,rep,name=group_ids,json=groupIds,proto3" json:"group_ids,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetVoiceActivityStatusResponse) Reset() {
+	*x = SetVoiceActivityStatusResponse{}
+	mi := &file_user_v1_presence_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetVoiceActivityStatusResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetVoiceActivityStatusResponse) ProtoMessage() {}
+
+func (x *SetVoiceActivityStatusResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_presence_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetVoiceActivityStatusResponse.ProtoReflect.Descriptor instead.
+func (*SetVoiceActivityStatusResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_presence_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *SetVoiceActivityStatusResponse) GetOk() bool {
+	if x != nil {
+		return x.Ok
+	}
+	return false
+}
+
+func (x *SetVoiceActivityStatusResponse) GetGroupIds() []string {
+	if x != nil {
+		return x.GroupIds
+	}
+	return nil
+}
+
 var File_user_v1_presence_proto protoreflect.FileDescriptor
 
 const file_user_v1_presence_proto_rawDesc = "" +
@@ -503,12 +607,19 @@ const file_user_v1_presence_proto_rawDesc = "" +
 	"\x10effective_status\x18\x02 \x01(\tR\x0feffectiveStatus\x12\x1b\n" +
 	"\tis_online\x18\x03 \x01(\bR\bisOnline\x12\x1d\n" +
 	"\n" +
-	"expires_at\x18\x04 \x01(\tR\texpiresAt2\xf9\x02\n" +
+	"expires_at\x18\x04 \x01(\tR\texpiresAt\"a\n" +
+	"\x1dSetVoiceActivityStatusRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12'\n" +
+	"\x0factivity_status\x18\x02 \x01(\tR\x0eactivityStatus\"M\n" +
+	"\x1eSetVoiceActivityStatusResponse\x12\x0e\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok\x12\x1b\n" +
+	"\tgroup_ids\x18\x02 \x03(\tR\bgroupIds2\xe4\x03\n" +
 	"\x0fPresenceService\x12[\n" +
 	"\x11HeartbeatPresence\x12!.user.v1.HeartbeatPresenceRequest\x1a#.user.v1.PresenceTransitionResponse\x12]\n" +
 	"\x12DisconnectPresence\x12\".user.v1.DisconnectPresenceRequest\x1a#.user.v1.PresenceTransitionResponse\x12Z\n" +
 	"\x11SetManualPresence\x12!.user.v1.SetManualPresenceRequest\x1a\".user.v1.SetManualPresenceResponse\x12N\n" +
-	"\rGetMyPresence\x12\x1d.user.v1.GetMyPresenceRequest\x1a\x1e.user.v1.GetMyPresenceResponseB\x9f\x01\n" +
+	"\rGetMyPresence\x12\x1d.user.v1.GetMyPresenceRequest\x1a\x1e.user.v1.GetMyPresenceResponse\x12i\n" +
+	"\x16SetVoiceActivityStatus\x12&.user.v1.SetVoiceActivityStatusRequest\x1a'.user.v1.SetVoiceActivityStatusResponseB\x9f\x01\n" +
 	"\vcom.user.v1B\rPresenceProtoP\x01ZDgithub.com/wichat/wichat/backend/wi-shared/models/gen/user/v1;userv1\xa2\x02\x03UXX\xaa\x02\aUser.V1\xca\x02\aUser\\V1\xe2\x02\x13User\\V1\\GPBMetadata\xea\x02\bUser::V1b\x06proto3"
 
 var (
@@ -523,27 +634,31 @@ func file_user_v1_presence_proto_rawDescGZIP() []byte {
 	return file_user_v1_presence_proto_rawDescData
 }
 
-var file_user_v1_presence_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_user_v1_presence_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_user_v1_presence_proto_goTypes = []any{
-	(*HeartbeatPresenceRequest)(nil),   // 0: user.v1.HeartbeatPresenceRequest
-	(*DisconnectPresenceRequest)(nil),  // 1: user.v1.DisconnectPresenceRequest
-	(*PresenceTransitionResponse)(nil), // 2: user.v1.PresenceTransitionResponse
-	(*SetManualPresenceRequest)(nil),   // 3: user.v1.SetManualPresenceRequest
-	(*SetManualPresenceResponse)(nil),  // 4: user.v1.SetManualPresenceResponse
-	(*GetMyPresenceRequest)(nil),       // 5: user.v1.GetMyPresenceRequest
-	(*GetMyPresenceResponse)(nil),      // 6: user.v1.GetMyPresenceResponse
+	(*HeartbeatPresenceRequest)(nil),       // 0: user.v1.HeartbeatPresenceRequest
+	(*DisconnectPresenceRequest)(nil),      // 1: user.v1.DisconnectPresenceRequest
+	(*PresenceTransitionResponse)(nil),     // 2: user.v1.PresenceTransitionResponse
+	(*SetManualPresenceRequest)(nil),       // 3: user.v1.SetManualPresenceRequest
+	(*SetManualPresenceResponse)(nil),      // 4: user.v1.SetManualPresenceResponse
+	(*GetMyPresenceRequest)(nil),           // 5: user.v1.GetMyPresenceRequest
+	(*GetMyPresenceResponse)(nil),          // 6: user.v1.GetMyPresenceResponse
+	(*SetVoiceActivityStatusRequest)(nil),  // 7: user.v1.SetVoiceActivityStatusRequest
+	(*SetVoiceActivityStatusResponse)(nil), // 8: user.v1.SetVoiceActivityStatusResponse
 }
 var file_user_v1_presence_proto_depIdxs = []int32{
 	0, // 0: user.v1.PresenceService.HeartbeatPresence:input_type -> user.v1.HeartbeatPresenceRequest
 	1, // 1: user.v1.PresenceService.DisconnectPresence:input_type -> user.v1.DisconnectPresenceRequest
 	3, // 2: user.v1.PresenceService.SetManualPresence:input_type -> user.v1.SetManualPresenceRequest
 	5, // 3: user.v1.PresenceService.GetMyPresence:input_type -> user.v1.GetMyPresenceRequest
-	2, // 4: user.v1.PresenceService.HeartbeatPresence:output_type -> user.v1.PresenceTransitionResponse
-	2, // 5: user.v1.PresenceService.DisconnectPresence:output_type -> user.v1.PresenceTransitionResponse
-	4, // 6: user.v1.PresenceService.SetManualPresence:output_type -> user.v1.SetManualPresenceResponse
-	6, // 7: user.v1.PresenceService.GetMyPresence:output_type -> user.v1.GetMyPresenceResponse
-	4, // [4:8] is the sub-list for method output_type
-	0, // [0:4] is the sub-list for method input_type
+	7, // 4: user.v1.PresenceService.SetVoiceActivityStatus:input_type -> user.v1.SetVoiceActivityStatusRequest
+	2, // 5: user.v1.PresenceService.HeartbeatPresence:output_type -> user.v1.PresenceTransitionResponse
+	2, // 6: user.v1.PresenceService.DisconnectPresence:output_type -> user.v1.PresenceTransitionResponse
+	4, // 7: user.v1.PresenceService.SetManualPresence:output_type -> user.v1.SetManualPresenceResponse
+	6, // 8: user.v1.PresenceService.GetMyPresence:output_type -> user.v1.GetMyPresenceResponse
+	8, // 9: user.v1.PresenceService.SetVoiceActivityStatus:output_type -> user.v1.SetVoiceActivityStatusResponse
+	5, // [5:10] is the sub-list for method output_type
+	0, // [0:5] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
 	0, // [0:0] is the sub-list for extension extendee
 	0, // [0:0] is the sub-list for field type_name
@@ -560,7 +675,7 @@ func file_user_v1_presence_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_user_v1_presence_proto_rawDesc), len(file_user_v1_presence_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

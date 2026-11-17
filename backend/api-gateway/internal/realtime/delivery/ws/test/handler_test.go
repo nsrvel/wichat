@@ -58,6 +58,10 @@ func (s *stubPresenceClient) GetMyPresence(context.Context, *userv1.GetMyPresenc
 	return &userv1.GetMyPresenceResponse{}, nil
 }
 
+func (s *stubPresenceClient) SetVoiceActivityStatus(context.Context, *userv1.SetVoiceActivityStatusRequest) (*userv1.SetVoiceActivityStatusResponse, error) {
+	return &userv1.SetVoiceActivityStatusResponse{Ok: true}, nil
+}
+
 func TestRealtimeHeartbeatAuthRefreshAndInitialSync(t *testing.T) {
 	t.Parallel()
 

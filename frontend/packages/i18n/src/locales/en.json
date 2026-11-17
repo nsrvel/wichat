@@ -1556,5 +1556,96 @@
       "delete_category": "Delete Category",
       "create_channel": "Create Channel"
     }
+  },
+  "voice": {
+    "status": {
+      "connected": "Voice Connected",
+      "connecting": "Connecting...",
+      "reconnecting": "Reconnecting...",
+      "disconnected": "Disconnected",
+      "in_a_call": "In a call",
+      "in_a_meeting": "In a meeting"
+    },
+    "controls": {
+      "mute": "Mute",
+      "unmute": "Unmute",
+      "server_muted": "Server Muted",
+      "deafen": "Deafen",
+      "undeafen": "Undeafen",
+      "server_deafened": "Server Deafened",
+      "camera_on": "Turn On Camera",
+      "camera_off": "Turn Off Camera",
+      "share_screen": "Share Screen",
+      "stop_share": "Stop Sharing",
+      "disconnect": "Disconnect",
+      "start_recording": "Record Call",
+      "stop_recording": "Stop Recording",
+      "grid_view": "Grid View",
+      "focus_view": "Focus View",
+      "join_voice": "Join Voice",
+      "leave_voice": "Leave Voice"
+    },
+    "stage": {
+      "empty_title": "No one is in the call yet",
+      "empty_description": "Join this channel to start talking or sharing video.",
+      "you": "You",
+      "speaking": "Speaking",
+      "screen_share_label": "{{name}}'s screen",
+      "screen_share_hint": "Sharing at 1080p • Use Stop Sharing to end.",
+      "recordings_title": "Call Recordings",
+      "no_recordings": "No recordings for this channel yet.",
+      "download_recording": "Download"
+    },
+    "moderation": {
+      "server_mute": "Server Mute",
+      "server_unmute": "Remove Server Mute",
+      "server_deafen": "Server Deafen",
+      "server_undeafen": "Remove Server Deafen",
+      "disconnect_user": "Disconnect",
+      "local_mute": "Mute for me",
+      "user_volume": "User Volume ({{percent}}%)",
+      "kicked_notice": "You were disconnected from the voice channel by a moderator."
+    },
+    "recording": {
+      "badge": "Recording",
+      "consent_title": "This call is being recorded",
+      "consent_description": "A participant is currently recording this call. By continuing, you consent to being recorded.",
+      "consent_accept": "Stay in Call",
+      "consent_leave": "Leave Call"
+    },
+    "idle": {
+      "warning_title": "Are you still there?",
+      "warning_description": "You have been inactive in this call and will be disconnected soon.",
+      "stay_connected": "I'm still here"
+    },
+    "quota": {
+      "warning_banner": "Monthly call minutes at {{percent}}% ({{used}}/{{limit}} min)."
+    },
+    "settings": {
+      "title": "Voice & Video",
+      "input_device": "Input Device",
+      "output_device": "Output Device",
+      "camera_device": "Camera",
+      "default_device": "System Default",
+      "mic_test": "Test Microphone",
+      "mic_test_stop": "Stop Test",
+      "input_mode": "Input Mode",
+      "vad": "Voice Activity",
+      "ptt": "Push to Talk",
+      "vad_sensitivity": "Input Sensitivity",
+      "ptt_key": "Push to Talk Key",
+      "press_any_key": "Press any key...",
+      "echo_cancellation": "Echo Cancellation",
+      "noise_suppression": "Noise Suppression",
+      "auto_gain_control": "Automatic Gain Control"
+    },
+    "errors": {
+      "room_full": "This voice channel is full.",
+      "video_cap": "Maximum concurrent video publishers reached.",
+      "guest_not_allowed": "Guest accounts cannot join voice channels.",
+      "quota_exceeded": "Monthly voice & video quota has been reached.",
+      "already_recording": "This call is already being recorded.",
+      "permission_denied": "Missing voice permission."
+    }
   }
 }

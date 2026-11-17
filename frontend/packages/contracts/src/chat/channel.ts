@@ -8,6 +8,7 @@ export const channelKindSchema = z.enum([
 	"broadcast",
 	"text_only",
 	"voice_only",
+	"text_and_voice",
 	"forum",
 	"dm",
 	"public",
@@ -106,6 +107,7 @@ export type ChannelsList = z.infer<typeof ChannelsListSchema>;
 export const creatableChannelKindSchema = z.enum([
 	"text_only",
 	"voice_only",
+	"text_and_voice",
 	"forum",
 	"broadcast",
 ]);

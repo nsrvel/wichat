@@ -93,9 +93,55 @@ func (r realtimeFanout) handle(in wikafka.Incoming) error {
 		return r.deliver(ev.GroupID, ev.ChannelID, func() ([]byte, error) {
 			return realtime.MarshalMessageReactionsUpdatedEvent(ev)
 		})
+	case chatEvents.TypeVoiceOccupancyUpdated:
+		var ev chatEvents.VoiceOccupancyUpdated
+		if err := json.Unmarshal(in.Value, &ev); err != nil {
+			return err
+		}
+		return r.deliverGroupAndChannel(ev.GroupID, ev.ChannelID, func() ([]byte, error) {
+			return realtime.MarshalVoiceOccupancyUpdatedEvent(ev)
+		})
+	case chatEvents.TypeVoiceRecordingUpdated:
+		var ev chatEvents.VoiceRecordingUpdated
+		if err := json.Unmarshal(in.Value, &ev); err != nil {
+			return err
+		}
+		return r.deliverGroupAndChannel(ev.GroupID, ev.ChannelID, func() ([]byte, error) {
+			return realtime.MarshalVoiceRecordingUpdatedEvent(ev)
+		})
+	case chatEvents.TypeVoiceModerationApplied:
+		var ev chatEvents.VoiceModerationApplied
+		if err := json.Unmarshal(in.Value, &ev); err != nil {
+			return err
+		}
+		return r.deliverGroupAndChannel(ev.GroupID, ev.ChannelID, func() ([]byte, error) {
+			return realtime.MarshalVoiceModerationAppliedEvent(ev)
+		})
+	case chatEvents.TypeVoiceIdleWarning:
+		var ev chatEvents.VoiceIdleWarning
+		if err := json.Unmarshal(in.Value, &ev); err != nil {
+			return err
+		}
+		return r.deliverGroupAndChannel(ev.GroupID, ev.ChannelID, func() ([]byte, error) {
+			return realtime.MarshalVoiceIdleWarningEvent(ev)
+		})
 	default:
 		return nil
 	}
+}
+
+func (r realtimeFanout) deliverGroupAndChannel(groupID, channelID string, marshalFn func() ([]byte, error)) error {
+	payload, err := marshalFn()
+	if err != nil {
+		return err
+	}
+	if groupID != "" {
+		r.hub.DeliverGroup(groupID, payload)
+	}
+	if groupID != "" && channelID != "" {
+		r.hub.Deliver(groupID, channelID, payload)
+	}
+	return nil
 }
 
 func (r realtimeFanout) deliver(groupID, channelID string, marshalFn func() ([]byte, error)) error {

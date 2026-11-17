@@ -10,10 +10,11 @@ import (
 )
 
 const (
-	connKeyPrefix      = "presence:conn:"
-	connIDsKeyPrefix   = "presence:conn_ids:"
-	manualKeyPrefix    = "presence:manual:"
-	effectiveKeyPrefix = "presence:effective:"
+	connKeyPrefix          = "presence:conn:"
+	connIDsKeyPrefix       = "presence:conn_ids:"
+	manualKeyPrefix        = "presence:manual:"
+	effectiveKeyPrefix     = "presence:effective:"
+	voiceActivityKeyPrefix = "presence:voice_activity:"
 )
 
 // RedisRepository stores ephemeral connection heartbeats, manual overrides, and effective presence in Redis.
@@ -26,6 +27,8 @@ type RedisRepository interface {
 	SetEffectiveStatus(ctx context.Context, userID, effectiveStatus string, ttl time.Duration) error
 	GetEffectiveStatus(ctx context.Context, userID string) (string, error)
 	BatchGetEffectivePresence(ctx context.Context, userIDs []string) (map[string]models.UserPresenceSnapshot, error)
+	SetVoiceActivityStatus(ctx context.Context, userID, activityStatus string, ttl time.Duration) error
+	GetVoiceActivityStatus(ctx context.Context, userID string) (string, error)
 }
 
 type redisPresenceRepo struct {
@@ -187,4 +190,23 @@ func (r redisPresenceRepo) BatchGetEffectivePresence(ctx context.Context, userID
 	}
 
 	return out, nil
+}
+
+func (r redisPresenceRepo) SetVoiceActivityStatus(ctx context.Context, userID, activityStatus string, ttl time.Duration) error {
+	key := voiceActivityKeyPrefix + userID
+	if activityStatus == "" {
+		return r.rdb.Del(ctx, key).Err()
+	}
+	return r.rdb.Set(ctx, key, activityStatus, ttl).Err()
+}
+
+func (r redisPresenceRepo) GetVoiceActivityStatus(ctx context.Context, userID string) (string, error) {
+	val, err := r.rdb.Get(ctx, voiceActivityKeyPrefix+userID).Result()
+	if errors.Is(err, redis.Nil) {
+		return "", nil
+	}
+	if err != nil {
+		return "", err
+	}
+	return val, nil
 }

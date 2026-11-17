@@ -96,3 +96,23 @@ func MarshalMessageReactionsUpdatedEvent(ev chatEvents.MessageReactionsUpdated) 
 		Reactions: reactions,
 	})
 }
+
+// MarshalVoiceOccupancyUpdatedEvent JSON-encodes a voice.occupancy.updated event for WebSocket subscribers.
+func MarshalVoiceOccupancyUpdatedEvent(ev chatEvents.VoiceOccupancyUpdated) ([]byte, error) {
+	return json.Marshal(ev)
+}
+
+// MarshalVoiceRecordingUpdatedEvent JSON-encodes a voice.recording.updated event for WebSocket subscribers.
+func MarshalVoiceRecordingUpdatedEvent(ev chatEvents.VoiceRecordingUpdated) ([]byte, error) {
+	return json.Marshal(ev)
+}
+
+// MarshalVoiceModerationAppliedEvent JSON-encodes a voice.moderation.applied event for WebSocket subscribers.
+func MarshalVoiceModerationAppliedEvent(ev chatEvents.VoiceModerationApplied) ([]byte, error) {
+	return json.Marshal(ev)
+}
+
+// MarshalVoiceIdleWarningEvent JSON-encodes a voice.idle.warning event for WebSocket subscribers.
+func MarshalVoiceIdleWarningEvent(ev chatEvents.VoiceIdleWarning) ([]byte, error) {
+	return json.Marshal(ev)
+}

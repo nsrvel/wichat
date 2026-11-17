@@ -12,6 +12,9 @@ func TestValidMessageCodePrefixes(t *testing.T) {
 	if !exception.ValidMessageCode(exception.MsgForbidden) {
 		t.Fatal("auth prefix")
 	}
+	if !exception.ValidMessageCode(exception.MsgVoiceRoomFull) {
+		t.Fatal("voice prefix")
+	}
 	if exception.ValidMessageCode("") {
 		t.Fatal("empty")
 	}

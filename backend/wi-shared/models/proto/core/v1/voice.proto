@@ -1,0 +1,165 @@
+syntax = "proto3";
+
+package core.v1;
+
+option go_package = "github.com/wichat/wichat/backend/wi-shared/models/gen/core/v1;corev1";
+
+// VoiceService manages LiveKit JWT issuance, occupancy, moderation, recording, idle-kick, and quota.
+service VoiceService {
+  rpc IssueVoiceToken(IssueVoiceTokenRequest) returns (IssueVoiceTokenResponse);
+  rpc ModerateParticipant(ModerateParticipantRequest) returns (ModerateParticipantResponse);
+  rpc HandleWebhook(HandleWebhookRequest) returns (HandleWebhookResponse);
+  rpc ListGroupOccupancy(ListGroupOccupancyRequest) returns (ListGroupOccupancyResponse);
+  rpc StartRecording(StartRecordingRequest) returns (StartRecordingResponse);
+  rpc StopRecording(StopRecordingRequest) returns (StopRecordingResponse);
+  rpc ListChannelRecordings(ListChannelRecordingsRequest) returns (ListChannelRecordingsResponse);
+  rpc AcknowledgeIdleWarning(AcknowledgeIdleWarningRequest) returns (AcknowledgeIdleWarningResponse);
+  rpc GetQuotaUsage(GetQuotaUsageRequest) returns (GetQuotaUsageResponse);
+}
+
+message VoiceOccupant {
+  string user_id = 1;
+  string display_name = 2;
+  string username = 3;
+  string avatar_url = 4;
+  bool is_muted = 5;
+  bool is_deafened = 6;
+  bool is_server_muted = 7;
+  bool is_server_deafened = 8;
+  bool is_camera_on = 9;
+  bool is_screen_sharing = 10;
+  string joined_at = 11;
+}
+
+message ChannelOccupancy {
+  string channel_id = 1;
+  bool is_recording = 2;
+  repeated VoiceOccupant occupants = 3;
+}
+
+message CallRecordingSummary {
+  string id = 1;
+  string session_id = 2;
+  string channel_id = 3;
+  string egress_id = 4;
+  string status = 5;
+  string file_key = 6;
+  int64 file_size_bytes = 7;
+  int32 duration_seconds = 8;
+  string started_by = 9;
+  string stopped_by = 10;
+  string started_at = 11;
+  string ended_at = 12;
+  string download_url = 13;
+}
+
+message IssueVoiceTokenRequest {
+  string access_token = 1;
+  string group_id = 2;
+  string channel_id = 3;
+}
+
+message IssueVoiceTokenResponse {
+  string token = 1;
+  string livekit_url = 2;
+  string room_name = 3;
+  string channel_id = 4;
+  string expires_at = 5;
+  bool initial_server_muted = 6;
+  bool can_publish_audio = 7;
+  bool can_publish_video = 8;
+  bool use_voice_activity = 9;
+  int32 bitrate_kbps = 10;
+  string video_quality = 11;
+  bool is_recording = 12;
+  repeated VoiceOccupant occupants = 13;
+}
+
+message ModerateParticipantRequest {
+  string access_token = 1;
+  string group_id = 2;
+  string channel_id = 3;
+  string target_user_id = 4;
+  string action = 5; // "mute" | "unmute" | "deafen" | "undeafen" | "disconnect"
+  string reason = 6;
+}
+
+message ModerateParticipantResponse {
+  bool ok = 1;
+  VoiceOccupant occupant = 2;
+}
+
+message HandleWebhookRequest {
+  string auth_header = 1;
+  bytes raw_body = 2;
+}
+
+message HandleWebhookResponse {
+  bool ok = 1;
+}
+
+message ListGroupOccupancyRequest {
+  string access_token = 1;
+  string group_id = 2;
+}
+
+message ListGroupOccupancyResponse {
+  repeated ChannelOccupancy channels = 1;
+}
+
+message StartRecordingRequest {
+  string access_token = 1;
+  string group_id = 2;
+  string channel_id = 3;
+}
+
+message StartRecordingResponse {
+  CallRecordingSummary recording = 1;
+}
+
+message StopRecordingRequest {
+  string access_token = 1;
+  string group_id = 2;
+  string channel_id = 3;
+  string recording_id = 4;
+}
+
+message StopRecordingResponse {
+  CallRecordingSummary recording = 1;
+}
+
+message ListChannelRecordingsRequest {
+  string access_token = 1;
+  string group_id = 2;
+  string channel_id = 3;
+  int32 limit = 4;
+  string cursor = 5;
+}
+
+message ListChannelRecordingsResponse {
+  repeated CallRecordingSummary recordings = 1;
+  string next_cursor = 2;
+}
+
+message AcknowledgeIdleWarningRequest {
+  string access_token = 1;
+  string group_id = 2;
+  string channel_id = 3;
+}
+
+message AcknowledgeIdleWarningResponse {
+  bool ok = 1;
+}
+
+message GetQuotaUsageRequest {
+  string access_token = 1;
+  string group_id = 2;
+}
+
+message GetQuotaUsageResponse {
+  string month = 1;
+  int64 used_participant_minutes = 2;
+  int64 limit_participant_minutes = 3;
+  double usage_percent = 4;
+  bool warning_active = 5;
+}

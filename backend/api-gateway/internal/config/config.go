@@ -16,6 +16,7 @@ type Config struct {
 	Port                       string         `mapstructure:"port"`
 	UserHost                   string         `mapstructure:"ms_user_host"`
 	ChatHost                   string         `mapstructure:"ms_chat_host"`
+	CoreHost                   string         `mapstructure:"ms_core_host"`
 	NotificationHost           string         `mapstructure:"ms_notification_host"`
 	WebOrigin                  string         `mapstructure:"web_origin"`
 	KafkaBrokers               string         `mapstructure:"kafka_brokers"`
@@ -35,6 +36,7 @@ var Defaults = Config{
 	Port:                       "3000",
 	UserHost:                   "localhost:3001",
 	ChatHost:                   "localhost:3002",
+	CoreHost:                   "localhost:3003",
 	NotificationHost:           "localhost:3005",
 	WebOrigin:                  "http://localhost:8080",
 	KafkaBrokers:               "localhost:9092",

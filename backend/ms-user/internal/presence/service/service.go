@@ -28,6 +28,7 @@ type Service interface {
 	DisconnectPresence(ctx context.Context, userID, connID string) (models.PresenceTransition, error)
 	SetManualPresence(ctx context.Context, accessToken, status string, ttlSeconds int64) (models.SetManualPresenceResult, error)
 	GetMyPresence(ctx context.Context, accessToken string) (models.MyPresenceView, error)
+	SetVoiceActivityStatus(ctx context.Context, userID, activityStatus string) ([]string, error)
 }
 
 type service struct {
@@ -259,4 +260,16 @@ func (s service) GetMyPresence(ctx context.Context, accessToken string) (models.
 
 func (s service) BatchGetEffectivePresence(ctx context.Context, userIDs []string) (map[string]models.UserPresenceSnapshot, error) {
 	return s.repo.BatchGetEffectivePresence(ctx, userIDs)
+}
+
+func (s service) SetVoiceActivityStatus(ctx context.Context, userID, activityStatus string) ([]string, error) {
+	trimmed := strings.TrimSpace(activityStatus)
+	if trimmed != "" && trimmed != "In a call" && trimmed != "In a meeting" {
+		return nil, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "activity_status"})
+	}
+	uid := strings.TrimSpace(userID)
+	if err := s.repo.SetVoiceActivityStatus(ctx, uid, trimmed, 12*time.Hour); err != nil {
+		return nil, err
+	}
+	return s.userGroupPublicIDs(ctx, uid), nil
 }

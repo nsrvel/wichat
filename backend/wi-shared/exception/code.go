@@ -32,6 +32,15 @@ const (
 
 	MsgUserNotFound   MessageCode = "user.not_found"
 	MsgUserOwnsGroups MessageCode = "user.owns_groups"
+
+	MsgVoiceRoomFull           MessageCode = "voice.room_full"
+	MsgVoiceVideoLimitReached  MessageCode = "voice.video_limit_reached"
+	MsgVoiceChannelNotVoice    MessageCode = "voice.channel_not_voice_capable"
+	MsgVoiceQuotaExceeded      MessageCode = "voice.quota_exceeded"
+	MsgVoiceRecordingAlready   MessageCode = "voice.recording_already_active"
+	MsgVoiceRecordingNotActive MessageCode = "voice.recording_not_active"
+	MsgVoiceWebhookInvalidSig  MessageCode = "voice.webhook_invalid_signature"
+	MsgVoiceGuestNotAllowed    MessageCode = "voice.guest_not_allowed"
 )
 
 // ValidMessageCode reports whether code is an allowed i18n key shape from trusted services.
@@ -43,5 +52,6 @@ func ValidMessageCode(code MessageCode) bool {
 
 	return strings.HasPrefix(s, "error.") ||
 		strings.HasPrefix(s, "auth.") ||
-		strings.HasPrefix(s, "user.")
+		strings.HasPrefix(s, "user.") ||
+		strings.HasPrefix(s, "voice.")
 }

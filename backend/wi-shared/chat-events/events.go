@@ -11,6 +11,10 @@ const (
 	TypeMessageUpdated          = "message.updated"
 	TypeMessageDeleted          = "message.deleted"
 	TypeMessageReactionsUpdated = "message.reactions.updated"
+	TypeVoiceOccupancyUpdated   = "voice.occupancy.updated"
+	TypeVoiceRecordingUpdated   = "voice.recording.updated"
+	TypeVoiceModerationApplied  = "voice.moderation.applied"
+	TypeVoiceIdleWarning        = "voice.idle.warning"
 )
 
 // ReplyPreview is a compact quoted parent message snippet.
@@ -73,6 +77,60 @@ type MessageReactionsUpdated struct {
 	ChannelID string            `json:"channel_id"`
 	MessageID string            `json:"message_id"`
 	Reactions []ReactionSummary `json:"reactions"`
+}
+
+// VoiceOccupant represents one active participant in a voice channel.
+type VoiceOccupant struct {
+	UserID           string `json:"user_id"`
+	DisplayName      string `json:"display_name"`
+	Username         string `json:"username"`
+	AvatarURL        string `json:"avatar_url,omitempty"`
+	IsMuted          bool   `json:"is_muted"`
+	IsDeafened       bool   `json:"is_deafened"`
+	IsServerMuted    bool   `json:"is_server_muted"`
+	IsServerDeafened bool   `json:"is_server_deafened"`
+	IsCameraOn       bool   `json:"is_camera_on"`
+	IsScreenSharing  bool   `json:"is_screen_sharing"`
+	JoinedAt         string `json:"joined_at"`
+}
+
+// VoiceOccupancyUpdated is emitted when voice room occupancy or track state changes.
+type VoiceOccupancyUpdated struct {
+	Type        string          `json:"type"`
+	GroupID     string          `json:"group_id"`
+	ChannelID   string          `json:"channel_id"`
+	IsRecording bool            `json:"is_recording"`
+	Occupants   []VoiceOccupant `json:"occupants"`
+}
+
+// VoiceRecordingUpdated is emitted when call recording starts or stops.
+type VoiceRecordingUpdated struct {
+	Type            string `json:"type"`
+	GroupID         string `json:"group_id"`
+	ChannelID       string `json:"channel_id"`
+	IsRecording     bool   `json:"is_recording"`
+	RecordingID     string `json:"recording_id,omitempty"`
+	StartedByUserID string `json:"started_by_user_id,omitempty"`
+	StartedAt       string `json:"started_at,omitempty"`
+}
+
+// VoiceModerationApplied is emitted when a moderator mutes/deafens/disconnects a participant.
+type VoiceModerationApplied struct {
+	Type         string `json:"type"`
+	GroupID      string `json:"group_id"`
+	ChannelID    string `json:"channel_id"`
+	TargetUserID string `json:"target_user_id"`
+	Action       string `json:"action"`
+	ActorUserID  string `json:"actor_user_id"`
+}
+
+// VoiceIdleWarning is emitted 2 minutes before automatic idle-kick.
+type VoiceIdleWarning struct {
+	Type             string `json:"type"`
+	GroupID          string `json:"group_id"`
+	ChannelID        string `json:"channel_id"`
+	UserID           string `json:"user_id"`
+	ExpiresInSeconds int32  `json:"expires_in_seconds"`
 }
 
 // NewMessageCreated builds a chat-events payload.

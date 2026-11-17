@@ -21,7 +21,7 @@ import {
 	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { type Channel, creatableChannelKindSchema } from "@wichat/contracts/chat/channel";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { AtSign, Compass, FileText, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -40,7 +40,6 @@ import {
 import { sidebarNavGlyphIconClass } from "@/components/layout/sidebar-list-icon";
 import { SortableCategoryItem } from "@/features/channel-category/components/sortable-category-item";
 import { SortableChannelRow } from "@/features/channel/components/sortable-channel-list";
-import { prefetchChannelMessages } from "@/services/message/message.query";
 import { formatChannelDisplayName } from "@/features/channel/lib/channel-display";
 import { useCategorySettings } from "@/features/channel-category/category-settings/category-settings-provider";
 import { useChannelSettings } from "@/features/channel/channel-settings/channel-settings-provider";
@@ -68,6 +67,10 @@ import {
 } from "@/services/channel-category/channel-category.mutation";
 import * as channelQuery from "@/services/channel/channel.query";
 import { myGroupsQueryOpts } from "@/services/group/group.query";
+import { groupVoiceOccupancyQueryOpts } from "@/services/voice/voice.query";
+import { SidebarVoiceOccupants } from "@/features/voice/components/sidebar-voice-occupants";
+import { useVoiceOccupancyRealtime } from "@/features/voice/hooks/use-voice-occupancy-realtime";
+import { useVoiceSession } from "@/features/voice/voice-session-provider";
 
 type ProductionChannelSidebarProps = {
 	groupId: string;
@@ -102,6 +105,15 @@ export function ProductionChannelSidebar({
 		name: string;
 	} | null>(null);
 	const channels = useQuery(channelQuery.groupChannelsQueryOpts(groupId));
+	useVoiceOccupancyRealtime(groupId);
+	const occupancyQuery = useQuery(groupVoiceOccupancyQueryOpts(groupId));
+	const { joinChannel, participants: activeVoiceParticipants } = useVoiceSession();
+	const occupancyByChannelId = new Map(
+		(occupancyQuery.data?.channels ?? []).map((entry) => [entry.channel_id, entry]),
+	);
+	const speakingIds = new Set(
+		activeVoiceParticipants.filter((p) => p.isSpeaking).map((p) => p.identity),
+	);
 	const { data: myGroups = [] } = useQuery(myGroupsQueryOpts());
 	const currentGroup = myGroups.find((g) => g.id === groupId);
 	const isGroupOwner = currentGroup?.role === "owner";
@@ -187,62 +199,78 @@ export function ProductionChannelSidebar({
 			},
 		);
 	};
-	const queryClient = useQueryClient();
 	const renderChannelRow = (
 		ch: Channel,
 		index: number,
 		siblingCount: number,
 		categoryId?: string,
-	) => (
-		<SortableChannelRow
-			key={ch.id}
-			channel={ch}
-			categories={categories}
-			categoryId={categoryId}
-			selected={!activeQuickView && ch.id === activeChannelId}
-			disabled={!canManageChannels}
-			canManage={canManageChannels}
-			isFirstInCategory={index === 0}
-			isLastInCategory={index >= siblingCount - 1}
-			activeMenuId={activeMenuId}
-			onActiveMenuIdChange={setActiveMenuId}
-			onSelect={() => router.push(channelPath(groupId, ch.id))}
-			onPrefetch={
-				ch.type === "text" || ch.type === "broadcast"
-					? () => prefetchChannelMessages(queryClient, groupId, ch.id)
-					: undefined
-			}
-			onInvite={() =>
-				openInvite({
-					scope: "channel",
-					groupId,
-					groupName: currentGroup?.name ?? "",
-					channelId: ch.id,
-					channelName: ch.name,
-				})
-			}
-			onMoveToCategory={(targetCategoryId) => moveChannelToCategory(ch, targetCategoryId)}
-			onMoveToFirstInCategory={() => moveChannelInCategory(ch, "first")}
-			onMoveToLastInCategory={() => moveChannelInCategory(ch, "last")}
-			onEditChannel={() =>
-				openChannelSettings({
-					groupId,
-					channelId: ch.id,
-					channelName: ch.name,
-					channelType: ch.type,
-				})
-			}
-			onDuplicateChannel={() => duplicateChannel(ch)}
-			onCreateChannel={() =>
-				openCreateChannel({
-					groupId,
-					groupName: currentGroup?.name,
-					defaultCategoryId: ch.category_id ?? undefined,
-				})
-			}
-			onDeleteChannel={() => setPendingDeleteChannel({ id: ch.id, name: ch.name })}
-		/>
-	);
+	) => {
+		const isVoiceChannel = ch.type === "voice_only" || ch.type === "text_and_voice";
+		const occ = isVoiceChannel ? occupancyByChannelId.get(ch.id) : undefined;
+		return (
+			<div key={ch.id} className="flex flex-col">
+				<SortableChannelRow
+					channel={ch}
+					categories={categories}
+					categoryId={categoryId}
+					selected={!activeQuickView && ch.id === activeChannelId}
+					disabled={!canManageChannels}
+					canManage={canManageChannels}
+					isFirstInCategory={index === 0}
+					isLastInCategory={index >= siblingCount - 1}
+					activeMenuId={activeMenuId}
+					onActiveMenuIdChange={setActiveMenuId}
+					onSelect={() => {
+						if (ch.type === "voice_only") {
+							void joinChannel({
+								channelId: ch.id,
+								channelName: ch.name,
+								groupId,
+								groupName: currentGroup?.name,
+							});
+						}
+						router.push(channelPath(groupId, ch.id));
+					}}
+					onInvite={() =>
+						openInvite({
+							scope: "channel",
+							groupId,
+							groupName: currentGroup?.name ?? "",
+							channelId: ch.id,
+							channelName: ch.name,
+						})
+					}
+					onMoveToCategory={(targetCategoryId) => moveChannelToCategory(ch, targetCategoryId)}
+					onMoveToFirstInCategory={() => moveChannelInCategory(ch, "first")}
+					onMoveToLastInCategory={() => moveChannelInCategory(ch, "last")}
+					onEditChannel={() =>
+						openChannelSettings({
+							groupId,
+							channelId: ch.id,
+							channelName: ch.name,
+							channelType: ch.type,
+						})
+					}
+					onDuplicateChannel={() => duplicateChannel(ch)}
+					onCreateChannel={() =>
+						openCreateChannel({
+							groupId,
+							groupName: currentGroup?.name,
+							defaultCategoryId: ch.category_id ?? undefined,
+						})
+					}
+					onDeleteChannel={() => setPendingDeleteChannel({ id: ch.id, name: ch.name })}
+				/>
+				{isVoiceChannel && occ ? (
+					<SidebarVoiceOccupants
+						occupants={occ.occupants}
+						isRecording={occ.is_recording}
+						speakingIds={speakingIds}
+					/>
+				) : null}
+			</div>
+		);
+	};
 	const sensors = useSensors(
 		useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
 		useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),

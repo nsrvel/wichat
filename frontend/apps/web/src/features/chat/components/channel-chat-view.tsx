@@ -16,6 +16,7 @@ import { ChatComposer } from "@/features/chat/components/chat-composer";
 import { ConversationHeader } from "@/features/chat/components/conversation-header";
 import { MessageList } from "@/features/chat/components/message-list";
 import { PinnedMessagesPopover } from "@/features/chat/components/pinned-messages-popover";
+import { VoiceStageView } from "@/features/voice/components/voice-stage-view";
 import type { ChannelMessage } from "@/features/chat/lib/channel-message";
 import { groupTimelineItems } from "@/features/chat/lib/group-timeline-items";
 import { useChannelMessages } from "@/features/chat/lib/use-channel-messages";
@@ -125,6 +126,12 @@ export function ChannelChatView({ groupId, channelId, onOpenSidebar }: ChannelCh
 	const canReact = perms.length === 0 || isAdmin || perms.includes("add_reactions");
 	const canPin = isAdmin || perms.includes("pin_messages") || perms.includes("manage_messages");
 	const canManageMessages = isAdmin || perms.includes("manage_messages");
+	const canRecordCall = isAdmin || perms.includes("record_call");
+	const canMuteMembers = isAdmin || perms.includes("mute_members");
+	const canDeafenMembers = isAdmin || perms.includes("deafen_members");
+	const canMoveMembers = isAdmin || perms.includes("move_members");
+	const isVoiceOnly = activeChannel?.type === "voice_only";
+	const isTextAndVoice = activeChannel?.type === "text_and_voice";
 
 	const composerDisabled = !hasSendMessages || !canPostBroadcast;
 	const disabledReason = !hasSendMessages
@@ -420,7 +427,19 @@ export function ChannelChatView({ groupId, channelId, onOpenSidebar }: ChannelCh
 			) : null}
 
 			<div className="relative flex min-h-0 flex-1 flex-col">
-				{needsVisibilityAck ? (
+				{isVoiceOnly ? (
+					<VoiceStageView
+						channelId={channelId}
+						channelName={activeChannel?.name ?? "Voice"}
+						groupId={groupId}
+						groupName={myGroups.find((g) => g.id === groupId)?.name}
+						canRecordCall={canRecordCall}
+						canMuteMembers={canMuteMembers}
+						canDeafenMembers={canDeafenMembers}
+						canMoveMembers={canMoveMembers}
+						isAdmin={isAdmin}
+					/>
+				) : needsVisibilityAck ? (
 					<div className="flex flex-1 items-center justify-center p-6">
 						<div className="flex max-w-md flex-col items-center gap-3 rounded-xl border border-border bg-card p-6 text-center shadow-sm">
 							<div className="flex size-11 items-center justify-center rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400">
@@ -457,6 +476,20 @@ export function ChannelChatView({ groupId, channelId, onOpenSidebar }: ChannelCh
 					</div>
 				) : (
 					<>
+						{isTextAndVoice ? (
+							<VoiceStageView
+								compact
+								channelId={channelId}
+								channelName={activeChannel?.name ?? "Voice"}
+								groupId={groupId}
+								groupName={myGroups.find((g) => g.id === groupId)?.name}
+								canRecordCall={canRecordCall}
+								canMuteMembers={canMuteMembers}
+								canDeafenMembers={canDeafenMembers}
+								canMoveMembers={canMoveMembers}
+								isAdmin={isAdmin}
+							/>
+						) : null}
 						<div className="relative flex min-h-0 flex-1 flex-col">
 							<MessageList
 								scrollRef={scrollRef}
@@ -464,6 +497,20 @@ export function ChannelChatView({ groupId, channelId, onOpenSidebar }: ChannelCh
 								onScroll={handleScroll}
 								innerClassName={showEmpty || isError ? "min-h-full justify-center py-0" : undefined}
 							>
+								{isPending && messages.length === 0 && !isError ? (
+									<div className="flex flex-col gap-4 py-4" aria-busy="true">
+										{[0, 1, 2, 3, 4].map((row) => (
+											<div key={row} className="flex items-start gap-3">
+												<div className="size-9 shrink-0 animate-pulse rounded-full bg-muted/60" />
+												<div className="flex flex-1 flex-col gap-2 pt-0.5">
+													<div className="h-3.5 w-32 animate-pulse rounded bg-muted/60" />
+													<div className="h-3.5 w-3/4 animate-pulse rounded bg-muted/45" />
+												</div>
+											</div>
+										))}
+									</div>
+								) : null}
+
 								{isError ? (
 									<div className="flex flex-col items-center justify-center gap-3 py-8 text-center text-sm">
 										<p className="text-muted-foreground">{t("chat.load_error")}</p>

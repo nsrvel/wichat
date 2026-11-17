@@ -10,6 +10,7 @@ import { UserSettingsDevicesSection } from "@/features/user-settings/components/
 import { UserSettingsLanguageSection } from "@/features/user-settings/components/sections/user-settings-language-section";
 import { UserSettingsPlaceholderSection } from "@/features/user-settings/components/sections/user-settings-placeholder-section";
 import { UserSettingsProfilesSection } from "@/features/user-settings/components/sections/user-settings-profiles-section";
+import { UserSettingsVoiceSection } from "@/features/user-settings/components/user-settings-voice-section";
 import { UserSettingsSidebar } from "@/features/user-settings/components/user-settings-sidebar";
 import {
 	USER_SETTINGS_ITEM_BY_ID,
@@ -218,6 +219,8 @@ export function UserSettingsDialog({
 							/>
 						) : activeSection === "language" ? (
 							<UserSettingsLanguageSection />
+						) : activeSection === "voice" ? (
+							<UserSettingsVoiceSection />
 						) : activeSection === "devices" ? (
 							<UserSettingsDevicesSection
 								hasPassword={user?.has_password ?? true}

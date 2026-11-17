@@ -3,6 +3,7 @@ package microservices
 import (
 	"github.com/wichat/wichat/backend/wi-shared/infra/logger"
 	msChat "github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-chat"
+	msCore "github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-core"
 	msNotification "github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-notification"
 	msUser "github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-user"
 	"github.com/wichat/wichat/backend/wi-shared/microservices/utils"
@@ -16,6 +17,7 @@ type Config struct {
 	Settings         utils.Settings
 	UserAddr         string
 	ChatAddr         string
+	CoreAddr         string
 	NotificationAddr string
 }
 
@@ -23,10 +25,12 @@ type Config struct {
 type Clients struct {
 	User         msUser.Service
 	Chat         msChat.Service
+	Core         msCore.Service
 	Notification msNotification.Service
 
 	userConn         *grpc.ClientConn
 	chatConn         *grpc.ClientConn
+	coreConn         *grpc.ClientConn
 	notificationConn *grpc.ClientConn
 }
 
@@ -56,6 +60,18 @@ func Open(cfg Config) (*Clients, error) {
 		clients.chatConn = chatConn
 	}
 
+	if cfg.CoreAddr != "" {
+		coreConn, err := msgrpc.Dial(cfg.CoreAddr, msgrpc.DefaultDialOptions)
+		if err != nil {
+			_ = clients.closeUserAndChat()
+			return nil, err
+		}
+		clients.Core = msCore.Service{
+			GRPC: msCore.NewGRPC(coreConn, cfg.Settings, cfg.Log),
+		}
+		clients.coreConn = coreConn
+	}
+
 	if cfg.NotificationAddr != "" {
 		notifConn, err := msgrpc.Dial(cfg.NotificationAddr, msgrpc.DefaultDialOptions)
 		if err != nil {
@@ -82,6 +98,11 @@ func (c *Clients) Close() error {
 			first = err
 		}
 	}
+	if c.coreConn != nil {
+		if err := c.coreConn.Close(); err != nil && first == nil {
+			first = err
+		}
+	}
 	if c.chatConn != nil {
 		if err := c.chatConn.Close(); err != nil && first == nil {
 			first = err
@@ -98,8 +119,13 @@ func (c *Clients) Close() error {
 
 func (c *Clients) closeUserAndChat() error {
 	var first error
+	if c.coreConn != nil {
+		if err := c.coreConn.Close(); err != nil {
+			first = err
+		}
+	}
 	if c.chatConn != nil {
-		if err := c.chatConn.Close(); err != nil {
+		if err := c.chatConn.Close(); err != nil && first == nil {
 			first = err
 		}
 	}

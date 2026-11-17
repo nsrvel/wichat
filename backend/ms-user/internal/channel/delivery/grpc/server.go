@@ -189,5 +189,9 @@ func (s *Server) AssertGroupChannelAccess(ctx context.Context, req *userv1.Asser
 		ChannelType:       access.ChannelType,
 		SlowmodeSeconds:   access.SlowmodeSeconds,
 		ContentVisibility: access.ContentVisibility,
+		BitrateKbps:       access.BitrateKbps,
+		VideoQuality:      access.VideoQuality,
+		UserLimit:         access.UserLimit,
+		RtcRegion:         access.RTCRegion,
 	}, nil
 }

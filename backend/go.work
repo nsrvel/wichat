@@ -1,10 +1,11 @@
-go 1.26.0
+go 1.26.8
 
 use (
 	./api-gateway
-	./tools/check-layout
 	./ms-chat
+	./ms-core
 	./ms-notification
 	./ms-user
+	./tools/check-layout
 	./wi-shared
 )

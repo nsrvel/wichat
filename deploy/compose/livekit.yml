@@ -1,0 +1,31 @@
+# Optional self-hosted LiveKit SFU + Egress profile for local dev or self-hosting.
+# Start with: docker compose -p wichat -f deploy/compose/livekit.yml up -d
+services:
+  livekit:
+    image: livekit/livekit-server:v1.9
+    command: --dev --bind 0.0.0.0 --node-ip 127.0.0.1
+    ports:
+      - "7880:7880"
+      - "7881:7881"
+      - "7882:7882/udp"
+    environment:
+      LIVEKIT_KEYS: "devkey: secretdevkey1234567890abcdef1234567890"
+    restart: unless-stopped
+
+  livekit-egress:
+    image: livekit/egress:v1.8
+    depends_on:
+      - livekit
+    cap_add:
+      - SYS_ADMIN
+    environment:
+      EGRESS_CONFIG_BODY: |
+        api_key: devkey
+        api_secret: secretdevkey1234567890abcdef1234567890
+        ws_url: ws://livekit:7880
+        redis:
+          address: host.docker.internal:6379
+        insecure: true
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped

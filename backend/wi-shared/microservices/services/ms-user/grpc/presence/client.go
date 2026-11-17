@@ -15,6 +15,7 @@ type Client interface {
 	DisconnectPresence(ctx context.Context, in *userv1.DisconnectPresenceRequest) (*userv1.PresenceTransitionResponse, error)
 	SetManualPresence(ctx context.Context, in *userv1.SetManualPresenceRequest) (*userv1.SetManualPresenceResponse, error)
 	GetMyPresence(ctx context.Context, in *userv1.GetMyPresenceRequest) (*userv1.GetMyPresenceResponse, error)
+	SetVoiceActivityStatus(ctx context.Context, in *userv1.SetVoiceActivityStatusRequest) (*userv1.SetVoiceActivityStatusResponse, error)
 }
 
 type client struct {
@@ -61,5 +62,11 @@ func (c *client) SetManualPresence(ctx context.Context, in *userv1.SetManualPres
 func (c *client) GetMyPresence(ctx context.Context, in *userv1.GetMyPresenceRequest) (*userv1.GetMyPresenceResponse, error) {
 	return utils.CallUnaryResult(ctx, c.read, c.log, "presence.PresenceService/GetMyPresence", func(callCtx context.Context) (*userv1.GetMyPresenceResponse, error) {
 		return c.stub.GetMyPresence(callCtx, in)
+	})
+}
+
+func (c *client) SetVoiceActivityStatus(ctx context.Context, in *userv1.SetVoiceActivityStatusRequest) (*userv1.SetVoiceActivityStatusResponse, error) {
+	return utils.CallUnaryResult(ctx, c.none, c.log, "presence.PresenceService/SetVoiceActivityStatus", func(callCtx context.Context) (*userv1.SetVoiceActivityStatusResponse, error) {
+		return c.stub.SetVoiceActivityStatus(callCtx, in)
 	})
 }

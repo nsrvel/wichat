@@ -41,6 +41,7 @@ const CREATE_CHANNEL_TITLE_ID = "wichat-create-channel-title";
 const CHANNEL_TYPE_OPTIONS = [
 	{ value: "text_only", icon: Hash },
 	{ value: "voice_only", icon: Volume2 },
+	{ value: "text_and_voice", icon: Volume2 },
 	{ value: "forum", icon: MessagesSquare },
 	{ value: "broadcast", icon: Megaphone },
 ] as const;
@@ -48,7 +49,7 @@ const CHANNEL_TYPE_OPTIONS = [
 export type CreatableChannelType = (typeof CHANNEL_TYPE_OPTIONS)[number]["value"];
 
 const CreateChannelSchema = z.object({
-	type: z.enum(["text_only", "voice_only", "forum", "broadcast"]),
+	type: z.enum(["text_only", "voice_only", "text_and_voice", "forum", "broadcast"]),
 	name: z
 		.string()
 		.trim()

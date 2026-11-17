@@ -54,6 +54,10 @@ type ChannelAccess struct {
 	ChannelType       string
 	SlowmodeSeconds   int32
 	ContentVisibility string
+	BitrateKbps       int32
+	VideoQuality      string
+	UserLimit         int32
+	RTCRegion         string
 }
 
 // PublicChannel is returned to clients (JSON id is public_id).

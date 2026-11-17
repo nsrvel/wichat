@@ -22,9 +22,8 @@ export function channelMessagesQueryOpts(groupId: string, channelId: string) {
 			}
 			return lastPage.messages[0]?.created_at;
 		},
-		maxPages: 10,
 		enabled: isPublicEntityId(groupId) && isPublicEntityId(channelId),
-		staleTime: 30_000,
+		staleTime: 2 * 60_000,
 		refetchOnWindowFocus: false,
 	});
 }

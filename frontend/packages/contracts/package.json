@@ -19,7 +19,8 @@
     "./group/invite": "./src/group/invite.ts",
     "./chat/channel": "./src/chat/channel.ts",
     "./chat/channel-category": "./src/chat/channel-category.ts",
-    "./chat/message": "./src/chat/message.ts"
+    "./chat/message": "./src/chat/message.ts",
+    "./chat/voice": "./src/chat/voice.ts"
   },
   "dependencies": {
     "zod": "^4.6.5"

@@ -59,7 +59,8 @@ curl -sf http://127.0.0.1:9000/minio/health/live && echo ok
 | ms-user | **3001** | gRPC (auth + user/workspace) |
 | ms-chat | **3002** | gRPC (messages); Kafka produce + ES indexer consumer |
 | api-gateway WS | **3000** | `GET /api/v1/realtime` — Kafka fanout to WebSocket subscribers |
-| ms-core | **3003** | gRPC (LiveKit tokens, call lifecycle) — planned |
+| ms-core | **3003** | gRPC (LiveKit tokens, call lifecycle, moderation, recording, quota) |
+| LiveKit (optional local) | **7880** (WS/API), **7881** (TCP), **7882/udp** | `docker compose -p wichat -f deploy/compose/livekit.yml up -d` for local SFU + Egress, or set LiveKit Cloud `LIVEKIT_*` vars in `backend/ms-core/.env` |
 | ms-plugin | **3004** | gRPC — planned |
 | ms-notification | **3005** | gRPC — planned |
 | ms-audit | **3006** | gRPC — planned |

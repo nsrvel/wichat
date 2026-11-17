@@ -354,7 +354,7 @@ func TestCreateGroupChannelLifecycleAndPermissions(t *testing.T) {
 	if _, err := svc.CreateGroupChannel(ctx, owner.AccessToken, created.ID, "   ", "text_only", cat.ID, false); err == nil {
 		t.Fatal("expected invalid input for blank name")
 	}
-	if _, err := svc.CreateGroupChannel(ctx, owner.AccessToken, created.ID, "bad-type", "text_and_voice", cat.ID, false); err == nil {
+	if _, err := svc.CreateGroupChannel(ctx, owner.AccessToken, created.ID, "bad-type", "unknown_kind", cat.ID, false); err == nil {
 		t.Fatal("expected invalid input for unsupported type")
 	}
 	if _, err := svc.CreateGroupChannel(ctx, owner.AccessToken, created.ID, "bad-cat", "text_only", "ffffffffffffffffffffffff", false); err == nil {
@@ -366,8 +366,8 @@ func TestCreateGroupChannelLifecycleAndPermissions(t *testing.T) {
 		t.Fatal("expected forbidden")
 	}
 
-	// Create all 4 creatable channel types.
-	for _, kind := range []string{"text_only", "voice_only", "forum", "broadcast"} {
+	// Create all 5 creatable channel types.
+	for _, kind := range []string{"text_only", "voice_only", "text_and_voice", "forum", "broadcast"} {
 		ch, err := svc.CreateGroupChannel(ctx, owner.AccessToken, created.ID, "ch-"+kind, kind, cat.ID, kind == "broadcast")
 		if err != nil {
 			t.Fatalf("CreateGroupChannel(%s): %v", kind, err)

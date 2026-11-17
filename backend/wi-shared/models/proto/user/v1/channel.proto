@@ -195,5 +195,9 @@ message AssertGroupChannelAccessResponse {
   string channel_type = 4;
   int32 slowmode_seconds = 5;
   string content_visibility = 6;
+  int32 bitrate_kbps = 7;
+  string video_quality = 8;
+  int32 user_limit = 9;
+  string rtc_region = 10;
 }
 

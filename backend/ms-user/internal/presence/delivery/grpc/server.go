@@ -83,3 +83,14 @@ func (s *Server) GetMyPresence(ctx context.Context, req *userv1.GetMyPresenceReq
 		ExpiresAt:       expiresAt,
 	}, nil
 }
+
+func (s *Server) SetVoiceActivityStatus(ctx context.Context, req *userv1.SetVoiceActivityStatusRequest) (*userv1.SetVoiceActivityStatusResponse, error) {
+	groupIDs, err := s.svc.SetVoiceActivityStatus(ctx, req.GetUserId(), req.GetActivityStatus())
+	if err != nil {
+		return nil, responsegrpc.ToStatus(err)
+	}
+	return &userv1.SetVoiceActivityStatusResponse{
+		Ok:       true,
+		GroupIds: groupIDs,
+	}, nil
+}

@@ -1414,6 +1414,10 @@ type AssertGroupChannelAccessResponse struct {
 	ChannelType       string                 `protobuf:"bytes,4,opt,name=channel_type,json=channelType,proto3" json:"channel_type,omitempty"`
 	SlowmodeSeconds   int32                  `protobuf:"varint,5,opt,name=slowmode_seconds,json=slowmodeSeconds,proto3" json:"slowmode_seconds,omitempty"`
 	ContentVisibility string                 `protobuf:"bytes,6,opt,name=content_visibility,json=contentVisibility,proto3" json:"content_visibility,omitempty"`
+	BitrateKbps       int32                  `protobuf:"varint,7,opt,name=bitrate_kbps,json=bitrateKbps,proto3" json:"bitrate_kbps,omitempty"`
+	VideoQuality      string                 `protobuf:"bytes,8,opt,name=video_quality,json=videoQuality,proto3" json:"video_quality,omitempty"`
+	UserLimit         int32                  `protobuf:"varint,9,opt,name=user_limit,json=userLimit,proto3" json:"user_limit,omitempty"`
+	RtcRegion         string                 `protobuf:"bytes,10,opt,name=rtc_region,json=rtcRegion,proto3" json:"rtc_region,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -1486,6 +1490,34 @@ func (x *AssertGroupChannelAccessResponse) GetSlowmodeSeconds() int32 {
 func (x *AssertGroupChannelAccessResponse) GetContentVisibility() string {
 	if x != nil {
 		return x.ContentVisibility
+	}
+	return ""
+}
+
+func (x *AssertGroupChannelAccessResponse) GetBitrateKbps() int32 {
+	if x != nil {
+		return x.BitrateKbps
+	}
+	return 0
+}
+
+func (x *AssertGroupChannelAccessResponse) GetVideoQuality() string {
+	if x != nil {
+		return x.VideoQuality
+	}
+	return ""
+}
+
+func (x *AssertGroupChannelAccessResponse) GetUserLimit() int32 {
+	if x != nil {
+		return x.UserLimit
+	}
+	return 0
+}
+
+func (x *AssertGroupChannelAccessResponse) GetRtcRegion() string {
+	if x != nil {
+		return x.RtcRegion
 	}
 	return ""
 }
@@ -1632,14 +1664,21 @@ const file_user_v1_channel_proto_rawDesc = "" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
 	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x1d\n" +
 	"\n" +
-	"channel_id\x18\x03 \x01(\tR\tchannelId\"\x81\x02\n" +
+	"channel_id\x18\x03 \x01(\tR\tchannelId\"\x87\x03\n" +
 	" AssertGroupChannelAccessResponse\x12!\n" +
 	"\fchannel_uuid\x18\x01 \x01(\tR\vchannelUuid\x12\x1b\n" +
 	"\tuser_uuid\x18\x02 \x01(\tR\buserUuid\x12 \n" +
 	"\vpermissions\x18\x03 \x03(\tR\vpermissions\x12!\n" +
 	"\fchannel_type\x18\x04 \x01(\tR\vchannelType\x12)\n" +
 	"\x10slowmode_seconds\x18\x05 \x01(\x05R\x0fslowmodeSeconds\x12-\n" +
-	"\x12content_visibility\x18\x06 \x01(\tR\x11contentVisibility2\x91\b\n" +
+	"\x12content_visibility\x18\x06 \x01(\tR\x11contentVisibility\x12!\n" +
+	"\fbitrate_kbps\x18\a \x01(\x05R\vbitrateKbps\x12#\n" +
+	"\rvideo_quality\x18\b \x01(\tR\fvideoQuality\x12\x1d\n" +
+	"\n" +
+	"user_limit\x18\t \x01(\x05R\tuserLimit\x12\x1d\n" +
+	"\n" +
+	"rtc_region\x18\n" +
+	" \x01(\tR\trtcRegion2\x91\b\n" +
 	"\x0eChannelService\x12Z\n" +
 	"\x11ListGroupChannels\x12!.user.v1.ListGroupChannelsRequest\x1a\".user.v1.ListGroupChannelsResponse\x12]\n" +
 	"\x12CreateGroupChannel\x12\".user.v1.CreateGroupChannelRequest\x1a#.user.v1.CreateGroupChannelResponse\x12]\n" +

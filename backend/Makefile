@@ -3,7 +3,7 @@ REPO_ROOT := ..
 COMPOSE_FILE := $(REPO_ROOT)/deploy/docker-compose.yml
 COMPOSE := docker compose -f $(COMPOSE_FILE)
 
-.PHONY: help check check-layout run tunnel run-infra run-infra-minio-check run-down dev-ms-user dev-ms-chat dev-ms-notification dev-api-gateway run-ms-user run-ms-chat run-ms-notification run-api-gateway migrate-up migrate-down migrate-status
+.PHONY: help check check-layout run tunnel run-infra run-infra-minio-check run-down dev-ms-user dev-ms-chat dev-ms-core dev-ms-notification dev-api-gateway run-ms-user run-ms-chat run-ms-core run-ms-notification run-api-gateway migrate-up migrate-down migrate-status
 
 help:
 	@echo "WiChat backend — common targets:"
@@ -33,6 +33,7 @@ check-layout:
 check: check-layout
 	$(MAKE) -C wi-shared check
 	$(MAKE) -C ms-chat check
+	$(MAKE) -C ms-core check
 	$(MAKE) -C ms-notification check
 	$(MAKE) -C ms-user check
 	$(MAKE) -C api-gateway check
@@ -70,6 +71,8 @@ run: run-infra
 		sleep 1; \
 		echo "Starting ms-chat (3002)..."; \
 		$(MAKE) -C ms-chat run & \
+		echo "Starting ms-core (3003)..."; \
+		$(MAKE) -C ms-core run & \
 		echo "Starting ms-notification (3005)..."; \
 		$(MAKE) -C ms-notification run & \
 		sleep 1; \
@@ -84,6 +87,9 @@ dev-ms-user:
 dev-ms-chat:
 	$(MAKE) -C ms-chat dev
 
+dev-ms-core:
+	$(MAKE) -C ms-core dev
+
 dev-ms-notification:
 	$(MAKE) -C ms-notification dev
 
@@ -95,6 +101,9 @@ run-ms-user:
 
 run-ms-chat:
 	$(MAKE) -C ms-chat run
+
+run-ms-core:
+	$(MAKE) -C ms-core run
 
 run-ms-notification:
 	$(MAKE) -C ms-notification run

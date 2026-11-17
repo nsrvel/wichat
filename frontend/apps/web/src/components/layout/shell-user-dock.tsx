@@ -19,6 +19,8 @@ import {
 } from "@/components/layout/workspace-header-icon-button";
 import { WorkspaceSplitIconControl } from "@/components/layout/workspace-split-icon-control";
 import { UserSettingsDialog } from "@/features/user-settings/components/user-settings-dialog";
+import { VoiceCallControls } from "@/features/voice/components/voice-call-controls";
+import { useVoiceSession } from "@/features/voice/voice-session-provider";
 import type { UserSettingsSectionId } from "@/features/user-settings/lib/user-settings-nav";
 import { applyAppLocale } from "@/integrations/i18n/apply-app-locale";
 import { translateError } from "@/integrations/i18n/translate-error";
@@ -63,8 +65,12 @@ export function ShellUserDock() {
 	});
 	const updatePresence = useUpdateMyPresenceMutation();
 	const updateStatusNote = useUpdateMyStatusNoteMutation();
-	const [muted, setMuted] = useState(false);
-	const [deafened, setDeafened] = useState(false);
+	const voiceSession = useVoiceSession();
+	const [localMuted, setLocalMuted] = useState(false);
+	const [localDeafened, setLocalDeafened] = useState(false);
+	const inVoiceCall = voiceSession.phase !== "disconnected";
+	const muted = inVoiceCall ? voiceSession.isMuted : localMuted;
+	const deafened = inVoiceCall ? voiceSession.isDeafened : localDeafened;
 	const [statusDialogOpen, setStatusDialogOpen] = useState(false);
 	const [settingsOpen, setSettingsOpen] = useState(false);
 	const [settingsTab, setSettingsTab] = useState<UserSettingsSectionId>("account");
@@ -146,6 +152,7 @@ export function ShellUserDock() {
 				className="pointer-events-none fixed bottom-0 left-0 z-50 box-border hidden p-2 transition-[width] duration-200 ease-out lg:block"
 				style={{ width: dockWidth }}
 			>
+				<VoiceCallControls />
 				<div
 					className={cn(
 						"pointer-events-auto w-full min-w-0 overflow-hidden rounded-xl border border-chat-surface-border shadow-[var(--shadow-elevated)]",
@@ -184,7 +191,13 @@ export function ShellUserDock() {
 								mainAriaLabel={muted ? "Unmute microphone" : "Mute microphone"}
 								optionsAriaLabel="Microphone options"
 								mainActive={muted}
-								onMainClick={() => setMuted((prev) => !prev)}
+								onMainClick={() => {
+									if (inVoiceCall) {
+										void voiceSession.toggleMute();
+									} else {
+										setLocalMuted((prev) => !prev);
+									}
+								}}
 							>
 								{muted ? (
 									<MicOff className={workspaceHeaderIconClass} strokeWidth={2} />
@@ -196,7 +209,13 @@ export function ShellUserDock() {
 								mainAriaLabel={deafened ? "Undeafen" : "Deafen"}
 								optionsAriaLabel="Headphone options"
 								mainActive={deafened}
-								onMainClick={() => setDeafened((prev) => !prev)}
+								onMainClick={() => {
+									if (inVoiceCall) {
+										void voiceSession.toggleDeafen();
+									} else {
+										setLocalDeafened((prev) => !prev);
+									}
+								}}
 							>
 								<Headphones className={workspaceHeaderIconClass} strokeWidth={2} />
 							</WorkspaceSplitIconControl>

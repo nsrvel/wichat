@@ -12,6 +12,10 @@ const (
 	TypeMessageUpdated          = "message.updated"
 	TypeMessageDeleted          = "message.deleted"
 	TypeMessageReactionsUpdated = "message.reactions.updated"
+	TypeVoiceOccupancyUpdated   = "voice.occupancy.updated"
+	TypeVoiceRecordingUpdated   = "voice.recording.updated"
+	TypeVoiceModerationApplied  = "voice.moderation.applied"
+	TypeVoiceIdleWarning        = "voice.idle.warning"
 )
 
 // ReplyPreviewPayload mirrors REST reply preview JSON for fanout.

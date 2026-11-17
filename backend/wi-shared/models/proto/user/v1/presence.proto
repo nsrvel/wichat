@@ -14,6 +14,8 @@ service PresenceService {
   rpc SetManualPresence(SetManualPresenceRequest) returns (SetManualPresenceResponse);
   // GetMyPresence returns the caller's current manual and effective presence status.
   rpc GetMyPresence(GetMyPresenceRequest) returns (GetMyPresenceResponse);
+  // SetVoiceActivityStatus sets or clears ephemeral automatic voice/video call activity status.
+  rpc SetVoiceActivityStatus(SetVoiceActivityStatusRequest) returns (SetVoiceActivityStatusResponse);
 }
 
 message HeartbeatPresenceRequest {
@@ -59,4 +61,14 @@ message GetMyPresenceResponse {
   string effective_status = 2;
   bool is_online = 3;
   string expires_at = 4;
+}
+
+message SetVoiceActivityStatusRequest {
+  string user_id = 1;
+  string activity_status = 2; // "" to clear | "In a call" | "In a meeting"
+}
+
+message SetVoiceActivityStatusResponse {
+  bool ok = 1;
+  repeated string group_ids = 2;
 }

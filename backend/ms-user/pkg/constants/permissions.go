@@ -46,6 +46,7 @@ const (
 	PermMuteMembers          = "mute_members"
 	PermDeafenMembers        = "deafen_members"
 	PermMoveMembers          = "move_members"
+	PermRecordCall           = "record_call"
 	PermManagePlugins        = "manage_plugins"
 	PermUsePlugins           = "use_plugins"
 	PermCreateEvents         = "create_events"
@@ -92,6 +93,7 @@ var AllKnownPermissions = []string{
 	PermMuteMembers,
 	PermDeafenMembers,
 	PermMoveMembers,
+	PermRecordCall,
 	PermManagePlugins,
 	PermUsePlugins,
 	PermCreateEvents,

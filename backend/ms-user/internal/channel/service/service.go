@@ -677,7 +677,7 @@ func (s service) CreateGroupChannel(
 
 	kind := strings.TrimSpace(channelType)
 	switch kind {
-	case constants.ChannelKindTextOnly, constants.ChannelKindVoiceOnly, constants.ChannelKindForum, constants.ChannelKindBroadcast:
+	case constants.ChannelKindTextOnly, constants.ChannelKindVoiceOnly, constants.ChannelKindTextAndVoice, constants.ChannelKindForum, constants.ChannelKindBroadcast:
 	default:
 		return models.PublicChannel{}, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "type"})
 	}
@@ -968,6 +968,10 @@ func (s service) AssertGroupChannelAccess(ctx context.Context, accessToken, grou
 		ChannelType:       pub.Type,
 		SlowmodeSeconds:   pub.SlowmodeSeconds,
 		ContentVisibility: pub.ContentVisibility,
+		BitrateKbps:       pub.BitrateKbps,
+		VideoQuality:      pub.VideoQuality,
+		UserLimit:         pub.UserLimit,
+		RTCRegion:         pub.RTCRegion,
 	}, nil
 }
 

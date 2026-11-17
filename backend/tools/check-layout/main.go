@@ -15,7 +15,7 @@ var (
 	errs              []string
 	allowedRepoProd   = regexp.MustCompile(`^(pg_repository|minio_repository|es_repository|redis_[a-z0-9_]+)\.go$`)
 	kebabDir          = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
-	camelPkgDir       = map[string]bool{"test-support": true, "auth-redis": true, "auth-pb": true, "auth-http": true, "chat-http": true}
+	camelPkgDir       = map[string]bool{"test-support": true, "auth-redis": true, "auth-pb": true, "auth-http": true, "chat-http": true, "voice-http": true, "livekit-client": true}
 )
 
 func main() {
@@ -26,7 +26,7 @@ func main() {
 	}
 	backendRoot = root
 
-	for _, mod := range []string{"api-gateway", "ms-user", "ms-chat", "ms-notification", "wi-shared"} {
+	for _, mod := range []string{"api-gateway", "ms-user", "ms-chat", "ms-core", "ms-notification", "wi-shared"} {
 		modPath := filepath.Join(backendRoot, mod)
 		if st, err := os.Stat(modPath); err != nil || !st.IsDir() {
 			continue

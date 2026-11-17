@@ -7,6 +7,7 @@ import {
 	notifyGatewayUnreachable,
 	onGatewayRecovered,
 } from "@/integrations/realtime/gateway-connection";
+import { dispatchVoiceRealtimeFrame } from "@/integrations/realtime/voice-realtime";
 import { env } from "@/lib/env";
 
 const HEARTBEAT_INTERVAL_MS = 25_000;
@@ -191,6 +192,9 @@ export function connectPresenceRealtime(options: PresenceConnectionOptions): {
 								refreshingAuth = false;
 							});
 					}
+					return;
+				}
+				if (dispatchVoiceRealtimeFrame(raw)) {
 					return;
 				}
 				const parsed = RealtimePresenceUpdatedSchema.parse(raw);

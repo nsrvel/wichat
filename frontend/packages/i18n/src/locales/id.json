@@ -1556,5 +1556,96 @@
       "delete_category": "Hapus Kategori",
       "create_channel": "Buat Channel"
     }
+  },
+  "voice": {
+    "status": {
+      "connected": "Suara Terhubung",
+      "connecting": "Menghubungkan...",
+      "reconnecting": "Menghubungkan ulang...",
+      "disconnected": "Terputus",
+      "in_a_call": "Sedang menelepon",
+      "in_a_meeting": "Sedang rapat"
+    },
+    "controls": {
+      "mute": "Bisukan",
+      "unmute": "Bunyikan",
+      "server_muted": "Dibisukan Server",
+      "deafen": "Matikan Audio",
+      "undeafen": "Aktifkan Audio",
+      "server_deafened": "Audio Dimatikan Server",
+      "camera_on": "Nyalakan Kamera",
+      "camera_off": "Matikan Kamera",
+      "share_screen": "Bagikan Layar",
+      "stop_share": "Hentikan Berbagi",
+      "disconnect": "Putuskan",
+      "start_recording": "Rekam Panggilan",
+      "stop_recording": "Hentikan Rekaman",
+      "grid_view": "Tampilan Grid",
+      "focus_view": "Tampilan Fokus",
+      "join_voice": "Gabung Suara",
+      "leave_voice": "Keluar Suara"
+    },
+    "stage": {
+      "empty_title": "Belum ada yang bergabung",
+      "empty_description": "Gabung ke channel ini untuk mulai berbicara atau berbagi video.",
+      "you": "Anda",
+      "speaking": "Berbicara",
+      "screen_share_label": "Layar {{name}}",
+      "screen_share_hint": "Berbagi 1080p • Klik Hentikan Berbagi untuk selesai.",
+      "recordings_title": "Rekaman Panggilan",
+      "no_recordings": "Belum ada rekaman untuk channel ini.",
+      "download_recording": "Unduh"
+    },
+    "moderation": {
+      "server_mute": "Bisukan (Server)",
+      "server_unmute": "Buka Bisu (Server)",
+      "server_deafen": "Matikan Audio (Server)",
+      "server_undeafen": "Aktifkan Audio (Server)",
+      "disconnect_user": "Keluarkan",
+      "local_mute": "Bisukan untuk saya",
+      "user_volume": "Volume Pengguna ({{percent}}%)",
+      "kicked_notice": "Anda dikeluarkan dari channel suara oleh moderator."
+    },
+    "recording": {
+      "badge": "Merekam",
+      "consent_title": "Panggilan ini sedang direkam",
+      "consent_description": "Peserta sedang merekam panggilan ini. Dengan melanjutkan, Anda menyetujui untuk direkam.",
+      "consent_accept": "Tetap di Panggilan",
+      "consent_leave": "Keluar Panggilan"
+    },
+    "idle": {
+      "warning_title": "Apakah Anda masih di sana?",
+      "warning_description": "Anda tidak aktif dalam panggilan ini dan akan segera diputuskan.",
+      "stay_connected": "Saya masih di sini"
+    },
+    "quota": {
+      "warning_banner": "Kuota menit panggilan bulanan mencapai {{percent}}% ({{used}}/{{limit}} menit)."
+    },
+    "settings": {
+      "title": "Suara & Video",
+      "input_device": "Perangkat Input",
+      "output_device": "Perangkat Output",
+      "camera_device": "Kamera",
+      "default_device": "Default Sistem",
+      "mic_test": "Uji Mikrofon",
+      "mic_test_stop": "Hentikan Uji",
+      "input_mode": "Mode Input",
+      "vad": "Aktivitas Suara",
+      "ptt": "Tekan untuk Bicara",
+      "vad_sensitivity": "Sensitivitas Input",
+      "ptt_key": "Tombol Tekan untuk Bicara",
+      "press_any_key": "Tekan tombol apa saja...",
+      "echo_cancellation": "Pembatalan Gema",
+      "noise_suppression": "Peredam Kebisingan",
+      "auto_gain_control": "Kontrol Penguatan Otomatis"
+    },
+    "errors": {
+      "room_full": "Channel suara ini penuh.",
+      "video_cap": "Batas maksimum penyiar video tercapai.",
+      "guest_not_allowed": "Akun tamu tidak dapat bergabung ke channel suara.",
+      "quota_exceeded": "Kuota suara & video bulanan telah tercapai.",
+      "already_recording": "Panggilan ini sudah sedang direkam.",
+      "permission_denied": "Tidak memiliki izin suara."
+    }
   }
 }

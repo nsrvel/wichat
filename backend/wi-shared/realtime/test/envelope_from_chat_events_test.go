@@ -101,3 +101,50 @@ func TestMarshalMessageLifecycleEvents(t *testing.T) {
 		t.Fatalf("MarshalMessageReactionsUpdatedEvent: err=%v", err)
 	}
 }
+
+func TestMarshalVoiceEvents(t *testing.T) {
+	rawOcc, err := realtime.MarshalVoiceOccupancyUpdatedEvent(chatEvents.VoiceOccupancyUpdated{
+		Type:        chatEvents.TypeVoiceOccupancyUpdated,
+		GroupID:     "g1",
+		ChannelID:   "c1",
+		IsRecording: true,
+		Occupants:   []chatEvents.VoiceOccupant{{UserID: "u1", DisplayName: "Alice"}},
+	})
+	if err != nil || len(rawOcc) == 0 {
+		t.Fatalf("MarshalVoiceOccupancyUpdatedEvent: err=%v", err)
+	}
+
+	rawRec, err := realtime.MarshalVoiceRecordingUpdatedEvent(chatEvents.VoiceRecordingUpdated{
+		Type:        chatEvents.TypeVoiceRecordingUpdated,
+		GroupID:     "g1",
+		ChannelID:   "c1",
+		IsRecording: true,
+		RecordingID: "rec1",
+	})
+	if err != nil || len(rawRec) == 0 {
+		t.Fatalf("MarshalVoiceRecordingUpdatedEvent: err=%v", err)
+	}
+
+	rawMod, err := realtime.MarshalVoiceModerationAppliedEvent(chatEvents.VoiceModerationApplied{
+		Type:         chatEvents.TypeVoiceModerationApplied,
+		GroupID:      "g1",
+		ChannelID:    "c1",
+		TargetUserID: "u2",
+		Action:       "mute",
+		ActorUserID:  "u1",
+	})
+	if err != nil || len(rawMod) == 0 {
+		t.Fatalf("MarshalVoiceModerationAppliedEvent: err=%v", err)
+	}
+
+	rawIdle, err := realtime.MarshalVoiceIdleWarningEvent(chatEvents.VoiceIdleWarning{
+		Type:             chatEvents.TypeVoiceIdleWarning,
+		GroupID:          "g1",
+		ChannelID:        "c1",
+		UserID:           "u1",
+		ExpiresInSeconds: 120,
+	})
+	if err != nil || len(rawIdle) == 0 {
+		t.Fatalf("MarshalVoiceIdleWarningEvent: err=%v", err)
+	}
+}

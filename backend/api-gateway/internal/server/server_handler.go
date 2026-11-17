@@ -16,6 +16,7 @@ import (
 	realtimeWs "github.com/wichat/wichat/backend/api-gateway/internal/realtime/delivery/ws"
 	"github.com/wichat/wichat/backend/api-gateway/internal/realtime/hub"
 	userdelivery "github.com/wichat/wichat/backend/api-gateway/internal/user/delivery/http"
+	voicedelivery "github.com/wichat/wichat/backend/api-gateway/internal/voice/delivery/http"
 	"github.com/wichat/wichat/backend/wi-shared/microservices"
 )
 
@@ -68,6 +69,7 @@ func (s *server) mapHandlers(mux *http.ServeMux, ms *microservices.Clients, rtHu
 	channelcategorydelivery.Register(mux, channelcategorydelivery.NewHandler(ms, s.log))
 	invitedelivery.Register(mux, invitedelivery.NewHandler(ms, s.log, s.cfg.WebOrigin))
 	chatdelivery.Register(mux, chatdelivery.NewHandler(ms, s.log))
+	voicedelivery.Register(mux, voicedelivery.NewHandler(ms, s.log))
 	realtimeWs.Register(mux, realtimeWs.NewHandler(ms, rtHub, s.log, s.cfg.WebOrigin))
 
 	// Root

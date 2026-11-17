@@ -19,10 +19,11 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	PresenceService_HeartbeatPresence_FullMethodName  = "/user.v1.PresenceService/HeartbeatPresence"
-	PresenceService_DisconnectPresence_FullMethodName = "/user.v1.PresenceService/DisconnectPresence"
-	PresenceService_SetManualPresence_FullMethodName  = "/user.v1.PresenceService/SetManualPresence"
-	PresenceService_GetMyPresence_FullMethodName      = "/user.v1.PresenceService/GetMyPresence"
+	PresenceService_HeartbeatPresence_FullMethodName      = "/user.v1.PresenceService/HeartbeatPresence"
+	PresenceService_DisconnectPresence_FullMethodName     = "/user.v1.PresenceService/DisconnectPresence"
+	PresenceService_SetManualPresence_FullMethodName      = "/user.v1.PresenceService/SetManualPresence"
+	PresenceService_GetMyPresence_FullMethodName          = "/user.v1.PresenceService/GetMyPresence"
+	PresenceService_SetVoiceActivityStatus_FullMethodName = "/user.v1.PresenceService/SetVoiceActivityStatus"
 )
 
 // PresenceServiceClient is the client API for PresenceService service.
@@ -39,6 +40,8 @@ type PresenceServiceClient interface {
 	SetManualPresence(ctx context.Context, in *SetManualPresenceRequest, opts ...grpc.CallOption) (*SetManualPresenceResponse, error)
 	// GetMyPresence returns the caller's current manual and effective presence status.
 	GetMyPresence(ctx context.Context, in *GetMyPresenceRequest, opts ...grpc.CallOption) (*GetMyPresenceResponse, error)
+	// SetVoiceActivityStatus sets or clears ephemeral automatic voice/video call activity status.
+	SetVoiceActivityStatus(ctx context.Context, in *SetVoiceActivityStatusRequest, opts ...grpc.CallOption) (*SetVoiceActivityStatusResponse, error)
 }
 
 type presenceServiceClient struct {
@@ -89,6 +92,16 @@ func (c *presenceServiceClient) GetMyPresence(ctx context.Context, in *GetMyPres
 	return out, nil
 }
 
+func (c *presenceServiceClient) SetVoiceActivityStatus(ctx context.Context, in *SetVoiceActivityStatusRequest, opts ...grpc.CallOption) (*SetVoiceActivityStatusResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SetVoiceActivityStatusResponse)
+	err := c.cc.Invoke(ctx, PresenceService_SetVoiceActivityStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // PresenceServiceServer is the server API for PresenceService service.
 // All implementations must embed UnimplementedPresenceServiceServer
 // for forward compatibility.
@@ -103,6 +116,8 @@ type PresenceServiceServer interface {
 	SetManualPresence(context.Context, *SetManualPresenceRequest) (*SetManualPresenceResponse, error)
 	// GetMyPresence returns the caller's current manual and effective presence status.
 	GetMyPresence(context.Context, *GetMyPresenceRequest) (*GetMyPresenceResponse, error)
+	// SetVoiceActivityStatus sets or clears ephemeral automatic voice/video call activity status.
+	SetVoiceActivityStatus(context.Context, *SetVoiceActivityStatusRequest) (*SetVoiceActivityStatusResponse, error)
 	mustEmbedUnimplementedPresenceServiceServer()
 }
 
@@ -124,6 +139,9 @@ func (UnimplementedPresenceServiceServer) SetManualPresence(context.Context, *Se
 }
 func (UnimplementedPresenceServiceServer) GetMyPresence(context.Context, *GetMyPresenceRequest) (*GetMyPresenceResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetMyPresence not implemented")
+}
+func (UnimplementedPresenceServiceServer) SetVoiceActivityStatus(context.Context, *SetVoiceActivityStatusRequest) (*SetVoiceActivityStatusResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetVoiceActivityStatus not implemented")
 }
 func (UnimplementedPresenceServiceServer) mustEmbedUnimplementedPresenceServiceServer() {}
 func (UnimplementedPresenceServiceServer) testEmbeddedByValue()                         {}
@@ -218,6 +236,24 @@ func _PresenceService_GetMyPresence_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PresenceService_SetVoiceActivityStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetVoiceActivityStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PresenceServiceServer).SetVoiceActivityStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PresenceService_SetVoiceActivityStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PresenceServiceServer).SetVoiceActivityStatus(ctx, req.(*SetVoiceActivityStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // PresenceService_ServiceDesc is the grpc.ServiceDesc for PresenceService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -240,6 +276,10 @@ var PresenceService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetMyPresence",
 			Handler:    _PresenceService_GetMyPresence_Handler,
+		},
+		{
+			MethodName: "SetVoiceActivityStatus",
+			Handler:    _PresenceService_SetVoiceActivityStatus_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
