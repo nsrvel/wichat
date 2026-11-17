@@ -4,15 +4,19 @@ import { useQuery, useQueryClient, type InfiniteData } from "@tanstack/react-que
 import { useEffect } from "react";
 import { isPublicEntityId } from "@wichat/contracts/common";
 import type { MessagesList } from "@wichat/contracts/chat/message";
-import { appendOrUpdateInfiniteChannelMessage } from "@/features/chat/lib/channel-message";
+import {
+	appendOrUpdateInfiniteChannelMessage,
+	removeInfiniteChannelMessage,
+	updateInfiniteChannelMessageReactions,
+} from "@/features/chat/lib/channel-message";
 import { subscribeChatChannel } from "@/integrations/realtime/chat-channel";
 import { sessionQueryOpts } from "@/services/auth/auth.query";
-import { Q_CHANNEL_MESSAGES } from "@/services/message/message.key";
+import { Q_CHANNEL_MESSAGES, Q_PINNED_MESSAGES } from "@/services/message/message.key";
 
 export function useChannelRealtime(
 	groupId: string,
 	channelId: string,
-	onMessageReceived?: () => void,
+	onMessageReceived?: (authorId: string) => void,
 ) {
 	const queryClient = useQueryClient();
 	const { data: sessionUser } = useQuery(sessionQueryOpts());
@@ -30,7 +34,31 @@ export function useChannelRealtime(
 					[Q_CHANNEL_MESSAGES, groupId, channelId],
 					(prev) => appendOrUpdateInfiniteChannelMessage(prev, message, sessionUser?.id),
 				);
-				onMessageReceived?.();
+				onMessageReceived?.(message.author_id);
+			},
+			onMessageUpdated: (message) => {
+				queryClient.setQueryData<InfiniteData<MessagesList>>(
+					[Q_CHANNEL_MESSAGES, groupId, channelId],
+					(prev) => appendOrUpdateInfiniteChannelMessage(prev, message, sessionUser?.id),
+				);
+				void queryClient.invalidateQueries({
+					queryKey: [Q_PINNED_MESSAGES, groupId, channelId],
+				});
+			},
+			onMessageDeleted: (messageId) => {
+				queryClient.setQueryData<InfiniteData<MessagesList>>(
+					[Q_CHANNEL_MESSAGES, groupId, channelId],
+					(prev) => removeInfiniteChannelMessage(prev, messageId),
+				);
+				void queryClient.invalidateQueries({
+					queryKey: [Q_PINNED_MESSAGES, groupId, channelId],
+				});
+			},
+			onMessageReactionsUpdated: (messageId, reactions) => {
+				queryClient.setQueryData<InfiniteData<MessagesList>>(
+					[Q_CHANNEL_MESSAGES, groupId, channelId],
+					(prev) => updateInfiniteChannelMessageReactions(prev, messageId, reactions),
+				);
 			},
 			onReconnect: () => {
 				void queryClient.invalidateQueries({

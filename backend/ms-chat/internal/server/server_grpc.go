@@ -7,5 +7,5 @@ import (
 )
 
 func newGRPCServer(log logger.Logger) *grpc.Server {
-	return msgrpc.NewServer(log)
+	return msgrpc.NewServer(log, grpc.MaxRecvMsgSize(32<<20))
 }

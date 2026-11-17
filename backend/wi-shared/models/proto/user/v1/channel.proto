@@ -65,6 +65,8 @@ message ChannelSummary {
   int32 user_limit = 18;
   // Voice RTC region override (automatic or region slug).
   string rtc_region = 19;
+  // Effective permissions for the authenticated caller on this channel.
+  repeated string caller_permissions = 20;
 }
 
 message ListGroupChannelsRequest {
@@ -190,5 +192,8 @@ message AssertGroupChannelAccessResponse {
   string channel_uuid = 1;
   string user_uuid = 2;
   repeated string permissions = 3;
+  string channel_type = 4;
+  int32 slowmode_seconds = 5;
+  string content_visibility = 6;
 }
 

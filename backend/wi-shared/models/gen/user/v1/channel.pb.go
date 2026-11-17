@@ -56,9 +56,11 @@ type ChannelSummary struct {
 	// Voice user limit (0 = unlimited, 1..99).
 	UserLimit int32 `protobuf:"varint,18,opt,name=user_limit,json=userLimit,proto3" json:"user_limit,omitempty"`
 	// Voice RTC region override (automatic or region slug).
-	RtcRegion     string `protobuf:"bytes,19,opt,name=rtc_region,json=rtcRegion,proto3" json:"rtc_region,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	RtcRegion string `protobuf:"bytes,19,opt,name=rtc_region,json=rtcRegion,proto3" json:"rtc_region,omitempty"`
+	// Effective permissions for the authenticated caller on this channel.
+	CallerPermissions []string `protobuf:"bytes,20,rep,name=caller_permissions,json=callerPermissions,proto3" json:"caller_permissions,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *ChannelSummary) Reset() {
@@ -215,6 +217,13 @@ func (x *ChannelSummary) GetRtcRegion() string {
 		return x.RtcRegion
 	}
 	return ""
+}
+
+func (x *ChannelSummary) GetCallerPermissions() []string {
+	if x != nil {
+		return x.CallerPermissions
+	}
+	return nil
 }
 
 type ListGroupChannelsRequest struct {
@@ -1398,12 +1407,15 @@ func (x *AssertGroupChannelAccessRequest) GetChannelId() string {
 }
 
 type AssertGroupChannelAccessResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	ChannelUuid   string                 `protobuf:"bytes,1,opt,name=channel_uuid,json=channelUuid,proto3" json:"channel_uuid,omitempty"`
-	UserUuid      string                 `protobuf:"bytes,2,opt,name=user_uuid,json=userUuid,proto3" json:"user_uuid,omitempty"`
-	Permissions   []string               `protobuf:"bytes,3,rep,name=permissions,proto3" json:"permissions,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	ChannelUuid       string                 `protobuf:"bytes,1,opt,name=channel_uuid,json=channelUuid,proto3" json:"channel_uuid,omitempty"`
+	UserUuid          string                 `protobuf:"bytes,2,opt,name=user_uuid,json=userUuid,proto3" json:"user_uuid,omitempty"`
+	Permissions       []string               `protobuf:"bytes,3,rep,name=permissions,proto3" json:"permissions,omitempty"`
+	ChannelType       string                 `protobuf:"bytes,4,opt,name=channel_type,json=channelType,proto3" json:"channel_type,omitempty"`
+	SlowmodeSeconds   int32                  `protobuf:"varint,5,opt,name=slowmode_seconds,json=slowmodeSeconds,proto3" json:"slowmode_seconds,omitempty"`
+	ContentVisibility string                 `protobuf:"bytes,6,opt,name=content_visibility,json=contentVisibility,proto3" json:"content_visibility,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *AssertGroupChannelAccessResponse) Reset() {
@@ -1457,11 +1469,32 @@ func (x *AssertGroupChannelAccessResponse) GetPermissions() []string {
 	return nil
 }
 
+func (x *AssertGroupChannelAccessResponse) GetChannelType() string {
+	if x != nil {
+		return x.ChannelType
+	}
+	return ""
+}
+
+func (x *AssertGroupChannelAccessResponse) GetSlowmodeSeconds() int32 {
+	if x != nil {
+		return x.SlowmodeSeconds
+	}
+	return 0
+}
+
+func (x *AssertGroupChannelAccessResponse) GetContentVisibility() string {
+	if x != nil {
+		return x.ContentVisibility
+	}
+	return ""
+}
+
 var File_user_v1_channel_proto protoreflect.FileDescriptor
 
 const file_user_v1_channel_proto_rawDesc = "" +
 	"\n" +
-	"\x15user/v1/channel.proto\x12\auser.v1\x1a\x1euser/v1/channel_category.proto\"\x8c\x05\n" +
+	"\x15user/v1/channel.proto\x12\auser.v1\x1a\x1euser/v1/channel_category.proto\"\xbb\x05\n" +
 	"\x0eChannelSummary\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
@@ -1485,7 +1518,8 @@ const file_user_v1_channel_proto_rawDesc = "" +
 	"\n" +
 	"user_limit\x18\x12 \x01(\x05R\tuserLimit\x12\x1d\n" +
 	"\n" +
-	"rtc_region\x18\x13 \x01(\tR\trtcRegion\"X\n" +
+	"rtc_region\x18\x13 \x01(\tR\trtcRegion\x12-\n" +
+	"\x12caller_permissions\x18\x14 \x03(\tR\x11callerPermissions\"X\n" +
 	"\x18ListGroupChannelsRequest\x12!\n" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
 	"\bgroup_id\x18\x02 \x01(\tR\agroupId\"\x8a\x01\n" +
@@ -1598,11 +1632,14 @@ const file_user_v1_channel_proto_rawDesc = "" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
 	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x1d\n" +
 	"\n" +
-	"channel_id\x18\x03 \x01(\tR\tchannelId\"\x84\x01\n" +
+	"channel_id\x18\x03 \x01(\tR\tchannelId\"\x81\x02\n" +
 	" AssertGroupChannelAccessResponse\x12!\n" +
 	"\fchannel_uuid\x18\x01 \x01(\tR\vchannelUuid\x12\x1b\n" +
 	"\tuser_uuid\x18\x02 \x01(\tR\buserUuid\x12 \n" +
-	"\vpermissions\x18\x03 \x03(\tR\vpermissions2\x91\b\n" +
+	"\vpermissions\x18\x03 \x03(\tR\vpermissions\x12!\n" +
+	"\fchannel_type\x18\x04 \x01(\tR\vchannelType\x12)\n" +
+	"\x10slowmode_seconds\x18\x05 \x01(\x05R\x0fslowmodeSeconds\x12-\n" +
+	"\x12content_visibility\x18\x06 \x01(\tR\x11contentVisibility2\x91\b\n" +
 	"\x0eChannelService\x12Z\n" +
 	"\x11ListGroupChannels\x12!.user.v1.ListGroupChannelsRequest\x1a\".user.v1.ListGroupChannelsResponse\x12]\n" +
 	"\x12CreateGroupChannel\x12\".user.v1.CreateGroupChannelRequest\x1a#.user.v1.CreateGroupChannelResponse\x12]\n" +

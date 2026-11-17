@@ -1,10 +1,16 @@
 import type { InfiniteData } from "@tanstack/react-query";
-import type { Message, MessagesList } from "@wichat/contracts/chat/message";
+import type {
+	Message,
+	MessageReactionSummary,
+	MessageReplyPreview,
+	MessagesList,
+} from "@wichat/contracts/chat/message";
 
 export type ChannelMessageReaction = {
 	emoji: string;
 	count?: number;
 	active?: boolean;
+	userIds?: string[];
 };
 
 export type ChannelMessage = {
@@ -12,12 +18,13 @@ export type ChannelMessage = {
 	authorId: string;
 	authorDisplayName: string;
 	authorAvatarUrl: string;
-	/** ISO-8601 from API later; dev fixtures may use display strings via `timeLabel`. */
 	createdAt: string;
+	editedAt?: string;
+	isPinned?: boolean;
+	replyTo?: MessageReplyPreview | null;
 	bodyPlain: string;
 	mine?: boolean;
 	reactions?: ChannelMessageReaction[];
-	/** Relative or formatted time for display when API formatting is not wired. */
 	timeLabel?: string;
 };
 
@@ -79,6 +86,39 @@ export function appendOrUpdateInfiniteChannelMessage(
 	};
 }
 
+export function removeInfiniteChannelMessage(
+	prev: InfiniteData<MessagesList> | undefined,
+	messageId: string,
+): InfiniteData<MessagesList> | undefined {
+	if (!prev || !prev.pages) {
+		return prev;
+	}
+	return {
+		...prev,
+		pages: prev.pages.map((page) => ({
+			...page,
+			messages: page.messages.filter((m) => m.id !== messageId),
+		})),
+	};
+}
+
+export function updateInfiniteChannelMessageReactions(
+	prev: InfiniteData<MessagesList> | undefined,
+	messageId: string,
+	reactions: MessageReactionSummary[],
+): InfiniteData<MessagesList> | undefined {
+	if (!prev || !prev.pages) {
+		return prev;
+	}
+	return {
+		...prev,
+		pages: prev.pages.map((page) => ({
+			...page,
+			messages: page.messages.map((m) => (m.id === messageId ? { ...m, reactions } : m)),
+		})),
+	};
+}
+
 export function flattenInfiniteChannelMessages(
 	data: InfiniteData<MessagesList> | undefined,
 ): Message[] {
@@ -118,7 +158,6 @@ export function appendOrUpdateChannelMessage(
 		return { messages: [normalized] };
 	}
 
-	// Match by real ID first, or by optimistic temp ID
 	const existingIndex = prev.messages.findIndex(
 		(m) =>
 			m.id === incoming.id ||

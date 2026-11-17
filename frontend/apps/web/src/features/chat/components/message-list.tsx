@@ -4,11 +4,12 @@ import type { ReactNode, RefObject } from "react";
 import { cn } from "@/lib/utils";
 
 export const MESSAGE_LIST_GUTTER_CLASS =
-	"mx-auto flex w-full max-w-4xl flex-col gap-5 px-4 py-4 sm:px-5 lg:max-w-5xl lg:px-6";
+	"mx-auto flex w-full max-w-4xl flex-col px-4 py-4 sm:px-5 lg:max-w-5xl lg:px-6";
 
 type MessageListProps = {
 	children: ReactNode;
 	scrollRef?: RefObject<HTMLDivElement | null>;
+	contentRef?: RefObject<HTMLDivElement | null>;
 	onScroll?: () => void;
 	className?: string;
 	innerClassName?: string;
@@ -17,6 +18,7 @@ type MessageListProps = {
 export function MessageList({
 	children,
 	scrollRef,
+	contentRef,
 	onScroll,
 	className,
 	innerClassName,
@@ -25,9 +27,15 @@ export function MessageList({
 		<div
 			ref={scrollRef}
 			onScroll={onScroll}
-			className={cn("overlay-scroll flex-1 overflow-y-auto", className)}
+			style={{ overflowAnchor: "none" }}
+			className={cn(
+				"overlay-scroll min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable]",
+				className,
+			)}
 		>
-			<div className={cn(MESSAGE_LIST_GUTTER_CLASS, innerClassName)}>{children}</div>
+			<div ref={contentRef} className={cn(MESSAGE_LIST_GUTTER_CLASS, innerClassName)}>
+				{children}
+			</div>
 		</div>
 	);
 }

@@ -2,6 +2,7 @@ package http
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -16,12 +17,23 @@ import (
 	responsehttp "github.com/wichat/wichat/backend/wi-shared/response/http"
 )
 
-const maxMessageBodyBytes = 1 << 12
+const (
+	maxMessageBodyBytes      = 1 << 14
+	maxAttachmentUploadBytes = 25 << 20
+	maxMultipartOverhead     = 1 << 20
+)
 
 // Handler is the public chat message HTTP delivery.
 type Handler interface {
 	ListChannelMessages(w http.ResponseWriter, r *http.Request)
 	CreateChannelMessage(w http.ResponseWriter, r *http.Request)
+	UploadChannelAttachment(w http.ResponseWriter, r *http.Request)
+	UpdateChannelMessage(w http.ResponseWriter, r *http.Request)
+	DeleteChannelMessage(w http.ResponseWriter, r *http.Request)
+	ToggleMessageReaction(w http.ResponseWriter, r *http.Request)
+	ListPinnedChannelMessages(w http.ResponseWriter, r *http.Request)
+	PinChannelMessage(w http.ResponseWriter, r *http.Request)
+	UnpinChannelMessage(w http.ResponseWriter, r *http.Request)
 }
 
 type handler struct {
@@ -34,17 +46,40 @@ func NewHandler(ms *microservices.Clients, log logger.Logger) Handler {
 	return &handler{ms: ms, log: log}
 }
 
-func (h handler) ListChannelMessages(w http.ResponseWriter, r *http.Request) {
-	token := authHttp.Bearer(r)
+func (h handler) requireChannelContext(w http.ResponseWriter, r *http.Request) (token, groupID, channelID string, ok bool) {
+	token = authHttp.Bearer(r)
 	if token == "" {
 		authHttp.WriteOutbound(w, r, h.log, exception.Unauthenticated(exception.MsgUnauthorized, nil))
-		return
+		return "", "", "", false
 	}
 
-	groupID := strings.TrimSpace(r.PathValue("groupId"))
-	channelID := strings.TrimSpace(r.PathValue("channelId"))
+	groupID = strings.TrimSpace(r.PathValue("groupId"))
+	channelID = strings.TrimSpace(r.PathValue("channelId"))
 	if groupID == "" || channelID == "" {
 		authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "group_id"}))
+		return "", "", "", false
+	}
+
+	return token, groupID, channelID, true
+}
+
+func (h handler) requireMessageContext(w http.ResponseWriter, r *http.Request) (token, groupID, channelID, messageID string, ok bool) {
+	token, groupID, channelID, ok = h.requireChannelContext(w, r)
+	if !ok {
+		return "", "", "", "", false
+	}
+	messageID = strings.TrimSpace(r.PathValue("messageId"))
+	if messageID == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "message_id"}))
+		return "", "", "", "", false
+	}
+
+	return token, groupID, channelID, messageID, true
+}
+
+func (h handler) ListChannelMessages(w http.ResponseWriter, r *http.Request) {
+	token, groupID, channelID, ok := h.requireChannelContext(w, r)
+	if !ok {
 		return
 	}
 
@@ -76,20 +111,11 @@ func (h handler) ListChannelMessages(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h handler) CreateChannelMessage(w http.ResponseWriter, r *http.Request) {
-	token := authHttp.Bearer(r)
-	if token == "" {
-		authHttp.WriteOutbound(w, r, h.log, exception.Unauthenticated(exception.MsgUnauthorized, nil))
+	token, groupID, channelID, ok := h.requireChannelContext(w, r)
+	if !ok {
 		return
 	}
 
-	groupID := strings.TrimSpace(r.PathValue("groupId"))
-	channelID := strings.TrimSpace(r.PathValue("channelId"))
-	if groupID == "" || channelID == "" {
-		authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "group_id"}))
-		return
-	}
-
-	// Bind
 	r.Body = http.MaxBytesReader(w, r.Body, maxMessageBodyBytes)
 	var body chatHttp.CreateMessageBody
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
@@ -102,6 +128,7 @@ func (h handler) CreateChannelMessage(w http.ResponseWriter, r *http.Request) {
 		GroupId:     groupID,
 		ChannelId:   channelID,
 		Body:        body.Body,
+		ReplyToId:   body.ReplyToID,
 	})
 	if err != nil {
 		authHttp.WriteOutbound(w, r, h.log, err)
@@ -110,5 +137,194 @@ func (h handler) CreateChannelMessage(w http.ResponseWriter, r *http.Request) {
 
 	responsehttp.WriteJSON(w, http.StatusCreated, response.NewDataEnvelope(chatHttp.CreateMessageResponseBody{
 		Message: chatHttp.MessageFromPB(out.GetMessage()),
+	}))
+}
+
+func (h handler) UpdateChannelMessage(w http.ResponseWriter, r *http.Request) {
+	token, groupID, channelID, messageID, ok := h.requireMessageContext(w, r)
+	if !ok {
+		return
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, maxMessageBodyBytes)
+	var body chatHttp.UpdateMessageBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, nil))
+		return
+	}
+
+	out, err := h.ms.Chat.GRPC.Message.UpdateChannelMessage(r.Context(), &chatv1.UpdateChannelMessageRequest{
+		AccessToken: token,
+		GroupId:     groupID,
+		ChannelId:   channelID,
+		MessageId:   messageID,
+		Body:        body.Body,
+	})
+	if err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(chatHttp.CreateMessageResponseBody{
+		Message: chatHttp.MessageFromPB(out.GetMessage()),
+	}))
+}
+
+func (h handler) DeleteChannelMessage(w http.ResponseWriter, r *http.Request) {
+	token, groupID, channelID, messageID, ok := h.requireMessageContext(w, r)
+	if !ok {
+		return
+	}
+
+	_, err := h.ms.Chat.GRPC.Message.DeleteChannelMessage(r.Context(), &chatv1.DeleteChannelMessageRequest{
+		AccessToken: token,
+		GroupId:     groupID,
+		ChannelId:   channelID,
+		MessageId:   messageID,
+	})
+	if err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(authHttp.OKBody{OK: true}))
+}
+
+func (h handler) ToggleMessageReaction(w http.ResponseWriter, r *http.Request) {
+	token, groupID, channelID, messageID, ok := h.requireMessageContext(w, r)
+	if !ok {
+		return
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, 1024)
+	var body chatHttp.ToggleReactionBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, nil))
+		return
+	}
+
+	out, err := h.ms.Chat.GRPC.Message.ToggleMessageReaction(r.Context(), &chatv1.ToggleMessageReactionRequest{
+		AccessToken: token,
+		GroupId:     groupID,
+		ChannelId:   channelID,
+		MessageId:   messageID,
+		Emoji:       body.Emoji,
+	})
+	if err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(chatHttp.ReactionsResponseBody{
+		Reactions: chatHttp.ReactionsFromPB(out.GetReactions()),
+	}))
+}
+
+func (h handler) ListPinnedChannelMessages(w http.ResponseWriter, r *http.Request) {
+	token, groupID, channelID, ok := h.requireChannelContext(w, r)
+	if !ok {
+		return
+	}
+
+	out, err := h.ms.Chat.GRPC.Message.ListPinnedChannelMessages(r.Context(), &chatv1.ListPinnedChannelMessagesRequest{
+		AccessToken: token,
+		GroupId:     groupID,
+		ChannelId:   channelID,
+	})
+	if err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(chatHttp.MessagesListBody{
+		Messages: chatHttp.MessagesFromPB(out.GetMessages()),
+	}))
+}
+
+func (h handler) setChannelMessagePinned(w http.ResponseWriter, r *http.Request, pinned bool) {
+	token, groupID, channelID, messageID, ok := h.requireMessageContext(w, r)
+	if !ok {
+		return
+	}
+
+	out, err := h.ms.Chat.GRPC.Message.SetChannelMessagePinned(r.Context(), &chatv1.SetChannelMessagePinnedRequest{
+		AccessToken: token,
+		GroupId:     groupID,
+		ChannelId:   channelID,
+		MessageId:   messageID,
+		Pinned:      pinned,
+	})
+	if err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(chatHttp.CreateMessageResponseBody{
+		Message: chatHttp.MessageFromPB(out.GetMessage()),
+	}))
+}
+
+func (h handler) PinChannelMessage(w http.ResponseWriter, r *http.Request) {
+	h.setChannelMessagePinned(w, r, true)
+}
+
+func (h handler) UnpinChannelMessage(w http.ResponseWriter, r *http.Request) {
+	h.setChannelMessagePinned(w, r, false)
+}
+
+func (h handler) UploadChannelAttachment(w http.ResponseWriter, r *http.Request) {
+	token, groupID, channelID, ok := h.requireChannelContext(w, r)
+	if !ok {
+		return
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, maxAttachmentUploadBytes+maxMultipartOverhead)
+	if err := r.ParseMultipartForm(maxAttachmentUploadBytes); err != nil {
+		authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "file"}))
+		return
+	}
+
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "file"}))
+		return
+	}
+	defer func() { _ = file.Close() }()
+
+	data, err := io.ReadAll(io.LimitReader(file, maxAttachmentUploadBytes+1))
+	if err != nil || len(data) == 0 || len(data) > maxAttachmentUploadBytes {
+		authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "file"}))
+		return
+	}
+
+	contentType := ""
+	filename := "file"
+	if header != nil {
+		if ct := strings.TrimSpace(header.Header.Get("Content-Type")); ct != "" {
+			contentType = ct
+		}
+		if fn := strings.TrimSpace(header.Filename); fn != "" {
+			filename = fn
+		}
+	}
+	if contentType == "" || contentType == "application/octet-stream" {
+		contentType = http.DetectContentType(data)
+	}
+
+	out, err := h.ms.Chat.GRPC.Message.UploadChannelAttachment(r.Context(), &chatv1.UploadChannelAttachmentRequest{
+		AccessToken: token,
+		GroupId:     groupID,
+		ChannelId:   channelID,
+		Filename:    filename,
+		ContentType: contentType,
+		Data:        data,
+	})
+	if err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	responsehttp.WriteJSON(w, http.StatusCreated, response.NewDataEnvelope(chatHttp.UploadAttachmentResponseBody{
+		Attachment: chatHttp.AttachmentFromPB(out.GetAttachment()),
 	}))
 }

@@ -205,6 +205,7 @@ func ChannelSummary(c models.PublicChannel) *userv1.ChannelSummary {
 		VideoQuality:          c.VideoQuality,
 		UserLimit:             c.UserLimit,
 		RtcRegion:             c.RTCRegion,
+		CallerPermissions:     c.CallerPermissions,
 	}
 }
 

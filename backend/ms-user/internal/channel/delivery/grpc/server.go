@@ -183,8 +183,11 @@ func (s *Server) AssertGroupChannelAccess(ctx context.Context, req *userv1.Asser
 
 	// Response
 	return &userv1.AssertGroupChannelAccessResponse{
-		ChannelUuid: access.ChannelID,
-		UserUuid:    access.UserID,
-		Permissions: access.Permissions,
+		ChannelUuid:       access.ChannelID,
+		UserUuid:          access.UserID,
+		Permissions:       access.Permissions,
+		ChannelType:       access.ChannelType,
+		SlowmodeSeconds:   access.SlowmodeSeconds,
+		ContentVisibility: access.ContentVisibility,
 	}, nil
 }

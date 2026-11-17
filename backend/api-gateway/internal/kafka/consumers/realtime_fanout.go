@@ -59,24 +59,54 @@ func (r realtimeFanout) handle(in wikafka.Incoming) error {
 	if err := json.Unmarshal(in.Value, &head); err != nil {
 		return err
 	}
-	if strings.TrimSpace(head.Type) != chatEvents.TypeMessageCreated {
+
+	switch strings.TrimSpace(head.Type) {
+	case chatEvents.TypeMessageCreated:
+		var ev chatEvents.MessageCreated
+		if err := json.Unmarshal(in.Value, &ev); err != nil {
+			return err
+		}
+		return r.deliver(ev.GroupID, ev.ChannelID, func() ([]byte, error) {
+			return realtime.MarshalMessageCreatedEvent(ev)
+		})
+	case chatEvents.TypeMessageUpdated:
+		var ev chatEvents.MessageUpdated
+		if err := json.Unmarshal(in.Value, &ev); err != nil {
+			return err
+		}
+		return r.deliver(ev.GroupID, ev.ChannelID, func() ([]byte, error) {
+			return realtime.MarshalMessageUpdatedEvent(ev)
+		})
+	case chatEvents.TypeMessageDeleted:
+		var ev chatEvents.MessageDeleted
+		if err := json.Unmarshal(in.Value, &ev); err != nil {
+			return err
+		}
+		return r.deliver(ev.GroupID, ev.ChannelID, func() ([]byte, error) {
+			return realtime.MarshalMessageDeletedEvent(ev)
+		})
+	case chatEvents.TypeMessageReactionsUpdated:
+		var ev chatEvents.MessageReactionsUpdated
+		if err := json.Unmarshal(in.Value, &ev); err != nil {
+			return err
+		}
+		return r.deliver(ev.GroupID, ev.ChannelID, func() ([]byte, error) {
+			return realtime.MarshalMessageReactionsUpdatedEvent(ev)
+		})
+	default:
 		return nil
 	}
+}
 
-	var ev chatEvents.MessageCreated
-	if err := json.Unmarshal(in.Value, &ev); err != nil {
-		return err
-	}
-	if ev.GroupID == "" || ev.ChannelID == "" {
+func (r realtimeFanout) deliver(groupID, channelID string, marshalFn func() ([]byte, error)) error {
+	if groupID == "" || channelID == "" {
 		return fmt.Errorf("missing group or channel in event")
 	}
-
-	payload, err := realtime.MarshalMessageCreatedEvent(ev)
+	payload, err := marshalFn()
 	if err != nil {
 		return err
 	}
-
-	r.hub.Deliver(ev.GroupID, ev.ChannelID, payload)
+	r.hub.Deliver(groupID, channelID, payload)
 
 	return nil
 }

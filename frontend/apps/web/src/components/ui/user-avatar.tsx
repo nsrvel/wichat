@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { resolvePublicObjectUrl, toSameOriginObjectPath } from "@/lib/public-object-url";
 import { cn } from "@/lib/utils";
 import { USER_STATUS_BY_ID, type UserPresenceStatus } from "@/lib/user-status";
 
@@ -105,21 +106,41 @@ export function UserAvatar({
 	imgClassName,
 }: UserAvatarProps) {
 	const styles = SIZE_STYLES[size];
-	const trimmedSrc = src?.trim() || "";
-	const [failedSrc, setFailedSrc] = useState<string | null>(null);
-	const showImage = Boolean(trimmedSrc) && failedSrc !== trimmedSrc;
+	const resolvedSrc = resolvePublicObjectUrl(src ?? "");
+	const [failedPrimarySrc, setFailedPrimarySrc] = useState<string | null>(null);
+	const [failedFallbackSrc, setFailedFallbackSrc] = useState<string | null>(null);
+
+	const fallbackSrc =
+		resolvedSrc && failedPrimarySrc === resolvedSrc ? toSameOriginObjectPath(resolvedSrc) : null;
+	const activeSrc =
+		fallbackSrc && fallbackSrc !== resolvedSrc
+			? failedFallbackSrc === fallbackSrc
+				? ""
+				: fallbackSrc
+			: failedPrimarySrc === resolvedSrc
+				? ""
+				: resolvedSrc;
+
+	const showImage = Boolean(activeSrc);
 
 	return (
 		<div className={cn("relative shrink-0 select-none", styles.avatarClass, className)}>
 			{showImage ? (
 				/* eslint-disable-next-line @next/next/no-img-element */
 				<img
-					src={trimmedSrc}
+					key={activeSrc}
+					src={activeSrc}
 					alt={alt}
 					width={styles.px}
 					height={styles.px}
 					draggable={false}
-					onError={() => setFailedSrc(trimmedSrc)}
+					onError={() => {
+						if (activeSrc === resolvedSrc) {
+							setFailedPrimarySrc(resolvedSrc);
+						} else {
+							setFailedFallbackSrc(activeSrc);
+						}
+					}}
 					className={cn(
 						"pointer-events-none size-full rounded-full bg-card object-cover select-none",
 						ringClassName,

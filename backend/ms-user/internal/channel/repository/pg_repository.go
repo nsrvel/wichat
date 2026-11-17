@@ -20,6 +20,7 @@ type PgRepository interface {
 	UpdateChannel(ctx context.Context, groupID, channelPublicID string, input models.UpdateChannelInput, now time.Time) (models.Channel, error)
 	DeleteChannel(ctx context.Context, groupID, channelPublicID string) error
 	ListChannelPermissionOverrides(ctx context.Context, groupID, channelPublicID string) ([]models.PublicChannelCategoryPermissionOverride, error)
+	ListGroupChannelPermissionOverrides(ctx context.Context, groupID string) ([]models.ChannelPermissionOverride, error)
 	UpsertChannelPermissionOverride(ctx context.Context, groupID, channelPublicID, targetType, targetPublicID string, allow, deny []string, now time.Time) (models.PublicChannelCategoryPermissionOverride, error)
 	DeleteChannelPermissionOverride(ctx context.Context, groupID, channelPublicID, targetType, targetPublicID string) error
 	SyncChannelPermissionsWithCategory(ctx context.Context, groupID, channelPublicID string, now time.Time) (models.Channel, error)
@@ -275,6 +276,53 @@ func (r pgRepository) ListChannelPermissionOverrides(
 			TargetName:       row.TargetName,
 			TargetColor:      row.TargetColor,
 			TargetAvatarURL:  row.TargetAvatarURL,
+			IsEveryone:       row.IsEveryone,
+			AllowPermissions: row.AllowPermissions,
+			DenyPermissions:  row.DenyPermissions,
+		}
+	}
+
+	return out, nil
+}
+
+func (r pgRepository) ListGroupChannelPermissionOverrides(
+	ctx context.Context,
+	groupID string,
+) ([]models.ChannelPermissionOverride, error) {
+	type overrideRow struct {
+		ChannelID        string   `bun:"channel_id"`
+		TargetType       string   `bun:"target_type"`
+		TargetID         string   `bun:"target_id"`
+		IsEveryone       bool     `bun:"is_everyone"`
+		AllowPermissions []string `bun:"allow_permissions,array"`
+		DenyPermissions  []string `bun:"deny_permissions,array"`
+	}
+
+	var rows []overrideRow
+	err := r.db.NewSelect().
+		TableExpr("channel_permission_overrides AS o").
+		ColumnExpr("o.channel_id").
+		ColumnExpr("o.target_type").
+		ColumnExpr("o.target_id").
+		ColumnExpr("COALESCE(gr.is_default, false) AS is_everyone").
+		ColumnExpr("o.allow_permissions").
+		ColumnExpr("o.deny_permissions").
+		Join("JOIN channels AS ch ON ch.id = o.channel_id").
+		Join("LEFT JOIN group_roles AS gr ON o.target_type = 'role' AND gr.id = o.target_id AND gr.group_id = ?", groupID).
+		Where("ch.group_id = ?", groupID).
+		Scan(ctx, &rows)
+	if err != nil {
+		r.logIfInfraErr("ListGroupChannelPermissionOverrides", err)
+
+		return nil, err
+	}
+
+	out := make([]models.ChannelPermissionOverride, len(rows))
+	for i, row := range rows {
+		out[i] = models.ChannelPermissionOverride{
+			ChannelID:        row.ChannelID,
+			TargetType:       row.TargetType,
+			TargetID:         row.TargetID,
 			IsEveryone:       row.IsEveryone,
 			AllowPermissions: row.AllowPermissions,
 			DenyPermissions:  row.DenyPermissions,

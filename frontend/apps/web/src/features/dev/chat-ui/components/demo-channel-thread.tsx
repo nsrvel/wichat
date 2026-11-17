@@ -64,7 +64,6 @@ export function DemoChannelThread() {
 				authorDisplayName={demoName.self}
 				authorAvatarUrl={demoAvatar.self}
 				timeLabel="2 hari lalu"
-				mine
 			>
 				<p>
 					Mantap. Nanti tab Chat / Pinned / Shared juga jangan sampai geser alignment-nya pas resize
@@ -116,7 +115,6 @@ export function DemoChannelThread() {
 				authorAvatarUrl={demoAvatar.self}
 				authorDisplayName={demoName.self}
 				timeLabel="3 jam lalu"
-				mine
 				reactions={
 					<>
 						<DemoReaction emoji="🎉" count={3} />

@@ -1,4 +1,4 @@
-// Package realtime defines WebSocket chat fanout JSON (v0).
+// Package realtime defines WebSocket chat fanout JSON.
 package realtime
 
 import (
@@ -7,19 +7,44 @@ import (
 	"time"
 )
 
-const TypeMessageCreated = "message.created"
+const (
+	TypeMessageCreated          = "message.created"
+	TypeMessageUpdated          = "message.updated"
+	TypeMessageDeleted          = "message.deleted"
+	TypeMessageReactionsUpdated = "message.reactions.updated"
+)
 
-// MessagePayload mirrors REST message JSON for fanout.
-type MessagePayload struct {
+// ReplyPreviewPayload mirrors REST reply preview JSON for fanout.
+type ReplyPreviewPayload struct {
 	ID                string `json:"id"`
 	AuthorID          string `json:"author_id"`
 	AuthorDisplayName string `json:"author_display_name"`
-	Body              string `json:"body"`
-	CreatedAt         string `json:"created_at"`
-	Mine              bool   `json:"mine"`
+	BodyPreview       string `json:"body_preview"`
 }
 
-// Envelope is a WebSocket fanout frame.
+// ReactionPayload mirrors REST reaction summary JSON for fanout.
+type ReactionPayload struct {
+	Emoji   string   `json:"emoji"`
+	Count   int32    `json:"count"`
+	UserIDs []string `json:"user_ids"`
+}
+
+// MessagePayload mirrors REST message JSON for fanout.
+type MessagePayload struct {
+	ID                string               `json:"id"`
+	AuthorID          string               `json:"author_id"`
+	AuthorDisplayName string               `json:"author_display_name"`
+	AuthorAvatarURL   string               `json:"author_avatar_url,omitempty"`
+	Body              string               `json:"body"`
+	CreatedAt         string               `json:"created_at"`
+	EditedAt          string               `json:"edited_at,omitempty"`
+	IsPinned          bool                 `json:"is_pinned,omitempty"`
+	ReplyTo           *ReplyPreviewPayload `json:"reply_to,omitempty"`
+	Reactions         []ReactionPayload    `json:"reactions,omitempty"`
+	Mine              bool                 `json:"mine"`
+}
+
+// Envelope is a WebSocket fanout frame for message.created / message.updated.
 type Envelope struct {
 	Type    string         `json:"type"`
 	Message MessagePayload `json:"message"`

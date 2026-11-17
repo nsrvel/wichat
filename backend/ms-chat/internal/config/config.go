@@ -16,6 +16,13 @@ type Config struct {
 	KafkaConsumerGroup       string `mapstructure:"kafka_consumer_group"`
 	ElasticsearchURL         string `mapstructure:"elasticsearch_url"`
 	ElasticsearchMessagesIdx string `mapstructure:"elasticsearch_messages_index"`
+	MinioEndpoint            string `mapstructure:"minio_endpoint"`
+	MinioAccessKey           string `mapstructure:"minio_access_key"`
+	MinioSecretKey           string `mapstructure:"minio_secret_key"`
+	MinioBucket              string `mapstructure:"minio_bucket"`
+	MinioPublicBaseURL       string `mapstructure:"minio_public_base_url"`
+	MinioUseSSL              bool   `mapstructure:"minio_use_ssl"`
+	MinioRegion              string `mapstructure:"minio_region"`
 }
 
 // Defaults are applied when env / .env do not set a value.

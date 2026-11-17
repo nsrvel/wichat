@@ -43,6 +43,7 @@ import { SortableChannelRow } from "@/features/channel/components/sortable-chann
 import { formatChannelDisplayName } from "@/features/channel/lib/channel-display";
 import { useCategorySettings } from "@/features/channel-category/category-settings/category-settings-provider";
 import { useChannelSettings } from "@/features/channel/channel-settings/channel-settings-provider";
+import { DeleteChannelConfirmDialog } from "@/features/channel/channel-settings/delete-channel-confirm-dialog";
 import { DeleteCategoryConfirmDialog } from "@/features/channel-category/category-settings/delete-category-confirm-dialog";
 import { useCreateChannelDialog } from "@/features/channel/create-channel-dialog-provider";
 import { useInviteDialog } from "@/features/invite/invite-dialog-provider";
@@ -57,6 +58,7 @@ import { channelPath, quickViewPath, type QuickViewId } from "@/lib/app-routes";
 import { cn } from "@/lib/utils";
 import {
 	useCreateGroupChannelMutation,
+	useDeleteGroupChannelMutation,
 	useReorderGroupChannelsMutation,
 } from "@/services/channel/channel.mutation";
 import {
@@ -88,7 +90,12 @@ export function ProductionChannelSidebar({
 	const { openChannelSettings } = useChannelSettings();
 	const { openInvite } = useInviteDialog();
 	const createChannel = useCreateGroupChannelMutation(groupId);
+	const deleteChannelMutation = useDeleteGroupChannelMutation(groupId);
 	const deleteCategoryMutation = useDeleteGroupCategoryMutation(groupId);
+	const [pendingDeleteChannel, setPendingDeleteChannel] = useState<{
+		id: string;
+		name: string;
+	} | null>(null);
 	const [pendingDeleteCategory, setPendingDeleteCategory] = useState<{
 		id: string;
 		name: string;
@@ -226,6 +233,7 @@ export function ProductionChannelSidebar({
 					defaultCategoryId: ch.category_id ?? undefined,
 				})
 			}
+			onDeleteChannel={() => setPendingDeleteChannel({ id: ch.id, name: ch.name })}
 		/>
 	);
 	const sensors = useSensors(
@@ -651,6 +659,41 @@ export function ProductionChannelSidebar({
 			{!panelResizeHandle ? null : (
 				<div className="pointer-events-none absolute inset-y-0 right-0 w-px" aria-hidden />
 			)}
+			<DeleteChannelConfirmDialog
+				channelName={pendingDeleteChannel?.name ?? ""}
+				open={pendingDeleteChannel !== null}
+				onOpenChange={(open) => {
+					if (!open) {
+						setPendingDeleteChannel(null);
+					}
+				}}
+				confirmDisabled={deleteChannelMutation.isPending}
+				onConfirm={() => {
+					if (!pendingDeleteChannel) {
+						return;
+					}
+					const targetChannel = pendingDeleteChannel;
+					deleteChannelMutation.mutate(targetChannel.id, {
+						onSuccess: () => {
+							setPendingDeleteChannel(null);
+							toast.success(
+								t("channel.channel_settings.deleted_toast", { name: targetChannel.name }),
+							);
+							if (targetChannel.id === activeChannelId) {
+								const nextChannel = channels.data?.channels.find((c) => c.id !== targetChannel.id);
+								router.replace(
+									nextChannel
+										? channelPath(groupId, nextChannel.id)
+										: `/channel/${encodeURIComponent(groupId)}`,
+								);
+							}
+						},
+						onError: (err) => {
+							toast.error(translateError(t, err));
+						},
+					});
+				}}
+			/>
 			<DeleteCategoryConfirmDialog
 				categoryName={pendingDeleteCategory?.name ?? ""}
 				open={pendingDeleteCategory !== null}

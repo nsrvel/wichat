@@ -46,11 +46,14 @@ type UpdateChannelInput struct {
 	RTCRegion             *string
 }
 
-// ChannelAccess holds internal ids after token, membership, and channel resolution.
+// ChannelAccess holds internal ids and effective metadata after token, membership, and channel resolution.
 type ChannelAccess struct {
-	ChannelID   string
-	UserID      string
-	Permissions []string
+	ChannelID         string
+	UserID            string
+	Permissions       []string
+	ChannelType       string
+	SlowmodeSeconds   int32
+	ContentVisibility string
 }
 
 // PublicChannel is returned to clients (JSON id is public_id).
@@ -73,6 +76,7 @@ type PublicChannel struct {
 	VideoQuality          string
 	UserLimit             int32
 	RTCRegion             string
+	CallerPermissions     []string
 }
 
 // Public returns client-safe channel fields.

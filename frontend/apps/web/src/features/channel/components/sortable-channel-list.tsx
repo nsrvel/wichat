@@ -44,6 +44,7 @@ export type SortableChannelRowProps = {
 	onEditChannel?: () => void;
 	onDuplicateChannel?: () => void;
 	onCreateChannel?: () => void;
+	onDeleteChannel?: () => void;
 };
 
 export function SortableChannelRow({
@@ -65,6 +66,7 @@ export function SortableChannelRow({
 	onEditChannel,
 	onDuplicateChannel,
 	onCreateChannel,
+	onDeleteChannel,
 }: SortableChannelRowProps) {
 	const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
 		id: channel.id,
@@ -99,6 +101,7 @@ export function SortableChannelRow({
 				onEditChannel={onEditChannel}
 				onDuplicateChannel={onDuplicateChannel}
 				onCreateChannel={onCreateChannel}
+				onDeleteChannel={onDeleteChannel}
 			>
 				<SidebarChannelRow
 					menuId={`ch-${channel.id}`}

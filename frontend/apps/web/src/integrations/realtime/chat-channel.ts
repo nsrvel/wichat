@@ -1,4 +1,8 @@
-import { RealtimeMessageCreatedSchema, type Message } from "@wichat/contracts/chat/message";
+import {
+	RealtimeChatEventSchema,
+	type Message,
+	type MessageReactionSummary,
+} from "@wichat/contracts/chat/message";
 import { ensureAccessToken, getAccessToken } from "@/integrations/api-client";
 import { onGatewayRecovered } from "@/integrations/realtime/gateway-connection";
 import { env } from "@/lib/env";
@@ -7,6 +11,9 @@ export type ChatChannelRealtimeOptions = {
 	groupId: string;
 	channelId: string;
 	onMessageCreated: (message: Message) => void;
+	onMessageUpdated?: (message: Message) => void;
+	onMessageDeleted?: (messageId: string) => void;
+	onMessageReactionsUpdated?: (messageId: string, reactions: MessageReactionSummary[]) => void;
 	onReconnect?: () => void;
 };
 
@@ -18,7 +25,7 @@ function realtimeWebSocketURL(accessToken: string): string {
 	return url.toString();
 }
 
-/** Opens a WebSocket, subscribes to one channel, and forwards message.created events. */
+/** Opens a WebSocket, subscribes to one channel, and forwards chat lifecycle events. */
 export function subscribeChatChannel(options: ChatChannelRealtimeOptions): () => void {
 	let ws: WebSocket | null = null;
 	let closed = false;
@@ -77,12 +84,18 @@ export function subscribeChatChannel(options: ChatChannelRealtimeOptions): () =>
 		});
 		ws.addEventListener("message", (event) => {
 			try {
-				const parsed = RealtimeMessageCreatedSchema.parse(JSON.parse(String(event.data)));
+				const parsed = RealtimeChatEventSchema.parse(JSON.parse(String(event.data)));
 				if (parsed.type === "message.created") {
 					options.onMessageCreated(parsed.message);
+				} else if (parsed.type === "message.updated") {
+					options.onMessageUpdated?.(parsed.message);
+				} else if (parsed.type === "message.deleted") {
+					options.onMessageDeleted?.(parsed.message_id);
+				} else if (parsed.type === "message.reactions.updated") {
+					options.onMessageReactionsUpdated?.(parsed.message_id, parsed.reactions);
 				}
 			} catch {
-				// ignore malformed fanout frames
+				// ignore malformed or non-chat fanout frames
 			}
 		});
 		ws.addEventListener("close", () => {
@@ -115,9 +128,7 @@ export function subscribeChatChannel(options: ChatChannelRealtimeOptions): () =>
 		unsubscribeRecovered();
 		if (reconnectTimer !== undefined) {
 			clearTimeout(reconnectTimer);
-			reconnectTimer = undefined;
 		}
 		ws?.close();
-		ws = null;
 	};
 }

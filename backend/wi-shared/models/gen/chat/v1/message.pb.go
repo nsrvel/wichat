@@ -147,6 +147,7 @@ type CreateChannelMessageRequest struct {
 	GroupId       string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
 	ChannelId     string                 `protobuf:"bytes,3,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
 	Body          string                 `protobuf:"bytes,4,opt,name=body,proto3" json:"body,omitempty"`
+	ReplyToId     string                 `protobuf:"bytes,5,opt,name=reply_to_id,json=replyToId,proto3" json:"reply_to_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -209,6 +210,13 @@ func (x *CreateChannelMessageRequest) GetBody() string {
 	return ""
 }
 
+func (x *CreateChannelMessageRequest) GetReplyToId() string {
+	if x != nil {
+		return x.ReplyToId
+	}
+	return ""
+}
+
 type CreateChannelMessageResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Message       *MessageSummary        `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
@@ -253,21 +261,730 @@ func (x *CreateChannelMessageResponse) GetMessage() *MessageSummary {
 	return nil
 }
 
-type MessageSummary struct {
+type UpdateChannelMessageRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	GroupId       string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	ChannelId     string                 `protobuf:"bytes,3,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
+	MessageId     string                 `protobuf:"bytes,4,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
+	Body          string                 `protobuf:"bytes,5,opt,name=body,proto3" json:"body,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateChannelMessageRequest) Reset() {
+	*x = UpdateChannelMessageRequest{}
+	mi := &file_chat_v1_message_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateChannelMessageRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateChannelMessageRequest) ProtoMessage() {}
+
+func (x *UpdateChannelMessageRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_chat_v1_message_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateChannelMessageRequest.ProtoReflect.Descriptor instead.
+func (*UpdateChannelMessageRequest) Descriptor() ([]byte, []int) {
+	return file_chat_v1_message_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *UpdateChannelMessageRequest) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
+func (x *UpdateChannelMessageRequest) GetGroupId() string {
+	if x != nil {
+		return x.GroupId
+	}
+	return ""
+}
+
+func (x *UpdateChannelMessageRequest) GetChannelId() string {
+	if x != nil {
+		return x.ChannelId
+	}
+	return ""
+}
+
+func (x *UpdateChannelMessageRequest) GetMessageId() string {
+	if x != nil {
+		return x.MessageId
+	}
+	return ""
+}
+
+func (x *UpdateChannelMessageRequest) GetBody() string {
+	if x != nil {
+		return x.Body
+	}
+	return ""
+}
+
+type UpdateChannelMessageResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Message       *MessageSummary        `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateChannelMessageResponse) Reset() {
+	*x = UpdateChannelMessageResponse{}
+	mi := &file_chat_v1_message_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateChannelMessageResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateChannelMessageResponse) ProtoMessage() {}
+
+func (x *UpdateChannelMessageResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_chat_v1_message_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateChannelMessageResponse.ProtoReflect.Descriptor instead.
+func (*UpdateChannelMessageResponse) Descriptor() ([]byte, []int) {
+	return file_chat_v1_message_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *UpdateChannelMessageResponse) GetMessage() *MessageSummary {
+	if x != nil {
+		return x.Message
+	}
+	return nil
+}
+
+type DeleteChannelMessageRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	GroupId       string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	ChannelId     string                 `protobuf:"bytes,3,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
+	MessageId     string                 `protobuf:"bytes,4,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteChannelMessageRequest) Reset() {
+	*x = DeleteChannelMessageRequest{}
+	mi := &file_chat_v1_message_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteChannelMessageRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteChannelMessageRequest) ProtoMessage() {}
+
+func (x *DeleteChannelMessageRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_chat_v1_message_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteChannelMessageRequest.ProtoReflect.Descriptor instead.
+func (*DeleteChannelMessageRequest) Descriptor() ([]byte, []int) {
+	return file_chat_v1_message_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *DeleteChannelMessageRequest) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
+func (x *DeleteChannelMessageRequest) GetGroupId() string {
+	if x != nil {
+		return x.GroupId
+	}
+	return ""
+}
+
+func (x *DeleteChannelMessageRequest) GetChannelId() string {
+	if x != nil {
+		return x.ChannelId
+	}
+	return ""
+}
+
+func (x *DeleteChannelMessageRequest) GetMessageId() string {
+	if x != nil {
+		return x.MessageId
+	}
+	return ""
+}
+
+type DeleteChannelMessageResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteChannelMessageResponse) Reset() {
+	*x = DeleteChannelMessageResponse{}
+	mi := &file_chat_v1_message_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteChannelMessageResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteChannelMessageResponse) ProtoMessage() {}
+
+func (x *DeleteChannelMessageResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_chat_v1_message_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteChannelMessageResponse.ProtoReflect.Descriptor instead.
+func (*DeleteChannelMessageResponse) Descriptor() ([]byte, []int) {
+	return file_chat_v1_message_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *DeleteChannelMessageResponse) GetOk() bool {
+	if x != nil {
+		return x.Ok
+	}
+	return false
+}
+
+type ToggleMessageReactionRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	GroupId       string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	ChannelId     string                 `protobuf:"bytes,3,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
+	MessageId     string                 `protobuf:"bytes,4,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
+	Emoji         string                 `protobuf:"bytes,5,opt,name=emoji,proto3" json:"emoji,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ToggleMessageReactionRequest) Reset() {
+	*x = ToggleMessageReactionRequest{}
+	mi := &file_chat_v1_message_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ToggleMessageReactionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ToggleMessageReactionRequest) ProtoMessage() {}
+
+func (x *ToggleMessageReactionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_chat_v1_message_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ToggleMessageReactionRequest.ProtoReflect.Descriptor instead.
+func (*ToggleMessageReactionRequest) Descriptor() ([]byte, []int) {
+	return file_chat_v1_message_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *ToggleMessageReactionRequest) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
+func (x *ToggleMessageReactionRequest) GetGroupId() string {
+	if x != nil {
+		return x.GroupId
+	}
+	return ""
+}
+
+func (x *ToggleMessageReactionRequest) GetChannelId() string {
+	if x != nil {
+		return x.ChannelId
+	}
+	return ""
+}
+
+func (x *ToggleMessageReactionRequest) GetMessageId() string {
+	if x != nil {
+		return x.MessageId
+	}
+	return ""
+}
+
+func (x *ToggleMessageReactionRequest) GetEmoji() string {
+	if x != nil {
+		return x.Emoji
+	}
+	return ""
+}
+
+type ToggleMessageReactionResponse struct {
+	state         protoimpl.MessageState    `protogen:"open.v1"`
+	Reactions     []*MessageReactionSummary `protobuf:"bytes,1,rep,name=reactions,proto3" json:"reactions,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ToggleMessageReactionResponse) Reset() {
+	*x = ToggleMessageReactionResponse{}
+	mi := &file_chat_v1_message_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ToggleMessageReactionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ToggleMessageReactionResponse) ProtoMessage() {}
+
+func (x *ToggleMessageReactionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_chat_v1_message_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ToggleMessageReactionResponse.ProtoReflect.Descriptor instead.
+func (*ToggleMessageReactionResponse) Descriptor() ([]byte, []int) {
+	return file_chat_v1_message_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *ToggleMessageReactionResponse) GetReactions() []*MessageReactionSummary {
+	if x != nil {
+		return x.Reactions
+	}
+	return nil
+}
+
+type SetChannelMessagePinnedRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	GroupId       string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	ChannelId     string                 `protobuf:"bytes,3,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
+	MessageId     string                 `protobuf:"bytes,4,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
+	Pinned        bool                   `protobuf:"varint,5,opt,name=pinned,proto3" json:"pinned,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetChannelMessagePinnedRequest) Reset() {
+	*x = SetChannelMessagePinnedRequest{}
+	mi := &file_chat_v1_message_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetChannelMessagePinnedRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetChannelMessagePinnedRequest) ProtoMessage() {}
+
+func (x *SetChannelMessagePinnedRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_chat_v1_message_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetChannelMessagePinnedRequest.ProtoReflect.Descriptor instead.
+func (*SetChannelMessagePinnedRequest) Descriptor() ([]byte, []int) {
+	return file_chat_v1_message_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *SetChannelMessagePinnedRequest) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
+func (x *SetChannelMessagePinnedRequest) GetGroupId() string {
+	if x != nil {
+		return x.GroupId
+	}
+	return ""
+}
+
+func (x *SetChannelMessagePinnedRequest) GetChannelId() string {
+	if x != nil {
+		return x.ChannelId
+	}
+	return ""
+}
+
+func (x *SetChannelMessagePinnedRequest) GetMessageId() string {
+	if x != nil {
+		return x.MessageId
+	}
+	return ""
+}
+
+func (x *SetChannelMessagePinnedRequest) GetPinned() bool {
+	if x != nil {
+		return x.Pinned
+	}
+	return false
+}
+
+type SetChannelMessagePinnedResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Message       *MessageSummary        `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetChannelMessagePinnedResponse) Reset() {
+	*x = SetChannelMessagePinnedResponse{}
+	mi := &file_chat_v1_message_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetChannelMessagePinnedResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetChannelMessagePinnedResponse) ProtoMessage() {}
+
+func (x *SetChannelMessagePinnedResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_chat_v1_message_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetChannelMessagePinnedResponse.ProtoReflect.Descriptor instead.
+func (*SetChannelMessagePinnedResponse) Descriptor() ([]byte, []int) {
+	return file_chat_v1_message_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *SetChannelMessagePinnedResponse) GetMessage() *MessageSummary {
+	if x != nil {
+		return x.Message
+	}
+	return nil
+}
+
+type ListPinnedChannelMessagesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	GroupId       string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	ChannelId     string                 `protobuf:"bytes,3,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListPinnedChannelMessagesRequest) Reset() {
+	*x = ListPinnedChannelMessagesRequest{}
+	mi := &file_chat_v1_message_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListPinnedChannelMessagesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListPinnedChannelMessagesRequest) ProtoMessage() {}
+
+func (x *ListPinnedChannelMessagesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_chat_v1_message_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListPinnedChannelMessagesRequest.ProtoReflect.Descriptor instead.
+func (*ListPinnedChannelMessagesRequest) Descriptor() ([]byte, []int) {
+	return file_chat_v1_message_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *ListPinnedChannelMessagesRequest) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
+func (x *ListPinnedChannelMessagesRequest) GetGroupId() string {
+	if x != nil {
+		return x.GroupId
+	}
+	return ""
+}
+
+func (x *ListPinnedChannelMessagesRequest) GetChannelId() string {
+	if x != nil {
+		return x.ChannelId
+	}
+	return ""
+}
+
+type ListPinnedChannelMessagesResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Messages      []*MessageSummary      `protobuf:"bytes,1,rep,name=messages,proto3" json:"messages,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListPinnedChannelMessagesResponse) Reset() {
+	*x = ListPinnedChannelMessagesResponse{}
+	mi := &file_chat_v1_message_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListPinnedChannelMessagesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListPinnedChannelMessagesResponse) ProtoMessage() {}
+
+func (x *ListPinnedChannelMessagesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_chat_v1_message_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListPinnedChannelMessagesResponse.ProtoReflect.Descriptor instead.
+func (*ListPinnedChannelMessagesResponse) Descriptor() ([]byte, []int) {
+	return file_chat_v1_message_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *ListPinnedChannelMessagesResponse) GetMessages() []*MessageSummary {
+	if x != nil {
+		return x.Messages
+	}
+	return nil
+}
+
+type MessageReplyPreview struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Id                string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	AuthorId          string                 `protobuf:"bytes,2,opt,name=author_id,json=authorId,proto3" json:"author_id,omitempty"`
 	AuthorDisplayName string                 `protobuf:"bytes,3,opt,name=author_display_name,json=authorDisplayName,proto3" json:"author_display_name,omitempty"`
-	Body              string                 `protobuf:"bytes,4,opt,name=body,proto3" json:"body,omitempty"`
-	CreatedAt         string                 `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	Mine              bool                   `protobuf:"varint,6,opt,name=mine,proto3" json:"mine,omitempty"`
+	BodyPreview       string                 `protobuf:"bytes,4,opt,name=body_preview,json=bodyPreview,proto3" json:"body_preview,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
+}
+
+func (x *MessageReplyPreview) Reset() {
+	*x = MessageReplyPreview{}
+	mi := &file_chat_v1_message_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MessageReplyPreview) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MessageReplyPreview) ProtoMessage() {}
+
+func (x *MessageReplyPreview) ProtoReflect() protoreflect.Message {
+	mi := &file_chat_v1_message_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MessageReplyPreview.ProtoReflect.Descriptor instead.
+func (*MessageReplyPreview) Descriptor() ([]byte, []int) {
+	return file_chat_v1_message_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *MessageReplyPreview) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *MessageReplyPreview) GetAuthorId() string {
+	if x != nil {
+		return x.AuthorId
+	}
+	return ""
+}
+
+func (x *MessageReplyPreview) GetAuthorDisplayName() string {
+	if x != nil {
+		return x.AuthorDisplayName
+	}
+	return ""
+}
+
+func (x *MessageReplyPreview) GetBodyPreview() string {
+	if x != nil {
+		return x.BodyPreview
+	}
+	return ""
+}
+
+type MessageReactionSummary struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Emoji         string                 `protobuf:"bytes,1,opt,name=emoji,proto3" json:"emoji,omitempty"`
+	Count         int32                  `protobuf:"varint,2,opt,name=count,proto3" json:"count,omitempty"`
+	UserIds       []string               `protobuf:"bytes,3,rep,name=user_ids,json=userIds,proto3" json:"user_ids,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MessageReactionSummary) Reset() {
+	*x = MessageReactionSummary{}
+	mi := &file_chat_v1_message_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MessageReactionSummary) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MessageReactionSummary) ProtoMessage() {}
+
+func (x *MessageReactionSummary) ProtoReflect() protoreflect.Message {
+	mi := &file_chat_v1_message_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MessageReactionSummary.ProtoReflect.Descriptor instead.
+func (*MessageReactionSummary) Descriptor() ([]byte, []int) {
+	return file_chat_v1_message_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *MessageReactionSummary) GetEmoji() string {
+	if x != nil {
+		return x.Emoji
+	}
+	return ""
+}
+
+func (x *MessageReactionSummary) GetCount() int32 {
+	if x != nil {
+		return x.Count
+	}
+	return 0
+}
+
+func (x *MessageReactionSummary) GetUserIds() []string {
+	if x != nil {
+		return x.UserIds
+	}
+	return nil
+}
+
+type MessageSummary struct {
+	state             protoimpl.MessageState    `protogen:"open.v1"`
+	Id                string                    `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	AuthorId          string                    `protobuf:"bytes,2,opt,name=author_id,json=authorId,proto3" json:"author_id,omitempty"`
+	AuthorDisplayName string                    `protobuf:"bytes,3,opt,name=author_display_name,json=authorDisplayName,proto3" json:"author_display_name,omitempty"`
+	Body              string                    `protobuf:"bytes,4,opt,name=body,proto3" json:"body,omitempty"`
+	CreatedAt         string                    `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	Mine              bool                      `protobuf:"varint,6,opt,name=mine,proto3" json:"mine,omitempty"`
+	AuthorAvatarUrl   string                    `protobuf:"bytes,7,opt,name=author_avatar_url,json=authorAvatarUrl,proto3" json:"author_avatar_url,omitempty"`
+	EditedAt          string                    `protobuf:"bytes,8,opt,name=edited_at,json=editedAt,proto3" json:"edited_at,omitempty"`
+	IsPinned          bool                      `protobuf:"varint,9,opt,name=is_pinned,json=isPinned,proto3" json:"is_pinned,omitempty"`
+	ReplyTo           *MessageReplyPreview      `protobuf:"bytes,10,opt,name=reply_to,json=replyTo,proto3" json:"reply_to,omitempty"`
+	Reactions         []*MessageReactionSummary `protobuf:"bytes,11,rep,name=reactions,proto3" json:"reactions,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
 
 func (x *MessageSummary) Reset() {
 	*x = MessageSummary{}
-	mi := &file_chat_v1_message_proto_msgTypes[4]
+	mi := &file_chat_v1_message_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -279,7 +996,7 @@ func (x *MessageSummary) String() string {
 func (*MessageSummary) ProtoMessage() {}
 
 func (x *MessageSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_chat_v1_message_proto_msgTypes[4]
+	mi := &file_chat_v1_message_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -292,7 +1009,7 @@ func (x *MessageSummary) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MessageSummary.ProtoReflect.Descriptor instead.
 func (*MessageSummary) Descriptor() ([]byte, []int) {
-	return file_chat_v1_message_proto_rawDescGZIP(), []int{4}
+	return file_chat_v1_message_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *MessageSummary) GetId() string {
@@ -337,6 +1054,253 @@ func (x *MessageSummary) GetMine() bool {
 	return false
 }
 
+func (x *MessageSummary) GetAuthorAvatarUrl() string {
+	if x != nil {
+		return x.AuthorAvatarUrl
+	}
+	return ""
+}
+
+func (x *MessageSummary) GetEditedAt() string {
+	if x != nil {
+		return x.EditedAt
+	}
+	return ""
+}
+
+func (x *MessageSummary) GetIsPinned() bool {
+	if x != nil {
+		return x.IsPinned
+	}
+	return false
+}
+
+func (x *MessageSummary) GetReplyTo() *MessageReplyPreview {
+	if x != nil {
+		return x.ReplyTo
+	}
+	return nil
+}
+
+func (x *MessageSummary) GetReactions() []*MessageReactionSummary {
+	if x != nil {
+		return x.Reactions
+	}
+	return nil
+}
+
+type UploadChannelAttachmentRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	GroupId       string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	ChannelId     string                 `protobuf:"bytes,3,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
+	Filename      string                 `protobuf:"bytes,4,opt,name=filename,proto3" json:"filename,omitempty"`
+	ContentType   string                 `protobuf:"bytes,5,opt,name=content_type,json=contentType,proto3" json:"content_type,omitempty"`
+	Data          []byte                 `protobuf:"bytes,6,opt,name=data,proto3" json:"data,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UploadChannelAttachmentRequest) Reset() {
+	*x = UploadChannelAttachmentRequest{}
+	mi := &file_chat_v1_message_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UploadChannelAttachmentRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UploadChannelAttachmentRequest) ProtoMessage() {}
+
+func (x *UploadChannelAttachmentRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_chat_v1_message_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UploadChannelAttachmentRequest.ProtoReflect.Descriptor instead.
+func (*UploadChannelAttachmentRequest) Descriptor() ([]byte, []int) {
+	return file_chat_v1_message_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *UploadChannelAttachmentRequest) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
+func (x *UploadChannelAttachmentRequest) GetGroupId() string {
+	if x != nil {
+		return x.GroupId
+	}
+	return ""
+}
+
+func (x *UploadChannelAttachmentRequest) GetChannelId() string {
+	if x != nil {
+		return x.ChannelId
+	}
+	return ""
+}
+
+func (x *UploadChannelAttachmentRequest) GetFilename() string {
+	if x != nil {
+		return x.Filename
+	}
+	return ""
+}
+
+func (x *UploadChannelAttachmentRequest) GetContentType() string {
+	if x != nil {
+		return x.ContentType
+	}
+	return ""
+}
+
+func (x *UploadChannelAttachmentRequest) GetData() []byte {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+type MessageAttachment struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Url           string                 `protobuf:"bytes,2,opt,name=url,proto3" json:"url,omitempty"`
+	Filename      string                 `protobuf:"bytes,3,opt,name=filename,proto3" json:"filename,omitempty"`
+	ContentType   string                 `protobuf:"bytes,4,opt,name=content_type,json=contentType,proto3" json:"content_type,omitempty"`
+	SizeBytes     int64                  `protobuf:"varint,5,opt,name=size_bytes,json=sizeBytes,proto3" json:"size_bytes,omitempty"`
+	IsImage       bool                   `protobuf:"varint,6,opt,name=is_image,json=isImage,proto3" json:"is_image,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MessageAttachment) Reset() {
+	*x = MessageAttachment{}
+	mi := &file_chat_v1_message_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MessageAttachment) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MessageAttachment) ProtoMessage() {}
+
+func (x *MessageAttachment) ProtoReflect() protoreflect.Message {
+	mi := &file_chat_v1_message_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MessageAttachment.ProtoReflect.Descriptor instead.
+func (*MessageAttachment) Descriptor() ([]byte, []int) {
+	return file_chat_v1_message_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *MessageAttachment) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *MessageAttachment) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+func (x *MessageAttachment) GetFilename() string {
+	if x != nil {
+		return x.Filename
+	}
+	return ""
+}
+
+func (x *MessageAttachment) GetContentType() string {
+	if x != nil {
+		return x.ContentType
+	}
+	return ""
+}
+
+func (x *MessageAttachment) GetSizeBytes() int64 {
+	if x != nil {
+		return x.SizeBytes
+	}
+	return 0
+}
+
+func (x *MessageAttachment) GetIsImage() bool {
+	if x != nil {
+		return x.IsImage
+	}
+	return false
+}
+
+type UploadChannelAttachmentResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Attachment    *MessageAttachment     `protobuf:"bytes,1,opt,name=attachment,proto3" json:"attachment,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UploadChannelAttachmentResponse) Reset() {
+	*x = UploadChannelAttachmentResponse{}
+	mi := &file_chat_v1_message_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UploadChannelAttachmentResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UploadChannelAttachmentResponse) ProtoMessage() {}
+
+func (x *UploadChannelAttachmentResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_chat_v1_message_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UploadChannelAttachmentResponse.ProtoReflect.Descriptor instead.
+func (*UploadChannelAttachmentResponse) Descriptor() ([]byte, []int) {
+	return file_chat_v1_message_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *UploadChannelAttachmentResponse) GetAttachment() *MessageAttachment {
+	if x != nil {
+		return x.Attachment
+	}
+	return nil
+}
+
 var File_chat_v1_message_proto protoreflect.FileDescriptor
 
 const file_chat_v1_message_proto_rawDesc = "" +
@@ -350,15 +1314,71 @@ const file_chat_v1_message_proto_rawDesc = "" +
 	"\x05limit\x18\x04 \x01(\x05R\x05limit\x12*\n" +
 	"\x11before_created_at\x18\x05 \x01(\tR\x0fbeforeCreatedAt\"R\n" +
 	"\x1bListChannelMessagesResponse\x123\n" +
-	"\bmessages\x18\x01 \x03(\v2\x17.chat.v1.MessageSummaryR\bmessages\"\x8e\x01\n" +
+	"\bmessages\x18\x01 \x03(\v2\x17.chat.v1.MessageSummaryR\bmessages\"\xae\x01\n" +
 	"\x1bCreateChannelMessageRequest\x12!\n" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
 	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x1d\n" +
 	"\n" +
 	"channel_id\x18\x03 \x01(\tR\tchannelId\x12\x12\n" +
-	"\x04body\x18\x04 \x01(\tR\x04body\"Q\n" +
+	"\x04body\x18\x04 \x01(\tR\x04body\x12\x1e\n" +
+	"\vreply_to_id\x18\x05 \x01(\tR\treplyToId\"Q\n" +
 	"\x1cCreateChannelMessageResponse\x121\n" +
-	"\amessage\x18\x01 \x01(\v2\x17.chat.v1.MessageSummaryR\amessage\"\xb4\x01\n" +
+	"\amessage\x18\x01 \x01(\v2\x17.chat.v1.MessageSummaryR\amessage\"\xad\x01\n" +
+	"\x1bUpdateChannelMessageRequest\x12!\n" +
+	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
+	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x1d\n" +
+	"\n" +
+	"channel_id\x18\x03 \x01(\tR\tchannelId\x12\x1d\n" +
+	"\n" +
+	"message_id\x18\x04 \x01(\tR\tmessageId\x12\x12\n" +
+	"\x04body\x18\x05 \x01(\tR\x04body\"Q\n" +
+	"\x1cUpdateChannelMessageResponse\x121\n" +
+	"\amessage\x18\x01 \x01(\v2\x17.chat.v1.MessageSummaryR\amessage\"\x99\x01\n" +
+	"\x1bDeleteChannelMessageRequest\x12!\n" +
+	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
+	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x1d\n" +
+	"\n" +
+	"channel_id\x18\x03 \x01(\tR\tchannelId\x12\x1d\n" +
+	"\n" +
+	"message_id\x18\x04 \x01(\tR\tmessageId\".\n" +
+	"\x1cDeleteChannelMessageResponse\x12\x0e\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok\"\xb0\x01\n" +
+	"\x1cToggleMessageReactionRequest\x12!\n" +
+	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
+	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x1d\n" +
+	"\n" +
+	"channel_id\x18\x03 \x01(\tR\tchannelId\x12\x1d\n" +
+	"\n" +
+	"message_id\x18\x04 \x01(\tR\tmessageId\x12\x14\n" +
+	"\x05emoji\x18\x05 \x01(\tR\x05emoji\"^\n" +
+	"\x1dToggleMessageReactionResponse\x12=\n" +
+	"\treactions\x18\x01 \x03(\v2\x1f.chat.v1.MessageReactionSummaryR\treactions\"\xb4\x01\n" +
+	"\x1eSetChannelMessagePinnedRequest\x12!\n" +
+	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
+	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x1d\n" +
+	"\n" +
+	"channel_id\x18\x03 \x01(\tR\tchannelId\x12\x1d\n" +
+	"\n" +
+	"message_id\x18\x04 \x01(\tR\tmessageId\x12\x16\n" +
+	"\x06pinned\x18\x05 \x01(\bR\x06pinned\"T\n" +
+	"\x1fSetChannelMessagePinnedResponse\x121\n" +
+	"\amessage\x18\x01 \x01(\v2\x17.chat.v1.MessageSummaryR\amessage\"\x7f\n" +
+	" ListPinnedChannelMessagesRequest\x12!\n" +
+	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
+	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x1d\n" +
+	"\n" +
+	"channel_id\x18\x03 \x01(\tR\tchannelId\"X\n" +
+	"!ListPinnedChannelMessagesResponse\x123\n" +
+	"\bmessages\x18\x01 \x03(\v2\x17.chat.v1.MessageSummaryR\bmessages\"\x95\x01\n" +
+	"\x13MessageReplyPreview\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
+	"\tauthor_id\x18\x02 \x01(\tR\bauthorId\x12.\n" +
+	"\x13author_display_name\x18\x03 \x01(\tR\x11authorDisplayName\x12!\n" +
+	"\fbody_preview\x18\x04 \x01(\tR\vbodyPreview\"_\n" +
+	"\x16MessageReactionSummary\x12\x14\n" +
+	"\x05emoji\x18\x01 \x01(\tR\x05emoji\x12\x14\n" +
+	"\x05count\x18\x02 \x01(\x05R\x05count\x12\x19\n" +
+	"\buser_ids\x18\x03 \x03(\tR\auserIds\"\x92\x03\n" +
 	"\x0eMessageSummary\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
 	"\tauthor_id\x18\x02 \x01(\tR\bauthorId\x12.\n" +
@@ -366,10 +1386,42 @@ const file_chat_v1_message_proto_rawDesc = "" +
 	"\x04body\x18\x04 \x01(\tR\x04body\x12\x1d\n" +
 	"\n" +
 	"created_at\x18\x05 \x01(\tR\tcreatedAt\x12\x12\n" +
-	"\x04mine\x18\x06 \x01(\bR\x04mine2\xd7\x01\n" +
+	"\x04mine\x18\x06 \x01(\bR\x04mine\x12*\n" +
+	"\x11author_avatar_url\x18\a \x01(\tR\x0fauthorAvatarUrl\x12\x1b\n" +
+	"\tedited_at\x18\b \x01(\tR\beditedAt\x12\x1b\n" +
+	"\tis_pinned\x18\t \x01(\bR\bisPinned\x127\n" +
+	"\breply_to\x18\n" +
+	" \x01(\v2\x1c.chat.v1.MessageReplyPreviewR\areplyTo\x12=\n" +
+	"\treactions\x18\v \x03(\v2\x1f.chat.v1.MessageReactionSummaryR\treactions\"\xd0\x01\n" +
+	"\x1eUploadChannelAttachmentRequest\x12!\n" +
+	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
+	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x1d\n" +
+	"\n" +
+	"channel_id\x18\x03 \x01(\tR\tchannelId\x12\x1a\n" +
+	"\bfilename\x18\x04 \x01(\tR\bfilename\x12!\n" +
+	"\fcontent_type\x18\x05 \x01(\tR\vcontentType\x12\x12\n" +
+	"\x04data\x18\x06 \x01(\fR\x04data\"\xae\x01\n" +
+	"\x11MessageAttachment\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x10\n" +
+	"\x03url\x18\x02 \x01(\tR\x03url\x12\x1a\n" +
+	"\bfilename\x18\x03 \x01(\tR\bfilename\x12!\n" +
+	"\fcontent_type\x18\x04 \x01(\tR\vcontentType\x12\x1d\n" +
+	"\n" +
+	"size_bytes\x18\x05 \x01(\x03R\tsizeBytes\x12\x19\n" +
+	"\bis_image\x18\x06 \x01(\bR\aisImage\"]\n" +
+	"\x1fUploadChannelAttachmentResponse\x12:\n" +
+	"\n" +
+	"attachment\x18\x01 \x01(\v2\x1a.chat.v1.MessageAttachmentR\n" +
+	"attachment2\xd9\x06\n" +
 	"\x0eMessageService\x12`\n" +
 	"\x13ListChannelMessages\x12#.chat.v1.ListChannelMessagesRequest\x1a$.chat.v1.ListChannelMessagesResponse\x12c\n" +
-	"\x14CreateChannelMessage\x12$.chat.v1.CreateChannelMessageRequest\x1a%.chat.v1.CreateChannelMessageResponseB\x9e\x01\n" +
+	"\x14CreateChannelMessage\x12$.chat.v1.CreateChannelMessageRequest\x1a%.chat.v1.CreateChannelMessageResponse\x12c\n" +
+	"\x14UpdateChannelMessage\x12$.chat.v1.UpdateChannelMessageRequest\x1a%.chat.v1.UpdateChannelMessageResponse\x12c\n" +
+	"\x14DeleteChannelMessage\x12$.chat.v1.DeleteChannelMessageRequest\x1a%.chat.v1.DeleteChannelMessageResponse\x12f\n" +
+	"\x15ToggleMessageReaction\x12%.chat.v1.ToggleMessageReactionRequest\x1a&.chat.v1.ToggleMessageReactionResponse\x12l\n" +
+	"\x17SetChannelMessagePinned\x12'.chat.v1.SetChannelMessagePinnedRequest\x1a(.chat.v1.SetChannelMessagePinnedResponse\x12r\n" +
+	"\x19ListPinnedChannelMessages\x12).chat.v1.ListPinnedChannelMessagesRequest\x1a*.chat.v1.ListPinnedChannelMessagesResponse\x12l\n" +
+	"\x17UploadChannelAttachment\x12'.chat.v1.UploadChannelAttachmentRequest\x1a(.chat.v1.UploadChannelAttachmentResponseB\x9e\x01\n" +
 	"\vcom.chat.v1B\fMessageProtoP\x01ZDgithub.com/wichat/wichat/backend/wi-shared/models/gen/chat/v1;chatv1\xa2\x02\x03CXX\xaa\x02\aChat.V1\xca\x02\aChat\\V1\xe2\x02\x13Chat\\V1\\GPBMetadata\xea\x02\bChat::V1b\x06proto3"
 
 var (
@@ -384,26 +1436,60 @@ func file_chat_v1_message_proto_rawDescGZIP() []byte {
 	return file_chat_v1_message_proto_rawDescData
 }
 
-var file_chat_v1_message_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_chat_v1_message_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
 var file_chat_v1_message_proto_goTypes = []any{
-	(*ListChannelMessagesRequest)(nil),   // 0: chat.v1.ListChannelMessagesRequest
-	(*ListChannelMessagesResponse)(nil),  // 1: chat.v1.ListChannelMessagesResponse
-	(*CreateChannelMessageRequest)(nil),  // 2: chat.v1.CreateChannelMessageRequest
-	(*CreateChannelMessageResponse)(nil), // 3: chat.v1.CreateChannelMessageResponse
-	(*MessageSummary)(nil),               // 4: chat.v1.MessageSummary
+	(*ListChannelMessagesRequest)(nil),        // 0: chat.v1.ListChannelMessagesRequest
+	(*ListChannelMessagesResponse)(nil),       // 1: chat.v1.ListChannelMessagesResponse
+	(*CreateChannelMessageRequest)(nil),       // 2: chat.v1.CreateChannelMessageRequest
+	(*CreateChannelMessageResponse)(nil),      // 3: chat.v1.CreateChannelMessageResponse
+	(*UpdateChannelMessageRequest)(nil),       // 4: chat.v1.UpdateChannelMessageRequest
+	(*UpdateChannelMessageResponse)(nil),      // 5: chat.v1.UpdateChannelMessageResponse
+	(*DeleteChannelMessageRequest)(nil),       // 6: chat.v1.DeleteChannelMessageRequest
+	(*DeleteChannelMessageResponse)(nil),      // 7: chat.v1.DeleteChannelMessageResponse
+	(*ToggleMessageReactionRequest)(nil),      // 8: chat.v1.ToggleMessageReactionRequest
+	(*ToggleMessageReactionResponse)(nil),     // 9: chat.v1.ToggleMessageReactionResponse
+	(*SetChannelMessagePinnedRequest)(nil),    // 10: chat.v1.SetChannelMessagePinnedRequest
+	(*SetChannelMessagePinnedResponse)(nil),   // 11: chat.v1.SetChannelMessagePinnedResponse
+	(*ListPinnedChannelMessagesRequest)(nil),  // 12: chat.v1.ListPinnedChannelMessagesRequest
+	(*ListPinnedChannelMessagesResponse)(nil), // 13: chat.v1.ListPinnedChannelMessagesResponse
+	(*MessageReplyPreview)(nil),               // 14: chat.v1.MessageReplyPreview
+	(*MessageReactionSummary)(nil),            // 15: chat.v1.MessageReactionSummary
+	(*MessageSummary)(nil),                    // 16: chat.v1.MessageSummary
+	(*UploadChannelAttachmentRequest)(nil),    // 17: chat.v1.UploadChannelAttachmentRequest
+	(*MessageAttachment)(nil),                 // 18: chat.v1.MessageAttachment
+	(*UploadChannelAttachmentResponse)(nil),   // 19: chat.v1.UploadChannelAttachmentResponse
 }
 var file_chat_v1_message_proto_depIdxs = []int32{
-	4, // 0: chat.v1.ListChannelMessagesResponse.messages:type_name -> chat.v1.MessageSummary
-	4, // 1: chat.v1.CreateChannelMessageResponse.message:type_name -> chat.v1.MessageSummary
-	0, // 2: chat.v1.MessageService.ListChannelMessages:input_type -> chat.v1.ListChannelMessagesRequest
-	2, // 3: chat.v1.MessageService.CreateChannelMessage:input_type -> chat.v1.CreateChannelMessageRequest
-	1, // 4: chat.v1.MessageService.ListChannelMessages:output_type -> chat.v1.ListChannelMessagesResponse
-	3, // 5: chat.v1.MessageService.CreateChannelMessage:output_type -> chat.v1.CreateChannelMessageResponse
-	4, // [4:6] is the sub-list for method output_type
-	2, // [2:4] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	16, // 0: chat.v1.ListChannelMessagesResponse.messages:type_name -> chat.v1.MessageSummary
+	16, // 1: chat.v1.CreateChannelMessageResponse.message:type_name -> chat.v1.MessageSummary
+	16, // 2: chat.v1.UpdateChannelMessageResponse.message:type_name -> chat.v1.MessageSummary
+	15, // 3: chat.v1.ToggleMessageReactionResponse.reactions:type_name -> chat.v1.MessageReactionSummary
+	16, // 4: chat.v1.SetChannelMessagePinnedResponse.message:type_name -> chat.v1.MessageSummary
+	16, // 5: chat.v1.ListPinnedChannelMessagesResponse.messages:type_name -> chat.v1.MessageSummary
+	14, // 6: chat.v1.MessageSummary.reply_to:type_name -> chat.v1.MessageReplyPreview
+	15, // 7: chat.v1.MessageSummary.reactions:type_name -> chat.v1.MessageReactionSummary
+	18, // 8: chat.v1.UploadChannelAttachmentResponse.attachment:type_name -> chat.v1.MessageAttachment
+	0,  // 9: chat.v1.MessageService.ListChannelMessages:input_type -> chat.v1.ListChannelMessagesRequest
+	2,  // 10: chat.v1.MessageService.CreateChannelMessage:input_type -> chat.v1.CreateChannelMessageRequest
+	4,  // 11: chat.v1.MessageService.UpdateChannelMessage:input_type -> chat.v1.UpdateChannelMessageRequest
+	6,  // 12: chat.v1.MessageService.DeleteChannelMessage:input_type -> chat.v1.DeleteChannelMessageRequest
+	8,  // 13: chat.v1.MessageService.ToggleMessageReaction:input_type -> chat.v1.ToggleMessageReactionRequest
+	10, // 14: chat.v1.MessageService.SetChannelMessagePinned:input_type -> chat.v1.SetChannelMessagePinnedRequest
+	12, // 15: chat.v1.MessageService.ListPinnedChannelMessages:input_type -> chat.v1.ListPinnedChannelMessagesRequest
+	17, // 16: chat.v1.MessageService.UploadChannelAttachment:input_type -> chat.v1.UploadChannelAttachmentRequest
+	1,  // 17: chat.v1.MessageService.ListChannelMessages:output_type -> chat.v1.ListChannelMessagesResponse
+	3,  // 18: chat.v1.MessageService.CreateChannelMessage:output_type -> chat.v1.CreateChannelMessageResponse
+	5,  // 19: chat.v1.MessageService.UpdateChannelMessage:output_type -> chat.v1.UpdateChannelMessageResponse
+	7,  // 20: chat.v1.MessageService.DeleteChannelMessage:output_type -> chat.v1.DeleteChannelMessageResponse
+	9,  // 21: chat.v1.MessageService.ToggleMessageReaction:output_type -> chat.v1.ToggleMessageReactionResponse
+	11, // 22: chat.v1.MessageService.SetChannelMessagePinned:output_type -> chat.v1.SetChannelMessagePinnedResponse
+	13, // 23: chat.v1.MessageService.ListPinnedChannelMessages:output_type -> chat.v1.ListPinnedChannelMessagesResponse
+	19, // 24: chat.v1.MessageService.UploadChannelAttachment:output_type -> chat.v1.UploadChannelAttachmentResponse
+	17, // [17:25] is the sub-list for method output_type
+	9,  // [9:17] is the sub-list for method input_type
+	9,  // [9:9] is the sub-list for extension type_name
+	9,  // [9:9] is the sub-list for extension extendee
+	0,  // [0:9] is the sub-list for field type_name
 }
 
 func init() { file_chat_v1_message_proto_init() }
@@ -417,7 +1503,7 @@ func file_chat_v1_message_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_chat_v1_message_proto_rawDesc), len(file_chat_v1_message_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   20,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

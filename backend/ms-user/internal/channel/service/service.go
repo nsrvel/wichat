@@ -95,10 +95,48 @@ func (s service) recordGroupActivity(ctx context.Context, entry models.GroupActi
 	s.groupActivity.Record(ctx, entry)
 }
 
-func resolveCategoryEffectivePermissions(
+type permOverride struct {
+	TargetType       string
+	TargetID         string
+	IsEveryone       bool
+	AllowPermissions []string
+	DenyPermissions  []string
+}
+
+func categoryOverridesToRules(overrides []models.ChannelCategoryPermissionOverride) []permOverride {
+	out := make([]permOverride, len(overrides))
+	for i, o := range overrides {
+		out[i] = permOverride{
+			TargetType:       o.TargetType,
+			TargetID:         o.TargetID,
+			IsEveryone:       o.IsEveryone,
+			AllowPermissions: o.AllowPermissions,
+			DenyPermissions:  o.DenyPermissions,
+		}
+	}
+
+	return out
+}
+
+func channelOverridesToRules(overrides []models.ChannelPermissionOverride) []permOverride {
+	out := make([]permOverride, len(overrides))
+	for i, o := range overrides {
+		out[i] = permOverride{
+			TargetType:       o.TargetType,
+			TargetID:         o.TargetID,
+			IsEveryone:       o.IsEveryone,
+			AllowPermissions: o.AllowPermissions,
+			DenyPermissions:  o.DenyPermissions,
+		}
+	}
+
+	return out
+}
+
+func resolveEffectivePermissionsWithOverrides(
 	basePerms []string,
 	isPrivate bool,
-	overrides []models.ChannelCategoryPermissionOverride,
+	overrides []permOverride,
 	memberRoleIDs []string,
 	userID string,
 ) []string {
@@ -206,6 +244,7 @@ func (s service) ListGroupChannels(ctx context.Context, accessToken, groupPublic
 	var basePerms []string
 	var roleIDs []string
 	overridesByCat := make(map[string][]models.ChannelCategoryPermissionOverride)
+	overridesByCh := make(map[string][]models.ChannelPermissionOverride)
 	if !bypass && s.roles != nil {
 		basePerms, err = s.roles.GetEffectivePermissions(ctx, group.ID, userID)
 		if err != nil {
@@ -218,17 +257,25 @@ func (s service) ListGroupChannels(ctx context.Context, accessToken, groupPublic
 			if err != nil {
 				return nil, nil, err
 			}
-			allOverrides, err := s.categories.ListGroupCategoryPermissionOverrides(ctx, group.ID)
+			allCatOverrides, err := s.categories.ListGroupCategoryPermissionOverrides(ctx, group.ID)
 			if err != nil {
 				return nil, nil, err
 			}
-			for _, o := range allOverrides {
+			for _, o := range allCatOverrides {
 				overridesByCat[o.CategoryID] = append(overridesByCat[o.CategoryID], o)
+			}
+			allChOverrides, err := s.channels.ListGroupChannelPermissionOverrides(ctx, group.ID)
+			if err != nil {
+				return nil, nil, err
+			}
+			for _, o := range allChOverrides {
+				overridesByCh[o.ChannelID] = append(overridesByCh[o.ChannelID], o)
 			}
 		}
 	}
 
 	visibleCats := make(map[string]bool, len(categories))
+	catEffectivePerms := make(map[string][]string, len(categories))
 	outCategories := make([]models.PublicChannelCategory, 0, len(categories))
 	for _, cat := range categories {
 		if bypass || s.roles == nil {
@@ -236,13 +283,14 @@ func (s service) ListGroupChannels(ctx context.Context, accessToken, groupPublic
 			outCategories = append(outCategories, cat.Public())
 			continue
 		}
-		effective := resolveCategoryEffectivePermissions(
+		effective := resolveEffectivePermissionsWithOverrides(
 			basePerms,
 			cat.IsPrivate,
-			overridesByCat[cat.ID],
+			categoryOverridesToRules(overridesByCat[cat.ID]),
 			roleIDs,
 			userID,
 		)
+		catEffectivePerms[cat.ID] = effective
 		if slices.Contains(effective, constants.PermViewChannels) {
 			visibleCats[cat.ID] = true
 			outCategories = append(outCategories, cat.Public())
@@ -254,7 +302,28 @@ func (s service) ListGroupChannels(ctx context.Context, accessToken, groupPublic
 		if ch.CategoryID != "" && !visibleCats[ch.CategoryID] {
 			continue
 		}
-		outChannels = append(outChannels, ch.Public())
+		pub := ch.Public()
+		if bypass || s.roles == nil {
+			pub.CallerPermissions = append([]string(nil), constants.AllKnownPermissions...)
+			outChannels = append(outChannels, pub)
+			continue
+		}
+		startPerms := basePerms
+		if ch.CategoryID != "" {
+			startPerms = catEffectivePerms[ch.CategoryID]
+		}
+		effective := resolveEffectivePermissionsWithOverrides(
+			startPerms,
+			ch.IsPrivate,
+			channelOverridesToRules(overridesByCh[ch.ID]),
+			roleIDs,
+			userID,
+		)
+		if !slices.Contains(effective, constants.PermViewChannels) {
+			continue
+		}
+		pub.CallerPermissions = effective
+		outChannels = append(outChannels, pub)
 	}
 
 	return outChannels, outCategories, nil
@@ -827,42 +896,79 @@ func (s service) AssertGroupChannelAccess(ctx context.Context, accessToken, grou
 		}
 		perms = p
 
-		if !slices.Contains(perms, constants.PermAdministrator) && ch.CategoryID != "" {
-			categories, err := s.categories.ListCategoriesByGroupID(ctx, group.ID)
+		if !slices.Contains(perms, constants.PermAdministrator) {
+			roleIDs, err := s.roles.ListUserRoleIDs(ctx, group.ID, userID)
 			if err != nil {
 				return models.ChannelAccess{}, err
 			}
-			var cat *models.ChannelCategory
-			for i := range categories {
-				if categories[i].ID == ch.CategoryID {
-					cat = &categories[i]
-					break
-				}
-			}
-			if cat != nil {
-				roleIDs, err := s.roles.ListUserRoleIDs(ctx, group.ID, userID)
+			if ch.CategoryID != "" {
+				categories, err := s.categories.ListCategoriesByGroupID(ctx, group.ID)
 				if err != nil {
 					return models.ChannelAccess{}, err
 				}
-				allOverrides, err := s.categories.ListGroupCategoryPermissionOverrides(ctx, group.ID)
-				if err != nil {
-					return models.ChannelAccess{}, err
-				}
-				var catOverrides []models.ChannelCategoryPermissionOverride
-				for _, o := range allOverrides {
-					if o.CategoryID == cat.ID {
-						catOverrides = append(catOverrides, o)
+				var cat *models.ChannelCategory
+				for i := range categories {
+					if categories[i].ID == ch.CategoryID {
+						cat = &categories[i]
+						break
 					}
 				}
-				perms = resolveCategoryEffectivePermissions(perms, cat.IsPrivate, catOverrides, roleIDs, userID)
-				if !slices.Contains(perms, constants.PermViewChannels) {
-					return models.ChannelAccess{}, exception.PermissionDenied(exception.MsgForbidden, nil)
+				if cat != nil {
+					allOverrides, err := s.categories.ListGroupCategoryPermissionOverrides(ctx, group.ID)
+					if err != nil {
+						return models.ChannelAccess{}, err
+					}
+					var catOverrides []models.ChannelCategoryPermissionOverride
+					for _, o := range allOverrides {
+						if o.CategoryID == cat.ID {
+							catOverrides = append(catOverrides, o)
+						}
+					}
+					perms = resolveEffectivePermissionsWithOverrides(
+						perms,
+						cat.IsPrivate,
+						categoryOverridesToRules(catOverrides),
+						roleIDs,
+						userID,
+					)
+					if !slices.Contains(perms, constants.PermViewChannels) {
+						return models.ChannelAccess{}, exception.PermissionDenied(exception.MsgForbidden, nil)
+					}
 				}
+			}
+
+			allChOverrides, err := s.channels.ListGroupChannelPermissionOverrides(ctx, group.ID)
+			if err != nil {
+				return models.ChannelAccess{}, err
+			}
+			var chOverrides []models.ChannelPermissionOverride
+			for _, o := range allChOverrides {
+				if o.ChannelID == ch.ID {
+					chOverrides = append(chOverrides, o)
+				}
+			}
+			perms = resolveEffectivePermissionsWithOverrides(
+				perms,
+				ch.IsPrivate,
+				channelOverridesToRules(chOverrides),
+				roleIDs,
+				userID,
+			)
+			if !slices.Contains(perms, constants.PermViewChannels) {
+				return models.ChannelAccess{}, exception.PermissionDenied(exception.MsgForbidden, nil)
 			}
 		}
 	}
 
-	return models.ChannelAccess{ChannelID: ch.ID, UserID: userID, Permissions: perms}, nil
+	pub := ch.Public()
+	return models.ChannelAccess{
+		ChannelID:         ch.ID,
+		UserID:            userID,
+		Permissions:       perms,
+		ChannelType:       pub.Type,
+		SlowmodeSeconds:   pub.SlowmodeSeconds,
+		ContentVisibility: pub.ContentVisibility,
+	}, nil
 }
 
 func (s service) SeedDefaultChannels(ctx context.Context, groupID, ownerUserID string, createdAt time.Time) error {

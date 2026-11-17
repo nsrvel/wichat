@@ -57,6 +57,7 @@ export const ChannelSchema = z.object({
 	video_quality: voiceVideoQualitySchema.default("auto"),
 	user_limit: z.number().int().default(0),
 	rtc_region: z.string().default("automatic"),
+	caller_permissions: z.array(z.string()).default([]),
 });
 export type Channel = z.infer<typeof ChannelSchema>;
 

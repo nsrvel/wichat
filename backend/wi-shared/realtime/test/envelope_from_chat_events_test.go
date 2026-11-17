@@ -50,3 +50,54 @@ func TestMarshalMessageCreatedEvent_matchesWSContract(t *testing.T) {
 		t.Fatal("mine should be false for subscribers")
 	}
 }
+
+func TestMarshalMessageLifecycleEvents(t *testing.T) {
+	evUpdated := chatEvents.MessageUpdated{
+		Type:      chatEvents.TypeMessageUpdated,
+		GroupID:   "g1",
+		ChannelID: "c1",
+		Message: chatEvents.Message{
+			ID:                "m1",
+			AuthorID:          "u1",
+			AuthorDisplayName: "Alice",
+			Body:              "edited",
+			CreatedAt:         "2026-01-15T10:00:00Z",
+			EditedAt:          "2026-01-15T10:01:00Z",
+			IsPinned:          true,
+			ReplyTo: &chatEvents.ReplyPreview{
+				ID:                "m0",
+				AuthorID:          "u2",
+				AuthorDisplayName: "Bob",
+				BodyPreview:       "hi",
+			},
+			Reactions: []chatEvents.ReactionSummary{
+				{Emoji: "👍", Count: 1, UserIDs: []string{"u2"}},
+			},
+		},
+	}
+	rawUpd, err := realtime.MarshalMessageUpdatedEvent(evUpdated)
+	if err != nil || len(rawUpd) == 0 {
+		t.Fatalf("MarshalMessageUpdatedEvent: err=%v", err)
+	}
+
+	rawDel, err := realtime.MarshalMessageDeletedEvent(chatEvents.MessageDeleted{
+		Type:      chatEvents.TypeMessageDeleted,
+		GroupID:   "g1",
+		ChannelID: "c1",
+		MessageID: "m1",
+	})
+	if err != nil || len(rawDel) == 0 {
+		t.Fatalf("MarshalMessageDeletedEvent: err=%v", err)
+	}
+
+	rawReact, err := realtime.MarshalMessageReactionsUpdatedEvent(chatEvents.MessageReactionsUpdated{
+		Type:      chatEvents.TypeMessageReactionsUpdated,
+		GroupID:   "g1",
+		ChannelID: "c1",
+		MessageID: "m1",
+		Reactions: []chatEvents.ReactionSummary{{Emoji: "🔥", Count: 2, UserIDs: []string{"u1", "u2"}}},
+	})
+	if err != nil || len(rawReact) == 0 {
+		t.Fatalf("MarshalMessageReactionsUpdatedEvent: err=%v", err)
+	}
+}

@@ -299,24 +299,25 @@ type UpdateGroupProfileBody struct {
 
 // ChannelBody is channel metadata in JSON responses.
 type ChannelBody struct {
-	ID                    string `json:"id"`
-	Name                  string `json:"name"`
-	Type                  string `json:"type"`
-	SidebarSection        string `json:"sidebar_section"`
-	ImageURL              string `json:"image_url"`
-	IsPrivate             bool   `json:"is_private"`
-	CategoryID            string `json:"category_id"`
-	Position              int    `json:"position"`
-	SlowmodeSeconds       int    `json:"slowmode_seconds"`
-	ThreadSlowmodeSeconds int    `json:"thread_slowmode_seconds"`
-	ContentVisibility     string `json:"content_visibility"`
-	ForumDefaultLayout    string `json:"forum_default_layout"`
-	ForumSortOrder        string `json:"forum_sort_order"`
-	ForumTagMatching      string `json:"forum_tag_matching"`
-	BitrateKbps           int    `json:"bitrate_kbps"`
-	VideoQuality          string `json:"video_quality"`
-	UserLimit             int    `json:"user_limit"`
-	RTCRegion             string `json:"rtc_region"`
+	ID                    string   `json:"id"`
+	Name                  string   `json:"name"`
+	Type                  string   `json:"type"`
+	SidebarSection        string   `json:"sidebar_section"`
+	ImageURL              string   `json:"image_url"`
+	IsPrivate             bool     `json:"is_private"`
+	CategoryID            string   `json:"category_id"`
+	Position              int      `json:"position"`
+	SlowmodeSeconds       int      `json:"slowmode_seconds"`
+	ThreadSlowmodeSeconds int      `json:"thread_slowmode_seconds"`
+	ContentVisibility     string   `json:"content_visibility"`
+	ForumDefaultLayout    string   `json:"forum_default_layout"`
+	ForumSortOrder        string   `json:"forum_sort_order"`
+	ForumTagMatching      string   `json:"forum_tag_matching"`
+	BitrateKbps           int      `json:"bitrate_kbps"`
+	VideoQuality          string   `json:"video_quality"`
+	UserLimit             int      `json:"user_limit"`
+	RTCRegion             string   `json:"rtc_region"`
+	CallerPermissions     []string `json:"caller_permissions"`
 }
 
 // UpdateGroupChannelBody is PATCH /api/v1/groups/{id}/channels/{channelId}.
@@ -773,6 +774,7 @@ func ChannelFromPB(c *userv1.ChannelSummary) ChannelBody {
 		VideoQuality:          c.GetVideoQuality(),
 		UserLimit:             int(c.GetUserLimit()),
 		RTCRegion:             c.GetRtcRegion(),
+		CallerPermissions:     c.GetCallerPermissions(),
 	}
 }
 

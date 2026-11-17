@@ -749,6 +749,116 @@ func TestChannelSettingsAndPermissions(t *testing.T) {
 	}
 }
 
+func hasPerm(perms []string, target string) bool {
+	for _, p := range perms {
+		if p == target {
+			return true
+		}
+	}
+	return false
+}
+
+func TestChannelLevelPermissionOverridesAndAccessMetadata(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	st := usermock.NewState()
+	authSvc, notify, _, _, groupSvc, _ := testSupport.NewAuthService(t, st, nil)
+	owner := testSupport.RegisterSession(t, authSvc, notify, models.RegisterInput{
+		Email: "chperm-owner@example.com", Password: "correct-horse-battery", DisplayName: "Owner", BirthDate: "2000-01-15",
+	})
+	member := testSupport.RegisterSession(t, authSvc, notify, models.RegisterInput{
+		Email: "chperm-member@example.com", Password: "correct-horse-battery", DisplayName: "Member", BirthDate: "2000-01-15",
+	})
+	created, err := groupSvc.CreateGroup(ctx, owner.AccessToken, "ChanPermGroup")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	st.Lock()
+	groupUUID := st.Groups[0].ID
+	st.Members = append(st.Members, models.GroupMember{
+		GroupID: groupUUID,
+		UserID:  member.User.ID,
+		Role:    constants.GroupRoleMember,
+	})
+	st.Unlock()
+
+	_, groups, sessions := testSupport.TestRepos(st)
+	roleRepo := grouprolemock.NewPgRepositoryMock(st)
+	chanRepo := testSupport.ChannelRepo(st)
+	catRepo := categorymock.NewPgRepositoryMock(st)
+	log := logger.New(logger.Options{Service: "channel-test", Env: "test", Level: "error"})
+	svc := channelservice.NewService(chanRepo, catRepo, groups, groupmembermock.NewPgRepositoryMock(st), roleRepo, sessions, []byte(testSupport.TestJWTSecret), log)
+
+	ch, err := svc.CreateGroupChannel(ctx, owner.AccessToken, created.ID, "read-only", constants.ChannelKindTextOnly, "", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	slowmode := int32(15)
+	vis := "spoiler"
+	if _, err := svc.UpdateGroupChannel(ctx, owner.AccessToken, created.ID, ch.ID, models.UpdateChannelInput{
+		SlowmodeSeconds:   &slowmode,
+		ContentVisibility: &vis,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	roles, err := roleRepo.ListRolesForGroup(ctx, groupUUID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var everyoneID string
+	for _, r := range roles {
+		if r.Slug == constants.RoleSlugEveryone {
+			everyoneID = r.PublicID
+			break
+		}
+	}
+
+	// Deny send_messages on channel for @everyone.
+	if _, err := svc.UpsertChannelPermission(ctx, owner.AccessToken, created.ID, ch.ID, "role", everyoneID, nil, []string{constants.PermSendMessages}); err != nil {
+		t.Fatal(err)
+	}
+
+	listed, _, err := svc.ListGroupChannels(ctx, member.AccessToken, created.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var found *models.PublicChannel
+	for i := range listed {
+		if listed[i].ID == ch.ID {
+			found = &listed[i]
+			break
+		}
+	}
+	if found == nil {
+		t.Fatalf("expected channel %s to be visible", ch.ID)
+	}
+	if hasPerm(found.CallerPermissions, constants.PermSendMessages) {
+		t.Fatalf("expected send_messages denied on channel, got %+v", found.CallerPermissions)
+	}
+
+	acc, err := svc.AssertGroupChannelAccess(ctx, member.AccessToken, created.ID, ch.ID)
+	if err != nil {
+		t.Fatalf("AssertGroupChannelAccess: %v", err)
+	}
+	if acc.SlowmodeSeconds != 15 || acc.ContentVisibility != "spoiler" || acc.ChannelType != constants.ChannelKindTextOnly {
+		t.Fatalf("unexpected ChannelAccess metadata: %+v", acc)
+	}
+	if hasPerm(acc.Permissions, constants.PermSendMessages) {
+		t.Fatalf("expected send_messages denied in ChannelAccess, got %+v", acc.Permissions)
+	}
+
+	// Private channel hides from member without override.
+	privCh, err := svc.CreateGroupChannel(ctx, owner.AccessToken, created.ID, "vip-only", constants.ChannelKindTextOnly, "", true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.AssertGroupChannelAccess(ctx, member.AccessToken, created.ID, privCh.ID); err == nil {
+		t.Fatal("expected permission denied for private channel")
+	}
+}
+
 type recordingActivityLog struct {
 	entries []models.GroupActivityLogEntry
 }

@@ -21,6 +21,7 @@ import (
 	searchrepo "github.com/wichat/wichat/backend/ms-chat/internal/search/repository"
 	"github.com/wichat/wichat/backend/wi-shared/infra/elasticsearch"
 	wikafka "github.com/wichat/wichat/backend/wi-shared/infra/kafka"
+	"github.com/wichat/wichat/backend/wi-shared/infra/minio"
 	"github.com/wichat/wichat/backend/wi-shared/microservices"
 	msUser "github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-user"
 	"github.com/wichat/wichat/backend/wi-shared/microservices/utils"
@@ -121,10 +122,25 @@ func (s *server) Run(ctx context.Context) error {
 		s.log,
 	)
 
+	// MinIO (channel attachments; empty endpoint disables uploads)
+	minioClient, err := minio.New(minio.Config{
+		Endpoint:      s.cfg.MinioEndpoint,
+		AccessKey:     s.cfg.MinioAccessKey,
+		SecretKey:     s.cfg.MinioSecretKey,
+		Bucket:        s.cfg.MinioBucket,
+		PublicBaseURL: s.cfg.MinioPublicBaseURL,
+		UseSSL:        s.cfg.MinioUseSSL,
+		Region:        s.cfg.MinioRegion,
+	}, s.log)
+	if err != nil {
+		return fmt.Errorf("minio: %w", err)
+	}
+
 	// Services
 	messagePg := messagerepo.NewPgRepository(db, s.log)
+	messageMinio := messagerepo.NewMinioRepository(minioClient)
 	eventPub := kafkaproducers.NewMessageCreated(kafkaProducer, topic, s.log)
-	messageSvc := messageservice.NewService(messagePg, userGRPC.Channel, eventPub, s.log)
+	messageSvc := messageservice.NewService(messagePg, messageMinio, userGRPC.Channel, eventPub, s.log)
 
 	// gRPC
 	addr := s.cfg.ListenAddr()

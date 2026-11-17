@@ -413,6 +413,29 @@ func (m pgRepositoryMock) ListChannelPermissionOverrides(
 	return out, nil
 }
 
+func (m pgRepositoryMock) ListGroupChannelPermissionOverrides(
+	_ context.Context,
+	groupID string,
+) ([]models.ChannelPermissionOverride, error) {
+	m.st.Lock()
+	defer m.st.Unlock()
+
+	chIDs := make(map[string]struct{})
+	for _, ch := range m.st.Channels {
+		if ch.GroupID == groupID {
+			chIDs[ch.ID] = struct{}{}
+		}
+	}
+	var out []models.ChannelPermissionOverride
+	for _, o := range m.st.ChannelPermissionOverrides {
+		if _, ok := chIDs[o.ChannelID]; ok {
+			out = append(out, o)
+		}
+	}
+
+	return out, nil
+}
+
 func (m pgRepositoryMock) UpsertChannelPermissionOverride(
 	_ context.Context,
 	groupID, channelPublicID, targetType, targetPublicID string,

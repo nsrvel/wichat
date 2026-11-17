@@ -19,18 +19,30 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	MessageService_ListChannelMessages_FullMethodName  = "/chat.v1.MessageService/ListChannelMessages"
-	MessageService_CreateChannelMessage_FullMethodName = "/chat.v1.MessageService/CreateChannelMessage"
+	MessageService_ListChannelMessages_FullMethodName       = "/chat.v1.MessageService/ListChannelMessages"
+	MessageService_CreateChannelMessage_FullMethodName      = "/chat.v1.MessageService/CreateChannelMessage"
+	MessageService_UpdateChannelMessage_FullMethodName      = "/chat.v1.MessageService/UpdateChannelMessage"
+	MessageService_DeleteChannelMessage_FullMethodName      = "/chat.v1.MessageService/DeleteChannelMessage"
+	MessageService_ToggleMessageReaction_FullMethodName     = "/chat.v1.MessageService/ToggleMessageReaction"
+	MessageService_SetChannelMessagePinned_FullMethodName   = "/chat.v1.MessageService/SetChannelMessagePinned"
+	MessageService_ListPinnedChannelMessages_FullMethodName = "/chat.v1.MessageService/ListPinnedChannelMessages"
+	MessageService_UploadChannelAttachment_FullMethodName   = "/chat.v1.MessageService/UploadChannelAttachment"
 )
 
 // MessageServiceClient is the client API for MessageService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// MessageService stores and lists plain-text channel messages (v0).
+// MessageService stores, lists, updates, reacts to, and pins channel messages.
 type MessageServiceClient interface {
 	ListChannelMessages(ctx context.Context, in *ListChannelMessagesRequest, opts ...grpc.CallOption) (*ListChannelMessagesResponse, error)
 	CreateChannelMessage(ctx context.Context, in *CreateChannelMessageRequest, opts ...grpc.CallOption) (*CreateChannelMessageResponse, error)
+	UpdateChannelMessage(ctx context.Context, in *UpdateChannelMessageRequest, opts ...grpc.CallOption) (*UpdateChannelMessageResponse, error)
+	DeleteChannelMessage(ctx context.Context, in *DeleteChannelMessageRequest, opts ...grpc.CallOption) (*DeleteChannelMessageResponse, error)
+	ToggleMessageReaction(ctx context.Context, in *ToggleMessageReactionRequest, opts ...grpc.CallOption) (*ToggleMessageReactionResponse, error)
+	SetChannelMessagePinned(ctx context.Context, in *SetChannelMessagePinnedRequest, opts ...grpc.CallOption) (*SetChannelMessagePinnedResponse, error)
+	ListPinnedChannelMessages(ctx context.Context, in *ListPinnedChannelMessagesRequest, opts ...grpc.CallOption) (*ListPinnedChannelMessagesResponse, error)
+	UploadChannelAttachment(ctx context.Context, in *UploadChannelAttachmentRequest, opts ...grpc.CallOption) (*UploadChannelAttachmentResponse, error)
 }
 
 type messageServiceClient struct {
@@ -61,14 +73,80 @@ func (c *messageServiceClient) CreateChannelMessage(ctx context.Context, in *Cre
 	return out, nil
 }
 
+func (c *messageServiceClient) UpdateChannelMessage(ctx context.Context, in *UpdateChannelMessageRequest, opts ...grpc.CallOption) (*UpdateChannelMessageResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateChannelMessageResponse)
+	err := c.cc.Invoke(ctx, MessageService_UpdateChannelMessage_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *messageServiceClient) DeleteChannelMessage(ctx context.Context, in *DeleteChannelMessageRequest, opts ...grpc.CallOption) (*DeleteChannelMessageResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteChannelMessageResponse)
+	err := c.cc.Invoke(ctx, MessageService_DeleteChannelMessage_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *messageServiceClient) ToggleMessageReaction(ctx context.Context, in *ToggleMessageReactionRequest, opts ...grpc.CallOption) (*ToggleMessageReactionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ToggleMessageReactionResponse)
+	err := c.cc.Invoke(ctx, MessageService_ToggleMessageReaction_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *messageServiceClient) SetChannelMessagePinned(ctx context.Context, in *SetChannelMessagePinnedRequest, opts ...grpc.CallOption) (*SetChannelMessagePinnedResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SetChannelMessagePinnedResponse)
+	err := c.cc.Invoke(ctx, MessageService_SetChannelMessagePinned_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *messageServiceClient) ListPinnedChannelMessages(ctx context.Context, in *ListPinnedChannelMessagesRequest, opts ...grpc.CallOption) (*ListPinnedChannelMessagesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListPinnedChannelMessagesResponse)
+	err := c.cc.Invoke(ctx, MessageService_ListPinnedChannelMessages_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *messageServiceClient) UploadChannelAttachment(ctx context.Context, in *UploadChannelAttachmentRequest, opts ...grpc.CallOption) (*UploadChannelAttachmentResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UploadChannelAttachmentResponse)
+	err := c.cc.Invoke(ctx, MessageService_UploadChannelAttachment_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MessageServiceServer is the server API for MessageService service.
 // All implementations must embed UnimplementedMessageServiceServer
 // for forward compatibility.
 //
-// MessageService stores and lists plain-text channel messages (v0).
+// MessageService stores, lists, updates, reacts to, and pins channel messages.
 type MessageServiceServer interface {
 	ListChannelMessages(context.Context, *ListChannelMessagesRequest) (*ListChannelMessagesResponse, error)
 	CreateChannelMessage(context.Context, *CreateChannelMessageRequest) (*CreateChannelMessageResponse, error)
+	UpdateChannelMessage(context.Context, *UpdateChannelMessageRequest) (*UpdateChannelMessageResponse, error)
+	DeleteChannelMessage(context.Context, *DeleteChannelMessageRequest) (*DeleteChannelMessageResponse, error)
+	ToggleMessageReaction(context.Context, *ToggleMessageReactionRequest) (*ToggleMessageReactionResponse, error)
+	SetChannelMessagePinned(context.Context, *SetChannelMessagePinnedRequest) (*SetChannelMessagePinnedResponse, error)
+	ListPinnedChannelMessages(context.Context, *ListPinnedChannelMessagesRequest) (*ListPinnedChannelMessagesResponse, error)
+	UploadChannelAttachment(context.Context, *UploadChannelAttachmentRequest) (*UploadChannelAttachmentResponse, error)
 	mustEmbedUnimplementedMessageServiceServer()
 }
 
@@ -84,6 +162,24 @@ func (UnimplementedMessageServiceServer) ListChannelMessages(context.Context, *L
 }
 func (UnimplementedMessageServiceServer) CreateChannelMessage(context.Context, *CreateChannelMessageRequest) (*CreateChannelMessageResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateChannelMessage not implemented")
+}
+func (UnimplementedMessageServiceServer) UpdateChannelMessage(context.Context, *UpdateChannelMessageRequest) (*UpdateChannelMessageResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateChannelMessage not implemented")
+}
+func (UnimplementedMessageServiceServer) DeleteChannelMessage(context.Context, *DeleteChannelMessageRequest) (*DeleteChannelMessageResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteChannelMessage not implemented")
+}
+func (UnimplementedMessageServiceServer) ToggleMessageReaction(context.Context, *ToggleMessageReactionRequest) (*ToggleMessageReactionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ToggleMessageReaction not implemented")
+}
+func (UnimplementedMessageServiceServer) SetChannelMessagePinned(context.Context, *SetChannelMessagePinnedRequest) (*SetChannelMessagePinnedResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetChannelMessagePinned not implemented")
+}
+func (UnimplementedMessageServiceServer) ListPinnedChannelMessages(context.Context, *ListPinnedChannelMessagesRequest) (*ListPinnedChannelMessagesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListPinnedChannelMessages not implemented")
+}
+func (UnimplementedMessageServiceServer) UploadChannelAttachment(context.Context, *UploadChannelAttachmentRequest) (*UploadChannelAttachmentResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UploadChannelAttachment not implemented")
 }
 func (UnimplementedMessageServiceServer) mustEmbedUnimplementedMessageServiceServer() {}
 func (UnimplementedMessageServiceServer) testEmbeddedByValue()                        {}
@@ -142,6 +238,114 @@ func _MessageService_CreateChannelMessage_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _MessageService_UpdateChannelMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateChannelMessageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MessageServiceServer).UpdateChannelMessage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MessageService_UpdateChannelMessage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MessageServiceServer).UpdateChannelMessage(ctx, req.(*UpdateChannelMessageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MessageService_DeleteChannelMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteChannelMessageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MessageServiceServer).DeleteChannelMessage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MessageService_DeleteChannelMessage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MessageServiceServer).DeleteChannelMessage(ctx, req.(*DeleteChannelMessageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MessageService_ToggleMessageReaction_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ToggleMessageReactionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MessageServiceServer).ToggleMessageReaction(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MessageService_ToggleMessageReaction_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MessageServiceServer).ToggleMessageReaction(ctx, req.(*ToggleMessageReactionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MessageService_SetChannelMessagePinned_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetChannelMessagePinnedRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MessageServiceServer).SetChannelMessagePinned(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MessageService_SetChannelMessagePinned_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MessageServiceServer).SetChannelMessagePinned(ctx, req.(*SetChannelMessagePinnedRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MessageService_ListPinnedChannelMessages_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListPinnedChannelMessagesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MessageServiceServer).ListPinnedChannelMessages(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MessageService_ListPinnedChannelMessages_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MessageServiceServer).ListPinnedChannelMessages(ctx, req.(*ListPinnedChannelMessagesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _MessageService_UploadChannelAttachment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UploadChannelAttachmentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MessageServiceServer).UploadChannelAttachment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MessageService_UploadChannelAttachment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MessageServiceServer).UploadChannelAttachment(ctx, req.(*UploadChannelAttachmentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // MessageService_ServiceDesc is the grpc.ServiceDesc for MessageService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -156,6 +360,30 @@ var MessageService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateChannelMessage",
 			Handler:    _MessageService_CreateChannelMessage_Handler,
+		},
+		{
+			MethodName: "UpdateChannelMessage",
+			Handler:    _MessageService_UpdateChannelMessage_Handler,
+		},
+		{
+			MethodName: "DeleteChannelMessage",
+			Handler:    _MessageService_DeleteChannelMessage_Handler,
+		},
+		{
+			MethodName: "ToggleMessageReaction",
+			Handler:    _MessageService_ToggleMessageReaction_Handler,
+		},
+		{
+			MethodName: "SetChannelMessagePinned",
+			Handler:    _MessageService_SetChannelMessagePinned_Handler,
+		},
+		{
+			MethodName: "ListPinnedChannelMessages",
+			Handler:    _MessageService_ListPinnedChannelMessages_Handler,
+		},
+		{
+			MethodName: "UploadChannelAttachment",
+			Handler:    _MessageService_UploadChannelAttachment_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
