@@ -52,14 +52,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 		router,
 	]);
 
-	if (!mounted || bootstrap.isPending || bootstrap.isError || gatewayStatus === "reconnecting") {
-		if (bootstrap.data) {
-			return <WorkspaceReadyGate>{children}</WorkspaceReadyGate>;
-		}
-		return <WorkspaceLoader className="min-h-[50vh]" />;
-	}
-
-	if (!bootstrap.data) {
+	const bootstrapLoading = !mounted || bootstrap.isPending || bootstrap.isError || !bootstrap.data;
+	if (bootstrapLoading) {
 		return <WorkspaceLoader className="min-h-[50vh]" />;
 	}
 

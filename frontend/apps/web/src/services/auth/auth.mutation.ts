@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { resetWorkspaceShellReady } from "@/features/shell/workspace-ready-gate";
 import { useRouter } from "next/navigation";
 import { setAccessToken } from "@/integrations/api-client";
 import { Q_SESSION } from "@/services/auth/auth.key";
@@ -100,6 +101,7 @@ export function useLogoutMutation() {
 	return useMutation({
 		mutationFn: logout,
 		onSettled: () => {
+			resetWorkspaceShellReady();
 			setAccessToken(null);
 			queryClient.setQueryData([Q_APP_BOOTSTRAP], null);
 			queryClient.removeQueries({ queryKey: [Q_SESSION] });

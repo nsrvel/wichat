@@ -158,7 +158,7 @@ export function GroupSettingsMembersSection({
 					<GroupSettingsMembersTable
 						groupId={groupId}
 						rows={visibleRows}
-						loading={membersPending || membersQuery.isFetching}
+						loading={membersPending}
 						failed={membersFailed}
 						actorUserId={actorUserId}
 						actorGroup={effectiveGroup}
