@@ -734,6 +734,7 @@ func (s service) RequestPasswordReset(ctx context.Context, emailRaw, locale stri
 		_ = s.reset.DeleteOTP(ctx, email)
 		return 0, err
 	}
+	s.storeDevE2EOTP(ctx, authRedis.EmailKey(email), code)
 
 	wait, err := s.reset.RecordResetCodeSent(ctx, email)
 	if err != nil {
@@ -818,7 +819,7 @@ func (s service) CompletePasswordReset(ctx context.Context, resetToken, newPassw
 		return err
 	}
 
-	userID, email, err := s.reset.ConsumeResetToken(ctx, resetToken)
+	userID, email, err := s.reset.GetResetToken(ctx, resetToken)
 	if errors.Is(err, constants.ErrNotFound) {
 		return exception.Unauthenticated(exception.MsgUnauthorized, nil)
 	}
@@ -837,6 +838,10 @@ func (s service) CompletePasswordReset(ctx context.Context, resetToken, newPassw
 	}
 
 	if err := s.revokeAllUserSessions(ctx, userID, now); err != nil {
+		return err
+	}
+
+	if err := s.reset.DeleteResetToken(ctx, resetToken); err != nil {
 		return err
 	}
 
