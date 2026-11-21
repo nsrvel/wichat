@@ -12,6 +12,13 @@ import { channelMessagesQueryOpts } from "@/services/message/message.query";
 
 const IMAGE_SETTLE_TIMEOUT_MS = 2500;
 
+let workspaceShellReadyPersisted = false;
+
+/** Reset on logout so the next session gets the initial bootstrap overlay. */
+export function resetWorkspaceShellReady(): void {
+	workspaceShellReadyPersisted = false;
+}
+
 function waitForImageElement(img: HTMLImageElement): Promise<void> {
 	if (img.complete) {
 		if (img.naturalWidth > 0 && typeof img.decode === "function") {
@@ -47,7 +54,7 @@ function waitForImageElement(img: HTMLImageElement): Promise<void> {
  */
 export function WorkspaceReadyGate({ children }: { children: ReactNode }) {
 	const pathname = usePathname();
-	const [ready, setReady] = useState(false);
+	const [ready, setReady] = useState(workspaceShellReadyPersisted);
 	const containerRef = useRef<HTMLDivElement>(null);
 
 	const target = useMemo(() => parseChannelRoute(pathname), [pathname]);
@@ -76,6 +83,9 @@ export function WorkspaceReadyGate({ children }: { children: ReactNode }) {
 		(!(groupId && channelId) || !messagesQuery.isPending);
 
 	useEffect(() => {
+		if (workspaceShellReadyPersisted) {
+			return;
+		}
 		if (ready || !queriesReady) {
 			return;
 		}
@@ -110,6 +120,7 @@ export function WorkspaceReadyGate({ children }: { children: ReactNode }) {
 			raf1 = requestAnimationFrame(() => {
 				raf2 = requestAnimationFrame(() => {
 					if (!cancelled) {
+						workspaceShellReadyPersisted = true;
 						setReady(true);
 					}
 				});
