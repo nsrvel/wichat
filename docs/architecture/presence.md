@@ -32,4 +32,4 @@
 | `use-group-online-count.ts` | Live online tally from member cache |
 | `live-cache.ts` | Patches `Q_INVITE_MEMBERS`, `Q_GROUP_ROLE_MEMBERS`, debounced `Q_INVITE_PREVIEW` on `/invite/*` |
 
-No localStorage for dots. No HTTP prefetch in gate. Member UIs use `memberPresenceDot`; self chrome uses `useLivePresence`.
+No localStorage for dots. `presence-gate` **fetchQuery** bootstraps `Q_MY_PRESENCE` before WS can seed the cache. Member UIs use `memberPresenceDot`; self chrome uses `useLivePresence`.

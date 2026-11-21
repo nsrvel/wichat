@@ -122,13 +122,26 @@ export function upsertLiveMyPresence(
 	if (frame.user_id !== selfUserId) {
 		return;
 	}
-	queryClient.setQueryData<MyPresenceResponse>([Q_MY_PRESENCE], (prev) => ({
-		manual_status: prev?.manual_status ?? "online",
-		effective_status: frame.presence_status,
-		is_online: frame.is_online,
-		expires_at: prev?.expires_at ?? "",
-	}));
-	patchSelfMemberPresenceFromMyPresence(queryClient, selfUserId);
+	const hadMyPresence = queryClient.getQueryData<MyPresenceResponse>([Q_MY_PRESENCE]) !== undefined;
+	queryClient.setQueryData<MyPresenceResponse>([Q_MY_PRESENCE], (prev) => {
+		if (!prev) {
+			return prev;
+		}
+		return {
+			...prev,
+			effective_status: frame.presence_status,
+			is_online: frame.is_online,
+		};
+	});
+	if (hadMyPresence) {
+		patchSelfMemberPresenceFromMyPresence(queryClient, selfUserId);
+	} else {
+		patchLiveMemberPresence(queryClient, {
+			user_id: selfUserId,
+			presence_status: frame.presence_status,
+			is_online: frame.is_online,
+		});
+	}
 }
 
 /** Re-apply self row in cached member lists from `Q_MY_PRESENCE` (HTTP refetch / race after WS). */
