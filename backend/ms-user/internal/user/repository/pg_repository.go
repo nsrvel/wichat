@@ -18,7 +18,6 @@ import (
 // PgRepository is the Postgres user and workspace store.
 type PgRepository interface {
 	CountUsers(ctx context.Context) (int, error)
-	GetInstanceSettings(ctx context.Context) (models.InstanceSettings, error)
 	CompleteInstanceSetup(ctx context.Context, ownerUserID string, payload models.InstanceSetupPayload, now time.Time) error
 	CreateFirstUser(ctx context.Context, user models.User) error
 	CreateUser(ctx context.Context, user models.User) error
@@ -70,18 +69,7 @@ func (r pgRepository) CountUsers(ctx context.Context) (int, error) {
 	return int(n), err
 }
 
-// GetInstanceSettings loads the singleton instance policy row.
-func (r pgRepository) GetInstanceSettings(ctx context.Context) (models.InstanceSettings, error) {
-	var row models.InstanceSettingsRow
-	err := r.db.NewSelect().Model(&row).Where("id = ?", 1).Scan(ctx)
-	if err != nil {
-		return models.InstanceSettings{}, pgErr.MapNotFound(err)
-	}
-
-	return row.ToModel(), nil
-}
-
-// CompleteInstanceSetup creates the first group, owner membership, and instance policy.
+// CompleteInstanceSetup creates the first group and owner membership when none exist yet.
 func (r pgRepository) CompleteInstanceSetup(ctx context.Context, ownerUserID string, payload models.InstanceSetupPayload, now time.Time) error {
 	return r.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
 		n, err := tx.NewSelect().Model((*models.GroupRow)(nil)).Count(ctx)
@@ -90,23 +78,6 @@ func (r pgRepository) CompleteInstanceSetup(ctx context.Context, ownerUserID str
 		}
 		if n > 0 {
 			return constants.ErrConflict
-		}
-
-		res, err := tx.NewUpdate().Model(&models.InstanceSettingsRow{}).
-			Set("registration_mode = ?", payload.RegistrationMode).
-			Set("setup_completed = ?", true).
-			Set("updated_at = ?", now).
-			Where("id = ? AND setup_completed = ?", 1, false).
-			Exec(ctx)
-		if err != nil {
-			return err
-		}
-		rows, err := res.RowsAffected()
-		if err != nil {
-			return err
-		}
-		if rows == 0 {
-			return constants.ErrNotFound
 		}
 
 		group := models.Group{

@@ -27,6 +27,9 @@ type State struct {
 	Avatars    map[string]string
 	Reactions  []reactionRecord
 	ChannelSeq map[string]int64
+	Outbox     []models.EventOutboxInsert
+	// FailOutbox makes WithOutbox repository methods fail at outbox insert (message unchanged).
+	FailOutbox bool
 }
 
 // NewState returns empty message mock storage.
@@ -227,6 +230,31 @@ func (m pgRepositoryMock) UpdateBody(_ context.Context, channelID, publicID, aut
 	return models.MessageWithAuthor{}, constants.ErrNotFound
 }
 
+func (m pgRepositoryMock) UpdateBodyWithOutbox(_ context.Context, in *models.UpdateMessageBodyWithOutboxInput) (models.MessageWithAuthor, error) {
+	if in == nil {
+		return models.MessageWithAuthor{}, fmt.Errorf("update message input required")
+	}
+
+	m.st.mu.Lock()
+	defer m.st.mu.Unlock()
+
+	for i, msg := range m.st.Messages {
+		if msg.ChannelID == in.ChannelID && msg.PublicID == in.PublicID && msg.AuthorID == in.AuthorID {
+			if m.st.FailOutbox {
+				return models.MessageWithAuthor{}, fmt.Errorf("outbox insert failed")
+			}
+			msg.Body = in.Body
+			msg.EditedAt = &in.EditedAt
+			m.st.Messages[i] = msg
+			m.st.Outbox = append(m.st.Outbox, in.Outbox)
+
+			return m.buildMessageWithAuthorLocked(msg), nil
+		}
+	}
+
+	return models.MessageWithAuthor{}, constants.ErrNotFound
+}
+
 func (m pgRepositoryMock) DeleteByID(_ context.Context, id string) error {
 	m.st.mu.Lock()
 	defer m.st.mu.Unlock()
@@ -249,6 +277,29 @@ func (m pgRepositoryMock) DeleteByPublicID(_ context.Context, channelID, publicI
 	for i, msg := range m.st.Messages {
 		if msg.ChannelID == channelID && msg.PublicID == publicID {
 			m.st.Messages = append(m.st.Messages[:i], m.st.Messages[i+1:]...)
+
+			return nil
+		}
+	}
+
+	return constants.ErrNotFound
+}
+
+func (m pgRepositoryMock) DeleteByPublicIDWithOutbox(_ context.Context, in *models.DeleteMessageWithOutboxInput) error {
+	if in == nil {
+		return fmt.Errorf("delete message input required")
+	}
+
+	m.st.mu.Lock()
+	defer m.st.mu.Unlock()
+
+	for i, msg := range m.st.Messages {
+		if msg.ChannelID == in.ChannelID && msg.PublicID == in.PublicID {
+			if m.st.FailOutbox {
+				return fmt.Errorf("outbox insert failed")
+			}
+			m.st.Messages = append(m.st.Messages[:i], m.st.Messages[i+1:]...)
+			m.st.Outbox = append(m.st.Outbox, in.Outbox)
 
 			return nil
 		}

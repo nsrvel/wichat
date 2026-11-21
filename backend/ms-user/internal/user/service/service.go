@@ -69,6 +69,7 @@ type Service interface {
 	ListRelationships(ctx context.Context, accessToken string) ([]models.UserRelationship, error)
 	SetRelationship(ctx context.Context, accessToken, targetUserID, kind string) (string, error)
 	WithActivityLog(r activitysvc.Recorder) Service
+	WithInviteOnly(inviteOnly bool) Service
 }
 
 type service struct {
@@ -88,6 +89,7 @@ type service struct {
 	secret      []byte
 	log         logger.Logger
 	now         func() time.Time
+	inviteOnly  bool
 }
 
 // NewService builds user/workspace use cases.
@@ -150,6 +152,12 @@ func (s service) WithActivityLog(r activitysvc.Recorder) Service {
 	return s
 }
 
+// WithInviteOnly mirrors INVITE_ONLY for setup-status registration_mode.
+func (s service) WithInviteOnly(inviteOnly bool) Service {
+	s.inviteOnly = inviteOnly
+	return s
+}
+
 func (s service) recordActivity(ctx context.Context, entry models.UserActivityLogEntry) {
 	if s.activity == nil {
 		return
@@ -161,13 +169,13 @@ func (s service) recordActivity(ctx context.Context, entry models.UserActivityLo
 }
 
 func (s service) SetupStatus(ctx context.Context) (*models.SetupStatus, error) {
-	settings, err := s.users.GetInstanceSettings(ctx)
-	if err != nil {
-		return nil, err
+	mode := constants.RegistrationOpen
+	if s.inviteOnly {
+		mode = constants.RegistrationInviteOnly
 	}
 
 	return &models.SetupStatus{
-		RegistrationMode: settings.RegistrationMode,
+		RegistrationMode: mode,
 	}, nil
 }
 
@@ -178,14 +186,6 @@ func (s service) CompleteInstanceSetup(ctx context.Context, accessToken string, 
 	}
 	if !user.IsInstanceOwner {
 		return exception.PermissionDenied(exception.MsgForbidden, nil)
-	}
-
-	settings, err := s.users.GetInstanceSettings(ctx)
-	if err != nil {
-		return err
-	}
-	if settings.SetupCompleted {
-		return exception.Conflict(exception.MsgSetupClosed, nil)
 	}
 
 	payload, err := validator.InstanceSetup(in)

@@ -35,6 +35,7 @@ type Handler interface {
 	ForgotPasswordRequest(w http.ResponseWriter, r *http.Request)
 	ForgotPasswordVerify(w http.ResponseWriter, r *http.Request)
 	ForgotPasswordReset(w http.ResponseWriter, r *http.Request)
+	WithInviteOnly(inviteOnly bool) Handler
 }
 
 type handler struct {
@@ -43,6 +44,13 @@ type handler struct {
 	secureCookie bool
 	webOrigin    string
 	turnstile    turnstile.Verifier
+	inviteOnly   bool
+}
+
+// WithInviteOnly mirrors INVITE_ONLY for OAuth redirect handling on the HTTP edge.
+func (h handler) WithInviteOnly(inviteOnly bool) Handler {
+	h.inviteOnly = inviteOnly
+	return h
 }
 
 // NewHandler wires auth HTTP to the ms-user client.
@@ -93,6 +101,7 @@ func (h handler) Register(w http.ResponseWriter, r *http.Request) {
 		DisplayName: body.DisplayName,
 		BirthDate:   body.BirthDate,
 		Locale:      body.Locale,
+		InviteToken: body.InviteToken,
 		UserAgent:   middleware.UserAgent(r),
 		ClientIp:    middleware.ClientIP(r),
 	})
@@ -293,6 +302,11 @@ func (h handler) GoogleStart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if h.inviteOnly && authHttp.OAuthSignupReturnBlocked(r.URL.Query().Get("next")) {
+		authHttp.RedirectForbidden(w, r, h.webOrigin)
+		return
+	}
+
 	// Service
 	out, err := h.ms.User.GRPC.Auth.GoogleStart(r.Context(), &userv1.GoogleStartRequest{})
 	if err != nil {
@@ -333,7 +347,12 @@ func (h handler) GoogleCallback(w http.ResponseWriter, r *http.Request) {
 		ClientIp:     middleware.ClientIP(r),
 	})
 	if err != nil {
-		authHttp.RedirectSignIn(w, r, h.webOrigin, authHttp.GRPCMessageCode(err))
+		code := authHttp.GRPCMessageCode(err)
+		if code == string(exception.MsgRegistrationClosed) {
+			authHttp.RedirectForbidden(w, r, h.webOrigin)
+			return
+		}
+		authHttp.RedirectSignIn(w, r, h.webOrigin, code)
 		return
 	}
 	sess := out.GetSession()

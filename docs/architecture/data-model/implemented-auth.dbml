@@ -18,10 +18,6 @@ TableGroup ms_user_core {
   user_sessions
 }
 
-TableGroup ms_user_instance {
-  instance_settings
-}
-
 TableGroup ms_user_workspace {
   groups
   group_settings
@@ -76,17 +72,6 @@ Table user_sessions {
   refresh_id text [not null, default: '', note: 'Current refresh row id; secret hash in Redis']
   last_used_at timestamptz [not null]
   created_at timestamptz [not null]
-}
-
-Table instance_settings {
-  id smallint [pk, note: 'Singleton row id = 1']
-  username_enabled boolean [not null, default: true]
-  registration_mode text [not null, default: 'invite_only', note: 'invite_only | approval_required | open']
-  setup_completed boolean [not null, default: false]
-  created_at timestamptz [not null]
-  updated_at timestamptz [not null]
-
-  Note: 'Instance policy only; workspace branding in group_settings'
 }
 
 Table groups {

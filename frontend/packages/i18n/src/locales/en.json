@@ -2,6 +2,7 @@
   "auth": {
     "invalid_credentials": "Username, email, or password is incorrect.",
     "email_taken": "That email is already in use.",
+    "register_unavailable": "Registration could not be completed. Check your details or try again later.",
     "username_taken": "That username is already taken.",
     "age_restricted": "You must be at least 13 years old.",
     "unauthorized": "Sign in to continue.",

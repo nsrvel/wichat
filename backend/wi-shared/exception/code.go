@@ -20,6 +20,7 @@ const (
 	MsgInstanceSetupRequired MessageCode = "auth.instance_setup_required"
 	MsgForbidden             MessageCode = "auth.forbidden"
 	MsgEmailTaken            MessageCode = "auth.email_taken"
+	MsgRegisterUnavailable   MessageCode = "auth.register_unavailable"
 	MsgUsernameTaken         MessageCode = "auth.username_taken"
 	MsgAgeRestricted         MessageCode = "auth.age_restricted"
 	MsgGoogleDenied          MessageCode = "auth.google_denied"

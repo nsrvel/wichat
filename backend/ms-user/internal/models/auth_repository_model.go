@@ -55,24 +55,6 @@ type UserConnectionRow struct {
 	UpdatedAt time.Time `bun:"updated_at"`
 }
 
-// InstanceSettingsRow maps instance_settings for Bun.
-type InstanceSettingsRow struct {
-	bun.BaseModel `bun:"table:instance_settings"`
-
-	ID               int16     `bun:"id,pk"`
-	RegistrationMode string    `bun:"registration_mode"`
-	SetupCompleted   bool      `bun:"setup_completed"`
-	CreatedAt        time.Time `bun:"created_at"`
-	UpdatedAt        time.Time `bun:"updated_at"`
-}
-
-func (r InstanceSettingsRow) ToModel() InstanceSettings {
-	return InstanceSettings{
-		RegistrationMode: r.RegistrationMode,
-		SetupCompleted:   r.SetupCompleted,
-	}
-}
-
 func UserRowFrom(u User) UserRow {
 	var email *string
 	if u.Email != "" {

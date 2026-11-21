@@ -3,6 +3,7 @@ package repository_test
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -44,6 +45,41 @@ func TestPasswordResetOTPWrongCode(t *testing.T) {
 	userID, err := store.VerifyOTP(ctx, email, "123456", testOTPSecret, 5)
 	if err != nil || userID != "user-1" {
 		t.Fatalf("second verify: %q %v", userID, err)
+	}
+}
+
+func TestPasswordResetOTPConcurrentSingleWinner(t *testing.T) {
+	store := newPasswordResetStore(t)
+	ctx := context.Background()
+	email := "race@example.com"
+
+	if err := store.SaveOTP(ctx, email, "user-race", "654321", testOTPSecret, 10*time.Minute); err != nil {
+		t.Fatal(err)
+	}
+
+	var wg sync.WaitGroup
+	winners := make(chan string, 8)
+	for range 8 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			userID, err := store.VerifyOTP(ctx, email, "654321", testOTPSecret, 5)
+			if err == nil {
+				winners <- userID
+			}
+		}()
+	}
+	wg.Wait()
+	close(winners)
+
+	n := 0
+	var lastID string
+	for id := range winners {
+		n++
+		lastID = id
+	}
+	if n != 1 || lastID != "user-race" {
+		t.Fatalf("expected one winner user-race, got n=%d id=%q", n, lastID)
 	}
 }
 

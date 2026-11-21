@@ -53,16 +53,6 @@ erDiagram
     timestamptz created_at
   }
 
-  instance_settings {
-    smallint id PK
-    boolean username_enabled
-    text registration_mode
-    boolean guest_enabled
-    boolean setup_completed
-    timestamptz created_at
-    timestamptz updated_at
-  }
-
   groups {
     text id PK
     timestamptz created_at

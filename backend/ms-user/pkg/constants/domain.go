@@ -1,6 +1,6 @@
 package constants
 
-// Registration modes (instance_settings.registration_mode).
+// Registration modes exposed on setup-status (derived from INVITE_ONLY when enforced).
 const (
 	RegistrationInviteOnly       = "invite_only"
 	RegistrationApprovalRequired = "approval_required"

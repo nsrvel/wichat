@@ -7,9 +7,14 @@ import (
 	"github.com/wichat/wichat/backend/api-gateway/internal/middleware"
 )
 
-// Register mounts auth routes on mux.
-func Register(mux *http.ServeMux, h Handler) {
-	registerLimit := middleware.NewLimiter(5, time.Hour)
+// Register mounts auth routes on mux. development lifts the register POST cap for local E2E.
+func Register(mux *http.ServeMux, h Handler, development bool) {
+	registerCap := 5
+	if development {
+		// ponytail: dev serial register-flow e2e exceeds 5/hour from one IP; production stays 5.
+		registerCap = 40
+	}
+	registerLimit := middleware.NewLimiter(registerCap, time.Hour)
 	registerVerifyLimit := middleware.NewLimiter(40, time.Hour)
 	registerResendLimit := middleware.NewLimiter(15, time.Hour)
 	loginLimit := middleware.NewLimiter(10, time.Minute)

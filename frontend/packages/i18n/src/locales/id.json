@@ -2,6 +2,7 @@
   "auth": {
     "invalid_credentials": "Username, email, atau kata sandi salah.",
     "email_taken": "Email itu sudah dipakai.",
+    "register_unavailable": "Pendaftaran tidak dapat diselesaikan. Periksa data kamu atau coba lagi nanti.",
     "username_taken": "Username itu sudah dipakai.",
     "age_restricted": "Kamu harus berusia minimal 13 tahun.",
     "unauthorized": "Masuk untuk melanjutkan.",

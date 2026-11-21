@@ -60,6 +60,20 @@ func TestSetupStatusDefaultsBeforeWizard(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if status.RegistrationMode != constants.RegistrationOpen {
+		t.Fatalf("%+v", status)
+	}
+}
+
+func TestSetupStatusInviteOnlyFromEnv(t *testing.T) {
+	st := usermock.NewState()
+	_, _, _, userSvc, _, _ := testSupport.NewAuthService(t, st, nil, true)
+	ctx := context.Background()
+
+	status, err := userSvc.SetupStatus(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if status.RegistrationMode != constants.RegistrationInviteOnly {
 		t.Fatalf("%+v", status)
 	}
@@ -138,7 +152,7 @@ func TestCompleteInstanceSetupCreatesFirstGroup(t *testing.T) {
 	}
 
 	status, err := userSvc.SetupStatus(ctx)
-	if err != nil || status.RegistrationMode != constants.RegistrationInviteOnly {
+	if err != nil || status.RegistrationMode != constants.RegistrationOpen {
 		t.Fatalf("status: %v %+v", err, status)
 	}
 }

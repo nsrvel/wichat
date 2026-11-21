@@ -11,6 +11,7 @@ import (
 	"github.com/go-webauthn/webauthn/protocol"
 	"github.com/go-webauthn/webauthn/webauthn"
 	authrepo "github.com/wichat/wichat/backend/ms-user/internal/auth/repository"
+	inviterepo "github.com/wichat/wichat/backend/ms-user/internal/invite/repository"
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
 	activitysvc "github.com/wichat/wichat/backend/ms-user/internal/user-activity-log/service"
 	userrepo "github.com/wichat/wichat/backend/ms-user/internal/user/repository"
@@ -58,34 +59,38 @@ type Service interface {
 }
 
 type service struct {
-	users     userrepo.PgRepository
-	sessions  authrepo.SessionRepository
-	refresh   authrepo.RefreshStore
-	workspace userservice.Service
-	reset     authrepo.PasswordResetStore
-	emailAuth authrepo.EmailAuthStore
-	mfa       authrepo.MFAStore
-	webauthn  *webauthn.WebAuthn
-	mfaKey    [32]byte
-	notify    Notifier
-	activity  activitysvc.Recorder
-	devOTP    authrepo.DevOTPStore
-	devE2EOTP bool
-	log       logger.Logger
-	secret    []byte
-	now       func() time.Time
-	dummy     string
-	google    google.Config
+	users      userrepo.PgRepository
+	sessions   authrepo.SessionRepository
+	refresh    authrepo.RefreshStore
+	workspace  userservice.Service
+	reset      authrepo.PasswordResetStore
+	emailAuth  authrepo.EmailAuthStore
+	mfa        authrepo.MFAStore
+	webauthn   *webauthn.WebAuthn
+	mfaKey     [32]byte
+	notify     Notifier
+	activity   activitysvc.Recorder
+	devOTP     authrepo.DevOTPStore
+	devE2EOTP  bool
+	log        logger.Logger
+	secret     []byte
+	now        func() time.Time
+	dummy      string
+	google     google.Config
+	inviteOnly bool
+	invites    inviterepo.PgRepository
 }
 
 // Options overrides auth service wiring (tests and optional MFA).
 type Options struct {
-	Now       func() time.Time
-	MFA       authrepo.MFAStore
-	WebAuthn  *webauthn.WebAuthn
-	MFAKey    [32]byte
-	DevE2EOTP bool
-	DevOTP    authrepo.DevOTPStore
+	Now        func() time.Time
+	MFA        authrepo.MFAStore
+	WebAuthn   *webauthn.WebAuthn
+	MFAKey     [32]byte
+	DevE2EOTP  bool
+	DevOTP     authrepo.DevOTPStore
+	InviteOnly bool
+	Invites    inviterepo.PgRepository
 }
 
 // NewService builds the auth use cases. secret is the HMAC key and must be at least 32 bytes.
@@ -129,29 +134,35 @@ func NewService(
 
 	devE2EOTP := false
 	var devOTP authrepo.DevOTPStore
+	inviteOnly := false
+	var invites inviterepo.PgRepository
 	if opts != nil {
 		devE2EOTP = opts.DevE2EOTP
 		devOTP = opts.DevOTP
+		inviteOnly = opts.InviteOnly
+		invites = opts.Invites
 	}
 
 	return service{
-		users:     users,
-		sessions:  sessions,
-		refresh:   refresh,
-		workspace: workspace,
-		reset:     reset,
-		emailAuth: emailAuth,
-		mfa:       mfaStore,
-		webauthn:  wa,
-		mfaKey:    mfaKey,
-		notify:    notify,
-		devOTP:    devOTP,
-		devE2EOTP: devE2EOTP,
-		log:       log,
-		secret:    copied,
-		now:       now,
-		dummy:     dummy,
-		google:    google.Prepare(googleCfg),
+		users:      users,
+		sessions:   sessions,
+		refresh:    refresh,
+		workspace:  workspace,
+		reset:      reset,
+		emailAuth:  emailAuth,
+		mfa:        mfaStore,
+		webauthn:   wa,
+		mfaKey:     mfaKey,
+		notify:     notify,
+		devOTP:     devOTP,
+		devE2EOTP:  devE2EOTP,
+		log:        log,
+		secret:     copied,
+		now:        now,
+		dummy:      dummy,
+		google:     google.Prepare(googleCfg),
+		inviteOnly: inviteOnly,
+		invites:    invites,
 	}, nil
 }
 
@@ -195,13 +206,27 @@ func (s service) Register(ctx context.Context, in models.RegisterInput) (*models
 		return nil, err
 	}
 
+	if err := s.assertRegistrationAllowed(ctx, email, in.InviteToken); err != nil {
+		return nil, err
+	}
+	if err := s.requireEmailAuth(); err != nil {
+		return nil, err
+	}
+
+	if err := s.emailAuth.EnsureNoActiveRegisterChallenge(ctx, email); err != nil {
+		if errors.Is(err, constants.ErrRegisterChallengeActive) {
+			return nil, registerUnavailable()
+		}
+		return nil, err
+	}
+
 	if _, err := s.users.FindUserByEmail(ctx, email); err == nil {
-		return nil, exception.Conflict(exception.MsgEmailTaken, nil)
+		return nil, registerUnavailable()
 	} else if !errors.Is(err, constants.ErrNotFound) {
 		return nil, err
 	}
 	if _, err := s.users.FindUserByUsername(ctx, handle); err == nil {
-		return nil, exception.Conflict(exception.MsgUsernameTaken, nil)
+		return nil, registerUnavailable()
 	} else if !errors.Is(err, constants.ErrNotFound) {
 		return nil, err
 	}
@@ -233,6 +258,9 @@ func (s service) Register(ctx context.Context, in models.RegisterInput) (*models
 		ClientIP:     in.ClientIP,
 	}
 	if err := s.emailAuth.PutRegisterPending(ctx, ch.ChallengeID, pending, constants.EmailAuthOTPTTL); err != nil {
+		if errors.Is(err, constants.ErrRegisterChallengeActive) {
+			return nil, registerUnavailable()
+		}
 		return nil, err
 	}
 
@@ -250,7 +278,7 @@ func (s service) Register(ctx context.Context, in models.RegisterInput) (*models
 
 func (s service) createUserFromPending(ctx context.Context, pending models.RegisterPending) (models.User, error) {
 	if _, err := s.users.FindUserByEmail(ctx, pending.Email); err == nil {
-		return models.User{}, exception.Conflict(exception.MsgEmailTaken, nil)
+		return models.User{}, registerUnavailable()
 	} else if !errors.Is(err, constants.ErrNotFound) {
 		return models.User{}, err
 	}
@@ -271,7 +299,7 @@ func (s service) createUserFromPending(ctx context.Context, pending models.Regis
 		return models.User{}, err
 	}
 	if _, err := s.users.FindUserByUsername(ctx, handle); err == nil {
-		return models.User{}, exception.Conflict(exception.MsgUsernameTaken, nil)
+		return models.User{}, registerUnavailable()
 	} else if !errors.Is(err, constants.ErrNotFound) {
 		return models.User{}, err
 	}
@@ -304,7 +332,7 @@ func (s service) createUserFromPending(ctx context.Context, pending models.Regis
 		}
 	} else if err := s.users.CreateUser(ctx, user); err != nil {
 		if errors.Is(err, constants.ErrConflict) {
-			return models.User{}, exception.Conflict(exception.MsgEmailTaken, nil)
+			return models.User{}, registerUnavailable()
 		}
 
 		return models.User{}, err
@@ -570,15 +598,15 @@ func (s service) VerifyRegister(ctx context.Context, challengeID, code string) (
 		return nil, err
 	}
 
+	user, err := s.createUserFromPending(ctx, pending)
+	if err != nil {
+		return nil, err
+	}
+
 	if err := s.emailAuth.DeleteRegisterPending(ctx, challengeID); err != nil {
 		return nil, err
 	}
 	if err := s.emailAuth.ClearEmailCodePenalty(ctx, pending.Email); err != nil {
-		return nil, err
-	}
-
-	user, err := s.createUserFromPending(ctx, pending)
-	if err != nil {
 		return nil, err
 	}
 
@@ -761,9 +789,6 @@ func (s service) VerifyPasswordReset(ctx context.Context, emailRaw, code string)
 		return "", err
 	}
 
-	if err := s.reset.DeleteOTP(ctx, email); err != nil {
-		return "", err
-	}
 	if err := s.reset.ClearResendPenalty(ctx, email); err != nil {
 		return "", err
 	}
@@ -1072,6 +1097,16 @@ func (s service) GoogleFinish(ctx context.Context, code, verifier string, meta m
 		return nil, exception.Unauthenticated(exception.MsgGoogleDenied, nil)
 	}
 
+	if s.inviteOnly {
+		if _, err := s.users.FindUserByEmail(ctx, email); errors.Is(err, constants.ErrNotFound) {
+			if err := s.assertRegistrationAllowed(ctx, email, ""); err != nil {
+				return nil, err
+			}
+		} else if err != nil {
+			return nil, err
+		}
+	}
+
 	if err := s.sessions.DeleteExpired(ctx, s.now()); err != nil {
 		return nil, err
 	}
@@ -1116,6 +1151,50 @@ func (s service) GoogleFinish(ctx context.Context, code, verifier string, meta m
 	}
 
 	return s.openSession(ctx, user, meta)
+}
+
+func registerUnavailable() error {
+	return exception.InvalidInput(exception.MsgRegisterUnavailable, nil)
+}
+
+func (s service) assertRegistrationAllowed(ctx context.Context, email, inviteToken string) error {
+	if !s.inviteOnly {
+		return nil
+	}
+
+	n, err := s.users.CountUsers(ctx)
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return nil
+	}
+
+	token := strings.TrimSpace(inviteToken)
+	if token == "" {
+		return exception.PermissionDenied(exception.MsgRegistrationClosed, nil)
+	}
+	if s.invites == nil {
+		return exception.PermissionDenied(exception.MsgRegistrationClosed, nil)
+	}
+
+	row, err := s.invites.FindByToken(ctx, token)
+	if err != nil {
+		return exception.PermissionDenied(exception.MsgRegistrationClosed, nil)
+	}
+
+	now := s.now()
+	if row.RedeemedAt != nil || !row.ExpiresAt.After(now) {
+		return exception.PermissionDenied(exception.MsgRegistrationClosed, nil)
+	}
+	if row.Email != nil {
+		bound := strings.TrimSpace(*row.Email)
+		if bound != "" && !strings.EqualFold(bound, email) {
+			return exception.PermissionDenied(exception.MsgRegistrationClosed, nil)
+		}
+	}
+
+	return nil
 }
 
 func ensureAccountActive(user models.User) error {

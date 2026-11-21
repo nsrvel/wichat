@@ -23,6 +23,23 @@ type InsertMessageWithOutboxInput struct {
 	Outbox    EventOutboxInsert
 }
 
+// UpdateMessageBodyWithOutboxInput bundles body edit and outbox enqueue.
+type UpdateMessageBodyWithOutboxInput struct {
+	ChannelID string
+	PublicID  string
+	AuthorID  string
+	Body      string
+	EditedAt  time.Time
+	Outbox    EventOutboxInsert
+}
+
+// DeleteMessageWithOutboxInput bundles message delete and outbox enqueue.
+type DeleteMessageWithOutboxInput struct {
+	ChannelID string
+	PublicID  string
+	Outbox    EventOutboxInsert
+}
+
 // EventOutboxRow is a claimed unpublished outbox row.
 type EventOutboxRow struct {
 	ID              string

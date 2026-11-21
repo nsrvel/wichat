@@ -22,8 +22,10 @@ type PgRepository interface {
 	Insert(ctx context.Context, channelID, authorID, body string, replyToID *string, createdAt time.Time) (models.Message, error)
 	InsertWithOutbox(ctx context.Context, in *models.InsertMessageWithOutboxInput) (models.Message, error)
 	UpdateBody(ctx context.Context, channelID, publicID, authorID, body string, editedAt time.Time) (models.MessageWithAuthor, error)
+	UpdateBodyWithOutbox(ctx context.Context, in *models.UpdateMessageBodyWithOutboxInput) (models.MessageWithAuthor, error)
 	DeleteByID(ctx context.Context, id string) error
 	DeleteByPublicID(ctx context.Context, channelID, publicID string) error
+	DeleteByPublicIDWithOutbox(ctx context.Context, in *models.DeleteMessageWithOutboxInput) error
 	ToggleReaction(ctx context.Context, messageID, userID, emoji string, now time.Time) ([]models.MessageReactionSummary, error)
 	SetPinned(ctx context.Context, channelID, publicID, userID string, pinned bool, now time.Time) (models.MessageWithAuthor, error)
 	FindLastMessageTimeByAuthor(ctx context.Context, channelID, authorID string) (*time.Time, error)
@@ -254,6 +256,39 @@ func (r pgRepository) UpdateBody(ctx context.Context, channelID, publicID, autho
 	return r.FindByPublicIDInChannel(ctx, channelID, publicID)
 }
 
+func (r pgRepository) UpdateBodyWithOutbox(ctx context.Context, in *models.UpdateMessageBodyWithOutboxInput) (models.MessageWithAuthor, error) {
+	if in == nil {
+		return models.MessageWithAuthor{}, errors.New("update message input required")
+	}
+
+	err := r.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
+		res, err := tx.NewUpdate().
+			Model((*models.MessageRow)(nil)).
+			Set("body = ?", in.Body).
+			Set("edited_at = ?", in.EditedAt).
+			Where("channel_id = ? AND public_id = ? AND author_id = ?", in.ChannelID, in.PublicID, in.AuthorID).
+			Exec(ctx)
+		if err != nil {
+			return err
+		}
+		if n, _ := res.RowsAffected(); n == 0 {
+			return constants.ErrNotFound
+		}
+
+		return r.outbox.InsertInTx(ctx, tx, in.Outbox)
+	})
+	if err != nil {
+		if errors.Is(err, constants.ErrNotFound) {
+			return models.MessageWithAuthor{}, constants.ErrNotFound
+		}
+		r.logIfInfraErr("UpdateBodyWithOutbox", err)
+
+		return models.MessageWithAuthor{}, err
+	}
+
+	return r.FindByPublicIDInChannel(ctx, in.ChannelID, in.PublicID)
+}
+
 func (r pgRepository) DeleteByID(ctx context.Context, id string) error {
 	_, err := r.db.NewDelete().
 		Model((*models.MessageRow)(nil)).
@@ -280,6 +315,37 @@ func (r pgRepository) DeleteByPublicID(ctx context.Context, channelID, publicID 
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
 		return constants.ErrNotFound
+	}
+
+	return nil
+}
+
+func (r pgRepository) DeleteByPublicIDWithOutbox(ctx context.Context, in *models.DeleteMessageWithOutboxInput) error {
+	if in == nil {
+		return errors.New("delete message input required")
+	}
+
+	err := r.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
+		res, err := tx.NewDelete().
+			Model((*models.MessageRow)(nil)).
+			Where("channel_id = ? AND public_id = ?", in.ChannelID, in.PublicID).
+			Exec(ctx)
+		if err != nil {
+			return err
+		}
+		if n, _ := res.RowsAffected(); n == 0 {
+			return constants.ErrNotFound
+		}
+
+		return r.outbox.InsertInTx(ctx, tx, in.Outbox)
+	})
+	if err != nil {
+		if errors.Is(err, constants.ErrNotFound) {
+			return constants.ErrNotFound
+		}
+		r.logIfInfraErr("DeleteByPublicIDWithOutbox", err)
+
+		return err
 	}
 
 	return nil

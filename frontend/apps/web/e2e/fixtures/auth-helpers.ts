@@ -10,7 +10,9 @@ async function parseEnvelope<T>(res: Awaited<ReturnType<APIRequestContext["post"
 	return json.data;
 }
 
-async function parseErrorCode(res: Awaited<ReturnType<APIRequestContext["post"]>>): Promise<string> {
+async function parseErrorCode(
+	res: Awaited<ReturnType<APIRequestContext["post"]>>,
+): Promise<string> {
 	const text = await res.text();
 	const json = JSON.parse(text) as { error?: { code?: string } };
 	return json.error?.code ?? "";
@@ -26,10 +28,9 @@ function redisGet(key: string): string | null {
 	const container = process.env.E2E_REDIS_CONTAINER?.trim() || "wichat-redis-1";
 	const redisURL = process.env.E2E_REDIS_URL?.trim() || "redis://localhost:6379/0";
 	try {
-		const viaDocker = execSync(
-			`docker exec ${container} redis-cli GET ${JSON.stringify(key)}`,
-			{ encoding: "utf8" },
-		).trim();
+		const viaDocker = execSync(`docker exec ${container} redis-cli GET ${JSON.stringify(key)}`, {
+			encoding: "utf8",
+		}).trim();
 		if (viaDocker && viaDocker !== "(nil)") {
 			return viaDocker;
 		}
@@ -140,15 +141,80 @@ export type RegisterPayload = {
 	locale: string;
 };
 
+export async function fetchPolicyInviteOnly(request: APIRequestContext): Promise<boolean> {
+	const res = await request.get(`${E2E_API_BASE}/auth/setup-status`);
+	expect(res.ok(), await res.text()).toBeTruthy();
+	const data = await parseEnvelope<{ invite_only?: boolean }>(res);
+	return data.invite_only === true;
+}
+
+export async function fetchTurnstileRequired(request: APIRequestContext): Promise<boolean> {
+	const res = await request.get(`${E2E_API_BASE}/auth/setup-status`);
+	expect(res.ok(), await res.text()).toBeTruthy();
+	const data = await parseEnvelope<{ turnstile_required?: boolean }>(res);
+	return data.turnstile_required === true;
+}
+
+export async function expectGoogleStartForbiddenForSignUp(
+	request: APIRequestContext,
+): Promise<void> {
+	const res = await request.get(`${E2E_API_BASE}/auth/google?next=/sign-up`, { maxRedirects: 0 });
+	expect([302, 303, 307]).toContain(res.status());
+	const location = res.headers().location ?? "";
+	expect(location).toContain("/forbidden");
+}
+
+export async function expectRegisterVerifyRequiresCaptcha(
+	request: APIRequestContext,
+	challengeId: string,
+	code: string,
+): Promise<void> {
+	const res = await request.post(`${E2E_API_BASE}/auth/register/verify`, {
+		data: { challenge_id: challengeId, code },
+	});
+	expect(res.ok()).toBeFalsy();
+	const errCode = await parseErrorCode(res);
+	expect(errCode).toBe("auth.captcha_failed");
+}
+
 export async function registerPasswordChallenge(
 	request: APIRequestContext,
 	body: RegisterPayload,
 ): Promise<string> {
 	const res = await request.post(`${E2E_API_BASE}/auth/register`, { data: body });
+	if (!res.ok() && (await isRegisterRateLimited(res))) {
+		return "";
+	}
 	expect(res.ok(), await res.text()).toBeTruthy();
 	const data = await parseEnvelope<{ challenge_id: string }>(res);
 	expect(data.challenge_id).toBeTruthy();
 	return data.challenge_id;
+}
+
+export async function expectRegisterRejected(
+	request: APIRequestContext,
+	body: RegisterPayload,
+): Promise<void> {
+	const res = await request.post(`${E2E_API_BASE}/auth/register`, { data: body });
+	expect(res.ok()).toBeFalsy();
+	const code = await parseErrorCode(res);
+	expect(code).toBe("auth.registration_closed");
+}
+
+export async function expectRegisterUnavailable(
+	request: APIRequestContext,
+	body: RegisterPayload,
+): Promise<void> {
+	const res = await request.post(`${E2E_API_BASE}/auth/register`, { data: body });
+	expect(res.ok()).toBeFalsy();
+	const code = await parseErrorCode(res);
+	expect(code).toBe("auth.register_unavailable");
+}
+
+export function isRegisterRateLimited(
+	res: Awaited<ReturnType<APIRequestContext["post"]>>,
+): Promise<boolean> {
+	return parseErrorCode(res).then((code) => code === "error.rate_limited");
 }
 
 export async function verifyRegisterCode(

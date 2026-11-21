@@ -19,7 +19,34 @@ import (
 	"github.com/uptrace/bun/dialect/pgdialect"
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
 	userrepo "github.com/wichat/wichat/backend/ms-user/internal/user/repository"
+	"github.com/wichat/wichat/backend/ms-user/pkg/constants"
 )
+
+func TestCompleteInstanceSetupCreatesFirstGroupOnce(t *testing.T) {
+	users, cleanup := newUserPgRepository(t)
+	defer cleanup()
+	ctx := context.Background()
+	now := time.Now().UTC().Truncate(time.Microsecond)
+
+	ownerID := "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+	if err := users.CreateFirstUser(ctx, models.User{
+		ID: ownerID, Email: "owner@example.com", Username: "owner", PasswordHash: "hash",
+		IsInstanceOwner: true, DisplayName: "Owner", CreatedAt: now, UpdatedAt: now,
+	}); err != nil {
+		t.Fatalf("CreateFirstUser: %v", err)
+	}
+
+	payload := models.InstanceSetupPayload{
+		GroupID: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", GroupPublicID: "cccccccccccccccccccccccc",
+		GroupName: "WiChat", RegistrationMode: constants.RegistrationOpen,
+	}
+	if err := users.CompleteInstanceSetup(ctx, ownerID, payload, now); err != nil {
+		t.Fatalf("CompleteInstanceSetup: %v", err)
+	}
+	if err := users.CompleteInstanceSetup(ctx, ownerID, payload, now); err == nil {
+		t.Fatal("expected conflict on second setup")
+	}
+}
 
 func TestFindUserByEmailAfterCreate(t *testing.T) {
 	users, cleanup := newUserPgRepository(t)

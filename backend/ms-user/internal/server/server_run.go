@@ -173,7 +173,7 @@ func (s *server) Run(ctx context.Context) error {
 	activitySvc := activityservice.NewService(activityRepo, authSessions, secret, s.log)
 	groupActivityRepo := groupactivityrepo.NewPgRepository(db)
 	groupActivitySvc := groupactivityservice.NewService(groupActivityRepo, groupPg, groupMemberPg, groupRolePg, authSessions, secret, s.log)
-	userSvc := userservice.NewServiceWithMFA(userPg, groupPg, groupMemberPg, userMinio, authSessions, authRefresh, emailAuthStore, emailChangeStore, userMFAStore, wa, mfaKey, notifyClient, secret, s.log).WithActivityLog(activitySvc)
+	userSvc := userservice.NewServiceWithMFA(userPg, groupPg, groupMemberPg, userMinio, authSessions, authRefresh, emailAuthStore, emailChangeStore, userMFAStore, wa, mfaKey, notifyClient, secret, s.log).WithActivityLog(activitySvc).WithInviteOnly(s.cfg.InviteOnly)
 	channelSvc := channelservice.NewService(channelPg, categoryPg, groupPg, groupMemberPg, groupRolePg, authSessions, secret, s.log).WithGroupActivityLog(groupActivitySvc)
 	categorySvc := categoryservice.NewService(categoryPg, groupPg, groupMemberPg, groupRolePg, authSessions, secret, s.log).WithGroupActivityLog(groupActivitySvc)
 	groupSvc := groupservice.NewService(groupPg, groupMemberPg, groupRolePg, channelSvc, userPg, groupMinio, authSessions, secret, s.log).WithActivityLog(activitySvc).WithGroupActivityLog(groupActivitySvc)
@@ -188,11 +188,13 @@ func (s *server) Run(ctx context.Context) error {
 		ClientSecret: s.cfg.GoogleClientSecret,
 		RedirectURL:  s.cfg.GoogleRedirectURL,
 	}, authrepo.NewRedisPasswordResetStore(rdb), emailAuthStore, notifyClient, userSvc, &authservice.Options{
-		MFA:       authMFAStore,
-		WebAuthn:  wa,
-		MFAKey:    mfaKey,
-		DevE2EOTP: s.cfg.Env == "development",
-		DevOTP:    authrepo.NewRedisDevOTPStore(rdb),
+		MFA:        authMFAStore,
+		WebAuthn:   wa,
+		MFAKey:     mfaKey,
+		DevE2EOTP:  s.cfg.Env == "development",
+		DevOTP:     authrepo.NewRedisDevOTPStore(rdb),
+		InviteOnly: s.cfg.InviteOnly,
+		Invites:    invitePg,
 	})
 	if err != nil {
 		return err

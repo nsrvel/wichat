@@ -32,12 +32,6 @@ type User struct {
 	UpdatedAt           time.Time
 }
 
-// InstanceSettings is the singleton instance policy row.
-type InstanceSettings struct {
-	RegistrationMode string
-	SetupCompleted   bool
-}
-
 // SetupStatus is the public instance policy snapshot for the auth UI.
 type SetupStatus struct {
 	RegistrationMode string
@@ -167,6 +161,7 @@ type RegisterInput struct {
 	DisplayName string
 	BirthDate   string
 	Locale      string
+	InviteToken string
 	ClientMeta
 }
 
@@ -238,6 +233,7 @@ type RegisterPending struct {
 	Locale       string `json:"locale"`
 	CodeHMAC     string `json:"code_hmac"`
 	Attempts     int    `json:"attempts"`
+	OtpVerified  bool   `json:"otp_verified,omitempty"`
 	UserAgent    string `json:"user_agent"`
 	ClientIP     string `json:"client_ip"`
 }

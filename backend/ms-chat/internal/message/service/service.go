@@ -279,17 +279,33 @@ func (s service) UpdateChannelMessage(ctx context.Context, in *models.UpdateChan
 		return models.PublicMessage{}, exception.PermissionDenied(exception.MsgForbidden, nil)
 	}
 
-	updated, err := s.messages.UpdateBody(ctx, in.ResolvedChannelID, msgPubID, in.CallerUserID, body, s.now())
+	editedAt := s.now()
+	preview := toPublicMessage(existing, in.CallerUserID)
+	preview.Body = body
+	preview.EditedAt = &editedAt
+	outboxRow, err := pkgChatEvents.EncodeMessageUpdated(
+		in.GroupPublicID,
+		in.ChannelPublicID,
+		toPublicMessageWire(preview),
+		editedAt,
+	)
 	if err != nil {
 		return models.PublicMessage{}, err
 	}
 
-	out := toPublicMessage(updated, in.CallerUserID)
-	if err := s.enqueueOutbox(ctx, in.GroupPublicID, in.ChannelPublicID, out, s.now()); err != nil && s.log != nil {
-		s.log.Error("outbox message.updated", "message_id", updated.PublicID, "err", err)
+	updated, err := s.messages.UpdateBodyWithOutbox(ctx, &models.UpdateMessageBodyWithOutboxInput{
+		ChannelID: in.ResolvedChannelID,
+		PublicID:  msgPubID,
+		AuthorID:  in.CallerUserID,
+		Body:      body,
+		EditedAt:  editedAt,
+		Outbox:    toEventOutboxInsert(outboxRow),
+	})
+	if err != nil {
+		return models.PublicMessage{}, err
 	}
 
-	return out, nil
+	return toPublicMessage(updated, in.CallerUserID), nil
 }
 
 func (s service) DeleteChannelMessage(ctx context.Context, in *models.DeleteChannelMessageInput) error {
@@ -318,15 +334,17 @@ func (s service) DeleteChannelMessage(ctx context.Context, in *models.DeleteChan
 		return exception.PermissionDenied(exception.MsgForbidden, nil)
 	}
 
-	if err := s.messages.DeleteByPublicID(ctx, in.ResolvedChannelID, msgPubID); err != nil {
+	at := s.now()
+	outboxRow, err := pkgChatEvents.EncodeMessageDeleted(in.GroupPublicID, in.ChannelPublicID, msgPubID, at)
+	if err != nil {
 		return err
 	}
 
-	if err := s.enqueueDeleted(ctx, in.GroupPublicID, in.ChannelPublicID, msgPubID, s.now()); err != nil && s.log != nil {
-		s.log.Error("outbox message.deleted", "message_id", msgPubID, "err", err)
-	}
-
-	return nil
+	return s.messages.DeleteByPublicIDWithOutbox(ctx, &models.DeleteMessageWithOutboxInput{
+		ChannelID: in.ResolvedChannelID,
+		PublicID:  msgPubID,
+		Outbox:    toEventOutboxInsert(outboxRow),
+	})
 }
 
 func (s service) ToggleMessageReaction(ctx context.Context, in *models.ToggleMessageReactionInput) ([]models.MessageReactionSummary, error) {
@@ -746,15 +764,6 @@ func toReactionWire(in []models.MessageReactionSummary) []pkgChatEvents.Reaction
 
 func (s service) enqueueOutbox(ctx context.Context, groupID, channelID string, msg models.PublicMessage, at time.Time) error {
 	row, err := pkgChatEvents.EncodeMessageUpdated(groupID, channelID, toPublicMessageWire(msg), at)
-	if err != nil {
-		return err
-	}
-
-	return s.outbox.Insert(ctx, toEventOutboxInsert(row))
-}
-
-func (s service) enqueueDeleted(ctx context.Context, groupID, channelID, messagePublicID string, at time.Time) error {
-	row, err := pkgChatEvents.EncodeMessageDeleted(groupID, channelID, messagePublicID, at)
 	if err != nil {
 		return err
 	}

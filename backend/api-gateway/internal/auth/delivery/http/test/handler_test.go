@@ -551,6 +551,22 @@ func TestLoginMFAReturnsChallenge(t *testing.T) {
 	}
 }
 
+func TestRegisterReturnsRegisterUnavailable(t *testing.T) {
+	handler := authdelivery.NewHandler(testClients(msUserFakes{Auth: fakeAuth{
+		register: func(context.Context, *userv1.RegisterRequest) (*userv1.RegisterResponse, error) {
+			return nil, status.Error(codes.InvalidArgument, string(exception.MsgRegisterUnavailable))
+		},
+	}}), testLog(), false, "http://localhost:8080")
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/register", strings.NewReader(`{"email":"a@b.com","username":"ada","password":"longpassword12","display_name":"Ada","birth_date":"2000-01-01"}`))
+	rec := httptest.NewRecorder()
+	handler.Register(rec, req)
+
+	if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), string(exception.MsgRegisterUnavailable)) {
+		t.Fatalf("status %d body %s", rec.Code, rec.Body.String())
+	}
+}
+
 func TestRegisterReturnsChallenge(t *testing.T) {
 	handler := authdelivery.NewHandler(testClients(msUserFakes{Auth: fakeAuth{
 		register: func(context.Context, *userv1.RegisterRequest) (*userv1.RegisterResponse, error) {
@@ -851,6 +867,88 @@ func TestGoogleStartRejectsMissingTurnstileWhenEnabled(t *testing.T) {
 	handler.GoogleStart(rec, req)
 
 	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status %d body %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestGoogleStartInviteOnlyBlocksSignUpReturn(t *testing.T) {
+	called := false
+	handler := authdelivery.NewHandler(testClients(msUserFakes{Auth: fakeAuth{
+		googleStart: func(context.Context, *userv1.GoogleStartRequest) (*userv1.GoogleStartResponse, error) {
+			called = true
+			return nil, nil
+		},
+	}}), testLog(), false, "http://localhost:8080").WithInviteOnly(true)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/google?next=/sign-up", nil)
+	rec := httptest.NewRecorder()
+	handler.GoogleStart(rec, req)
+
+	if called {
+		t.Fatal("expected gateway to block before gRPC")
+	}
+	if rec.Code != http.StatusFound || rec.Header().Get("Location") != "http://localhost:8080/forbidden" {
+		t.Fatalf("status %d location %q", rec.Code, rec.Header().Get("Location"))
+	}
+}
+
+func TestGoogleStartInviteOnlyAllowsInviteReturn(t *testing.T) {
+	handler := authdelivery.NewHandler(testClients(msUserFakes{Auth: fakeAuth{
+		googleStart: func(context.Context, *userv1.GoogleStartRequest) (*userv1.GoogleStartResponse, error) {
+			return &userv1.GoogleStartResponse{
+				AuthorizationUrl: "https://accounts.google.com/o/oauth2/auth",
+				State:            "state-1",
+				CodeVerifier:     "verifier-1",
+			}, nil
+		},
+	}}), testLog(), false, "http://localhost:8080").WithInviteOnly(true)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/google?next=/invite/abcdefgh", nil)
+	rec := httptest.NewRecorder()
+	handler.GoogleStart(rec, req)
+
+	if rec.Code != http.StatusFound || !strings.Contains(rec.Header().Get("Location"), "accounts.google.com") {
+		t.Fatalf("status %d location %q", rec.Code, rec.Header().Get("Location"))
+	}
+}
+
+func TestGoogleCallbackRegistrationClosedRedirectsForbidden(t *testing.T) {
+	handler := authdelivery.NewHandler(testClients(msUserFakes{Auth: fakeAuth{
+		googleFinish: func(context.Context, *userv1.GoogleFinishRequest) (*userv1.GoogleFinishResponse, error) {
+			return nil, status.Error(codes.PermissionDenied, string(exception.MsgRegistrationClosed))
+		},
+	}}), testLog(), false, "http://localhost:8080").WithInviteOnly(true)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/google/callback?code=abc&state=state-1", nil)
+	req.AddCookie(&http.Cookie{Name: "wichat_oauth", Value: "state-1.verifier-1"})
+	rec := httptest.NewRecorder()
+	handler.GoogleCallback(rec, req)
+
+	if rec.Code != http.StatusFound || rec.Header().Get("Location") != "http://localhost:8080/forbidden" {
+		t.Fatalf("status %d location %q", rec.Code, rec.Header().Get("Location"))
+	}
+}
+
+func TestVerifyRegisterRejectsMissingTurnstileWhenEnabled(t *testing.T) {
+	handler := authdelivery.NewHandler(testClients(msUserFakes{}), testLog(), false, "http://localhost:8080", turnstileTestSecret)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/register/verify", strings.NewReader(`{"challenge_id":"ch-1","code":"ABC123"}`))
+	rec := httptest.NewRecorder()
+	handler.VerifyRegister(rec, req)
+
+	if rec.Code != http.StatusForbidden || !strings.Contains(rec.Body.String(), "captcha_failed") {
+		t.Fatalf("status %d body %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestResendRegisterRejectsMissingTurnstileWhenEnabled(t *testing.T) {
+	handler := authdelivery.NewHandler(testClients(msUserFakes{}), testLog(), false, "http://localhost:8080", turnstileTestSecret)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/register/resend", strings.NewReader(`{"challenge_id":"ch-1"}`))
+	rec := httptest.NewRecorder()
+	handler.ResendRegisterCode(rec, req)
+
+	if rec.Code != http.StatusForbidden || !strings.Contains(rec.Body.String(), "captcha_failed") {
 		t.Fatalf("status %d body %s", rec.Code, rec.Body.String())
 	}
 }
