@@ -289,13 +289,18 @@ func (s service) ListGroupMembers(
 			}
 		}
 		if s.presence != nil {
-			if presenceMap, err := s.presence.BatchGetEffectivePresence(ctx, userIDs); err == nil {
-				for i := range members {
-					if snap, ok := presenceMap[members[i].UserID]; ok {
-						members[i].IsOnline = snap.IsOnline
-						members[i].PresenceStatus = snap.PresenceStatus
-					}
+			presenceMap, err := s.presence.BatchGetEffectivePresence(ctx, userIDs)
+			if err != nil && s.log != nil {
+				s.log.Warn("list members presence enrichment skipped", "err", err)
+			}
+			for i := range members {
+				if snap, ok := presenceMap[members[i].UserID]; ok {
+					members[i].IsOnline = snap.IsOnline
+					members[i].PresenceStatus = snap.PresenceStatus
+					continue
 				}
+				members[i].IsOnline = false
+				members[i].PresenceStatus = models.PresenceStatusOffline
 			}
 		}
 	}

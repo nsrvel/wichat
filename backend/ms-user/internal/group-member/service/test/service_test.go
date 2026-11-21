@@ -2,12 +2,20 @@ package test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
 	usermock "github.com/wichat/wichat/backend/ms-user/internal/user/repository/mock"
 	testSupport "github.com/wichat/wichat/backend/ms-user/pkg/test-support"
 )
+
+type failingPresenceReader struct{}
+
+func (failingPresenceReader) BatchGetEffectivePresence(context.Context, []string) (map[string]models.UserPresenceSnapshot, error) {
+	return nil, errors.New("presence store unavailable")
+}
 
 func TestGroupMemberService(t *testing.T) {
 	ctx := context.Background()
@@ -94,4 +102,24 @@ func TestGroupMemberService(t *testing.T) {
 	if err := memberSvc.LeaveGroup(ctx, owner.AccessToken, group.ID); err == nil {
 		t.Fatalf("expected forbidden for owner leaving")
 	}
+}
+
+func TestListGroupMembersWithoutPresenceEnrichment(t *testing.T) {
+	ctx := context.Background()
+	st := usermock.NewState()
+	authSvc, notify, _, _, groupSvc, _ := testSupport.NewAuthService(t, st, nil)
+	memberSvc := testSupport.NewGroupMemberService(t, st).WithPresence(failingPresenceReader{})
+
+	owner := testSupport.RegisterSession(t, authSvc, notify, models.RegisterInput{
+		Email: "owner-presence-degrade@example.com", Password: "correct-horse-battery", DisplayName: "Owner", BirthDate: "2000-01-01",
+	})
+	group, err := groupSvc.CreateGroup(ctx, owner.AccessToken, "Degrade Members")
+	require.NoError(t, err)
+
+	page, err := memberSvc.ListGroupMembers(ctx, owner.AccessToken, group.ID, 10, nil)
+	require.NoError(t, err)
+	require.Equal(t, 1, page.Total)
+	require.Len(t, page.Members, 1)
+	require.False(t, page.Members[0].IsOnline)
+	require.Equal(t, models.PresenceStatusOffline, page.Members[0].PresenceStatus)
 }
