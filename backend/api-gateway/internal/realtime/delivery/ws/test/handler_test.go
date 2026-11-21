@@ -274,7 +274,7 @@ func TestHeartbeatDegradesWhenPresenceUnavailable(t *testing.T) {
 	t.Parallel()
 
 	stub := &stubPresenceClient{}
-	stub.heartbeatFn = func(_ *userv1.HeartbeatPresenceRequest) (*userv1.HeartbeatPresenceResponse, error) {
+	stub.heartbeatFn = func(_ *userv1.HeartbeatPresenceRequest) (*userv1.PresenceTransitionResponse, error) {
 		return nil, status.Error(codes.Unavailable, "ms-user down")
 	}
 	ms := &microservices.Clients{}
@@ -312,9 +312,9 @@ func TestRealtimeHeartbeatLoadSample(t *testing.T) {
 	}
 	stub := &stubPresenceClient{}
 	var calls atomic.Int32
-	stub.heartbeatFn = func(_ *userv1.HeartbeatPresenceRequest) (*userv1.HeartbeatPresenceResponse, error) {
+	stub.heartbeatFn = func(_ *userv1.HeartbeatPresenceRequest) (*userv1.PresenceTransitionResponse, error) {
 		calls.Add(1)
-		return &userv1.HeartbeatPresenceResponse{
+		return &userv1.PresenceTransitionResponse{
 			UserId:          "user-1",
 			PreviousStatus:  "online",
 			EffectiveStatus: "online",
@@ -371,10 +371,10 @@ func TestRealtimeMultiConnRealisticLoad(t *testing.T) {
 	}
 	stub := &stubPresenceClient{}
 	var calls atomic.Int32
-	stub.heartbeatFn = func(_ *userv1.HeartbeatPresenceRequest) (*userv1.HeartbeatPresenceResponse, error) {
+	stub.heartbeatFn = func(_ *userv1.HeartbeatPresenceRequest) (*userv1.PresenceTransitionResponse, error) {
 		calls.Add(1)
 		time.Sleep(time.Duration(1+time.Now().UnixNano()%2) * time.Millisecond)
-		return &userv1.HeartbeatPresenceResponse{
+		return &userv1.PresenceTransitionResponse{
 			UserId:          "user-1",
 			PreviousStatus:  "online",
 			EffectiveStatus: "online",
