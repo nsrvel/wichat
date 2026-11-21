@@ -127,4 +127,24 @@ export function upsertLiveMyPresence(
 		is_online: frame.is_online,
 		expires_at: prev?.expires_at ?? "",
 	}));
+	patchSelfMemberPresenceFromMyPresence(queryClient, selfUserId);
+}
+
+/** Re-apply self row in cached member lists from `Q_MY_PRESENCE` (HTTP refetch / race after WS). */
+export function patchSelfMemberPresenceFromMyPresence(
+	queryClient: QueryClient,
+	selfUserId: string,
+): void {
+	if (!selfUserId) {
+		return;
+	}
+	const my = queryClient.getQueryData<MyPresenceResponse>([Q_MY_PRESENCE]);
+	if (!my) {
+		return;
+	}
+	patchLiveMemberPresence(queryClient, {
+		user_id: selfUserId,
+		presence_status: my.effective_status,
+		is_online: my.is_online,
+	});
 }
