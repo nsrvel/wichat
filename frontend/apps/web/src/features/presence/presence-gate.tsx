@@ -6,12 +6,15 @@ import { useEffect } from "react";
 import { acquireLivePresence, setLivePresenceGroupId } from "@/features/presence/live-connection";
 import {
 	patchLiveMemberPresence,
+	patchSelfMemberPresenceFromMyPresence,
 	upsertLiveMyPresence,
 } from "@/features/presence/live-cache";
 import { normalizePublicGroupId } from "@/features/presence/public-group-id";
 import { sessionQueryOpts } from "@/services/auth/auth.query";
 import { useQuery } from "@tanstack/react-query";
 import { ensureAccessToken } from "@/integrations/api-client";
+import { Q_INVITE_MEMBERS } from "@/services/invite/invite.query";
+import { Q_MY_PRESENCE } from "@/services/user/user.key";
 
 /** One tab-wide WS + heartbeats for every authenticated route under AppProviders. */
 export function PresenceGate() {
@@ -48,6 +51,22 @@ export function PresenceGate() {
 			upsertLiveMyPresence(queryClient, frame, user.id);
 		});
 	}, [active, onInviteRoute, user?.id, queryClient]);
+
+	useEffect(() => {
+		if (!active || !user?.id) {
+			return;
+		}
+		const selfUserId = user.id;
+		return queryClient.getQueryCache().subscribe((event) => {
+			if (event.type !== "updated" || event.action.type !== "success") {
+				return;
+			}
+			const root = event.query.queryKey[0];
+			if (root === Q_INVITE_MEMBERS || root === Q_MY_PRESENCE) {
+				patchSelfMemberPresenceFromMyPresence(queryClient, selfUserId);
+			}
+		});
+	}, [active, queryClient, user?.id]);
 
 	return null;
 }

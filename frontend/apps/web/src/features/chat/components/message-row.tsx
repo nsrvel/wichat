@@ -2,7 +2,7 @@
 
 import { memo, type ReactNode } from "react";
 import type { MessageReplyPreview } from "@wichat/contracts/chat/message";
-import type { PresenceStatus } from "@wichat/contracts/user/presence";
+import type { AvatarPresenceDot } from "@/features/presence/presence-dot";
 import { Pin } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { OwnerCrownIcon } from "@/components/ui/owner-crown-icon";
@@ -18,7 +18,7 @@ type MessageRowProps = {
 	authorDisplayName: string;
 	authorNameColor?: string;
 	authorIsOwner?: boolean;
-	authorPresenceStatus?: PresenceStatus;
+	authorPresenceStatus?: AvatarPresenceDot;
 	ownerLabel?: string;
 	timeLabel?: string;
 	mine?: boolean;

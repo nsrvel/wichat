@@ -7,6 +7,7 @@ import {
 import { formatMessageTimeLabel } from "@/features/chat/lib/format-message-time";
 import { useTimeFormatPreference } from "@/lib/time-format";
 import { sessionQueryOpts } from "@/services/auth/auth.query";
+import { isQueryFailureWithoutData } from "@/lib/query-display";
 import { channelMessagesQueryOpts } from "@/services/message/message.query";
 
 export type UseChannelMessagesResult = {
@@ -61,7 +62,7 @@ export function useChannelMessages(groupId: string, channelId: string): UseChann
 	return {
 		messages,
 		isPending: query.isPending,
-		isError: query.isError,
+		isError: isQueryFailureWithoutData(query.isError, query.data),
 		hasOlderMessages: Boolean(query.hasNextPage),
 		isFetchingOlderMessages: query.isFetchingNextPage,
 		fetchOlderMessages,
