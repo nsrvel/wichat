@@ -52,6 +52,7 @@ func (s *server) Register(ctx context.Context, req *userv1.RegisterRequest) (*us
 		DisplayName: req.GetDisplayName(),
 		BirthDate:   req.GetBirthDate(),
 		Locale:      req.GetLocale(),
+		InviteToken: req.GetInviteToken(),
 		ClientMeta:  authPb.Meta(req.GetUserAgent(), req.GetClientIp()),
 	}
 

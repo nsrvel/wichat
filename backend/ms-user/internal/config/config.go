@@ -32,6 +32,7 @@ type Config struct {
 	WebAuthnRPOrigins     string `mapstructure:"webauthn_rp_origins"`
 	WebAuthnRPDisplayName string `mapstructure:"webauthn_rp_display_name"`
 	InternalGrpcToken     string `mapstructure:"internal_grpc_token"`
+	InviteOnly            bool   `mapstructure:"invite_only"`
 }
 
 // Defaults are applied when env / .env do not set a value.

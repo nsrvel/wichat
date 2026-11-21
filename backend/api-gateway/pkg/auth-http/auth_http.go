@@ -38,6 +38,7 @@ type RegisterBody struct {
 	DisplayName    string `json:"display_name"`
 	BirthDate      string `json:"birth_date"`
 	Locale         string `json:"locale"`
+	InviteToken    string `json:"invite_token"`
 	TurnstileToken string `json:"turnstile_token"`
 }
 
@@ -82,6 +83,7 @@ type ResendEmailCodeData struct {
 // SetupStatusBody is the JSON data for GET /api/v1/auth/setup-status (instance policy).
 type SetupStatusBody struct {
 	RegistrationMode  string `json:"registration_mode"`
+	InviteOnly        bool   `json:"invite_only"`
 	TurnstileSiteKey  string `json:"turnstile_site_key,omitempty"`
 	TurnstileRequired bool   `json:"turnstile_required,omitempty"`
 }
@@ -1025,6 +1027,15 @@ func GRPCMessageCode(err error) string {
 	return string(parsed.Code)
 }
 
+// OAuthSignupReturnBlocked reports whether Google OAuth must not start a new signup when invite-only is on.
+func OAuthSignupReturnBlocked(returnPath string) bool {
+	path := SafeReturnPath(returnPath)
+	if strings.HasPrefix(path, "/invite/") {
+		return false
+	}
+	return path == "/sign-up"
+}
+
 // SafeReturnPath allows only same-app absolute paths (no open redirect).
 func SafeReturnPath(raw string) string {
 	raw = strings.TrimSpace(raw)
@@ -1041,6 +1052,12 @@ func SafeReturnPath(raw string) string {
 // RedirectSignIn sends the browser to the web sign-in page with an error query param.
 func RedirectSignIn(w http.ResponseWriter, r *http.Request, webOrigin, code string) {
 	target := strings.TrimRight(strings.TrimSpace(webOrigin), "/") + "/sign-in?error=" + url.QueryEscape(code)
+	http.Redirect(w, r, target, http.StatusFound)
+}
+
+// RedirectForbidden sends the browser to the registration-closed status page.
+func RedirectForbidden(w http.ResponseWriter, r *http.Request, webOrigin string) {
+	target := strings.TrimRight(strings.TrimSpace(webOrigin), "/") + "/forbidden"
 	http.Redirect(w, r, target, http.StatusFound)
 }
 

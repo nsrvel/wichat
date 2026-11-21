@@ -59,6 +59,7 @@ function toRegisterRequest(
 	values: RegisterFormValues,
 	locale: string,
 	turnstileToken: string,
+	inviteToken?: string,
 ): RegisterRequest {
 	return {
 		email: values.email,
@@ -67,6 +68,7 @@ function toRegisterRequest(
 		display_name: values.display_name,
 		birth_date: formatBirthDate(values.birth_year, values.birth_month, values.birth_day),
 		locale,
+		invite_token: inviteToken?.trim() || undefined,
 		turnstile_token: turnstileToken || undefined,
 	};
 }
@@ -77,7 +79,13 @@ type UsernameCheckState =
 	| { status: "available"; normalized: string }
 	| { status: "taken" };
 
-export function RegisterForm({ authReturnTo = "/" }: { authReturnTo?: string }) {
+export function RegisterForm({
+	authReturnTo = "/",
+	inviteToken,
+}: {
+	authReturnTo?: string;
+	inviteToken?: string;
+}) {
 	const { t, i18n } = useTranslation();
 	const register = useRegisterMutation();
 	const verify = useVerifyRegisterMutation();
@@ -91,6 +99,7 @@ export function RegisterForm({ authReturnTo = "/" }: { authReturnTo?: string }) 
 	const [otpTurnstileToken, setOtpTurnstileToken] = useState("");
 	const [otpTurnstileResetKey, setOtpTurnstileResetKey] = useState(0);
 	const credentialBlocked = authSubmitBlocked(policy, policyReady, turnstileToken);
+	const showGoogle = !policy?.invite_only || Boolean(inviteToken?.trim());
 	const [usernameCheck, setUsernameCheck] = useState<{
 		query: string;
 		result: UsernameCheckState;
@@ -203,135 +212,141 @@ export function RegisterForm({ authReturnTo = "/" }: { authReturnTo?: string }) 
 
 	return (
 		<>
-			<GoogleButton
-				label={t("auth.google")}
-				authReturnTo={authReturnTo}
-				turnstileToken={turnstileToken}
-				disabled={credentialBlocked}
-			/>
-			<AuthOr label={t("auth.or")} />
+			{showGoogle ? (
+				<>
+					<GoogleButton
+						label={t("auth.google")}
+						authReturnTo={authReturnTo}
+						turnstileToken={turnstileToken}
+						disabled={credentialBlocked}
+					/>
+					<AuthOr label={t("auth.or")} />
+				</>
+			) : null}
 			<Form {...form}>
 				<form
 					className={authFormClass}
 					onSubmit={form.handleSubmit((values) => {
-					if (credentialBlocked) {
-						return;
-					}
-					register.mutate(toRegisterRequest(values, i18n.language, turnstileToken), {
-						onSuccess: (step) => {
-							if (step.kind === "challenge") {
-								setChallenge(step.challenge);
-								setResendCooldown(step.challenge.resend_after_seconds);
-							}
-						},
-						onError: () => {
-							if (turnstileSiteKey) {
-								setTurnstileToken("");
-								setTurnstileResetKey((k) => k + 1);
-							}
-						},
-					});
-				})}
-			>
-				<TextField
-					control={form.control}
-					name="email"
-					type="email"
-					label={t("login.email")}
-					placeholder={t("register.email_placeholder")}
-					autoComplete="email"
-					required
-					labelClassName={authFieldLabelClass}
-					inputClassName={authInputClass}
-				/>
-				<div className="space-y-1">
+						if (credentialBlocked) {
+							return;
+						}
+						register.mutate(toRegisterRequest(values, i18n.language, turnstileToken, inviteToken), {
+							onSuccess: (step) => {
+								if (step.kind === "challenge") {
+									setChallenge(step.challenge);
+									setResendCooldown(step.challenge.resend_after_seconds);
+								}
+							},
+							onError: () => {
+								if (turnstileSiteKey) {
+									setTurnstileToken("");
+									setTurnstileResetKey((k) => k + 1);
+								}
+							},
+						});
+					})}
+				>
 					<TextField
 						control={form.control}
-						name="username"
-						label={t("register.username")}
-						placeholder={t("register.username_placeholder")}
-						autoComplete="username"
+						name="email"
+						type="email"
+						label={t("login.email")}
+						placeholder={t("register.email_placeholder")}
+						autoComplete="email"
 						required
 						labelClassName={authFieldLabelClass}
 						inputClassName={authInputClass}
 					/>
-					{effectiveUsernameCheck.status === "checking" ? (
-						<p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-							<Loader2 className="size-3 shrink-0 animate-spin" aria-hidden />
-							<span>{t("register.username_checking")}</span>
+					<div className="space-y-1">
+						<TextField
+							control={form.control}
+							name="username"
+							label={t("register.username")}
+							placeholder={t("register.username_placeholder")}
+							autoComplete="username"
+							required
+							labelClassName={authFieldLabelClass}
+							inputClassName={authInputClass}
+						/>
+						{effectiveUsernameCheck.status === "checking" ? (
+							<p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+								<Loader2 className="size-3 shrink-0 animate-spin" aria-hidden />
+								<span>{t("register.username_checking")}</span>
+							</p>
+						) : null}
+						{effectiveUsernameCheck.status === "available" ? (
+							<p className="flex items-center gap-1.5 text-[11px] font-medium text-emerald-500 dark:text-emerald-400">
+								<Check className="size-3.5 shrink-0" aria-hidden />
+								<span>
+									{t("register.username_available", {
+										username: effectiveUsernameCheck.normalized,
+									})}
+								</span>
+							</p>
+						) : null}
+						{effectiveUsernameCheck.status === "taken" ? (
+							<p className="flex items-center gap-1.5 text-[11px] font-medium text-destructive">
+								<X className="size-3.5 shrink-0" aria-hidden />
+								<span>{t("register.username_taken")}</span>
+							</p>
+						) : null}
+					</div>
+					<TextField
+						control={form.control}
+						name="display_name"
+						label={t("register.display_name")}
+						placeholder={t("register.display_placeholder")}
+						autoComplete="name"
+						required
+						labelClassName={authFieldLabelClass}
+						inputClassName={authInputClass}
+					/>
+					<PasswordField
+						control={form.control}
+						name="password"
+						label={t("login.password")}
+						autoComplete="new-password"
+						required
+						showLabel={t("login.show_password")}
+						hideLabel={t("login.hide_password")}
+						labelClassName={authFieldLabelClass}
+						inputClassName={authInputClass}
+					/>
+					<BirthDateField
+						control={form.control}
+						dayName="birth_day"
+						monthName="birth_month"
+						yearName="birth_year"
+						label={t("register.birth_date")}
+						dayPlaceholder={t("register.dob_day")}
+						monthPlaceholder={t("register.dob_month")}
+						yearPlaceholder={t("register.dob_year")}
+						required
+						labelClassName={authFieldLabelClass}
+						selectClassName={authInputClass}
+					/>
+					<TurnstileWidget
+						siteKey={turnstileSiteKey}
+						resetKey={turnstileResetKey}
+						onToken={setTurnstileToken}
+					/>
+					{register.error ? (
+						<p role="alert" className="text-destructive text-[11px] font-medium">
+							{translateError(t, register.error)}
 						</p>
 					) : null}
-					{effectiveUsernameCheck.status === "available" ? (
-						<p className="flex items-center gap-1.5 text-[11px] font-medium text-emerald-500 dark:text-emerald-400">
-							<Check className="size-3.5 shrink-0" aria-hidden />
-							<span>
-								{t("register.username_available", { username: effectiveUsernameCheck.normalized })}
-							</span>
-						</p>
-					) : null}
-					{effectiveUsernameCheck.status === "taken" ? (
-						<p className="flex items-center gap-1.5 text-[11px] font-medium text-destructive">
-							<X className="size-3.5 shrink-0" aria-hidden />
-							<span>{t("register.username_taken")}</span>
-						</p>
-					) : null}
-				</div>
-				<TextField
-					control={form.control}
-					name="display_name"
-					label={t("register.display_name")}
-					placeholder={t("register.display_placeholder")}
-					autoComplete="name"
-					required
-					labelClassName={authFieldLabelClass}
-					inputClassName={authInputClass}
-				/>
-				<PasswordField
-					control={form.control}
-					name="password"
-					label={t("login.password")}
-					autoComplete="new-password"
-					required
-					showLabel={t("login.show_password")}
-					hideLabel={t("login.hide_password")}
-					labelClassName={authFieldLabelClass}
-					inputClassName={authInputClass}
-				/>
-				<BirthDateField
-					control={form.control}
-					dayName="birth_day"
-					monthName="birth_month"
-					yearName="birth_year"
-					label={t("register.birth_date")}
-					dayPlaceholder={t("register.dob_day")}
-					monthPlaceholder={t("register.dob_month")}
-					yearPlaceholder={t("register.dob_year")}
-					required
-					labelClassName={authFieldLabelClass}
-					selectClassName={authInputClass}
-				/>
-				<TurnstileWidget
-					siteKey={turnstileSiteKey}
-					resetKey={turnstileResetKey}
-					onToken={setTurnstileToken}
-				/>
-				{register.error ? (
-					<p role="alert" className="text-destructive text-[11px] font-medium">
-						{translateError(t, register.error)}
-					</p>
-				) : null}
-				<Button
-					type="submit"
-					disabled={
-						register.isPending ||
-						effectiveUsernameCheck.status === "checking" ||
-						effectiveUsernameCheck.status === "taken" ||
-						credentialBlocked
-					}
-					className={turnstileSiteKey ? authSubmitClass : `mt-2 ${authSubmitClass}`}
-				>
-					{register.isPending ? t("register.submitting") : t("register.submit")}
-				</Button>
+					<Button
+						type="submit"
+						disabled={
+							register.isPending ||
+							effectiveUsernameCheck.status === "checking" ||
+							effectiveUsernameCheck.status === "taken" ||
+							credentialBlocked
+						}
+						className={turnstileSiteKey ? authSubmitClass : `mt-2 ${authSubmitClass}`}
+					>
+						{register.isPending ? t("register.submitting") : t("register.submit")}
+					</Button>
 				</form>
 				<AuthPrivacyNotice />
 			</Form>

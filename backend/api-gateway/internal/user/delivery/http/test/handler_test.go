@@ -275,7 +275,8 @@ func TestSetupStatusReturnsInstancePolicy(t *testing.T) {
 			},
 		},
 	}}}
-	handler := userdelivery.NewHandler(clients, logger.New(logger.Options{Service: "gateway-test", Env: "test", Level: "error"}))
+	handler := userdelivery.NewHandler(clients, logger.New(logger.Options{Service: "gateway-test", Env: "test", Level: "error"})).
+		WithInviteOnly(true)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/setup-status", nil)
 	rec := httptest.NewRecorder()
@@ -288,6 +289,7 @@ func TestSetupStatusReturnsInstancePolicy(t *testing.T) {
 	var body struct {
 		Data struct {
 			RegistrationMode string `json:"registration_mode"`
+			InviteOnly       bool   `json:"invite_only"`
 			NeedsAccount     *bool  `json:"needs_account"`
 		} `json:"data"`
 	}
@@ -296,6 +298,9 @@ func TestSetupStatusReturnsInstancePolicy(t *testing.T) {
 	}
 	if body.Data.RegistrationMode != "invite_only" {
 		t.Fatalf("policy: %+v", body.Data)
+	}
+	if !body.Data.InviteOnly {
+		t.Fatalf("expected invite_only from env wiring, got %+v", body.Data)
 	}
 	if body.Data.NeedsAccount != nil {
 		t.Fatalf("deprecated field leaked: %+v", body.Data)

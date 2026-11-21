@@ -27,6 +27,7 @@ type Config struct {
 	TurnstileSiteKey           string         `mapstructure:"turnstile_site_key"`
 	TurnstileSecretKey         string         `mapstructure:"turnstile_secret_key"`
 	InternalGrpcToken          string         `mapstructure:"internal_grpc_token"`
+	InviteOnly                 bool           `mapstructure:"invite_only"`
 	Microservices              utils.Settings `mapstructure:",squash"`
 }
 

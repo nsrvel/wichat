@@ -12,6 +12,8 @@ import (
 	authrepo "github.com/wichat/wichat/backend/ms-user/internal/auth/repository"
 	"github.com/wichat/wichat/backend/ms-user/internal/auth/service"
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
+	activitymock "github.com/wichat/wichat/backend/ms-user/internal/user-activity-log/repository/mock"
+	activityservice "github.com/wichat/wichat/backend/ms-user/internal/user-activity-log/service"
 	usermock "github.com/wichat/wichat/backend/ms-user/internal/user/repository/mock"
 	userservice "github.com/wichat/wichat/backend/ms-user/internal/user/service"
 	"github.com/wichat/wichat/backend/ms-user/pkg/constants"
@@ -134,8 +136,8 @@ func TestRegisterUsernameCollision(t *testing.T) {
 	_, err := svc.Register(ctx, models.RegisterInput{
 		Email: "john@b.com", Username: "John.Doe", Password: testPassword, DisplayName: "John B", BirthDate: "2000-01-15",
 	})
-	if codeOf(t, err) != string(exception.MsgUsernameTaken) {
-		t.Fatalf("expected username taken, got %v", err)
+	if codeOf(t, err) != string(exception.MsgRegisterUnavailable) {
+		t.Fatalf("expected neutral register rejection, got %v", err)
 	}
 }
 
@@ -832,7 +834,7 @@ func TestRegisterRejectsDuplicateEmail(t *testing.T) {
 	testSupport.RegisterSession(t, svc, notify, registerInput("dup@example.com"))
 
 	_, err := svc.Register(ctx, registerInput("dup@example.com"))
-	if codeOf(t, err) != string(exception.MsgEmailTaken) {
+	if codeOf(t, err) != string(exception.MsgRegisterUnavailable) {
 		t.Fatalf("dup: %v", err)
 	}
 }
@@ -981,8 +983,47 @@ func TestVerifyRegisterRejectsEmailTakenRace(t *testing.T) {
 	}
 
 	_, err = svc.VerifyRegister(ctx, step.Challenge.ChallengeID, notify.LastCode)
-	if codeOf(t, err) != string(exception.MsgEmailTaken) {
+	if codeOf(t, err) != string(exception.MsgRegisterUnavailable) {
 		t.Fatalf("%v", err)
+	}
+
+	st.Users = nil
+	sess, err := svc.VerifyRegister(ctx, step.Challenge.ChallengeID, notify.LastCode)
+	if err != nil || sess == nil || sess.User.Email != "race@example.com" {
+		t.Fatalf("retry verify after race cleared: %+v %v", sess, err)
+	}
+}
+
+func TestRegisterRejectsSecondActiveChallengePerEmail(t *testing.T) {
+	ctx := context.Background()
+	svc, _, _, _, _, _ := testSupport.NewAuthService(t, usermock.NewState(), nil)
+
+	body := registerInput("one-chal@example.com")
+	step, err := svc.Register(ctx, body)
+	if err != nil || step.Challenge == nil {
+		t.Fatalf("first register: %v", err)
+	}
+
+	_, err = svc.Register(ctx, body)
+	if codeOf(t, err) != string(exception.MsgRegisterUnavailable) {
+		t.Fatalf("second register: %v", err)
+	}
+}
+
+func TestRegisterRejectsWhenEmailGuardWithoutPending(t *testing.T) {
+	ctx := context.Background()
+	svc, _, _, _, _, mr := testSupport.NewAuthService(t, usermock.NewState(), nil)
+	body := registerInput("stale-guard@example.com")
+
+	step, err := svc.Register(ctx, body)
+	if err != nil || step.Challenge == nil {
+		t.Fatalf("register: %v", err)
+	}
+	mr.Del("ms-user:register:pending:" + step.Challenge.ChallengeID)
+
+	_, err = svc.Register(ctx, body)
+	if codeOf(t, err) != string(exception.MsgRegisterUnavailable) {
+		t.Fatalf("stale email guard: %v", err)
 	}
 }
 
@@ -1677,5 +1718,99 @@ func TestAuthSetupAndPasswordResetFlow(t *testing.T) {
 	}
 	if err := svc.CompletePasswordReset(ctx, resetTok, "new-correct-horse-battery"); err != nil {
 		t.Fatalf("CompletePasswordReset: %v", err)
+	}
+}
+
+func TestRegisterRejectedWhenInviteOnlyWithoutToken(t *testing.T) {
+	ctx := context.Background()
+	st := usermock.NewState()
+	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, st, nil)
+	testSupport.RegisterSession(t, svc, notify, registerInput("seed-invite-only@example.com"))
+
+	svcClosed, _, _, _, _, _ := testSupport.NewAuthService(t, st, nil, true)
+	_, err := svcClosed.Register(ctx, registerInput("blocked@example.com"))
+	if err == nil {
+		t.Fatal("expected registration closed")
+	}
+	if codeOf(t, err) != string(exception.MsgRegistrationClosed) {
+		t.Fatalf("got %v", err)
+	}
+}
+
+func TestRegisterRejectedWhenInviteOnlyTokenWithoutInviteStore(t *testing.T) {
+	ctx := context.Background()
+	st := usermock.NewState()
+	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, st, nil)
+	testSupport.RegisterSession(t, svc, notify, registerInput("seed-token-store@example.com"))
+
+	svcClosed, _, _, _, _, _ := testSupport.NewAuthService(t, st, nil, true)
+	in := registerInput("token-no-store@example.com")
+	in.InviteToken = "orphan-token"
+	_, err := svcClosed.Register(ctx, in)
+	if err == nil {
+		t.Fatal("expected registration closed")
+	}
+	if codeOf(t, err) != string(exception.MsgRegistrationClosed) {
+		t.Fatalf("got %v", err)
+	}
+}
+
+func TestRegisterAllowedWhenInviteOnlyAndNoUsersYet(t *testing.T) {
+	ctx := context.Background()
+	st := usermock.NewState()
+	svc, _, _, _, _, _ := testSupport.NewAuthService(t, st, nil, true)
+	out, err := svc.Register(ctx, registerInput("first@example.com"))
+	if err != nil {
+		t.Fatalf("Register: %v", err)
+	}
+	if out == nil || out.Challenge == nil || out.Challenge.ChallengeID == "" {
+		t.Fatal("expected OTP challenge for bootstrap user")
+	}
+}
+
+func TestRegisterAllowedWhenInviteOnlyWithValidInviteToken(t *testing.T) {
+	ctx := context.Background()
+	st := usermock.NewState()
+	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, st, nil)
+	testSupport.RegisterSession(t, svc, notify, registerInput("gatekeeper@example.com"))
+
+	now := time.Now().UTC()
+	st.Invites = append(st.Invites, models.GroupInviteRow{
+		ID:              "11111111-1111-4111-8111-111111111111",
+		Token:           "valid-invite-token-32-chars-xx",
+		GroupID:         "22222222-2222-4222-8222-222222222222",
+		InvitedByUserID: "33333333-3333-4333-8333-333333333333",
+		Kind:            "direct",
+		ExpiresAt:       now.Add(24 * time.Hour),
+		CreatedAt:       now,
+	})
+
+	svcClosed, _, _, _, _, _ := testSupport.NewAuthService(t, st, nil, true)
+	in := registerInput("invited@example.com")
+	in.InviteToken = "valid-invite-token-32-chars-xx"
+	out, err := svcClosed.Register(ctx, in)
+	if err != nil {
+		t.Fatalf("Register: %v", err)
+	}
+	if out == nil || out.Challenge == nil || out.Challenge.ChallengeID == "" {
+		t.Fatal("expected OTP challenge when invite token is valid")
+	}
+}
+
+func TestAuthWithActivityLogRecordsRegister(t *testing.T) {
+	st := usermock.NewState()
+	svc, notify, _, _, _, _ := testSupport.NewAuthService(t, st, nil)
+	_, _, sessions := testSupport.TestRepos(st)
+	actState := activitymock.NewState()
+	actSvc := activityservice.NewService(
+		activitymock.NewPgRepositoryMock(actState),
+		sessions,
+		[]byte(testSupport.TestJWTSecret),
+		logger.New(logger.Options{Service: "auth-test", Env: "test", Level: "error"}),
+	)
+	svc = svc.WithActivityLog(actSvc)
+	testSupport.RegisterSession(t, svc, notify, registerInput("activity-log@example.com"))
+	if len(actState.Logs) == 0 {
+		t.Fatal("expected activity log entry after register verify")
 	}
 }

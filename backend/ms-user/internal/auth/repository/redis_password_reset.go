@@ -73,7 +73,7 @@ func (s redisPasswordResetStore) ClearResendPenalty(ctx context.Context, email s
 func (s redisPasswordResetStore) SaveOTP(ctx context.Context, email, userID, code string, secret []byte, ttl time.Duration) error {
 	rec := models.PasswordResetOTP{
 		UserID:   userID,
-		CodeHMAC: authRedis.HMACCode(secret, code),
+		CodeHMAC: authRedis.OTPCodeHMAC(secret, code),
 		Attempts: 0,
 	}
 	payload, err := json.Marshal(rec)

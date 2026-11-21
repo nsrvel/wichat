@@ -53,6 +53,7 @@ type Handler interface {
 	SetRelationship(w http.ResponseWriter, r *http.Request)
 	WithPresenceBroadcaster(b PresenceBroadcaster) Handler
 	WithTurnstileRequired(required bool) Handler
+	WithInviteOnly(inviteOnly bool) Handler
 }
 
 // PresenceBroadcaster pushes presence.updated events to subscribed groups.
@@ -65,6 +66,7 @@ type handler struct {
 	log               logger.Logger
 	turnstileSiteKey  string
 	turnstileRequired bool
+	inviteOnly        bool
 	broadcaster       PresenceBroadcaster
 }
 
@@ -79,6 +81,11 @@ func NewHandler(ms *microservices.Clients, log logger.Logger, turnstileSiteKey .
 
 func (h handler) WithTurnstileRequired(required bool) Handler {
 	h.turnstileRequired = required
+	return h
+}
+
+func (h handler) WithInviteOnly(inviteOnly bool) Handler {
+	h.inviteOnly = inviteOnly
 	return h
 }
 
@@ -98,6 +105,7 @@ func (h handler) SetupStatus(w http.ResponseWriter, r *http.Request) {
 	// Response
 	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(authHttp.SetupStatusBody{
 		RegistrationMode:  out.GetRegistrationMode(),
+		InviteOnly:        h.inviteOnly,
 		TurnstileSiteKey:  h.turnstileSiteKey,
 		TurnstileRequired: h.turnstileRequired,
 	}))

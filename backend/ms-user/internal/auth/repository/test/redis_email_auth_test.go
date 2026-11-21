@@ -35,6 +35,45 @@ func TestEmailAuthRegisterPendingRoundTrip(t *testing.T) {
 	if err != nil || rec.Email != pending.Email {
 		t.Fatalf("verify: %+v %v", rec, err)
 	}
+	if _, err := store.GetRegisterPending(ctx, "ch-1"); err != nil {
+		t.Fatalf("pending should remain after OTP verify: %v", err)
+	}
+}
+
+func TestEmailAuthEnsureNoActiveRegisterChallenge(t *testing.T) {
+	store := newEmailAuthStore(t)
+	ctx := context.Background()
+	if err := store.EnsureNoActiveRegisterChallenge(ctx, " "); !errors.Is(err, constants.ErrNotFound) {
+		t.Fatalf("empty email: %v", err)
+	}
+
+	email := "guard@example.com"
+
+	if err := store.EnsureNoActiveRegisterChallenge(ctx, email); err != nil {
+		t.Fatal(err)
+	}
+	pending := models.RegisterPending{Email: email, CodeHMAC: authRedis.OTPCodeHMAC(testOTPSecret, "111111")}
+	if err := store.PutRegisterPending(ctx, "ch-guard", pending, time.Minute); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.EnsureNoActiveRegisterChallenge(ctx, email); !errors.Is(err, constants.ErrRegisterChallengeActive) {
+		t.Fatalf("expected active challenge, got %v", err)
+	}
+}
+
+func TestEmailAuthRejectsSecondRegisterChallengePerEmail(t *testing.T) {
+	store := newEmailAuthStore(t)
+	ctx := context.Background()
+	email := "one-active@example.com"
+	pending := models.RegisterPending{Email: email, CodeHMAC: authRedis.OTPCodeHMAC(testOTPSecret, "111111")}
+
+	if err := store.PutRegisterPending(ctx, "ch-a", pending, 10*time.Minute); err != nil {
+		t.Fatal(err)
+	}
+	err := store.PutRegisterPending(ctx, "ch-b", pending, 10*time.Minute)
+	if !errors.Is(err, constants.ErrRegisterChallengeActive) {
+		t.Fatalf("expected active challenge conflict, got %v", err)
+	}
 }
 
 func TestEmailAuthRegisterWrongCodeThenExhaust(t *testing.T) {
@@ -142,9 +181,13 @@ func TestEmailAuthUpdateRegisterCode(t *testing.T) {
 func TestEmailAuthDeleteRegisterPending(t *testing.T) {
 	store := newEmailAuthStore(t)
 	ctx := context.Background()
+	email := "x@y.com"
 
-	if err := store.PutRegisterPending(ctx, "ch-del", models.RegisterPending{Email: "x@y.com"}, time.Minute); err != nil {
+	if err := store.PutRegisterPending(ctx, "ch-del", models.RegisterPending{Email: email}, time.Minute); err != nil {
 		t.Fatal(err)
+	}
+	if err := store.EnsureNoActiveRegisterChallenge(ctx, email); !errors.Is(err, constants.ErrRegisterChallengeActive) {
+		t.Fatalf("active before delete: %v", err)
 	}
 	if err := store.DeleteRegisterPending(ctx, "ch-del"); err != nil {
 		t.Fatal(err)
@@ -153,6 +196,9 @@ func TestEmailAuthDeleteRegisterPending(t *testing.T) {
 	_, err := store.GetRegisterPending(ctx, "ch-del")
 	if !errors.Is(err, constants.ErrNotFound) {
 		t.Fatalf("get after delete: %v", err)
+	}
+	if err := store.EnsureNoActiveRegisterChallenge(ctx, email); err != nil {
+		t.Fatalf("email guard should clear: %v", err)
 	}
 }
 

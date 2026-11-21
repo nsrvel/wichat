@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -19,6 +20,7 @@ type EmailAuthStore interface {
 	ClearFailedLogin(ctx context.Context, login string) error
 
 	EnsureCanSendEmailCode(ctx context.Context, email string) error
+	EnsureNoActiveRegisterChallenge(ctx context.Context, email string) error
 	RecordEmailCodeSent(ctx context.Context, email string) (time.Duration, error)
 	RecordWrongEmailCode(ctx context.Context, email string) error
 	ClearEmailCodePenalty(ctx context.Context, email string) error
@@ -95,6 +97,22 @@ func (s redisEmailAuthStore) ClearFailedLogin(ctx context.Context, login string)
 	return s.rdb.Del(ctx, failedLoginKey(login)).Err()
 }
 
+func (s redisEmailAuthStore) EnsureNoActiveRegisterChallenge(ctx context.Context, email string) error {
+	email = strings.TrimSpace(email)
+	if email == "" {
+		return constants.ErrNotFound
+	}
+	n, err := s.rdb.Exists(ctx, registerEmailActiveKey(email)).Result()
+	if err != nil {
+		return err
+	}
+	if n > 0 {
+		return constants.ErrRegisterChallengeActive
+	}
+
+	return nil
+}
+
 func (s redisEmailAuthStore) EnsureCanSendEmailCode(ctx context.Context, email string) error {
 	ttl, err := s.rdb.TTL(ctx, emailCodeCooldownKey(email)).Result()
 	if err != nil {
@@ -149,12 +167,30 @@ func (s redisEmailAuthStore) ClearEmailCodePenalty(ctx context.Context, email st
 }
 
 func (s redisEmailAuthStore) PutRegisterPending(ctx context.Context, challengeID string, rec models.RegisterPending, ttl time.Duration) error {
-	payload, err := json.Marshal(rec)
+	email := strings.TrimSpace(rec.Email)
+	if email == "" {
+		return constants.ErrNotFound
+	}
+	emailKey := registerEmailActiveKey(email)
+	ok, err := s.rdb.SetNX(ctx, emailKey, challengeID, ttl).Result()
 	if err != nil {
 		return err
 	}
+	if !ok {
+		return constants.ErrRegisterChallengeActive
+	}
 
-	return s.rdb.Set(ctx, registerPendingKey(challengeID), payload, ttl).Err()
+	payload, err := json.Marshal(rec)
+	if err != nil {
+		_ = s.rdb.Del(ctx, emailKey).Err()
+		return err
+	}
+	if err := s.rdb.Set(ctx, registerPendingKey(challengeID), payload, ttl).Err(); err != nil {
+		_ = s.rdb.Del(ctx, emailKey).Err()
+		return err
+	}
+
+	return nil
 }
 
 func (s redisEmailAuthStore) GetRegisterPending(ctx context.Context, challengeID string) (models.RegisterPending, error) {
@@ -176,7 +212,7 @@ func (s redisEmailAuthStore) GetRegisterPending(ctx context.Context, challengeID
 func (s redisEmailAuthStore) VerifyRegisterCode(ctx context.Context, challengeID, code string, secret []byte, maxAttempts int) (models.RegisterPending, error) {
 	key := registerPendingKey(challengeID)
 	submitted := authRedis.HMACCode(secret, authRedis.NormalizeOTP(code))
-	raw, err := authRedis.VerifyChallengeJSON(ctx, s.rdb, key, submitted, maxAttempts)
+	raw, err := authRedis.VerifyRegisterChallengeJSON(ctx, s.rdb, key, submitted, maxAttempts)
 	if err != nil {
 		if errors.Is(err, constants.ErrNotFound) {
 			return models.RegisterPending{}, constants.ErrNotFound
@@ -192,7 +228,26 @@ func (s redisEmailAuthStore) VerifyRegisterCode(ctx context.Context, challengeID
 }
 
 func (s redisEmailAuthStore) DeleteRegisterPending(ctx context.Context, challengeID string) error {
-	return s.rdb.Del(ctx, registerPendingKey(challengeID)).Err()
+	pendingKey := registerPendingKey(challengeID)
+	rec, err := s.GetRegisterPending(ctx, challengeID)
+	if errors.Is(err, constants.ErrNotFound) {
+		return s.rdb.Del(ctx, pendingKey).Err()
+	}
+	if err != nil {
+		return err
+	}
+	emailKey := registerEmailActiveKey(rec.Email)
+	bound, err := s.rdb.Get(ctx, emailKey).Result()
+	if err != nil && !errors.Is(err, redis.Nil) {
+		return err
+	}
+	pipe := s.rdb.Pipeline()
+	pipe.Del(ctx, pendingKey)
+	if bound == challengeID {
+		pipe.Del(ctx, emailKey)
+	}
+	_, err = pipe.Exec(ctx)
+	return err
 }
 
 func (s redisEmailAuthStore) UpdateRegisterCode(ctx context.Context, challengeID, codeHMAC string, ttl time.Duration) error {
@@ -202,6 +257,7 @@ func (s redisEmailAuthStore) UpdateRegisterCode(ctx context.Context, challengeID
 	}
 	rec.CodeHMAC = codeHMAC
 	rec.Attempts = 0
+	rec.OtpVerified = false
 	payload, err := json.Marshal(rec)
 	if err != nil {
 		return err
@@ -282,6 +338,10 @@ func emailCodeStrikesKey(email string) string {
 
 func registerPendingKey(challengeID string) string {
 	return authRedis.KeyPrefix + "register:pending:" + challengeID
+}
+
+func registerEmailActiveKey(email string) string {
+	return authRedis.KeyPrefix + "register:email:" + authRedis.EmailKey(email)
 }
 
 func loginChallengeKey(challengeID string) string {

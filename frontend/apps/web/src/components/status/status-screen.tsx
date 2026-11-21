@@ -16,6 +16,7 @@ type StatusScreenProps = {
 	homeHref?: string;
 	signInHref?: string;
 	className?: string;
+	hideActions?: boolean;
 };
 
 const VARIANT_KEY: Record<
@@ -34,6 +35,7 @@ export function StatusScreen({
 	onRetry,
 	homeHref = "/",
 	signInHref = "/sign-in",
+	hideActions = false,
 	className,
 }: StatusScreenProps) {
 	const { t } = useTranslation();
@@ -67,42 +69,44 @@ export function StatusScreen({
 							{t(`status_pages.${key}.description`)}
 						</p>
 
-						<div
-							key={variant}
-							className="mt-6 flex flex-wrap items-center justify-center gap-2.5 md:justify-start"
-						>
-							{variant === "error" && onRetry ? (
-								<Button
-									type="button"
-									onClick={onRetry}
-									className="h-10 rounded-xl px-5 font-medium transition-colors"
-								>
-									{t("status_pages.actions.try_again")}
-								</Button>
-							) : null}
+						{hideActions ? null : (
+							<div
+								key={variant}
+								className="mt-6 flex flex-wrap items-center justify-center gap-2.5 md:justify-start"
+							>
+								{variant === "error" && onRetry ? (
+									<Button
+										type="button"
+										onClick={onRetry}
+										className="h-10 rounded-xl px-5 font-medium transition-colors"
+									>
+										{t("status_pages.actions.try_again")}
+									</Button>
+								) : null}
 
-							{variant === "unauthorized" ? (
+								{variant === "unauthorized" ? (
+									<Link
+										href={signInHref}
+										className={cn(
+											buttonVariants({ variant: "default" }),
+											"h-10 rounded-xl px-5 font-medium transition-colors",
+										)}
+									>
+										{t("status_pages.actions.sign_in")}
+									</Link>
+								) : null}
+
 								<Link
-									href={signInHref}
+									href={homeHref}
 									className={cn(
-										buttonVariants({ variant: "default" }),
+										buttonVariants({ variant: hasPrimaryOverride ? "outline" : "default" }),
 										"h-10 rounded-xl px-5 font-medium transition-colors",
 									)}
 								>
-									{t("status_pages.actions.sign_in")}
+									{t("status_pages.actions.back_home")}
 								</Link>
-							) : null}
-
-							<Link
-								href={homeHref}
-								className={cn(
-									buttonVariants({ variant: hasPrimaryOverride ? "outline" : "default" }),
-									"h-10 rounded-xl px-5 font-medium transition-colors",
-								)}
-							>
-								{t("status_pages.actions.back_home")}
-							</Link>
-						</div>
+							</div>
+						)}
 					</div>
 				</div>
 			</section>

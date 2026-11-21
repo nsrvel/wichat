@@ -30,7 +30,6 @@ type State struct {
 	Users                       []models.User
 	Sessions                    []models.Session
 	Links                       []googleLink
-	Settings                    models.InstanceSettings
 	Groups                      []models.Group
 	Members                     []models.GroupMember
 	Invites                     []models.GroupInviteRow
@@ -57,20 +56,6 @@ func (s *State) Lock() { s.mu.Lock() }
 
 // Unlock releases the mock state lock.
 func (s *State) Unlock() { s.mu.Unlock() }
-
-// SetInstanceSettings preloads instance policy (e.g. guest enabled).
-func (s *State) SetInstanceSettings(settings models.InstanceSettings) {
-	s.mu.Lock()
-	s.Settings = settings
-	s.mu.Unlock()
-}
-
-func defaultInstanceSettings() models.InstanceSettings {
-	return models.InstanceSettings{
-		RegistrationMode: constants.RegistrationInviteOnly,
-		SetupCompleted:   false,
-	}
-}
 
 func (s *State) InsertSessionRecord(session models.Session) error {
 	s.mu.Lock()
@@ -235,29 +220,14 @@ func (m *pgRepositoryMock) CountUsers(context.Context) (int, error) {
 	return len(m.st.Users), nil
 }
 
-func (m *pgRepositoryMock) GetInstanceSettings(context.Context) (models.InstanceSettings, error) {
-	m.st.mu.Lock()
-	defer m.st.mu.Unlock()
-
-	if m.st.Settings == (models.InstanceSettings{}) {
-		return defaultInstanceSettings(), nil
-	}
-
-	return m.st.Settings, nil
-}
-
 func (m *pgRepositoryMock) CompleteInstanceSetup(_ context.Context, ownerUserID string, payload models.InstanceSetupPayload, now time.Time) error {
 	m.st.mu.Lock()
 	defer m.st.mu.Unlock()
 
-	if m.st.Settings.SetupCompleted || len(m.st.Groups) > 0 {
-		return constants.ErrNotFound
+	if len(m.st.Groups) > 0 {
+		return constants.ErrConflict
 	}
 
-	m.st.Settings = models.InstanceSettings{
-		RegistrationMode: payload.RegistrationMode,
-		SetupCompleted:   true,
-	}
 	m.st.Groups = append(m.st.Groups, models.Group{
 		ID:        payload.GroupID,
 		PublicID:  payload.GroupPublicID,

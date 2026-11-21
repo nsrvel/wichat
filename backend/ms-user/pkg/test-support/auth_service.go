@@ -18,6 +18,7 @@ import (
 	grouprepo "github.com/wichat/wichat/backend/ms-user/internal/group/repository"
 	groupmock "github.com/wichat/wichat/backend/ms-user/internal/group/repository/mock"
 	groupservice "github.com/wichat/wichat/backend/ms-user/internal/group/service"
+	invitemock "github.com/wichat/wichat/backend/ms-user/internal/invite/repository/mock"
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
 	userrepo "github.com/wichat/wichat/backend/ms-user/internal/user/repository"
 	usermock "github.com/wichat/wichat/backend/ms-user/internal/user/repository/mock"
@@ -66,7 +67,7 @@ func RedisClient(t *testing.T) *redis.Client {
 // NewAuthService wires auth + user services with miniredis OTP stores.
 // NewAuthService wires auth, user, and group services with a shared miniredis OTP backend.
 // The returned Miniredis handle supports FastForward in rate-limit tests.
-func NewAuthService(t *testing.T, st *usermock.State, now func() time.Time) (service.Service, *FakeNotifier, userrepo.PgRepository, userservice.Service, groupservice.Service, *miniredis.Miniredis) {
+func NewAuthService(t *testing.T, st *usermock.State, now func() time.Time, inviteOnly ...bool) (service.Service, *FakeNotifier, userrepo.PgRepository, userservice.Service, groupservice.Service, *miniredis.Miniredis) {
 	t.Helper()
 
 	users, groups, sessions := TestRepos(st)
@@ -90,6 +91,9 @@ func NewAuthService(t *testing.T, st *usermock.State, now func() time.Time) (ser
 	}
 	refresh := authrepo.NewRedisRefreshStore(rdb)
 	userSvc := userservice.NewServiceWithMFA(users, groups, members, nil, sessions, refresh, emailAuth, userrepo.NewRedisEmailChangeStore(rdb), userrepo.NewMFAEnrollmentStore(rdb), wa, mfaKey, notify, []byte(TestJWTSecret), log)
+	if len(inviteOnly) > 0 && inviteOnly[0] {
+		userSvc = userSvc.WithInviteOnly(true)
+	}
 	channelSvc := channelservice.NewService(channelmock.NewPgRepositoryMock(st), categorymock.NewPgRepositoryMock(st), groups, members, roles, sessions, []byte(TestJWTSecret), log)
 	groupSvc := groupservice.NewService(groups, members, roles, channelSvc, users, disabledGroupMinio(log), sessions, []byte(TestJWTSecret), log)
 	opts := &service.Options{
@@ -97,6 +101,10 @@ func NewAuthService(t *testing.T, st *usermock.State, now func() time.Time) (ser
 		MFA:      authrepo.NewMFAStore(rdb),
 		WebAuthn: wa,
 		MFAKey:   mfaKey,
+		Invites:  invitemock.NewPgRepositoryMock(st),
+	}
+	if len(inviteOnly) > 0 && inviteOnly[0] {
+		opts.InviteOnly = true
 	}
 	svc, err := service.NewService(users, sessions, refresh, []byte(TestJWTSecret), log, googleoauth.Config{}, authrepo.NewRedisPasswordResetStore(rdb), emailAuth, notify, userSvc, opts)
 	if err != nil {

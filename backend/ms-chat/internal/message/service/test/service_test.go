@@ -10,6 +10,7 @@ import (
 	"github.com/wichat/wichat/backend/ms-chat/internal/models"
 	outboxmock "github.com/wichat/wichat/backend/ms-chat/internal/outbox/repository/mock"
 	"github.com/wichat/wichat/backend/ms-chat/pkg/constants"
+	chatEvents "github.com/wichat/wichat/backend/wi-shared/chat-events"
 	"github.com/wichat/wichat/backend/wi-shared/exception"
 	"github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-user/grpc/channel"
 	userv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/user/v1"
@@ -486,5 +487,82 @@ func TestListChannelMessagesPaginationAndHasMore(t *testing.T) {
 	}
 	if hasMore2 || len(page2) != 1 || page2[0].Body != "m1" {
 		t.Fatalf("unexpected page2: %+v hasMore=%v", page2, hasMore2)
+	}
+}
+
+func TestUpdateDeleteChannelMessageOutboxWithRepository(t *testing.T) {
+	ctx := context.Background()
+	st := mock.NewState()
+	st.Authors["u1"] = "Alice"
+	svc := newTestService(st)
+
+	root, err := svc.CreateChannelMessage(ctx, &models.CreateChannelMessageInput{
+		ResolvedChannelID: "ch-outbox",
+		CallerUserID:      "u1",
+		CallerPermissions: []string{"view_channels", "send_messages"},
+		GroupPublicID:     "grp-1",
+		ChannelPublicID:   "ch-pub",
+		Body:              "original",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := svc.UpdateChannelMessage(ctx, &models.UpdateChannelMessageInput{
+		ResolvedChannelID: "ch-outbox",
+		CallerUserID:      "u1",
+		GroupPublicID:     "grp-1",
+		ChannelPublicID:   "ch-pub",
+		MessagePublicID:   root.ID,
+		Body:              "edited",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if len(st.Outbox) != 1 || st.Outbox[0].EventType != chatEvents.TypeMessageUpdated {
+		t.Fatalf("expected one message.updated outbox row, got %+v", st.Outbox)
+	}
+
+	st.FailOutbox = true
+	if _, err := svc.UpdateChannelMessage(ctx, &models.UpdateChannelMessageInput{
+		ResolvedChannelID: "ch-outbox",
+		CallerUserID:      "u1",
+		GroupPublicID:     "grp-1",
+		ChannelPublicID:   "ch-pub",
+		MessagePublicID:   root.ID,
+		Body:              "should not stick",
+	}); err == nil {
+		t.Fatal("expected error when outbox fails")
+	}
+	got, _, err := svc.ListChannelMessages(ctx, &models.ListChannelMessagesInput{
+		ResolvedChannelID: "ch-outbox",
+		CallerUserID:      "u1",
+		CallerPermissions: []string{"view_channels", "read_message_history"},
+		Limit:             10,
+	})
+	if err != nil || len(got) != 1 || got[0].Body != "edited" {
+		t.Fatalf("expected body unchanged after failed outbox, got %+v err=%v", got, err)
+	}
+
+	st.FailOutbox = false
+	if err := svc.DeleteChannelMessage(ctx, &models.DeleteChannelMessageInput{
+		ResolvedChannelID: "ch-outbox",
+		CallerUserID:      "u1",
+		GroupPublicID:     "grp-1",
+		ChannelPublicID:   "ch-pub",
+		MessagePublicID:   root.ID,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if len(st.Outbox) != 2 || st.Outbox[1].EventType != chatEvents.TypeMessageDeleted {
+		t.Fatalf("expected message.deleted outbox row, got %+v", st.Outbox)
+	}
+	got, _, err = svc.ListChannelMessages(ctx, &models.ListChannelMessagesInput{
+		ResolvedChannelID: "ch-outbox",
+		CallerUserID:      "u1",
+		CallerPermissions: []string{"view_channels", "read_message_history"},
+		Limit:             10,
+	})
+	if err != nil || len(got) != 0 {
+		t.Fatalf("expected message deleted, got %+v err=%v", got, err)
 	}
 }

@@ -50,6 +50,7 @@ export type RegistrationMode = z.infer<typeof RegistrationModeSchema>;
 
 export const InstancePolicySchema = z.object({
 	registration_mode: RegistrationModeSchema,
+	invite_only: z.boolean().optional().default(false),
 	turnstile_site_key: z.string().optional().default(""),
 	turnstile_required: z.boolean().optional().default(false),
 });
@@ -84,6 +85,7 @@ export const RegisterRequestSchema = z.object({
 	display_name: displayNameSchema,
 	birth_date: birthDateSchema,
 	locale: z.string().trim().optional(),
+	invite_token: z.string().trim().optional(),
 	turnstile_token: z.string().optional(),
 });
 export type RegisterRequest = z.infer<typeof RegisterRequestSchema>;

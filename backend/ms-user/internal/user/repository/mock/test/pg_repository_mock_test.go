@@ -53,12 +53,6 @@ func TestUserMockCRUD(t *testing.T) {
 		t.Fatalf("link %+v %v", again, err)
 	}
 
-	st.SetInstanceSettings(models.InstanceSettings{RegistrationMode: constants.RegistrationOpen})
-	got, err := repo.GetInstanceSettings(ctx)
-	if err != nil || got.RegistrationMode != constants.RegistrationOpen {
-		t.Fatalf("%+v %v", got, err)
-	}
-
 	hits, err := repo.SearchUsers(ctx, "ada", 10, "")
 	if err != nil || len(hits) == 0 {
 		t.Fatalf("search %+v %v", hits, err)
@@ -98,7 +92,7 @@ func TestCompleteInstanceSetupOnce(t *testing.T) {
 	}
 }
 
-func TestUserMockCountFindEmailDefaultSettings(t *testing.T) {
+func TestUserMockCountFindEmail(t *testing.T) {
 	st := usermock.NewState()
 	repo := usermock.NewPgRepositoryMock(st)
 	ctx := context.Background()
@@ -122,11 +116,6 @@ func TestUserMockCountFindEmailDefaultSettings(t *testing.T) {
 	}
 	if _, err := repo.FindUserByEmail(ctx, "missing@example.com"); err == nil {
 		t.Fatal("not found")
-	}
-
-	def, err := repo.GetInstanceSettings(ctx)
-	if err != nil || def.SetupCompleted {
-		t.Fatalf("defaults %+v %v", def, err)
 	}
 }
 

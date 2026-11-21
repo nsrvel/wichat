@@ -317,6 +317,7 @@ type RegisterRequest struct {
 	ClientIp      string                 `protobuf:"bytes,7,opt,name=client_ip,json=clientIp,proto3" json:"client_ip,omitempty"`
 	Locale        string                 `protobuf:"bytes,8,opt,name=locale,proto3" json:"locale,omitempty"`
 	Username      string                 `protobuf:"bytes,9,opt,name=username,proto3" json:"username,omitempty"`
+	InviteToken   string                 `protobuf:"bytes,10,opt,name=invite_token,json=inviteToken,proto3" json:"invite_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -403,6 +404,13 @@ func (x *RegisterRequest) GetLocale() string {
 func (x *RegisterRequest) GetUsername() string {
 	if x != nil {
 		return x.Username
+	}
+	return ""
+}
+
+func (x *RegisterRequest) GetInviteToken() string {
+	if x != nil {
+		return x.InviteToken
 	}
 	return ""
 }
@@ -1981,7 +1989,7 @@ const file_user_v1_auth_proto_rawDesc = "" +
 	"\fmfa_required\x18\x05 \x01(\bR\vmfaRequired\x12\x1f\n" +
 	"\vmfa_methods\x18\x06 \x03(\tR\n" +
 	"mfaMethods\x122\n" +
-	"\x15webauthn_options_json\x18\a \x01(\tR\x13webauthnOptionsJson\"\xfb\x01\n" +
+	"\x15webauthn_options_json\x18\a \x01(\tR\x13webauthnOptionsJson\"\x9e\x02\n" +
 	"\x0fRegisterRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1a\n" +
 	"\bpassword\x18\x02 \x01(\tR\bpassword\x12!\n" +
@@ -1992,7 +2000,9 @@ const file_user_v1_auth_proto_rawDesc = "" +
 	"user_agent\x18\x06 \x01(\tR\tuserAgent\x12\x1b\n" +
 	"\tclient_ip\x18\a \x01(\tR\bclientIp\x12\x16\n" +
 	"\x06locale\x18\b \x01(\tR\x06locale\x12\x1a\n" +
-	"\busername\x18\t \x01(\tR\busernameJ\x04\b\x04\x10\x05\"t\n" +
+	"\busername\x18\t \x01(\tR\busername\x12!\n" +
+	"\finvite_token\x18\n" +
+	" \x01(\tR\vinviteTokenJ\x04\b\x04\x10\x05\"t\n" +
 	"\x10RegisterResponse\x12*\n" +
 	"\asession\x18\x01 \x01(\v2\x10.user.v1.SessionR\asession\x124\n" +
 	"\tchallenge\x18\x02 \x01(\v2\x16.user.v1.AuthChallengeR\tchallenge\"\x94\x01\n" +

@@ -50,6 +50,10 @@ func (s userRouteStub) WithTurnstileRequired(bool) userhttp.Handler {
 	return s
 }
 
+func (s userRouteStub) WithInviteOnly(bool) userhttp.Handler {
+	return s
+}
+
 func TestRegisterMountsSetupStatus(t *testing.T) {
 	mux := http.NewServeMux()
 	userhttp.Register(mux, userRouteStub{})

@@ -110,6 +110,18 @@ func TestSafeReturnPath(t *testing.T) {
 	}
 }
 
+func TestOAuthSignupReturnBlocked(t *testing.T) {
+	if !authHttp.OAuthSignupReturnBlocked("/sign-up") {
+		t.Fatal("sign-up should block")
+	}
+	if authHttp.OAuthSignupReturnBlocked("/invite/abc") {
+		t.Fatal("invite path should allow")
+	}
+	if authHttp.OAuthSignupReturnBlocked("/") {
+		t.Fatal("home should allow login return")
+	}
+}
+
 func TestWriteOutboundWithLogger(t *testing.T) {
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
