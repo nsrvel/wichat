@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { authFormClass, authSubmitClass } from "@/lib/form-field-styles";
 import { translateError } from "@/integrations/i18n/translate-error";
+import { TurnstileWidget } from "@/features/auth/components/turnstile-widget";
 import { ForgotPasswordResendCode } from "./forgot-password-resend-code";
 
 const OTP_LENGTH = 6;
@@ -23,6 +24,10 @@ type ForgotPasswordOtpFormProps = {
 	isPending?: boolean;
 	error?: unknown;
 	resendCooldownSec?: number;
+	submitDisabled?: boolean;
+	turnstileSiteKey?: string;
+	turnstileResetKey?: number;
+	onTurnstileToken?: (token: string) => void;
 	onResend?: () => void;
 	onSubmit: (values: ForgotPasswordOtpValues) => void;
 };
@@ -31,6 +36,10 @@ export function ForgotPasswordOtpForm({
 	isPending = false,
 	error,
 	resendCooldownSec,
+	submitDisabled = false,
+	turnstileSiteKey = "",
+	turnstileResetKey = 0,
+	onTurnstileToken,
 	onResend,
 	onSubmit,
 }: ForgotPasswordOtpFormProps) {
@@ -54,7 +63,15 @@ export function ForgotPasswordOtpForm({
 				{error ? (
 					<p className="text-destructive text-[11px] font-medium">{translateError(t, error)}</p>
 				) : null}
-				<Button type="submit" disabled={isPending} className={`mt-2 ${authSubmitClass}`}>
+				{turnstileSiteKey ? (
+					<TurnstileWidget
+						siteKey={turnstileSiteKey}
+						resetKey={turnstileResetKey}
+						onVerify={(token) => onTurnstileToken?.(token)}
+						onExpire={() => onTurnstileToken?.("")}
+					/>
+				) : null}
+				<Button type="submit" disabled={isPending || submitDisabled} className={`mt-2 ${authSubmitClass}`}>
 					{isPending ? t("forgot_password.confirming_code") : t("forgot_password.confirm_code")}
 				</Button>
 				<ForgotPasswordResendCode cooldownSec={resendCooldownSec} onResend={onResend} />

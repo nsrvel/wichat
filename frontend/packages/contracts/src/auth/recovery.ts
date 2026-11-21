@@ -3,6 +3,7 @@ import { z } from "zod";
 export const ForgotPasswordRequestSchema = z.object({
 	email: z.email(),
 	locale: z.string().trim().optional(),
+	turnstile_token: z.string().optional(),
 });
 
 export const ForgotPasswordRequestResponseSchema = z.object({
@@ -13,6 +14,7 @@ export const ForgotPasswordRequestResponseSchema = z.object({
 export const ForgotPasswordVerifySchema = z.object({
 	email: z.email(),
 	code: z.string().trim().min(1).max(16),
+	turnstile_token: z.string().optional(),
 });
 
 export const ForgotPasswordVerifyResponseSchema = z.object({

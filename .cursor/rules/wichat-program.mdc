@@ -10,7 +10,8 @@ WiChat is a **major product** — build and spec it seriously, not as a throwawa
 ## Workflow
 
 - Default branch: **`main`** — production line (GitHub default; what we ship).
-- **`release`** — staging; day-to-day commits and PRs land here first. Promote **`release` → `main`** when staging is validated for production.
+- **`release`** — staging; day-to-day commits and PRs land here first.
+- **Production promotion:** after staging is validated, land changes on **`main`** by **cherry-picking** the reviewed commit(s) from **`release`** — **do not merge `release` into `main`** (no merge commits, no branch fast-forward of `release` onto `main`). Push `release` first, then `git checkout main && git cherry-pick <sha> && git push origin main`.
 - **Spec wins:** `docs/architecture/wichat-system-design.md` unless Garam explicitly overrides in chat.
 
 ## Focus

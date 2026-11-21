@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { execSync } from "node:child_process";
 import { expect, type APIRequestContext } from "@playwright/test";
 import { E2E_API_BASE } from "./api-helpers";
@@ -238,4 +239,86 @@ export async function expectVerifyRegisterRejected(
 		data: { challenge_id: challengeId, code },
 	});
 	expect(res.ok()).toBeFalsy();
+}
+
+/** Stable Redis key segment for password-reset dev OTP (matches ms-user pkg/auth-redis EmailKey). */
+export function devOtpKeyForEmail(email: string): string {
+	const normalized = email.trim().toLowerCase();
+	return `${DEV_E2E_OTP_KEY_PREFIX}${createHash("sha256").update(normalized).digest("hex")}`;
+}
+
+export function readDevOtpForPasswordReset(email: string): string | null {
+	return redisGet(devOtpKeyForEmail(email));
+}
+
+export function waitDevOtpForPasswordReset(email: string, attempts = 20): string | null {
+	for (let i = 0; i < attempts; i++) {
+		const code = readDevOtpForPasswordReset(email);
+		if (code) {
+			return code;
+		}
+		execSync("sleep 0.15");
+	}
+	return null;
+}
+
+export async function forgotPasswordRequest(
+	request: APIRequestContext,
+	email: string,
+	locale = "en",
+): Promise<{ resend_cooldown_seconds: number }> {
+	const res = await request.post(`${E2E_API_BASE}/auth/forgot-password`, {
+		data: { email, locale },
+	});
+	expect(res.ok(), await res.text()).toBeTruthy();
+	return parseEnvelope<{ resend_cooldown_seconds: number }>(res);
+}
+
+export async function expectForgotPasswordVerifyRequiresCaptcha(
+	request: APIRequestContext,
+	email: string,
+	code: string,
+): Promise<void> {
+	const res = await request.post(`${E2E_API_BASE}/auth/forgot-password/verify`, {
+		data: { email, code },
+	});
+	expect(res.ok()).toBeFalsy();
+	const errCode = await parseErrorCode(res);
+	expect(errCode).toBe("auth.captcha_failed");
+}
+
+export async function forgotPasswordVerify(
+	request: APIRequestContext,
+	email: string,
+	code: string,
+): Promise<{ reset_token: string }> {
+	const res = await request.post(`${E2E_API_BASE}/auth/forgot-password/verify`, {
+		data: { email, code },
+	});
+	expect(res.ok(), await res.text()).toBeTruthy();
+	return parseEnvelope<{ reset_token: string }>(res);
+}
+
+export async function forgotPasswordReset(
+	request: APIRequestContext,
+	resetToken: string,
+	password: string,
+): Promise<void> {
+	const res = await request.post(`${E2E_API_BASE}/auth/forgot-password/reset`, {
+		data: { reset_token: resetToken, password },
+	});
+	expect(res.ok(), await res.text()).toBeTruthy();
+}
+
+export async function expectForgotPasswordWrongCode(
+	request: APIRequestContext,
+	email: string,
+	code: string,
+): Promise<void> {
+	const res = await request.post(`${E2E_API_BASE}/auth/forgot-password/verify`, {
+		data: { email, code },
+	});
+	expect(res.ok()).toBeFalsy();
+	const errCode = await parseErrorCode(res);
+	expect(errCode).toBe("auth.reset_code_invalid");
 }

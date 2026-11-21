@@ -22,6 +22,8 @@ type PasswordResetStore interface {
 	VerifyOTP(ctx context.Context, email, code string, secret []byte, maxAttempts int) (userID string, err error)
 	DeleteOTP(ctx context.Context, email string) error
 	SaveResetToken(ctx context.Context, token, userID, email string, ttl time.Duration) error
+	GetResetToken(ctx context.Context, token string) (userID, email string, err error)
+	DeleteResetToken(ctx context.Context, token string) error
 	ConsumeResetToken(ctx context.Context, token string) (userID, email string, err error)
 }
 
@@ -114,6 +116,26 @@ func (s redisPasswordResetStore) SaveResetToken(ctx context.Context, token, user
 	}
 
 	return s.rdb.Set(ctx, pwResetTokenKey(token), payload, ttl).Err()
+}
+
+func (s redisPasswordResetStore) GetResetToken(ctx context.Context, token string) (string, string, error) {
+	raw, err := s.rdb.Get(ctx, pwResetTokenKey(token)).Bytes()
+	if errors.Is(err, redis.Nil) {
+		return "", "", constants.ErrNotFound
+	}
+	if err != nil {
+		return "", "", err
+	}
+	var rec models.PasswordResetTokenRecord
+	if err := json.Unmarshal(raw, &rec); err != nil {
+		return "", "", err
+	}
+
+	return rec.UserID, rec.Email, nil
+}
+
+func (s redisPasswordResetStore) DeleteResetToken(ctx context.Context, token string) error {
+	return s.rdb.Del(ctx, pwResetTokenKey(token)).Err()
 }
 
 func (s redisPasswordResetStore) ConsumeResetToken(ctx context.Context, token string) (string, string, error) {
