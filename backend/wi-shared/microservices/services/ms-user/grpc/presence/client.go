@@ -11,8 +11,8 @@ import (
 
 // Client calls presence domain PresenceService RPCs with shared timeouts, retries, and circuit breaking.
 type Client interface {
-	HeartbeatPresence(ctx context.Context, in *userv1.HeartbeatPresenceRequest) (*userv1.PresenceTransitionResponse, error)
-	DisconnectPresence(ctx context.Context, in *userv1.DisconnectPresenceRequest) (*userv1.PresenceTransitionResponse, error)
+	HeartbeatPresence(ctx context.Context, in *userv1.HeartbeatPresenceRequest) (*userv1.HeartbeatPresenceResponse, error)
+	DisconnectPresence(ctx context.Context, in *userv1.DisconnectPresenceRequest) (*userv1.DisconnectPresenceResponse, error)
 	SetManualPresence(ctx context.Context, in *userv1.SetManualPresenceRequest) (*userv1.SetManualPresenceResponse, error)
 	GetMyPresence(ctx context.Context, in *userv1.GetMyPresenceRequest) (*userv1.GetMyPresenceResponse, error)
 }
@@ -40,14 +40,14 @@ func New(stub userv1.PresenceServiceClient, settings utils.Settings, log logger.
 	}
 }
 
-func (c *client) HeartbeatPresence(ctx context.Context, in *userv1.HeartbeatPresenceRequest) (*userv1.PresenceTransitionResponse, error) {
-	return utils.CallUnaryResult(ctx, c.none, c.log, "presence.PresenceService/HeartbeatPresence", func(callCtx context.Context) (*userv1.PresenceTransitionResponse, error) {
+func (c *client) HeartbeatPresence(ctx context.Context, in *userv1.HeartbeatPresenceRequest) (*userv1.HeartbeatPresenceResponse, error) {
+	return utils.CallUnaryResult(ctx, c.none, c.log, "presence.PresenceService/HeartbeatPresence", func(callCtx context.Context) (*userv1.HeartbeatPresenceResponse, error) {
 		return c.stub.HeartbeatPresence(callCtx, in)
 	})
 }
 
-func (c *client) DisconnectPresence(ctx context.Context, in *userv1.DisconnectPresenceRequest) (*userv1.PresenceTransitionResponse, error) {
-	return utils.CallUnaryResult(ctx, c.none, c.log, "presence.PresenceService/DisconnectPresence", func(callCtx context.Context) (*userv1.PresenceTransitionResponse, error) {
+func (c *client) DisconnectPresence(ctx context.Context, in *userv1.DisconnectPresenceRequest) (*userv1.DisconnectPresenceResponse, error) {
+	return utils.CallUnaryResult(ctx, c.none, c.log, "presence.PresenceService/DisconnectPresence", func(callCtx context.Context) (*userv1.DisconnectPresenceResponse, error) {
 		return c.stub.DisconnectPresence(callCtx, in)
 	})
 }

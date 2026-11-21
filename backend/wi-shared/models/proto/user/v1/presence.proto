@@ -7,9 +7,9 @@ option go_package = "github.com/wichat/wichat/backend/wi-shared/models/gen/user/
 // PresenceService manages user connection heartbeats and manual presence overrides.
 service PresenceService {
   // HeartbeatPresence records an active/idle WebSocket heartbeat and returns effective presence transition.
-  rpc HeartbeatPresence(HeartbeatPresenceRequest) returns (PresenceTransitionResponse);
+  rpc HeartbeatPresence(HeartbeatPresenceRequest) returns (HeartbeatPresenceResponse);
   // DisconnectPresence removes a WebSocket connection and returns effective presence transition.
-  rpc DisconnectPresence(DisconnectPresenceRequest) returns (PresenceTransitionResponse);
+  rpc DisconnectPresence(DisconnectPresenceRequest) returns (DisconnectPresenceResponse);
   // SetManualPresence sets the caller's manual presence override (online, idle, dnd, invisible).
   rpc SetManualPresence(SetManualPresenceRequest) returns (SetManualPresenceResponse);
   // GetMyPresence returns the caller's current manual and effective presence status.
@@ -27,10 +27,18 @@ message DisconnectPresenceRequest {
   string conn_id = 2;
 }
 
-message PresenceTransitionResponse {
+message HeartbeatPresenceResponse {
   string user_id = 1;
   string previous_status = 2;  // "online" | "idle" | "dnd" | "offline"
   string effective_status = 3; // "online" | "idle" | "dnd" | "offline"
+  bool is_online = 4;
+  repeated string group_ids = 5;
+}
+
+message DisconnectPresenceResponse {
+  string user_id = 1;
+  string previous_status = 2;
+  string effective_status = 3;
   bool is_online = 4;
   repeated string group_ids = 5;
 }
