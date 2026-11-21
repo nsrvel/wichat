@@ -3,13 +3,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { isAppLocale } from "@wichat/i18n/locale";
 import { Headphones, Mic, MicOff, Settings } from "lucide-react";
-import { useParams } from "next/navigation";
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { SetStatusDialog } from "@/components/layout/set-status-dialog";
 import { ICON_RAIL_WIDTH_PX, useShellChrome } from "@/components/layout/shell-chrome-context";
-import { usePresenceSync } from "@/hooks/use-presence-sync";
+import { useLivePresence } from "@/hooks/use-live-presence";
 import { CHANNEL_SIDEBAR_MIN_WIDTH } from "@/hooks/use-resizable-sidebar-width";
 import { UserProfileButton } from "@/components/layout/user-profile-button";
 import { UserProfilePopover } from "@/components/layout/user-profile-popover";
@@ -26,10 +25,7 @@ import { readStoredTimeFormat, writeStoredTimeFormat } from "@/lib/time-format";
 import {
 	EMPTY_STATUS_NOTE,
 	formatStatusNoteLabel,
-	readStoredUserStatus,
 	statusNoteFromUser,
-	subscribeUserPresence,
-	writeStoredUserStatus,
 	type StatusNote,
 	type UserPresenceStatus,
 } from "@/lib/user-status";
@@ -39,7 +35,6 @@ import {
 	useUpdateMyPresenceMutation,
 	useUpdateMyStatusNoteMutation,
 } from "@/services/user/user.mutation";
-import { myPresenceQueryOptions } from "@/services/user/user.query";
 
 const dockSurfaceClass = "bg-chat-surface/85 backdrop-blur-md text-foreground";
 
@@ -52,15 +47,9 @@ function initialsForName(name: string): string {
 
 export function ShellUserDock() {
 	const { t, i18n } = useTranslation();
-	const params = useParams<{ groupId?: string }>();
-	const activeGroupId = typeof params?.groupId === "string" ? params.groupId : undefined;
 	const { railOpen, sidebarWidth } = useShellChrome();
 	const { data: user } = useQuery(sessionQueryOpts());
-	usePresenceSync(activeGroupId, Boolean(user), user?.id);
-	const myPresenceQuery = useQuery({
-		...myPresenceQueryOptions(),
-		enabled: Boolean(user),
-	});
+	const { manualStatus, avatarDot: avatarIndicator } = useLivePresence(Boolean(user));
 	const updatePresence = useUpdateMyPresenceMutation();
 	const updateStatusNote = useUpdateMyStatusNoteMutation();
 	const [muted, setMuted] = useState(false);
@@ -69,11 +58,6 @@ export function ShellUserDock() {
 	const [settingsOpen, setSettingsOpen] = useState(false);
 	const [settingsTab, setSettingsTab] = useState<UserSettingsSectionId>("account");
 	const [expiryTick, setExpiryTick] = useState(0);
-	const status = useSyncExternalStore(
-		subscribeUserPresence,
-		readStoredUserStatus,
-		() => "online" as const,
-	);
 	const statusNote = useMemo(
 		() => statusNoteFromUser(user),
 		// eslint-disable-next-line react-hooks/exhaustive-deps
@@ -106,15 +90,7 @@ export function ShellUserDock() {
 		}
 	}, [user, i18n]);
 
-	useEffect(() => {
-		const remoteManual = myPresenceQuery.data?.manual_status;
-		if (remoteManual && remoteManual !== readStoredUserStatus()) {
-			writeStoredUserStatus(remoteManual);
-		}
-	}, [myPresenceQuery.data?.manual_status]);
-
 	const handleStatusChange = (nextStatus: UserPresenceStatus) => {
-		writeStoredUserStatus(nextStatus);
 		updatePresence.mutate({ status: nextStatus });
 	};
 
@@ -157,7 +133,8 @@ export function ShellUserDock() {
 							user={user}
 							displayName={displayName}
 							initials={initials}
-							status={status}
+							status={manualStatus}
+							indicatorStatus={avatarIndicator}
 							onStatusChange={handleStatusChange}
 							statusNote={statusNote}
 							widthPx={popoverWidth}
@@ -173,7 +150,7 @@ export function ShellUserDock() {
 									secondaryText={secondaryText}
 									avatarUrl={avatarUrl}
 									initials={initials}
-									status={status}
+									status={avatarIndicator}
 									statusRingClassName="ring-chat-surface"
 									aria-label={t("shell.user_dock.open_profile")}
 								/>
@@ -221,7 +198,8 @@ export function ShellUserDock() {
 				avatarUrl={avatarUrl}
 				bannerColor={user?.banner_color?.trim() || ""}
 				initials={initials}
-				status={status}
+				status={manualStatus}
+				indicatorStatus={avatarIndicator}
 				initialNote={statusNote}
 				onSave={handleStatusNoteSave}
 			/>
@@ -234,7 +212,7 @@ export function ShellUserDock() {
 				secondaryText={secondaryText}
 				avatarUrl={avatarUrl}
 				initials={initials}
-				status={status}
+				status={manualStatus}
 				statusNoteLabel={statusNoteLabel}
 			/>
 		</>

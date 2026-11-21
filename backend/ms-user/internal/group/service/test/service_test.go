@@ -63,6 +63,12 @@ func TestCreateJoinGroupFlow(t *testing.T) {
 	if mine[0].Role != constants.GroupRoleOwner {
 		t.Fatalf("owner list role: %q", mine[0].Role)
 	}
+	if !regexp.MustCompile(`^[0-9a-f]{24}$`).MatchString(created.DefaultChannelID) {
+		t.Fatalf("default_channel_id: %q", created.DefaultChannelID)
+	}
+	if len(created.EffectivePermissions) == 0 {
+		t.Fatalf("expected owner effective_permissions on create, got %v", created.EffectivePermissions)
+	}
 
 	member := testSupport.RegisterSession(t, authSvc, notify, registerInput("member@example.com"))
 

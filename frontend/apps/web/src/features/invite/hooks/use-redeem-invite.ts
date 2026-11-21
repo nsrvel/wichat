@@ -1,9 +1,10 @@
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef } from "react";
-import { pickInviteToken } from "@/lib/auth-invite";
+import { inviteLandingPath, pickInviteToken } from "@/lib/auth-invite";
+import { instancePolicyQueryOpts } from "@/services/auth/auth.query";
 import { channelPath } from "@/lib/app-routes";
 import { Q_SESSION } from "@/services/auth/auth.key";
 import { Q_MY_GROUPS } from "@/services/group/group.key";
@@ -17,6 +18,10 @@ export function useRedeemInviteFromQuery() {
 	const queryClient = useQueryClient();
 	const router = useRouter();
 	const done = useRef(false);
+	const { data: policy } = useQuery({
+		...instancePolicyQueryOpts(),
+		enabled: Boolean(token),
+	});
 
 	const redeem = useMutation({
 		mutationFn: () => redeemInvite(token!),
@@ -38,7 +43,12 @@ export function useRedeemInviteFromQuery() {
 		if (!token || done.current || redeem.isPending || redeem.isSuccess) {
 			return;
 		}
+		if (policy?.turnstile_required) {
+			done.current = true;
+			router.replace(inviteLandingPath(token));
+			return;
+		}
 		done.current = true;
 		redeem.mutate();
-	}, [token, pathname, redeem]);
+	}, [token, pathname, redeem, policy?.turnstile_required, router]);
 }

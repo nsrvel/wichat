@@ -44,6 +44,8 @@ type SetStatusDialogProps = {
 	bannerColor?: string;
 	initials: string;
 	status: UserPresenceStatus;
+	/** Effective presence dot on the preview avatar (WS); falls back to manual `status`. */
+	indicatorStatus?: UserPresenceStatus | "offline";
 	initialNote: StatusNote;
 	onSave: (note: StatusNote) => Promise<void>;
 };
@@ -56,6 +58,7 @@ function SetStatusDialogBody({
 	bannerColor,
 	initials,
 	status,
+	indicatorStatus,
 	initialNote,
 	onSave,
 	titleId,
@@ -134,7 +137,7 @@ function SetStatusDialogBody({
 										src={avatarUrl}
 										initials={initials}
 										size="xl"
-										status={status}
+										status={indicatorStatus ?? status}
 										ringClassName="ring-[5px] ring-card"
 									/>
 

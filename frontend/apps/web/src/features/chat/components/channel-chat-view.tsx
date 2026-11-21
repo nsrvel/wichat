@@ -34,6 +34,7 @@ import { sessionQueryOpts } from "@/services/auth/auth.query";
 import * as channelQuery from "@/services/channel/channel.query";
 import { myGroupsQueryOpts } from "@/services/group/group.query";
 import { uploadChannelAttachment } from "@/services/message/message.service";
+import { memberPresenceDot } from "@/features/presence/presence-dot";
 import { groupMembersQueryOpts } from "@/services/invite/invite.query";
 import {
 	useCreateMessageMutation,
@@ -502,7 +503,7 @@ export function ChannelChatView({ groupId, channelId, onOpenSidebar }: ChannelCh
 											authorDisplayName={message.authorDisplayName}
 											authorNameColor={authorNameColor}
 											authorIsOwner={authorIsOwner}
-											authorPresenceStatus={member?.presence_status}
+											authorPresenceStatus={member ? memberPresenceDot(member) : undefined}
 											ownerLabel={t("invite.role_owner")}
 											timeLabel={message.timeLabel}
 											mine={isMine}

@@ -19,8 +19,10 @@ import { useMounted } from "@/hooks/use-mounted";
 import * as authQuery from "@/services/auth/auth.query";
 import { Q_SESSION } from "@/services/auth/auth.key";
 import { Q_MY_GROUPS } from "@/services/group/group.key";
-import { Q_INVITE_PREVIEW, invitePreviewQueryOpts } from "@/services/invite/invite.query";
+import { invitePreviewQueryKey, invitePreviewQueryOpts } from "@/services/invite/invite.query";
 import { readInvitePreviewCache } from "@/services/invite/invite-preview-cache";
+import { TurnstileWidget } from "@/features/auth/components/turnstile-widget";
+import { useInviteTurnstile } from "@/features/invite/hooks/use-invite-turnstile";
 import { redeemInvite } from "@/services/invite/invite.service";
 
 type InviteLandingPageProps = {
@@ -34,24 +36,27 @@ export function InviteLandingPage({ inviteToken }: InviteLandingPageProps) {
 	const mounted = useMounted();
 
 	const token = inviteToken.trim();
+	const captcha = useInviteTurnstile(mounted && Boolean(token));
 	const session = useQuery({ ...authQuery.sessionQueryOpts(), enabled: mounted });
 	const preview = useQuery({
-		...invitePreviewQueryOpts(inviteToken),
-		enabled: mounted && Boolean(token),
+		...invitePreviewQueryOpts(inviteToken, captcha.turnstileField, captcha.captchaReady),
+		enabled: mounted && Boolean(token) && captcha.captchaReady,
+		refetchInterval: (query) => (query.state.data?.valid === true ? 30_000 : false),
 	});
 
 	useEffect(() => {
-		if (!mounted || !token) {
+		if (!mounted || !token || !captcha.captchaReady) {
 			return;
 		}
 		const cached = readInvitePreviewCache(token);
-		if (cached) {
-			queryClient.setQueryData([Q_INVITE_PREVIEW, token], cached, { updatedAt: 0 });
+		if (!cached) {
+			return;
 		}
-	}, [mounted, token, queryClient]);
+		queryClient.setQueryData(invitePreviewQueryKey(token, captcha.turnstileField), cached);
+	}, [mounted, token, captcha.captchaReady, captcha.turnstileField, queryClient]);
 
 	const redeem = useMutation({
-		mutationFn: () => redeemInvite(inviteToken),
+		mutationFn: () => redeemInvite(inviteToken, captcha.turnstileField),
 		onSuccess: (result) => {
 			void queryClient.invalidateQueries({ queryKey: [Q_SESSION] });
 			void queryClient.invalidateQueries({ queryKey: [Q_MY_GROUPS] });
@@ -114,6 +119,9 @@ export function InviteLandingPage({ inviteToken }: InviteLandingPageProps) {
 			router.push(authPathWithReturn("/sign-in", returnTo));
 			return;
 		}
+		if (!captcha.captchaReady) {
+			return;
+		}
 		redeem.mutate();
 	};
 
@@ -147,11 +155,19 @@ export function InviteLandingPage({ inviteToken }: InviteLandingPageProps) {
 			{preview.isError && !previewData ? (
 				<p className="text-center text-sm text-destructive">{translateError(t, preview.error)}</p>
 			) : null}
+			{captcha.siteKey ? (
+				<TurnstileWidget
+					siteKey={captcha.siteKey}
+					resetKey={captcha.resetKey}
+					onToken={captcha.setToken}
+				/>
+			) : null}
 			{showAcceptCard ? (
 				<InviteAcceptCard
 					preview={previewData}
 					hasBanner={showCardBanner}
 					acceptPending={redeem.isPending}
+					acceptDisabled={!captcha.captchaReady}
 					onAccept={handleAccept}
 				/>
 			) : null}

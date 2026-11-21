@@ -10,7 +10,7 @@ type UserProfileButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "chi
 	secondaryText: string;
 	avatarUrl: string;
 	initials: string;
-	status: UserPresenceStatus;
+	status?: UserPresenceStatus | "offline";
 	statusRingClassName?: string;
 };
 

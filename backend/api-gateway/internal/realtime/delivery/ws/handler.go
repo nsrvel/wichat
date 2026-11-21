@@ -40,6 +40,28 @@ type presenceUpdatedEvent struct {
 	IsOnline       bool   `json:"is_online"`
 }
 
+type subscribeDeniedEvent struct {
+	Type      string `json:"type"`
+	Scope     string `json:"scope"`
+	GroupID   string `json:"group_id,omitempty"`
+	ChannelID string `json:"channel_id,omitempty"`
+	Code      string `json:"code"`
+}
+
+func (h Handler) writeSubscribeDenied(ctx context.Context, conn *websocket.Conn, scope, groupID, channelID, code string) {
+	payload, err := json.Marshal(subscribeDeniedEvent{
+		Type:      "subscribe.denied",
+		Scope:     scope,
+		GroupID:   groupID,
+		ChannelID: channelID,
+		Code:      code,
+	})
+	if err != nil {
+		return
+	}
+	_ = h.hub.WriteText(ctx, conn, payload)
+}
+
 // Handler is the chat realtime WebSocket delivery.
 type Handler struct {
 	ms        *microservices.Clients
@@ -198,11 +220,13 @@ func (h Handler) Realtime(w http.ResponseWriter, r *http.Request) {
 		case "subscribe_group":
 			groupID := strings.ToLower(strings.TrimSpace(msg.GroupID))
 			if !publicEntityID.MatchString(groupID) {
+				h.writeSubscribeDenied(connCtx, conn, "group", msg.GroupID, "", "invalid_group_id")
 				continue
 			}
 			if !h.isGroupMember(connCtx, token, groupID) {
-				_ = conn.Close(websocket.StatusPolicyViolation, "forbidden")
-				return
+				h.log.Info("realtime subscribe_group denied", "group_id", groupID)
+				h.writeSubscribeDenied(connCtx, conn, "group", groupID, "", "forbidden")
+				continue
 			}
 			subMu.Lock()
 			if groupSubCancel != nil {
@@ -217,6 +241,7 @@ func (h Handler) Realtime(w http.ResponseWriter, r *http.Request) {
 			groupID := strings.ToLower(strings.TrimSpace(msg.GroupID))
 			channelID := strings.ToLower(strings.TrimSpace(msg.ChannelID))
 			if !publicEntityID.MatchString(groupID) || !publicEntityID.MatchString(channelID) {
+				h.writeSubscribeDenied(connCtx, conn, "channel", msg.GroupID, msg.ChannelID, "invalid_target")
 				continue
 			}
 
@@ -226,8 +251,9 @@ func (h Handler) Realtime(w http.ResponseWriter, r *http.Request) {
 				ChannelId:   channelID,
 			})
 			if err != nil {
-				_ = conn.Close(websocket.StatusPolicyViolation, "forbidden")
-				return
+				h.log.Info("realtime subscribe channel denied", "group_id", groupID, "channel_id", channelID)
+				h.writeSubscribeDenied(connCtx, conn, "channel", groupID, channelID, "forbidden")
+				continue
 			}
 
 			subMu.Lock()

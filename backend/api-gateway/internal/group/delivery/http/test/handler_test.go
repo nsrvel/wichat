@@ -127,6 +127,27 @@ func TestCreateGroupWithBearer(t *testing.T) {
 	}
 }
 
+func TestCreateGroupForwardsTemplate(t *testing.T) {
+	var gotTemplate string
+	handler := testGroupHandler(fakeGroup{
+		createGroup: func(_ context.Context, in *userv1.CreateGroupRequest) (*userv1.CreateGroupResponse, error) {
+			gotTemplate = in.GetTemplate()
+			return &userv1.CreateGroupResponse{
+				Group: &userv1.GroupSummary{Id: testGroupPublicID, Name: in.GetName(), DefaultChannelId: testGroupPublicID},
+			}, nil
+		},
+	})
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/groups", strings.NewReader(`{"name":"Acme","template":"office"}`))
+	req.Header.Set("Authorization", "Bearer access-token")
+	rec := httptest.NewRecorder()
+	handler.CreateGroup(rec, req)
+
+	if rec.Code != http.StatusCreated || gotTemplate != "office" {
+		t.Fatalf("status %d template %q", rec.Code, gotTemplate)
+	}
+}
+
 func TestListGroupAuditLogsForwardsQueryAndMapsEnvelope(t *testing.T) {
 	var got *userv1.ListGroupActivityLogsRequest
 	h := testGroupHandler(fakeGroup{
