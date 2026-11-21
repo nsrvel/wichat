@@ -22,6 +22,7 @@
 		"check:e2e-auth-register": "playwright test e2e/auth/register-flow.spec.ts --workers=1",
 		"check:e2e-auth-login": "playwright test e2e/auth/login-flow.spec.ts --workers=1",
 		"check:e2e-auth-forgot": "playwright test e2e/auth/forgot-password-flow.spec.ts --workers=1",
+		"check:e2e-group-create": "playwright test e2e/group/create-group-flow.spec.ts --workers=1",
 		"check:full": "pnpm check && pnpm check:e2e-auth"
 	},
 	"dependencies": {

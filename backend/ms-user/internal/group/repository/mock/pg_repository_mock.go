@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	channelmock "github.com/wichat/wichat/backend/ms-user/internal/channel/repository/mock"
 	"github.com/wichat/wichat/backend/ms-user/internal/group/repository"
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
 	usermock "github.com/wichat/wichat/backend/ms-user/internal/user/repository/mock"
@@ -45,6 +46,7 @@ func (m pgRepositoryMock) FindGroupByID(_ context.Context, id string) (models.Gr
 
 	for _, g := range m.st.Groups {
 		if g.ID == id {
+			g.DefaultChannelPublicID = defaultGeneralTextChannelID(m.st, id)
 			return g, nil
 		}
 	}
@@ -109,6 +111,31 @@ func (m pgRepositoryMock) CreateGroupWithOwner(_ context.Context, group models.G
 	})
 
 	return nil
+}
+
+func (m pgRepositoryMock) CreateGroupWithOwnerAndChannels(
+	ctx context.Context,
+	group models.Group,
+	owner models.GroupMember,
+	template string,
+	createdAt time.Time,
+) error {
+	if err := m.CreateGroupWithOwner(ctx, group, owner); err != nil {
+		return err
+	}
+	ch := channelmock.NewPgRepositoryMock(m.st)
+
+	return ch.SeedDefaultChannelsWithTemplate(ctx, group.ID, owner.UserID, template, createdAt)
+}
+
+func defaultGeneralTextChannelID(st *usermock.State, groupID string) string {
+	for _, ch := range st.Channels {
+		if ch.GroupID == groupID && ch.Type == constants.ChannelKindTextOnly && strings.EqualFold(ch.Name, constants.DefaultChannelLookupKey) {
+			return ch.PublicID
+		}
+	}
+
+	return ""
 }
 
 func (m pgRepositoryMock) DeleteGroup(_ context.Context, groupID string) error {

@@ -41,6 +41,23 @@ func TestGroupMockUpdatesAndMembersPage(t *testing.T) {
 	}
 }
 
+func TestGroupMockCreateWithChannelsSetsDefaultGeneral(t *testing.T) {
+	st := usermock.NewState()
+	repo := groupmock.NewPgRepositoryMock(st)
+	ctx := context.Background()
+	now := time.Now().UTC()
+
+	g := models.Group{ID: "g-seed", PublicID: "cccccccccccccccccccccccc", Name: "Seed", CreatedAt: now, UpdatedAt: now}
+	owner := models.GroupMember{GroupID: g.ID, UserID: "u1", Role: constants.GroupRoleOwner, CreatedAt: now}
+	if err := repo.CreateGroupWithOwnerAndChannels(ctx, g, owner, "office", now); err != nil {
+		t.Fatal(err)
+	}
+	got, err := repo.FindGroupByID(ctx, g.ID)
+	if err != nil || got.DefaultChannelPublicID == "" {
+		t.Fatalf("default channel: %+v err %v", got, err)
+	}
+}
+
 func TestGroupMockCRUD(t *testing.T) {
 	st := usermock.NewState()
 	repo := groupmock.NewPgRepositoryMock(st)

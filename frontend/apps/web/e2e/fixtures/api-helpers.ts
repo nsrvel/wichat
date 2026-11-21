@@ -90,14 +90,14 @@ export async function createTestUser(
 }
 
 export async function loginInBrowser(context: BrowserContext, user: TestUser): Promise<void> {
-	const res = await context.request.post(`${E2E_API_BASE}/auth/login`, {
-		data: {
-			login: user.username,
-			password: user.password,
-			locale: "en",
-		},
+	const { loginPasswordChallenge, waitDevOtpForChallenge } = await import("./auth-helpers");
+	const challengeId = await loginPasswordChallenge(context.request, user.username, user.password);
+	const code = waitDevOtpForChallenge(challengeId);
+	expect(code, "browser login needs dev Redis OTP shadow (restart ms-user in development)").toBeTruthy();
+	const res = await context.request.post(`${E2E_API_BASE}/auth/login/verify`, {
+		data: { challenge_id: challengeId, code },
 	});
-	expect(res.ok(), `Browser login failed (${res.status()})`).toBeTruthy();
+	expect(res.ok(), `Browser login verify failed (${res.status()}): ${await res.text()}`).toBeTruthy();
 }
 
 export async function createGroupWithInvite(
