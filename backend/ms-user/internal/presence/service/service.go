@@ -268,6 +268,30 @@ func (s service) SetManualPresence(ctx context.Context, accessToken, status stri
 	}, nil
 }
 
+func degradedMyPresenceView(manual models.ManualPresenceState) models.MyPresenceView {
+	manualStatus := models.PresenceStatusOnline
+	if manual.Status != "" {
+		manualStatus = manual.Status
+	}
+	return models.MyPresenceView{
+		ManualStatus:    manualStatus,
+		EffectiveStatus: models.PresenceStatusOffline,
+		IsOnline:        false,
+		ExpiresAt:       manual.ExpiresAt,
+	}
+}
+
+func offlinePresenceSnapshots(userIDs []string) map[string]models.UserPresenceSnapshot {
+	out := make(map[string]models.UserPresenceSnapshot, len(userIDs))
+	for _, id := range userIDs {
+		out[id] = models.UserPresenceSnapshot{
+			IsOnline:       false,
+			PresenceStatus: models.PresenceStatusOffline,
+		}
+	}
+	return out
+}
+
 func (s service) GetMyPresence(ctx context.Context, accessToken string) (models.MyPresenceView, error) {
 	userID, err := access.UserIDFromAccessToken(ctx, accessToken, s.secret, s.sessions, s.now())
 	if err != nil {
@@ -276,11 +300,17 @@ func (s service) GetMyPresence(ctx context.Context, accessToken string) (models.
 
 	manual, err := s.repo.GetManualStatus(ctx, userID)
 	if err != nil {
-		return models.MyPresenceView{}, err
+		if s.log != nil {
+			s.log.Warn("presence manual read failed, degrading", "err", err, "user_id", userID)
+		}
+		return degradedMyPresenceView(models.ManualPresenceState{Status: models.PresenceStatusOnline}), nil
 	}
 	snap, err := s.resolveUserEffectivePresence(ctx, userID)
 	if err != nil {
-		return models.MyPresenceView{}, err
+		if s.log != nil {
+			s.log.Warn("presence effective resolve failed, degrading", "err", err, "user_id", userID)
+		}
+		return degradedMyPresenceView(manual), nil
 	}
 
 	return models.MyPresenceView{
@@ -294,7 +324,10 @@ func (s service) GetMyPresence(ctx context.Context, accessToken string) (models.
 func (s service) BatchGetEffectivePresence(ctx context.Context, userIDs []string) (map[string]models.UserPresenceSnapshot, error) {
 	out, err := s.repo.BatchGetEffectivePresence(ctx, userIDs)
 	if err != nil {
-		return nil, err
+		if s.log != nil {
+			s.log.Warn("presence batch read failed, degrading to offline", "err", err)
+		}
+		return offlinePresenceSnapshots(userIDs), nil
 	}
 	for _, id := range userIDs {
 		snap := out[id]

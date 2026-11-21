@@ -2,7 +2,9 @@ package test
 
 import (
 	"context"
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/alicebob/miniredis/v2"
 	"github.com/redis/go-redis/v9"
@@ -141,4 +143,128 @@ func TestPresenceServiceLifecycle(t *testing.T) {
 	require.Error(t, err)
 	_, err = svc.SetManualPresence(ctx, user.AccessToken, models.PresenceStatusDND, -1)
 	require.Error(t, err)
+}
+
+func newPresenceSvc(t *testing.T) (context.Context, presencesvc.Service, *models.SessionResult, func()) {
+	t.Helper()
+	ctx := context.Background()
+	st := usermock.NewState()
+	authSvc, notify, _, _, groupSvc, _ := testSupport.NewAuthService(t, st, nil)
+	user := testSupport.RegisterSession(t, authSvc, notify, models.RegisterInput{
+		Email:       fmt.Sprintf("presence-%s@example.com", t.Name()),
+		Password:    "correct-horse-battery",
+		DisplayName: "Presence Edge",
+		BirthDate:   "2000-01-01",
+	})
+	_, err := groupSvc.CreateGroup(ctx, user.AccessToken, "Edge Group")
+	require.NoError(t, err)
+
+	mr := miniredis.RunT(t)
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	_, groups, sessions := testSupport.TestRepos(st)
+	repo := presencerepo.NewRedisRepository(rdb)
+	svc := presencesvc.NewService(
+		repo,
+		groups,
+		sessions,
+		[]byte(testSupport.TestJWTSecret),
+		logger.New(logger.Options{Level: "error"}),
+	)
+	cleanup := func() {
+		_ = rdb.Close()
+	}
+	return ctx, svc, user, cleanup
+}
+
+func TestMultiDeviceOneDisconnectStaysOnlineForOthers(t *testing.T) {
+	ctx, svc, user, cleanup := newPresenceSvc(t)
+	defer cleanup()
+
+	_, err := svc.HeartbeatPresence(ctx, user.AccessToken, "phone", models.PresenceActivityActive)
+	require.NoError(t, err)
+	_, err = svc.HeartbeatPresence(ctx, user.AccessToken, "desktop", models.PresenceActivityActive)
+	require.NoError(t, err)
+
+	tr, err := svc.DisconnectPresence(ctx, user.User.ID, "phone")
+	require.NoError(t, err)
+	require.True(t, tr.IsOnline)
+	require.Equal(t, models.PresenceStatusOnline, tr.EffectiveStatus)
+
+	batch, err := svc.BatchGetEffectivePresence(ctx, []string{user.User.ID})
+	require.NoError(t, err)
+	require.True(t, batch[user.User.ID].IsOnline)
+	require.Equal(t, models.PresenceStatusOnline, batch[user.User.ID].PresenceStatus)
+}
+
+func TestMultiDeviceActivityMergeIdleAndActive(t *testing.T) {
+	ctx, svc, user, cleanup := newPresenceSvc(t)
+	defer cleanup()
+
+	_, err := svc.HeartbeatPresence(ctx, user.AccessToken, "a", models.PresenceActivityActive)
+	require.NoError(t, err)
+	_, err = svc.HeartbeatPresence(ctx, user.AccessToken, "b", models.PresenceActivityIdle)
+	require.NoError(t, err)
+
+	tr, err := svc.DisconnectPresence(ctx, user.User.ID, "a")
+	require.NoError(t, err)
+	require.True(t, tr.IsOnline)
+	require.Equal(t, models.PresenceStatusIdle, tr.EffectiveStatus)
+
+	_, err = svc.HeartbeatPresence(ctx, user.AccessToken, "c", models.PresenceActivityActive)
+	require.NoError(t, err)
+	batch, err := svc.BatchGetEffectivePresence(ctx, []string{user.User.ID})
+	require.NoError(t, err)
+	require.Equal(t, models.PresenceStatusOnline, batch[user.User.ID].PresenceStatus)
+}
+
+func TestPresenceDegradesWhenRedisUnavailable(t *testing.T) {
+	ctx, svc, user, cleanup := newPresenceSvc(t)
+	defer cleanup()
+
+	_, err := svc.HeartbeatPresence(ctx, user.AccessToken, "tab", models.PresenceActivityActive)
+	require.NoError(t, err)
+
+	cleanup()
+
+	_, err = svc.HeartbeatPresence(ctx, user.AccessToken, "tab", models.PresenceActivityActive)
+	require.Error(t, err)
+
+	view, err := svc.GetMyPresence(ctx, user.AccessToken)
+	require.NoError(t, err)
+	require.Equal(t, models.PresenceStatusOnline, view.ManualStatus)
+	require.Equal(t, models.PresenceStatusOffline, view.EffectiveStatus)
+	require.False(t, view.IsOnline)
+
+	batch, err := svc.BatchGetEffectivePresence(ctx, []string{user.User.ID, "other"})
+	require.NoError(t, err)
+	require.False(t, batch[user.User.ID].IsOnline)
+	require.Equal(t, models.PresenceStatusOffline, batch[user.User.ID].PresenceStatus)
+	require.False(t, batch["other"].IsOnline)
+}
+
+func TestPresenceHeartbeatLoadSample(t *testing.T) {
+	if testing.Short() {
+		t.Skip("load sample")
+	}
+	ctx, svc, user, cleanup := newPresenceSvc(t)
+	defer cleanup()
+
+	const (
+		heartbeats = 3_000
+		conns      = 32
+	)
+	start := time.Now()
+	for i := 0; i < heartbeats; i++ {
+		conn := fmt.Sprintf("load-conn-%d", i%conns)
+		activity := models.PresenceActivityActive
+		if i%5 == 0 {
+			activity = models.PresenceActivityIdle
+		}
+		if _, err := svc.HeartbeatPresence(ctx, user.AccessToken, conn, activity); err != nil {
+			t.Fatal(err)
+		}
+	}
+	elapsed := time.Since(start)
+	t.Logf("ms-user HeartbeatPresence: %d heartbeats in %v (%.0f ops/s, %d logical conns)",
+		heartbeats, elapsed, float64(heartbeats)/elapsed.Seconds(), conns)
 }
