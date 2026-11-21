@@ -533,6 +533,16 @@ type GroupMembersPageBody struct {
 	Members    []GroupMemberBody `json:"members"`
 	NextCursor string            `json:"next_cursor,omitempty"`
 	Total      int               `json:"total"`
+	Degraded   bool              `json:"degraded,omitempty"`
+}
+
+// DegradedGroupMembersPageBody keeps HTTP 200 when ms-user is unavailable so clients can retain cached rows.
+func DegradedGroupMembersPageBody() GroupMembersPageBody {
+	return GroupMembersPageBody{
+		Members:  []GroupMemberBody{},
+		Total:    0,
+		Degraded: true,
+	}
 }
 
 // UserSearchHitBody is one autocomplete row.

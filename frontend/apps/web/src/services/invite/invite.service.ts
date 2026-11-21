@@ -8,6 +8,7 @@ import {
 } from "@wichat/contracts/group/invite";
 import { GroupMembersPageSchema } from "@wichat/contracts/group/member";
 import { UserSearchSchema } from "@wichat/contracts/user";
+import { ApiError } from "@wichat/api-client/api-error";
 import { api } from "@/integrations/api-client";
 
 export async function listGroupMembers(
@@ -23,7 +24,11 @@ export async function listGroupMembers(
 	}
 	const qs = params.toString();
 	const path = `/groups/${encodeURIComponent(groupId)}/members${qs ? `?${qs}` : ""}`;
-	return api.get(path, GroupMembersPageSchema);
+	const page = await api.get(path, GroupMembersPageSchema);
+	if (page.degraded) {
+		throw new ApiError("error.service_unavailable");
+	}
+	return page;
 }
 
 export async function searchUsers(
