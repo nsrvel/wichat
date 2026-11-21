@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -264,4 +265,85 @@ func TestSubscribeGroupForbiddenKeepsConnectionAlive(t *testing.T) {
 	if updated.Type != "presence.updated" {
 		t.Fatalf("expected presence.updated after denied subscribe, got %q", updated.Type)
 	}
+}
+
+func TestHeartbeatDegradesWhenPresenceUnavailable(t *testing.T) {
+	t.Parallel()
+
+	stub := &stubPresenceClient{}
+	stub.heartbeatFn = func(_ *userv1.HeartbeatPresenceRequest) (*userv1.HeartbeatPresenceResponse, error) {
+		return nil, status.Error(codes.Unavailable, "ms-user down")
+	}
+	ms := &microservices.Clients{}
+	ms.User.GRPC.Presence = stub
+
+	h := ws.NewHandler(ms, hub.New(), logger.New(logger.Options{Service: "gateway-test", Env: "test", Level: "error"}), "")
+	srv := httptest.NewServer(http.HandlerFunc(h.Realtime))
+	defer srv.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	wsURL := strings.Replace(srv.URL, "http://", "ws://", 1) + "?access_token=test-token"
+	conn, resp, err := websocket.Dial(ctx, wsURL, nil)
+	if resp != nil && resp.Body != nil {
+		_ = resp.Body.Close()
+	}
+	if err != nil {
+		t.Fatalf("dial websocket: %v", err)
+	}
+	defer func() { _ = conn.Close(websocket.StatusNormalClosure, "") }()
+
+	if err := conn.Write(ctx, websocket.MessageText, []byte(`{"type":"presence.heartbeat","activity":"active"}`)); err != nil {
+		t.Fatalf("write heartbeat: %v", err)
+	}
+	time.Sleep(50 * time.Millisecond)
+	if err := conn.Write(ctx, websocket.MessageText, []byte(`{"type":"presence.heartbeat","activity":"active"}`)); err != nil {
+		t.Fatalf("second heartbeat after downstream failure: %v", err)
+	}
+}
+
+func TestRealtimeHeartbeatLoadSample(t *testing.T) {
+	if testing.Short() {
+		t.Skip("load sample")
+	}
+	stub := &stubPresenceClient{}
+	var calls atomic.Int32
+	stub.heartbeatFn = func(_ *userv1.HeartbeatPresenceRequest) (*userv1.HeartbeatPresenceResponse, error) {
+		calls.Add(1)
+		return &userv1.HeartbeatPresenceResponse{
+			UserId:          "user-1",
+			PreviousStatus:  "online",
+			EffectiveStatus: "online",
+			IsOnline:        true,
+		}, nil
+	}
+	ms := &microservices.Clients{}
+	ms.User.GRPC.Presence = stub
+	h := ws.NewHandler(ms, hub.New(), logger.New(logger.Options{Service: "gateway-test", Env: "test", Level: "error"}), "")
+	srv := httptest.NewServer(http.HandlerFunc(h.Realtime))
+	defer srv.Close()
+
+	ctx := context.Background()
+	wsURL := strings.Replace(srv.URL, "http://", "ws://", 1) + "?access_token=bench-token"
+	conn, resp, err := websocket.Dial(ctx, wsURL, nil)
+	if resp != nil && resp.Body != nil {
+		_ = resp.Body.Close()
+	}
+	if err != nil {
+		t.Fatalf("dial: %v", err)
+	}
+	defer func() { _ = conn.Close(websocket.StatusNormalClosure, "") }()
+
+	frame := []byte(`{"type":"presence.heartbeat","activity":"active"}`)
+	const heartbeats = 2_000
+	start := time.Now()
+	for i := 0; i < heartbeats; i++ {
+		if err := conn.Write(ctx, websocket.MessageText, frame); err != nil {
+			t.Fatalf("write %d: %v", i, err)
+		}
+	}
+	elapsed := time.Since(start)
+	t.Logf("api-gateway WS heartbeat sends: %d writes in %v (%.0f writes/s); downstream HeartbeatPresence calls=%d",
+		heartbeats, elapsed, float64(heartbeats)/elapsed.Seconds(), calls.Load())
 }

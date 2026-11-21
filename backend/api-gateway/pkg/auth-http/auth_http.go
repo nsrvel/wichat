@@ -513,6 +513,15 @@ type MyPresenceBody struct {
 	ExpiresAt       string `json:"expires_at,omitempty"`
 }
 
+// DegradedMyPresenceBody is the safe fallback when live presence cannot be loaded.
+func DegradedMyPresenceBody() MyPresenceBody {
+	return MyPresenceBody{
+		ManualStatus:    "online",
+		EffectiveStatus: "offline",
+		IsOnline:        false,
+	}
+}
+
 // UpdateMyPresenceRequestBody is PUT /api/v1/users/me/presence.
 type UpdateMyPresenceRequestBody struct {
 	Status     string `json:"status"`

@@ -12,6 +12,7 @@ import (
 	"github.com/wichat/wichat/backend/wi-shared/exception"
 	"github.com/wichat/wichat/backend/wi-shared/infra/logger"
 	"github.com/wichat/wichat/backend/wi-shared/microservices"
+	"github.com/wichat/wichat/backend/wi-shared/microservices/utils"
 	userv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/user/v1"
 	"github.com/wichat/wichat/backend/wi-shared/response"
 	responsehttp "github.com/wichat/wichat/backend/wi-shared/response/http"
@@ -1006,6 +1007,11 @@ func (h handler) GetMyPresence(w http.ResponseWriter, r *http.Request) {
 		AccessToken: token,
 	})
 	if err != nil {
+		if utils.IsOutboundUnavailable(err) {
+			h.log.Warn("get my presence degraded", "err", err)
+			responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(authHttp.DegradedMyPresenceBody()))
+			return
+		}
 		authHttp.WriteOutbound(w, r, h.log, err)
 		return
 	}

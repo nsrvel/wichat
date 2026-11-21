@@ -11,6 +11,8 @@
 
 `resolveUserEffectivePresence` on **GetMyPresence** and **BatchGetEffectivePresence** when effective key is missing but connections exist.
 
+**Degrade (no design change to TTL/heartbeat):** Redis or ms-user read failures must not 500 member lists or `GET /users/me/presence`. ms-user returns offline snapshots / degraded self view; api-gateway maps gRPC `Unavailable` on GetMyPresence to HTTP 200 with `DegradedMyPresenceBody` (manual `online`, effective `offline`).
+
 ## Realtime (api-gateway)
 
 `GET /api/v1/realtime?access_token=…` (WebSocket upgrade)
