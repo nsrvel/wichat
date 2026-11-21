@@ -27,11 +27,11 @@ import (
 type stubPresenceClient struct {
 	mu           sync.Mutex
 	tokens       []string
-	heartbeatFn  func(in *userv1.HeartbeatPresenceRequest) (*userv1.PresenceTransitionResponse, error)
-	disconnectFn func(in *userv1.DisconnectPresenceRequest) (*userv1.PresenceTransitionResponse, error)
+	heartbeatFn  func(in *userv1.HeartbeatPresenceRequest) (*userv1.HeartbeatPresenceResponse, error)
+	disconnectFn func(in *userv1.DisconnectPresenceRequest) (*userv1.DisconnectPresenceResponse, error)
 }
 
-func (s *stubPresenceClient) HeartbeatPresence(_ context.Context, in *userv1.HeartbeatPresenceRequest) (*userv1.PresenceTransitionResponse, error) {
+func (s *stubPresenceClient) HeartbeatPresence(_ context.Context, in *userv1.HeartbeatPresenceRequest) (*userv1.HeartbeatPresenceResponse, error) {
 	s.mu.Lock()
 	s.tokens = append(s.tokens, in.GetAccessToken())
 	fn := s.heartbeatFn
@@ -39,7 +39,7 @@ func (s *stubPresenceClient) HeartbeatPresence(_ context.Context, in *userv1.Hea
 	if fn != nil {
 		return fn(in)
 	}
-	return &userv1.PresenceTransitionResponse{
+	return &userv1.HeartbeatPresenceResponse{
 		UserId:          "user-1",
 		PreviousStatus:  "online",
 		EffectiveStatus: "online",
@@ -47,11 +47,11 @@ func (s *stubPresenceClient) HeartbeatPresence(_ context.Context, in *userv1.Hea
 	}, nil
 }
 
-func (s *stubPresenceClient) DisconnectPresence(_ context.Context, in *userv1.DisconnectPresenceRequest) (*userv1.PresenceTransitionResponse, error) {
+func (s *stubPresenceClient) DisconnectPresence(_ context.Context, in *userv1.DisconnectPresenceRequest) (*userv1.DisconnectPresenceResponse, error) {
 	if s.disconnectFn != nil {
 		return s.disconnectFn(in)
 	}
-	return &userv1.PresenceTransitionResponse{}, nil
+	return &userv1.DisconnectPresenceResponse{}, nil
 }
 
 func (s *stubPresenceClient) SetManualPresence(context.Context, *userv1.SetManualPresenceRequest) (*userv1.SetManualPresenceResponse, error) {
@@ -102,11 +102,11 @@ func TestRealtimeHeartbeatAuthRefreshAndInitialSync(t *testing.T) {
 	t.Parallel()
 
 	stub := &stubPresenceClient{}
-	stub.heartbeatFn = func(in *userv1.HeartbeatPresenceRequest) (*userv1.PresenceTransitionResponse, error) {
+	stub.heartbeatFn = func(in *userv1.HeartbeatPresenceRequest) (*userv1.HeartbeatPresenceResponse, error) {
 		if in.GetAccessToken() == "expired-token" {
 			return nil, status.Error(codes.Unauthenticated, "expired")
 		}
-		return &userv1.PresenceTransitionResponse{
+		return &userv1.HeartbeatPresenceResponse{
 			UserId:          "user-1",
 			PreviousStatus:  "online",
 			EffectiveStatus: "online",
@@ -201,8 +201,8 @@ func TestSubscribeGroupForbiddenKeepsConnectionAlive(t *testing.T) {
 	t.Parallel()
 
 	stub := &stubPresenceClient{}
-	stub.heartbeatFn = func(in *userv1.HeartbeatPresenceRequest) (*userv1.PresenceTransitionResponse, error) {
-		return &userv1.PresenceTransitionResponse{
+	stub.heartbeatFn = func(in *userv1.HeartbeatPresenceRequest) (*userv1.HeartbeatPresenceResponse, error) {
+		return &userv1.HeartbeatPresenceResponse{
 			UserId:          "user-1",
 			PreviousStatus:  "offline",
 			EffectiveStatus: "online",
