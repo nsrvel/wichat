@@ -11,7 +11,7 @@ import (
 type inviteRouteStub struct{}
 
 func (inviteRouteStub) GetGroupInviteLink(http.ResponseWriter, *http.Request) {}
-func (inviteRouteStub) SendGroupInvites(http.ResponseWriter, *http.Request)  {}
+func (inviteRouteStub) SendGroupInvites(http.ResponseWriter, *http.Request)   {}
 func (inviteRouteStub) PreviewGroupInvite(http.ResponseWriter, *http.Request) {}
 func (inviteRouteStub) RedeemGroupInvite(http.ResponseWriter, *http.Request)  {}
 
