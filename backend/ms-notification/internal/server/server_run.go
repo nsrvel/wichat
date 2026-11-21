@@ -17,6 +17,10 @@ import (
 const serveShutdownTimeout = 5 * time.Second
 
 func (s *server) Run(ctx context.Context) error {
+	if err := s.cfg.Validate(); err != nil {
+		return err
+	}
+
 	// Mail
 	var mailSender mail.Sender
 	if s.cfg.Env == "development" && strings.TrimSpace(s.cfg.SMTPUser) == "" {
@@ -39,7 +43,7 @@ func (s *server) Run(ctx context.Context) error {
 		return fmt.Errorf("listen %s: %w", addr, err)
 	}
 
-	grpcSrv := newGRPCServer(s.log)
+	grpcSrv := newGRPCServer(s.log, s.cfg.InternalGrpcToken)
 	notificationv1.RegisterNotifyServiceServer(grpcSrv, notifygrpc.NewServer(notifySvc))
 	notificationv1.RegisterGeneralServiceServer(grpcSrv, generalgrpc.NewServer("ms-notification"))
 

@@ -6,6 +6,6 @@ import (
 	"google.golang.org/grpc"
 )
 
-func newGRPCServer(log logger.Logger) *grpc.Server {
-	return msgrpc.NewServer(log, grpc.MaxRecvMsgSize(32<<20))
+func newGRPCServer(log logger.Logger, internalToken string) *grpc.Server {
+	return msgrpc.NewServer(log, internalToken, grpc.MaxRecvMsgSize(32<<20))
 }

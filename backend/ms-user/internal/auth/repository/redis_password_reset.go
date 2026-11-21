@@ -86,41 +86,17 @@ func (s redisPasswordResetStore) SaveOTP(ctx context.Context, email, userID, cod
 
 func (s redisPasswordResetStore) VerifyOTP(ctx context.Context, email, code string, secret []byte, maxAttempts int) (string, error) {
 	key := pwResetOTPKey(email)
-	raw, err := s.rdb.Get(ctx, key).Bytes()
-	if errors.Is(err, redis.Nil) {
-		return "", constants.ErrNotFound
-	}
+	submitted := authRedis.HMACCode(secret, authRedis.NormalizeOTP(code))
+	raw, err := authRedis.VerifyChallengeJSON(ctx, s.rdb, key, submitted, maxAttempts)
 	if err != nil {
-		return "", err
-	}
-
-	var rec models.PasswordResetOTP
-	if err := json.Unmarshal(raw, &rec); err != nil {
-		return "", err
-	}
-
-	if rec.CodeHMAC != authRedis.HMACCode(secret, authRedis.NormalizeOTP(code)) {
-		rec.Attempts++
-		if rec.Attempts >= maxAttempts {
-			_ = s.rdb.Del(ctx, key).Err()
+		if errors.Is(err, constants.ErrNotFound) {
 			return "", constants.ErrNotFound
 		}
-		payload, err := json.Marshal(rec)
-		if err != nil {
-			return "", err
-		}
-		ttl, err := s.rdb.TTL(ctx, key).Result()
-		if err != nil {
-			return "", err
-		}
-		if ttl <= 0 {
-			ttl = 10 * time.Minute
-		}
-		if err := s.rdb.Set(ctx, key, payload, ttl).Err(); err != nil {
-			return "", err
-		}
-
-		return "", constants.ErrNotFound
+		return "", err
+	}
+	var rec models.PasswordResetOTP
+	if err := authRedis.DecodeJSON(raw, &rec); err != nil {
+		return "", err
 	}
 
 	return rec.UserID, nil

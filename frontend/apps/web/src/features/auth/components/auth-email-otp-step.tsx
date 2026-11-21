@@ -13,6 +13,9 @@ import { ApiError } from "@wichat/api-client/api-error";
 import { translateError } from "@/integrations/i18n/translate-error";
 import { effectiveResendCooldownSec } from "@/features/auth/lib/resend-cooldown";
 import { ForgotPasswordResendCode } from "@/features/auth/forgot-password/forgot-password-resend-code";
+import { TurnstileWidget } from "@/features/auth/components/turnstile-widget";
+import { authSubmitBlocked } from "@/features/auth/lib/captcha-policy";
+import type { InstancePolicy } from "@wichat/contracts/auth";
 
 const OTP_LENGTH = 6;
 
@@ -43,9 +46,13 @@ type AuthEmailOtpStepProps = {
 	isResendPending?: boolean;
 	onSubmit: (code: string) => void;
 	onResend: () => void;
-	onBack?: () => void;
-	backLabel?: string;
 	resendCooldownSec?: number;
+	policy?: InstancePolicy;
+	policyReady?: boolean;
+	turnstileSiteKey?: string;
+	turnstileToken?: string;
+	onTurnstileToken?: (token: string) => void;
+	turnstileResetKey?: number;
 };
 
 export function AuthEmailOtpStep({
@@ -59,9 +66,13 @@ export function AuthEmailOtpStep({
 	isResendPending = false,
 	onSubmit,
 	onResend,
-	onBack,
-	backLabel,
 	resendCooldownSec = 0,
+	policy,
+	policyReady = true,
+	turnstileSiteKey = "",
+	turnstileToken = "",
+	onTurnstileToken,
+	turnstileResetKey = 0,
 }: AuthEmailOtpStepProps) {
 	const { t } = useTranslation();
 	const resendCooldown = effectiveResendCooldownSec(
@@ -73,6 +84,8 @@ export function AuthEmailOtpStep({
 		defaultValues: { code: "" },
 	});
 	const showVerifyError = error != null && !sameApiError(error, resendError);
+	const siteKey = turnstileSiteKey.trim();
+	const submitBlocked = authSubmitBlocked(policy, policyReady, turnstileToken);
 
 	return (
 		<Form {...form}>
@@ -81,7 +94,7 @@ export function AuthEmailOtpStep({
 				onSubmit={form.handleSubmit((values) => onSubmit(values.code))}
 			>
 				<p className="text-center text-xs font-light text-muted-foreground sm:text-sm">
-					{t(leadKey, { email: challenge.email_hint })}
+					{t(leadKey)}
 				</p>
 				<OtpField
 					control={form.control}
@@ -104,20 +117,20 @@ export function AuthEmailOtpStep({
 				{showVerifyError ? (
 					<p className="text-destructive text-[11px] font-medium">{translateError(t, error)}</p>
 				) : null}
-				<Button type="submit" disabled={isPending} className={`mt-2 ${authSubmitClass}`}>
+				{siteKey ? (
+					<TurnstileWidget
+						siteKey={siteKey}
+						resetKey={turnstileResetKey}
+						onToken={(token) => onTurnstileToken?.(token)}
+					/>
+				) : null}
+				<Button
+					type="submit"
+					disabled={isPending || submitBlocked}
+					className={`mt-2 ${authSubmitClass}`}
+				>
 					{isPending ? t(submittingKey) : t(submitKey)}
 				</Button>
-				{onBack ? (
-					<Button
-						type="button"
-						variant="ghost"
-						disabled={isPending}
-						onClick={onBack}
-						className="h-9 w-full text-xs font-medium text-muted-foreground hover:text-foreground"
-					>
-						{backLabel ?? t("auth.back")}
-					</Button>
-				) : null}
 			</form>
 		</Form>
 	);

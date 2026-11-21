@@ -14,5 +14,5 @@ export function ChannelRoutePage({ groupId, channelId }: Props) {
 		writeLastChannel({ groupId, channelId });
 	}, [channelId, groupId]);
 
-	return <ChannelChatView groupId={groupId} channelId={channelId} />;
+	return <ChannelChatView key={channelId} groupId={groupId} channelId={channelId} />;
 }

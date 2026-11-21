@@ -1,6 +1,7 @@
 import { expect, type APIRequestContext, type BrowserContext } from "@playwright/test";
 
-export const E2E_API_BASE = process.env.E2E_API_URL ?? "http://localhost:8080/api/v1";
+export const E2E_API_BASE =
+	process.env.E2E_API_URL ?? "http://localhost:8080/api/v1";
 
 export type TestUser = {
 	id: string;
@@ -51,14 +52,40 @@ export async function createTestUser(
 			locale: "en",
 		},
 	});
-	const data = await parseEnvelope<{ access_token: string; user: { id: string } }>(res);
+	const raw = await res.text();
+	expect(res.ok(), `register failed: ${raw}`).toBeTruthy();
+	const envelope = JSON.parse(raw) as Envelope<
+		| { access_token: string; user: { id: string } }
+		| { challenge_id: string; user?: { id: string } }
+	>;
+	const data = envelope.data;
+	let accessToken = "";
+	let userId = "";
+	if ("access_token" in data && data.access_token) {
+		accessToken = data.access_token;
+		userId = data.user.id;
+	} else if ("challenge_id" in data && data.challenge_id) {
+		const { waitDevOtpForChallenge } = await import("./auth-helpers");
+		const otp = waitDevOtpForChallenge(data.challenge_id);
+		expect(otp, "register verify needs dev Redis OTP shadow (restart ms-user in development)").toBeTruthy();
+		const verifyRes = await request.post(`${E2E_API_BASE}/auth/register/verify`, {
+			data: { challenge_id: data.challenge_id, code: otp },
+		});
+		const verified = await parseEnvelope<{ access_token: string; user: { id: string } }>(
+			verifyRes,
+		);
+		accessToken = verified.access_token;
+		userId = verified.user.id;
+	} else {
+		throw new Error(`unexpected register response: ${raw}`);
+	}
 	return {
-		id: data.user.id,
+		id: userId,
 		username,
 		displayName: name,
 		email,
 		password,
-		accessToken: data.access_token,
+		accessToken,
 	};
 }
 

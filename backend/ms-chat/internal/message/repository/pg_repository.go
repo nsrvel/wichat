@@ -7,6 +7,7 @@ import (
 
 	"github.com/uptrace/bun"
 	"github.com/wichat/wichat/backend/ms-chat/internal/models"
+	outboxrepo "github.com/wichat/wichat/backend/ms-chat/internal/outbox/repository"
 	"github.com/wichat/wichat/backend/ms-chat/pkg/constants"
 	pgErr "github.com/wichat/wichat/backend/ms-chat/pkg/db"
 	"github.com/wichat/wichat/backend/ms-chat/pkg/token"
@@ -15,35 +16,35 @@ import (
 
 // PgRepository persists channel messages and reactions.
 type PgRepository interface {
-	ListByChannel(ctx context.Context, channelID string, limit int, before *time.Time) ([]models.MessageWithAuthor, error)
+	ListByChannel(ctx context.Context, channelID string, limit int, before *time.Time, beforePublicID string, beforeChannelSeq int64) ([]models.MessageWithAuthor, bool, error)
 	ListPinnedByChannel(ctx context.Context, channelID string) ([]models.MessageWithAuthor, error)
 	FindByPublicIDInChannel(ctx context.Context, channelID, publicID string) (models.MessageWithAuthor, error)
 	Insert(ctx context.Context, channelID, authorID, body string, replyToID *string, createdAt time.Time) (models.Message, error)
+	InsertWithOutbox(ctx context.Context, in *models.InsertMessageWithOutboxInput) (models.Message, error)
 	UpdateBody(ctx context.Context, channelID, publicID, authorID, body string, editedAt time.Time) (models.MessageWithAuthor, error)
 	DeleteByID(ctx context.Context, id string) error
 	DeleteByPublicID(ctx context.Context, channelID, publicID string) error
 	ToggleReaction(ctx context.Context, messageID, userID, emoji string, now time.Time) ([]models.MessageReactionSummary, error)
 	SetPinned(ctx context.Context, channelID, publicID, userID string, pinned bool, now time.Time) (models.MessageWithAuthor, error)
-	FindUserDisplayName(ctx context.Context, userID string) (string, error)
-	FindUserProfile(ctx context.Context, userID string) (displayName, avatarURL string, err error)
 	FindLastMessageTimeByAuthor(ctx context.Context, channelID, authorID string) (*time.Time, error)
 }
 
 type pgRepository struct {
-	db  *bun.DB
-	log logger.Logger
+	db     *bun.DB
+	outbox outboxrepo.PgRepository
+	log    logger.Logger
 }
 
 // NewPgRepository constructs a Postgres message store.
-func NewPgRepository(db *bun.DB, log logger.Logger) PgRepository {
-	return pgRepository{db: db, log: log}
+func NewPgRepository(db *bun.DB, outbox outboxrepo.PgRepository, log logger.Logger) PgRepository {
+	return pgRepository{db: db, outbox: outbox, log: log}
 }
 
 func (r pgRepository) baseMessageSelect(rows *[]models.MessageListRow) *bun.SelectQuery {
 	return r.db.NewSelect().Model(rows).
-		ColumnExpr("m.id, m.public_id, m.channel_id, m.author_id, m.reply_to_id, m.body, m.created_at, m.edited_at, m.is_pinned, m.pinned_at, m.pinned_by").
+		ColumnExpr("m.id, m.public_id, m.channel_id, m.author_id, m.reply_to_id, m.channel_seq, m.body, m.created_at, m.edited_at, m.is_pinned, m.pinned_at, m.pinned_by").
 		ColumnExpr("u.display_name AS author_display_name, COALESCE(u.avatar_url, '') AS author_avatar_url").
-		ColumnExpr("rm.public_id AS reply_public_id, rm.author_id AS reply_author_id, ru.display_name AS reply_author_name, LEFT(rm.body, 200) AS reply_body").
+		ColumnExpr("rm.public_id AS reply_public_id, rm.author_id AS reply_author_id, ru.display_name AS reply_author_name, rm.body AS reply_body").
 		Join("JOIN users AS u ON u.id = m.author_id").
 		Join("LEFT JOIN messages AS rm ON rm.id = m.reply_to_id").
 		Join("LEFT JOIN users AS ru ON ru.id = rm.author_id")
@@ -55,33 +56,38 @@ func (r pgRepository) loadReactionsByMessageIDs(ctx context.Context, messageIDs 
 		return out, nil
 	}
 
-	type reactionAggRow struct {
-		MessageID string   `bun:"message_id"`
-		Emoji     string   `bun:"emoji"`
-		Count     int32    `bun:"count"`
-		UserIDs   []string `bun:"user_ids,array"`
-	}
-
-	var rows []reactionAggRow
-	if err := r.db.NewSelect().
-		TableExpr("message_reactions AS mr").
-		ColumnExpr("mr.message_id").
-		ColumnExpr("mr.emoji").
-		ColumnExpr("COUNT(*)::int AS count").
-		ColumnExpr("ARRAY_AGG(mr.user_id::text ORDER BY mr.created_at ASC) AS user_ids").
+	var rows []models.MessageReactionRow
+	if err := r.db.NewSelect().Model(&rows).
 		Where("mr.message_id IN (?)", bun.List(messageIDs)).
-		GroupExpr("mr.message_id, mr.emoji").
-		OrderExpr("MIN(mr.created_at) ASC").
-		Scan(ctx, &rows); err != nil {
+		OrderExpr("mr.created_at ASC").
+		Scan(ctx); err != nil {
 		return nil, err
 	}
 
+	byMsgEmoji := make(map[string]map[string]*models.MessageReactionSummary)
+	order := make(map[string][]string)
 	for _, row := range rows {
-		out[row.MessageID] = append(out[row.MessageID], models.MessageReactionSummary{
-			Emoji:   row.Emoji,
-			Count:   row.Count,
-			UserIDs: row.UserIDs,
-		})
+		m, ok := byMsgEmoji[row.MessageID]
+		if !ok {
+			m = make(map[string]*models.MessageReactionSummary)
+			byMsgEmoji[row.MessageID] = m
+		}
+		summary, exists := m[row.Emoji]
+		if !exists {
+			summary = &models.MessageReactionSummary{Emoji: row.Emoji}
+			m[row.Emoji] = summary
+			order[row.MessageID] = append(order[row.MessageID], row.Emoji)
+		}
+		summary.Count++
+		summary.UserIDs = append(summary.UserIDs, row.UserID)
+	}
+
+	for msgID, emojis := range order {
+		list := make([]models.MessageReactionSummary, 0, len(emojis))
+		for _, emoji := range emojis {
+			list = append(list, *byMsgEmoji[msgID][emoji])
+		}
+		out[msgID] = list
 	}
 
 	return out, nil
@@ -107,34 +113,42 @@ func (r pgRepository) hydrateRows(ctx context.Context, rows []models.MessageList
 	return out, nil
 }
 
-func (r pgRepository) ListByChannel(ctx context.Context, channelID string, limit int, before *time.Time) ([]models.MessageWithAuthor, error) {
-	if limit <= 0 {
-		limit = constants.DefaultMessageListLimit
-	}
-	if limit > constants.MaxMessageListLimit {
-		limit = constants.MaxMessageListLimit
-	}
-
+func (r pgRepository) ListByChannel(ctx context.Context, channelID string, limit int, before *time.Time, beforePublicID string, beforeChannelSeq int64) ([]models.MessageWithAuthor, bool, error) {
 	var rows []models.MessageListRow
 	q := r.baseMessageSelect(&rows).
 		Where("m.channel_id = ?", channelID).
 		OrderExpr("m.created_at DESC, m.id DESC").
-		Limit(int64(limit))
+		Limit(int64(limit + 1))
+	if beforeChannelSeq > 0 {
+		q = q.Where("m.channel_seq < ?", beforeChannelSeq)
+	}
 	if before != nil {
-		q = q.Where("m.created_at < ?", *before)
+		if beforePublicID != "" {
+			q = q.Where(
+				"(m.created_at < ? OR (m.created_at = ? AND m.id < (SELECT id FROM messages WHERE channel_id = ? AND public_id = ? LIMIT 1)))",
+				*before, *before, channelID, beforePublicID,
+			)
+		} else {
+			q = q.Where("m.created_at < ?", *before)
+		}
 	}
 
 	if err := q.Scan(ctx); err != nil {
 		r.logIfInfraErr("ListByChannel", err)
 
-		return nil, err
+		return nil, false, err
+	}
+
+	hasMore := len(rows) > limit
+	if hasMore {
+		rows = rows[:limit]
 	}
 
 	hydrated, err := r.hydrateRows(ctx, rows)
 	if err != nil {
 		r.logIfInfraErr("ListByChannel.hydrate", err)
 
-		return nil, err
+		return nil, false, err
 	}
 
 	out := make([]models.MessageWithAuthor, len(hydrated))
@@ -142,7 +156,7 @@ func (r pgRepository) ListByChannel(ctx context.Context, channelID string, limit
 		out[len(hydrated)-1-i] = item
 	}
 
-	return out, nil
+	return out, hasMore, nil
 }
 
 func (r pgRepository) ListPinnedByChannel(ctx context.Context, channelID string) ([]models.MessageWithAuthor, error) {
@@ -334,31 +348,6 @@ func (r pgRepository) SetPinned(ctx context.Context, channelID, publicID, userID
 	return r.FindByPublicIDInChannel(ctx, channelID, publicID)
 }
 
-func (r pgRepository) FindUserDisplayName(ctx context.Context, userID string) (string, error) {
-	name, _, err := r.FindUserProfile(ctx, userID)
-
-	return name, err
-}
-
-func (r pgRepository) FindUserProfile(ctx context.Context, userID string) (displayName, avatarURL string, err error) {
-	var row struct {
-		DisplayName string `bun:"display_name"`
-		AvatarURL   string `bun:"avatar_url"`
-	}
-	err = r.db.NewSelect().
-		TableExpr("users").
-		ColumnExpr("display_name, COALESCE(avatar_url, '') AS avatar_url").
-		Where("id = ?", userID).
-		Scan(ctx, &row)
-	if err != nil {
-		r.logIfInfraErr("FindUserProfile", err)
-
-		return "", "", pgErr.MapNotFound(err)
-	}
-
-	return row.DisplayName, row.AvatarURL, nil
-}
-
 func (r pgRepository) FindLastMessageTimeByAuthor(ctx context.Context, channelID, authorID string) (*time.Time, error) {
 	var createdAt time.Time
 	err := r.db.NewSelect().
@@ -378,6 +367,63 @@ func (r pgRepository) FindLastMessageTimeByAuthor(ctx context.Context, channelID
 	}
 
 	return &createdAt, nil
+}
+
+func (r pgRepository) InsertWithOutbox(ctx context.Context, in *models.InsertMessageWithOutboxInput) (models.Message, error) {
+	if in == nil {
+		return models.Message{}, errors.New("insert message input required")
+	}
+
+	if in.ID == "" || in.PublicID == "" {
+		return models.Message{}, errors.New("message id and public_id required")
+	}
+
+	var inserted models.Message
+	err := r.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
+		channelSeq, err := r.nextChannelSeq(ctx, tx, in.ChannelID)
+		if err != nil {
+			return err
+		}
+
+		row := models.MessageRowFrom(models.Message{
+			ID: in.ID, PublicID: in.PublicID, ChannelID: in.ChannelID, AuthorID: in.AuthorID,
+			ReplyToID: in.ReplyToID, ChannelSeq: channelSeq, Body: in.Body, CreatedAt: in.CreatedAt,
+		})
+		if _, err := tx.NewInsert().Model(&row).Exec(ctx); err != nil {
+			return err
+		}
+		if err := r.outbox.InsertInTx(ctx, tx, in.Outbox); err != nil {
+			return err
+		}
+
+		inserted = row.ToModel()
+
+		return nil
+	})
+	if err == nil {
+		return inserted, nil
+	}
+	if errors.Is(pgErr.MapUnique(err), constants.ErrConflict) {
+		return models.Message{}, constants.ErrConflict
+	}
+	r.logIfInfraErr("InsertWithOutbox", err)
+
+	return models.Message{}, err
+}
+
+func (r pgRepository) nextChannelSeq(ctx context.Context, tx bun.Tx, channelID string) (int64, error) {
+	var channelSeq int64
+	err := tx.NewRaw(
+		`UPDATE channels SET message_seq = message_seq + 1 WHERE id = ? RETURNING message_seq`,
+		channelID,
+	).Scan(ctx, &channelSeq)
+	if err != nil {
+		r.logIfInfraErr("nextChannelSeq", err)
+
+		return 0, err
+	}
+
+	return channelSeq, nil
 }
 
 func (r pgRepository) logIfInfraErr(op string, err error) {

@@ -22,10 +22,13 @@ message ListChannelMessagesRequest {
   string channel_id = 3;
   int32 limit = 4;
   string before_created_at = 5;
+  string before_id = 6;
+  int64 before_channel_seq = 7;
 }
 
 message ListChannelMessagesResponse {
   repeated MessageSummary messages = 1;
+  bool has_more = 2;
 }
 
 message CreateChannelMessageRequest {
@@ -122,6 +125,7 @@ message MessageSummary {
   bool is_pinned = 9;
   MessageReplyPreview reply_to = 10;
   repeated MessageReactionSummary reactions = 11;
+  int64 channel_seq = 12;
 }
 
 message UploadChannelAttachmentRequest {

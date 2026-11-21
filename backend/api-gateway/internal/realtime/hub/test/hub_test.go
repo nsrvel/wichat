@@ -8,5 +8,5 @@ import (
 
 func TestDeliver_noSubscribers_noPanic(t *testing.T) {
 	h := hub.New()
-	h.Deliver("aaaaaaaaaaaaaaaaaaaaaaaa", "bbbbbbbbbbbbbbbbbbbbbbbb", []byte(`{"type":"message.created"}`))
+	_ = h.Deliver("aaaaaaaaaaaaaaaaaaaaaaaa", "bbbbbbbbbbbbbbbbbbbbbbbb", []byte(`{"type":"message.created"}`))
 }

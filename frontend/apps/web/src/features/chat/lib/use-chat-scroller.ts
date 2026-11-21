@@ -1,12 +1,32 @@
 "use client";
 
+import { useVirtualizer, type Virtualizer } from "@tanstack/react-virtual";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
+import type { TimelineItem } from "@/features/chat/lib/group-timeline-items";
+
+type ScrollMode = "sticky-bottom" | "free-scroll" | "jump-target";
+
+type SavedChannelScroll = { mode: "sticky-bottom" } | { mode: "free-scroll"; scrollTop: number };
+
+const channelScrollMemory = new Map<string, SavedChannelScroll>();
+const MAX_SCROLL_MEMORY_ENTRIES = 50;
+
+function saveChannelScroll(channelId: string, state: SavedChannelScroll) {
+	if (channelScrollMemory.has(channelId)) {
+		channelScrollMemory.delete(channelId);
+	}
+	channelScrollMemory.set(channelId, state);
+	if (channelScrollMemory.size > MAX_SCROLL_MEMORY_ENTRIES) {
+		const oldestKey = channelScrollMemory.keys().next().value;
+		if (oldestKey) {
+			channelScrollMemory.delete(oldestKey);
+		}
+	}
+}
 
 type UseChatScrollerOptions = {
 	channelId: string;
-	messageCount: number;
-	firstMessageId: string | undefined;
-	lastMessageId: string | undefined;
+	items: TimelineItem[];
 	hasOlderMessages: boolean;
 	isFetchingOlderMessages: boolean;
 	fetchOlderMessages: () => void;
@@ -15,6 +35,7 @@ type UseChatScrollerOptions = {
 export type UseChatScrollerResult = {
 	scrollRef: RefObject<HTMLDivElement | null>;
 	contentRef: RefObject<HTMLDivElement | null>;
+	virtualizer: Virtualizer<HTMLDivElement, HTMLDivElement>;
 	showJumpToLatest: boolean;
 	unreadNewCount: number;
 	highlightedMessageId: string | null;
@@ -25,14 +46,13 @@ export type UseChatScrollerResult = {
 	prepareForSend: () => void;
 };
 
-const BOTTOM_THRESHOLD_PX = 64;
-const TOP_LOAD_THRESHOLD_PX = 160;
+const BOTTOM_THRESHOLD_PX = 56;
+const JUMP_PILL_THRESHOLD_PX = 240;
+const TOP_LOAD_THRESHOLD_PX = 200;
 
 export function useChatScroller({
 	channelId,
-	messageCount,
-	firstMessageId,
-	lastMessageId,
+	items,
 	hasOlderMessages,
 	isFetchingOlderMessages,
 	fetchOlderMessages,
@@ -40,115 +60,152 @@ export function useChatScroller({
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const contentRef = useRef<HTMLDivElement>(null);
 
-	const isAtBottomRef = useRef(true);
-	const forceBottomRef = useRef(true);
-	const isSmoothScrollingRef = useRef(false);
-	const smoothScrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-	const prependBottomOffsetRef = useRef<number | null>(null);
-	const prevChannelIdRef = useRef<string>(channelId);
-	const prevFirstIdRef = useRef<string | undefined>(firstMessageId);
-	const prevLastIdRef = useRef<string | undefined>(lastMessageId);
+	const savedScroll = channelScrollMemory.get(channelId);
+	const modeRef = useRef<ScrollMode>(savedScroll?.mode ?? "sticky-bottom");
+	const initialRestoredRef = useRef(false);
+	const prevFirstKeyRef = useRef<string | undefined>(undefined);
+	const prevLastKeyRef = useRef<string | undefined>(undefined);
+	const prevTotalSizeRef = useRef<number>(0);
 
-	const [showJumpToLatest, setShowJumpToLatest] = useState(false);
+	const [showJumpToLatest, setShowJumpToLatest] = useState(savedScroll?.mode === "free-scroll");
 	const [unreadNewCount, setUnreadNewCount] = useState(0);
 	const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
 	const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-	const snapToBottom = useCallback((behavior: ScrollBehavior = "auto") => {
+	// eslint-disable-next-line react-hooks/incompatible-library -- TanStack Virtual returns non-memoizable imperative methods.
+	const virtualizer = useVirtualizer<HTMLDivElement, HTMLDivElement>({
+		count: items.length,
+		getScrollElement: () => scrollRef.current,
+		estimateSize: (index) => (items[index]?.kind === "date-divider" ? 44 : 80),
+		getItemKey: (index) => items[index]?.key ?? index,
+		overscan: 8,
+	});
+
+	const totalSize = virtualizer.getTotalSize();
+
+	const snapToBottomNow = useCallback((behavior: ScrollBehavior = "auto") => {
 		const el = scrollRef.current;
 		if (!el) {
 			return;
 		}
 		const targetTop = Math.max(0, el.scrollHeight - el.clientHeight);
 		if (behavior === "smooth") {
-			isSmoothScrollingRef.current = true;
-			if (smoothScrollTimerRef.current) {
-				clearTimeout(smoothScrollTimerRef.current);
-			}
-			smoothScrollTimerRef.current = setTimeout(() => {
-				isSmoothScrollingRef.current = false;
-				smoothScrollTimerRef.current = null;
-			}, 650);
 			el.scrollTo({ top: targetTop, behavior: "smooth" });
 		} else {
-			isSmoothScrollingRef.current = false;
-			if (smoothScrollTimerRef.current) {
-				clearTimeout(smoothScrollTimerRef.current);
-				smoothScrollTimerRef.current = null;
-			}
 			el.scrollTop = targetTop;
 		}
 	}, []);
 
-	// Reset state on channel switch.
-	useLayoutEffect(() => {
-		if (prevChannelIdRef.current !== channelId) {
-			prevChannelIdRef.current = channelId;
-			prevFirstIdRef.current = undefined;
-			prevLastIdRef.current = undefined;
-			prependBottomOffsetRef.current = null;
-			isAtBottomRef.current = true;
-			forceBottomRef.current = true;
-			setShowJumpToLatest(false);
-			setUnreadNewCount(0);
-			setHighlightedMessageId(null);
-			if (highlightTimerRef.current) {
-				clearTimeout(highlightTimerRef.current);
-				highlightTimerRef.current = null;
+	// Persist scroll state on unmount (channel switch).
+	useEffect(() => {
+		const el = scrollRef.current;
+		return () => {
+			if (!el) {
+				return;
 			}
-		}
+			if (modeRef.current === "sticky-bottom") {
+				saveChannelScroll(channelId, { mode: "sticky-bottom" });
+			} else {
+				saveChannelScroll(channelId, { mode: "free-scroll", scrollTop: el.scrollTop });
+			}
+		};
 	}, [channelId]);
 
-	// Deterministic scroll positioning on message list updates (before paint).
+	// User-intent interruption: cancel smooth scroll / sticky lock on manual wheel, touch, or pointer drag.
+	useEffect(() => {
+		const el = scrollRef.current;
+		if (!el) {
+			return;
+		}
+		const onUserInteract = () => {
+			if (modeRef.current === "jump-target") {
+				modeRef.current = "free-scroll";
+			}
+		};
+		el.addEventListener("wheel", onUserInteract, { passive: true });
+		el.addEventListener("touchstart", onUserInteract, { passive: true });
+		el.addEventListener("pointerdown", onUserInteract, { passive: true });
+		return () => {
+			el.removeEventListener("wheel", onUserInteract);
+			el.removeEventListener("touchstart", onUserInteract);
+			el.removeEventListener("pointerdown", onUserInteract);
+		};
+	}, []);
+
+	// Deterministic scroll positioning before paint on timeline updates.
 	useLayoutEffect(() => {
 		const el = scrollRef.current;
 		if (!el) {
 			return;
 		}
 
-		// 1. Prepend anchoring when older messages are loaded at top.
-		if (
-			prependBottomOffsetRef.current !== null &&
-			firstMessageId !== undefined &&
-			firstMessageId !== prevFirstIdRef.current
-		) {
-			el.scrollTop = Math.max(0, el.scrollHeight - prependBottomOffsetRef.current);
-			prependBottomOffsetRef.current = null;
-			prevFirstIdRef.current = firstMessageId;
-			prevLastIdRef.current = lastMessageId;
+		const firstKey = items[0]?.key;
+		const lastKey = items[items.length - 1]?.key;
+		const prevFirstKey = prevFirstKeyRef.current;
+		const prevLastKey = prevLastKeyRef.current;
+		const prevTotalSize = prevTotalSizeRef.current;
+
+		// 1. Initial channel mount with data: restore saved scroll position or snap to bottom.
+		if (!initialRestoredRef.current && items.length > 0) {
+			initialRestoredRef.current = true;
+			const saved = channelScrollMemory.get(channelId);
+			if (saved?.mode === "free-scroll") {
+				modeRef.current = "free-scroll";
+				el.scrollTop = Math.min(saved.scrollTop, Math.max(0, el.scrollHeight - el.clientHeight));
+				setShowJumpToLatest(true);
+			} else {
+				modeRef.current = "sticky-bottom";
+				setShowJumpToLatest(false);
+				setUnreadNewCount(0);
+				snapToBottomNow("auto");
+			}
+			prevFirstKeyRef.current = firstKey;
+			prevLastKeyRef.current = lastKey;
+			prevTotalSizeRef.current = totalSize;
 			return;
 		}
 
-		// 2. Initial channel load or forced snap (e.g. user sent message).
-		if (forceBottomRef.current && messageCount > 0) {
-			forceBottomRef.current = false;
-			isAtBottomRef.current = true;
-			setShowJumpToLatest(false);
-			setUnreadNewCount(0);
-			snapToBottom("auto");
-		} else if (lastMessageId !== prevLastIdRef.current && isAtBottomRef.current) {
-			// 3. New message appended while user is locked at bottom.
-			snapToBottom("auto");
+		// 2. Prepend anchoring when older messages are added at the top.
+		if (
+			prevFirstKey !== undefined &&
+			firstKey !== undefined &&
+			firstKey !== prevFirstKey &&
+			lastKey === prevLastKey
+		) {
+			const delta = totalSize - prevTotalSize;
+			if (delta > 0) {
+				el.scrollTop += delta;
+			}
+			prevFirstKeyRef.current = firstKey;
+			prevLastKeyRef.current = lastKey;
+			prevTotalSizeRef.current = totalSize;
+			return;
 		}
 
-		prevFirstIdRef.current = firstMessageId;
-		prevLastIdRef.current = lastMessageId;
-	}, [messageCount, firstMessageId, lastMessageId, snapToBottom]);
+		// 3. New message appended or size refined while locked to bottom.
+		if (modeRef.current === "sticky-bottom") {
+			snapToBottomNow("auto");
+		}
 
-	// Keep bottom locked whenever inner content resizes (images, code blocks, AI streaming).
+		prevFirstKeyRef.current = firstKey;
+		prevLastKeyRef.current = lastKey;
+		prevTotalSizeRef.current = totalSize;
+	}, [channelId, items, totalSize, snapToBottomNow]);
+
+	// Keep bottom pinned when inner content resizes (e.g. async images, code highlight, embeds).
 	useEffect(() => {
 		const contentEl = contentRef.current;
 		if (!contentEl || typeof ResizeObserver === "undefined") {
 			return;
 		}
 		const observer = new ResizeObserver(() => {
-			if (isAtBottomRef.current) {
-				snapToBottom(isSmoothScrollingRef.current ? "smooth" : "auto");
+			if (modeRef.current === "sticky-bottom") {
+				snapToBottomNow("auto");
 			}
 		});
 		observer.observe(contentEl);
 		return () => observer.disconnect();
-	}, [snapToBottom]);
+	}, [snapToBottomNow]);
 
 	const handleScroll = useCallback(() => {
 		const el = scrollRef.current;
@@ -158,102 +215,106 @@ export function useChatScroller({
 
 		const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
 		const atBottom = distanceFromBottom <= BOTTOM_THRESHOLD_PX;
-		isAtBottomRef.current = atBottom;
 
 		if (atBottom) {
+			modeRef.current = "sticky-bottom";
 			setShowJumpToLatest(false);
 			setUnreadNewCount(0);
-		} else if (distanceFromBottom > 240) {
-			setShowJumpToLatest(true);
+		} else {
+			if (modeRef.current === "sticky-bottom") {
+				modeRef.current = "free-scroll";
+			}
+			if (distanceFromBottom > JUMP_PILL_THRESHOLD_PX) {
+				setShowJumpToLatest(true);
+			}
 		}
 
 		if (
 			el.scrollTop <= TOP_LOAD_THRESHOLD_PX &&
 			hasOlderMessages &&
 			!isFetchingOlderMessages &&
-			prependBottomOffsetRef.current === null
+			items.length > 0
 		) {
-			prependBottomOffsetRef.current = el.scrollHeight - el.scrollTop;
 			fetchOlderMessages();
 		}
-	}, [hasOlderMessages, isFetchingOlderMessages, fetchOlderMessages]);
-
-	// Clear stale prepend offset if fetch finishes without adding older items.
-	useEffect(() => {
-		if (!isFetchingOlderMessages && prependBottomOffsetRef.current !== null) {
-			const id = requestAnimationFrame(() => {
-				prependBottomOffsetRef.current = null;
-			});
-			return () => cancelAnimationFrame(id);
-		}
-	}, [isFetchingOlderMessages]);
+	}, [hasOlderMessages, isFetchingOlderMessages, fetchOlderMessages, items.length]);
 
 	const scrollToBottom = useCallback(
 		(behavior: ScrollBehavior = "smooth") => {
-			isAtBottomRef.current = true;
+			modeRef.current = "sticky-bottom";
 			setShowJumpToLatest(false);
 			setUnreadNewCount(0);
-			snapToBottom(behavior);
+			if (items.length > 0) {
+				virtualizer.scrollToIndex(items.length - 1, {
+					align: "end",
+					behavior: behavior === "smooth" ? "smooth" : "auto",
+				});
+			}
+			snapToBottomNow(behavior);
 		},
-		[snapToBottom],
+		[items.length, snapToBottomNow, virtualizer],
 	);
 
 	const prepareForSend = useCallback(() => {
-		forceBottomRef.current = true;
-		isAtBottomRef.current = true;
+		modeRef.current = "sticky-bottom";
 		setShowJumpToLatest(false);
 		setUnreadNewCount(0);
 	}, []);
 
-	const notifyIncomingMessage = useCallback((isMine: boolean) => {
-		if (isMine) {
-			forceBottomRef.current = true;
-			isAtBottomRef.current = true;
-			setShowJumpToLatest(false);
-			setUnreadNewCount(0);
-			return;
-		}
-		if (!isAtBottomRef.current) {
-			setShowJumpToLatest(true);
-			setUnreadNewCount((prev) => prev + 1);
-		}
-	}, []);
+	const notifyIncomingMessage = useCallback(
+		(isMine: boolean) => {
+			if (isMine) {
+				modeRef.current = "sticky-bottom";
+				setShowJumpToLatest(false);
+				setUnreadNewCount(0);
+				snapToBottomNow("auto");
+				return;
+			}
+			if (modeRef.current !== "sticky-bottom") {
+				setShowJumpToLatest(true);
+				setUnreadNewCount((prev) => prev + 1);
+			}
+		},
+		[snapToBottomNow],
+	);
 
 	useEffect(() => {
 		return () => {
 			if (highlightTimerRef.current) {
 				clearTimeout(highlightTimerRef.current);
 			}
-			if (smoothScrollTimerRef.current) {
-				clearTimeout(smoothScrollTimerRef.current);
-			}
 		};
 	}, []);
 
-	const scrollToMessage = useCallback((messageId: string): boolean => {
-		const container = scrollRef.current;
-		if (!container || !messageId) {
-			return false;
-		}
-		const selector = `[data-message-id="${CSS.escape(messageId)}"]`;
-		const target = container.querySelector(selector) as HTMLElement | null;
-		if (!target) {
-			return false;
-		}
-		target.scrollIntoView({ behavior: "smooth", block: "center" });
-		setHighlightedMessageId(messageId);
-		if (highlightTimerRef.current) {
-			clearTimeout(highlightTimerRef.current);
-		}
-		highlightTimerRef.current = setTimeout(() => {
-			setHighlightedMessageId((current) => (current === messageId ? null : current));
-		}, 1600);
-		return true;
-	}, []);
+	const scrollToMessage = useCallback(
+		(messageId: string): boolean => {
+			if (!messageId) {
+				return false;
+			}
+			const index = items.findIndex(
+				(item) => item.kind === "message" && item.message.id === messageId,
+			);
+			if (index < 0) {
+				return false;
+			}
+			modeRef.current = "jump-target";
+			virtualizer.scrollToIndex(index, { align: "center", behavior: "smooth" });
+			setHighlightedMessageId(messageId);
+			if (highlightTimerRef.current) {
+				clearTimeout(highlightTimerRef.current);
+			}
+			highlightTimerRef.current = setTimeout(() => {
+				setHighlightedMessageId((current) => (current === messageId ? null : current));
+			}, 1600);
+			return true;
+		},
+		[items, virtualizer],
+	);
 
 	return {
 		scrollRef,
 		contentRef,
+		virtualizer,
 		showJumpToLatest,
 		unreadNewCount,
 		highlightedMessageId,

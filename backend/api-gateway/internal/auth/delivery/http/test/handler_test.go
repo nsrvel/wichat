@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	authdelivery "github.com/wichat/wichat/backend/api-gateway/internal/auth/delivery/http"
+	"github.com/wichat/wichat/backend/wi-shared/exception"
 	"github.com/wichat/wichat/backend/wi-shared/infra/logger"
 	"github.com/wichat/wichat/backend/wi-shared/microservices"
 	msUser "github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-user"
@@ -54,6 +55,9 @@ func TestLoginReturnsChallengeWithoutRefreshCookie(t *testing.T) {
 	}
 	if body.Data.ChallengeID != "ch-1" || body.Data.AccessToken != "" {
 		t.Fatalf("challenge: %+v", body.Data)
+	}
+	if strings.Contains(rec.Body.String(), "email_hint") {
+		t.Fatalf("email_hint leaked: %s", rec.Body.String())
 	}
 
 	res := rec.Result()
@@ -113,18 +117,32 @@ func testClients(f msUserFakes) *microservices.Clients {
 }
 
 type fakeAuth struct {
-	login              func(context.Context, *userv1.LoginRequest) (*userv1.LoginResponse, error)
-	verifyLogin        func(context.Context, *userv1.VerifyLoginRequest) (*userv1.VerifyLoginResponse, error)
-	verifyLoginMFA     func(context.Context, *userv1.VerifyLoginMFARequest) (*userv1.VerifyLoginMFAResponse, error)
-	beginLoginWebAuthn func(context.Context, *userv1.BeginLoginWebAuthnRequest) (*userv1.BeginLoginWebAuthnResponse, error)
-	googleFinish       func(context.Context, *userv1.GoogleFinishRequest) (*userv1.GoogleFinishResponse, error)
+	login                 func(context.Context, *userv1.LoginRequest) (*userv1.LoginResponse, error)
+	verifyLogin           func(context.Context, *userv1.VerifyLoginRequest) (*userv1.VerifyLoginResponse, error)
+	verifyLoginMFA        func(context.Context, *userv1.VerifyLoginMFARequest) (*userv1.VerifyLoginMFAResponse, error)
+	beginLoginWebAuthn    func(context.Context, *userv1.BeginLoginWebAuthnRequest) (*userv1.BeginLoginWebAuthnResponse, error)
+	googleFinish          func(context.Context, *userv1.GoogleFinishRequest) (*userv1.GoogleFinishResponse, error)
+	resendLogin           func(context.Context, *userv1.ResendLoginCodeRequest) (*userv1.ResendLoginCodeResponse, error)
+	register              func(context.Context, *userv1.RegisterRequest) (*userv1.RegisterResponse, error)
+	verifyRegister        func(context.Context, *userv1.VerifyRegisterRequest) (*userv1.VerifyRegisterResponse, error)
+	googleStart           func(context.Context, *userv1.GoogleStartRequest) (*userv1.GoogleStartResponse, error)
+	refresh               func(context.Context, *userv1.RefreshRequest) (*userv1.RefreshResponse, error)
+	logout                func(context.Context, *userv1.LogoutRequest) (*userv1.LogoutResponse, error)
+	me                    func(context.Context, *userv1.MeRequest) (*userv1.MeResponse, error)
+	resendRegister        func(context.Context, *userv1.ResendRegisterCodeRequest) (*userv1.ResendRegisterCodeResponse, error)
+	verifyPasswordReset   func(context.Context, *userv1.VerifyPasswordResetRequest) (*userv1.VerifyPasswordResetResponse, error)
+	requestPasswordReset  func(context.Context, *userv1.RequestPasswordResetRequest) (*userv1.RequestPasswordResetResponse, error)
+	completePasswordReset func(context.Context, *userv1.CompletePasswordResetRequest) (*userv1.CompletePasswordResetResponse, error)
 }
 
 func (f fakeAuth) Setup(context.Context, *userv1.SetupRequest) (*userv1.SetupResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
 
-func (f fakeAuth) Register(context.Context, *userv1.RegisterRequest) (*userv1.RegisterResponse, error) {
+func (f fakeAuth) Register(ctx context.Context, in *userv1.RegisterRequest) (*userv1.RegisterResponse, error) {
+	if f.register != nil {
+		return f.register(ctx, in)
+	}
 	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
 
@@ -132,7 +150,10 @@ func (f fakeAuth) Login(ctx context.Context, in *userv1.LoginRequest) (*userv1.L
 	return f.login(ctx, in)
 }
 
-func (f fakeAuth) VerifyRegister(context.Context, *userv1.VerifyRegisterRequest) (*userv1.VerifyRegisterResponse, error) {
+func (f fakeAuth) VerifyRegister(ctx context.Context, in *userv1.VerifyRegisterRequest) (*userv1.VerifyRegisterResponse, error) {
+	if f.verifyRegister != nil {
+		return f.verifyRegister(ctx, in)
+	}
 	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
 
@@ -157,39 +178,66 @@ func (f fakeAuth) BeginLoginWebAuthn(ctx context.Context, in *userv1.BeginLoginW
 	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
 
-func (f fakeAuth) ResendRegisterCode(context.Context, *userv1.ResendRegisterCodeRequest) (*userv1.ResendRegisterCodeResponse, error) {
+func (f fakeAuth) ResendRegisterCode(ctx context.Context, in *userv1.ResendRegisterCodeRequest) (*userv1.ResendRegisterCodeResponse, error) {
+	if f.resendRegister != nil {
+		return f.resendRegister(ctx, in)
+	}
 	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
 
-func (f fakeAuth) ResendLoginCode(context.Context, *userv1.ResendLoginCodeRequest) (*userv1.ResendLoginCodeResponse, error) {
+func (f fakeAuth) ResendLoginCode(ctx context.Context, in *userv1.ResendLoginCodeRequest) (*userv1.ResendLoginCodeResponse, error) {
+	if f.resendLogin != nil {
+		return f.resendLogin(ctx, in)
+	}
 	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
 
-func (f fakeAuth) Refresh(context.Context, *userv1.RefreshRequest) (*userv1.RefreshResponse, error) {
+func (f fakeAuth) Refresh(ctx context.Context, in *userv1.RefreshRequest) (*userv1.RefreshResponse, error) {
+	if f.refresh != nil {
+		return f.refresh(ctx, in)
+	}
 	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
 
-func (f fakeAuth) Logout(context.Context, *userv1.LogoutRequest) (*userv1.LogoutResponse, error) {
+func (f fakeAuth) Logout(ctx context.Context, in *userv1.LogoutRequest) (*userv1.LogoutResponse, error) {
+	if f.logout != nil {
+		return f.logout(ctx, in)
+	}
 	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
 
-func (f fakeAuth) Me(context.Context, *userv1.MeRequest) (*userv1.MeResponse, error) {
+func (f fakeAuth) Me(ctx context.Context, in *userv1.MeRequest) (*userv1.MeResponse, error) {
+	if f.me != nil {
+		return f.me(ctx, in)
+	}
 	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
 
-func (f fakeAuth) GoogleStart(context.Context, *userv1.GoogleStartRequest) (*userv1.GoogleStartResponse, error) {
+func (f fakeAuth) GoogleStart(ctx context.Context, in *userv1.GoogleStartRequest) (*userv1.GoogleStartResponse, error) {
+	if f.googleStart != nil {
+		return f.googleStart(ctx, in)
+	}
 	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
 
-func (f fakeAuth) RequestPasswordReset(context.Context, *userv1.RequestPasswordResetRequest) (*userv1.RequestPasswordResetResponse, error) {
-	return &userv1.RequestPasswordResetResponse{Ok: true}, nil
+func (f fakeAuth) RequestPasswordReset(ctx context.Context, in *userv1.RequestPasswordResetRequest) (*userv1.RequestPasswordResetResponse, error) {
+	if f.requestPasswordReset != nil {
+		return f.requestPasswordReset(ctx, in)
+	}
+	return &userv1.RequestPasswordResetResponse{Ok: true, ResendCooldownSeconds: 60}, nil
 }
 
-func (f fakeAuth) VerifyPasswordReset(context.Context, *userv1.VerifyPasswordResetRequest) (*userv1.VerifyPasswordResetResponse, error) {
+func (f fakeAuth) VerifyPasswordReset(ctx context.Context, in *userv1.VerifyPasswordResetRequest) (*userv1.VerifyPasswordResetResponse, error) {
+	if f.verifyPasswordReset != nil {
+		return f.verifyPasswordReset(ctx, in)
+	}
 	return &userv1.VerifyPasswordResetResponse{ResetToken: "token-1"}, nil
 }
 
-func (f fakeAuth) CompletePasswordReset(context.Context, *userv1.CompletePasswordResetRequest) (*userv1.CompletePasswordResetResponse, error) {
+func (f fakeAuth) CompletePasswordReset(ctx context.Context, in *userv1.CompletePasswordResetRequest) (*userv1.CompletePasswordResetResponse, error) {
+	if f.completePasswordReset != nil {
+		return f.completePasswordReset(ctx, in)
+	}
 	return &userv1.CompletePasswordResetResponse{Ok: true}, nil
 }
 
@@ -307,6 +355,41 @@ func TestGoogleCallbackRejectsStateMismatch(t *testing.T) {
 
 func testLog() logger.Logger {
 	return logger.New(logger.Options{Service: "gateway-test", Env: "test", Level: "error"})
+}
+
+func TestLoginInvalidCredentials(t *testing.T) {
+	handler := authdelivery.NewHandler(testClients(msUserFakes{Auth: fakeAuth{
+		login: func(context.Context, *userv1.LoginRequest) (*userv1.LoginResponse, error) {
+			return nil, status.Error(codes.Unauthenticated, string(exception.MsgInvalidCredentials))
+		},
+	}}), testLog(), false, "http://localhost:8080")
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", strings.NewReader(`{"login":"ada","password":"wrong"}`))
+	rec := httptest.NewRecorder()
+	handler.Login(rec, req)
+
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("status %d body %s", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "invalid_credentials") {
+		t.Fatalf("body %s", rec.Body.String())
+	}
+}
+
+func TestResendLoginCodeReturnsCooldown(t *testing.T) {
+	handler := authdelivery.NewHandler(testClients(msUserFakes{Auth: fakeAuth{
+		resendLogin: func(context.Context, *userv1.ResendLoginCodeRequest) (*userv1.ResendLoginCodeResponse, error) {
+			return &userv1.ResendLoginCodeResponse{ResendCooldownSeconds: 45}, nil
+		},
+	}}), testLog(), false, "http://localhost:8080")
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login/resend", strings.NewReader(`{"challenge_id":"ch-1"}`))
+	rec := httptest.NewRecorder()
+	handler.ResendLoginCode(rec, req)
+
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"resend_after_seconds":45`) {
+		t.Fatalf("status %d body %s", rec.Code, rec.Body.String())
+	}
 }
 
 func TestAuthMFAHandlersForwardFields(t *testing.T) {

@@ -60,6 +60,14 @@ func NewHandler(ms *microservices.Clients, log logger.Logger, secureCookie bool,
 	}
 }
 
+func (h handler) verifyTurnstile(w http.ResponseWriter, r *http.Request, token string) bool {
+	if err := h.turnstile.Verify(r.Context(), token, middleware.ClientIP(r)); err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return false
+	}
+	return true
+}
+
 func (h handler) Setup(w http.ResponseWriter, r *http.Request) {
 	h.Register(w, r)
 }
@@ -103,6 +111,9 @@ func (h handler) VerifyRegister(w http.ResponseWriter, r *http.Request) {
 		authHttp.WriteOutbound(w, r, h.log, err)
 		return
 	}
+	if !h.verifyTurnstile(w, r, body.TurnstileToken) {
+		return
+	}
 
 	out, err := h.ms.User.GRPC.Auth.VerifyRegister(r.Context(), &userv1.VerifyRegisterRequest{
 		ChallengeId: body.ChallengeID,
@@ -120,6 +131,9 @@ func (h handler) ResendRegisterCode(w http.ResponseWriter, r *http.Request) {
 	var body authHttp.ResendEmailCodeBody
 	if err := authHttp.DecodeJSON(w, r, &body); err != nil {
 		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+	if !h.verifyTurnstile(w, r, body.TurnstileToken) {
 		return
 	}
 
@@ -177,6 +191,9 @@ func (h handler) VerifyLogin(w http.ResponseWriter, r *http.Request) {
 		authHttp.WriteOutbound(w, r, h.log, err)
 		return
 	}
+	if !h.verifyTurnstile(w, r, body.TurnstileToken) {
+		return
+	}
 
 	out, err := h.ms.User.GRPC.Auth.VerifyLogin(r.Context(), &userv1.VerifyLoginRequest{
 		ChallengeId: body.ChallengeID,
@@ -194,6 +211,9 @@ func (h handler) ResendLoginCode(w http.ResponseWriter, r *http.Request) {
 	var body authHttp.ResendEmailCodeBody
 	if err := authHttp.DecodeJSON(w, r, &body); err != nil {
 		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+	if !h.verifyTurnstile(w, r, body.TurnstileToken) {
 		return
 	}
 
@@ -269,6 +289,10 @@ func (h handler) Me(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h handler) GoogleStart(w http.ResponseWriter, r *http.Request) {
+	if !h.verifyTurnstile(w, r, r.URL.Query().Get("turnstile_token")) {
+		return
+	}
+
 	// Service
 	out, err := h.ms.User.GRPC.Auth.GoogleStart(r.Context(), &userv1.GoogleStartRequest{})
 	if err != nil {
@@ -422,6 +446,9 @@ func (h handler) VerifyLoginMFA(w http.ResponseWriter, r *http.Request) {
 	var body authHttp.VerifyLoginMFABody
 	if err := authHttp.DecodeJSON(w, r, &body); err != nil {
 		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+	if !h.verifyTurnstile(w, r, body.TurnstileToken) {
 		return
 	}
 

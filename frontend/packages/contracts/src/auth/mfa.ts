@@ -57,6 +57,7 @@ export type BeginLoginWebAuthnResponse = z.infer<
 >;
 
 export const VerifyLoginMfaRequestSchema = z.object({
+	turnstile_token: z.string().optional(),
 	challenge_id: z.string().trim().min(1),
 	method: MfaMethodSchema,
 	code: z.string().optional(),

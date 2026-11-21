@@ -25,7 +25,7 @@ export function useChannelMessages(groupId: string, channelId: string): UseChann
 	const timeFormat = useTimeFormatPreference();
 	const currentUserId = sessionUser?.id ?? "";
 
-	const messages = useMemo<ChannelMessage[]>(() => {
+	const messages: ChannelMessage[] = useMemo(() => {
 		const rawMessages = flattenInfiniteChannelMessages(query.data);
 		return rawMessages.map((msg) => ({
 			id: msg.id,

@@ -1,0 +1,3 @@
+# Login/auth HTTP flow — separate floor (see Makefile test-auth-cover).
+./internal/auth/delivery/http
+./pkg/auth-http

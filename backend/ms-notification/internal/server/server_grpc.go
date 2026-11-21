@@ -6,6 +6,6 @@ import (
 	"google.golang.org/grpc"
 )
 
-func newGRPCServer(log logger.Logger) *grpc.Server {
-	return msgrpc.NewServer(log)
+func newGRPCServer(log logger.Logger, internalToken string) *grpc.Server {
+	return msgrpc.NewServer(log, internalToken)
 }

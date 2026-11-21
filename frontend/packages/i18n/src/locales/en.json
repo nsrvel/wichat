@@ -10,6 +10,7 @@
     "instance_setup_required": "Finish instance setup before new people can join.",
     "forbidden": "You do not have permission to do that.",
     "google_denied": "Google sign-in was cancelled or could not be completed.",
+    "google_mfa_use_password": "This account uses two-factor authentication. Sign in with your username or email and password instead.",
     "google_email_unverified": "That Google account does not have a verified email.",
     "reset_code_invalid": "That code is incorrect or has expired.",
     "reset_rate_limited": "Wait {{retry_after_seconds}}s before requesting another code.",
@@ -61,6 +62,7 @@
     "login_placeholder": "name@example.com",
     "forgot_password": "Forgot password?",
     "code_lead": "We sent a 6-character code to {{email}}",
+    "code_lead_generic": "Enter the 6-character code we sent to your email.",
     "confirm_code": "Confirm",
     "confirming_code": "Confirming…",
     "mfa": {
@@ -122,6 +124,7 @@
     "submit": "Create account",
     "submitting": "Creating account…",
     "code_lead": "We sent a 6-character code to {{email}}",
+    "code_lead_generic": "Enter the 6-character code we sent to your email.",
     "confirm_code": "Confirm",
     "confirming_code": "Confirming…"
   },

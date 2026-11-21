@@ -23,8 +23,10 @@ type Config struct {
 	KafkaRealtimeConsumerGroup string         `mapstructure:"kafka_realtime_consumer_group"`
 	InstanceID                 string         `mapstructure:"instance_id"`
 	TrustedProxies             string         `mapstructure:"trusted_proxies"`
+	TurnstileEnabled           bool           `mapstructure:"turnstile_enabled"`
 	TurnstileSiteKey           string         `mapstructure:"turnstile_site_key"`
 	TurnstileSecretKey         string         `mapstructure:"turnstile_secret_key"`
+	InternalGrpcToken          string         `mapstructure:"internal_grpc_token"`
 	Microservices              utils.Settings `mapstructure:",squash"`
 }
 
@@ -41,6 +43,7 @@ var Defaults = Config{
 	KafkaChatEventsTopic:       "chat-events",
 	KafkaRealtimeConsumerGroup: "api-gateway-realtime",
 	InstanceID:                 "local",
+	TurnstileEnabled:           true,
 	Microservices:              utils.DefaultSettings,
 }
 
@@ -71,6 +74,22 @@ func (c Config) SecureCookies() bool {
 	return !strings.EqualFold(strings.TrimSpace(c.Env), "development")
 }
 
+// TurnstileVerifySecret is empty when verification is disabled (see TURNSTILE_ENABLED).
+func (c Config) TurnstileVerifySecret() string {
+	if !c.TurnstileEnabled {
+		return ""
+	}
+	return strings.TrimSpace(c.TurnstileSecretKey)
+}
+
+// TurnstileClientSiteKey is exposed to the web client; empty when Turnstile is disabled.
+func (c Config) TurnstileClientSiteKey() string {
+	if !c.TurnstileEnabled {
+		return ""
+	}
+	return strings.TrimSpace(c.TurnstileSiteKey)
+}
+
 // Validate enforces production safety invariants when Env is not development.
 func (c Config) Validate() error {
 	if !c.SecureCookies() {
@@ -80,6 +99,9 @@ func (c Config) Validate() error {
 	if !strings.HasPrefix(origin, "https://") {
 		return fmt.Errorf("WEB_ORIGIN must use https:// when ENV=%s", c.Env)
 	}
+	if !c.TurnstileEnabled {
+		return fmt.Errorf("TURNSTILE_ENABLED must be true when ENV=%s", c.Env)
+	}
 	secret := strings.TrimSpace(c.TurnstileSecretKey)
 	if secret == "" {
 		return fmt.Errorf("TURNSTILE_SECRET_KEY is required when ENV=%s", c.Env)
@@ -87,7 +109,7 @@ func (c Config) Validate() error {
 	if strings.HasPrefix(secret, "1x0000") || strings.HasPrefix(secret, "2x0000") || strings.HasPrefix(secret, "3x0000") {
 		return fmt.Errorf("TURNSTILE_SECRET_KEY must not use Cloudflare test keys when ENV=%s", c.Env)
 	}
-	return nil
+	return sharedconfig.RequireInternalGrpcToken(c.Env, c.InternalGrpcToken)
 }
 
 // RealtimeKafkaGroupID is a per-instance consumer group for broadcast fanout.

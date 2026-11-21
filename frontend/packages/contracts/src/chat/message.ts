@@ -35,6 +35,7 @@ export type Message = z.infer<typeof MessageSchema>;
 
 export const MessagesListSchema = z.object({
 	messages: z.array(MessageSchema),
+	has_more: z.boolean().optional(),
 });
 export type MessagesList = z.infer<typeof MessagesListSchema>;
 

@@ -3,10 +3,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { setAccessToken } from "@/integrations/api-client";
-import { Q_INSTANCE_POLICY, Q_SESSION } from "@/services/auth/auth.key";
+import { Q_SESSION } from "@/services/auth/auth.key";
+import { applySession } from "@/services/auth/apply-session";
 import { Q_APP_BOOTSTRAP } from "@/services/auth/bootstrap-app";
 import { Q_MY_GROUPS } from "@/services/group/group.key";
-import { prefetchMyGroups } from "@/services/group/prefetch-my-groups";
 import {
 	beginLoginWebAuthn,
 	forgotPasswordRequest,
@@ -21,15 +21,6 @@ import {
 	verifyLoginMfa,
 	verifyRegister,
 } from "@/services/auth/auth.service";
-
-function applySession(
-	queryClient: ReturnType<typeof useQueryClient>,
-	session: { user: { id: string } },
-) {
-	queryClient.setQueryData([Q_SESSION], session.user);
-	void queryClient.invalidateQueries({ queryKey: [Q_INSTANCE_POLICY] });
-	void prefetchMyGroups(queryClient);
-}
 
 export function useLoginMutation() {
 	const queryClient = useQueryClient();

@@ -10,6 +10,7 @@ import (
 type EsRepository interface {
 	EnsureIndex(ctx context.Context) error
 	IndexMessageCreated(ctx context.Context, doc elasticsearch.MessageDoc) error
+	DeleteMessage(ctx context.Context, messageID string) error
 }
 
 type esRepository struct {
@@ -30,4 +31,8 @@ func (r esRepository) EnsureIndex(ctx context.Context) error {
 
 func (r esRepository) IndexMessageCreated(ctx context.Context, doc elasticsearch.MessageDoc) error {
 	return r.es.IndexMessage(ctx, doc)
+}
+
+func (r esRepository) DeleteMessage(ctx context.Context, messageID string) error {
+	return r.es.DeleteMessage(ctx, messageID)
 }

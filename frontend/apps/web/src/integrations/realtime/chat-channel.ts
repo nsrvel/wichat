@@ -17,12 +17,14 @@ export type ChatChannelRealtimeOptions = {
 	onReconnect?: () => void;
 };
 
-function realtimeWebSocketURL(accessToken: string): string {
+function realtimeWebSocketURL(): string {
 	const base = env.NEXT_PUBLIC_API_URL.replace(/\/+$/, "").replace(/^http/, "ws");
 	const pathname = base.endsWith("/api/v1") ? `${base}/realtime` : `${base}/api/v1/realtime`;
-	const url = new URL(pathname);
-	url.searchParams.set("access_token", accessToken);
-	return url.toString();
+	return pathname;
+}
+
+function bearerSubprotocol(token: string): string {
+	return `bearer.${token}`;
 }
 
 /** Opens a WebSocket, subscribes to one channel, and forwards chat lifecycle events. */
@@ -62,7 +64,7 @@ export function subscribeChatChannel(options: ChatChannelRealtimeOptions): () =>
 		}
 
 		try {
-			ws = new WebSocket(realtimeWebSocketURL(token));
+			ws = new WebSocket(realtimeWebSocketURL(), [bearerSubprotocol(token)]);
 		} catch {
 			scheduleReconnect();
 			return;

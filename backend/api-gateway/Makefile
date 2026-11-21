@@ -14,6 +14,10 @@ BACKEND_ROOT := ..
 test-cover:
 	@bash "$(BACKEND_ROOT)/scripts/coverage-gate.sh" "$(CURDIR)" 90
 
+.PHONY: test-auth-cover
+test-auth-cover:
+	@COVERAGE_SCOPE_FILE=coverage.scope.auth COVERAGE_MIN_FILE=.coverage-min.auth bash "$(BACKEND_ROOT)/scripts/coverage-gate.sh" "$(CURDIR)" 80
+
 .PHONY: fmt lint test check dev run tunnel
 
 fmt:
@@ -25,7 +29,7 @@ lint:
 test:
 	go test ./...
 
-check: fmt lint test test-cover
+check: fmt lint test test-cover test-auth-cover
 
 dev:
 	$(AIR)

@@ -30,6 +30,7 @@ func TestConfigValidateProduction(t *testing.T) {
 				c.WebOrigin = "https://chat.example.com"
 				c.AuthJWTSecret = jwtSecret
 				c.MFAEncryptionKey = mfaSecret
+				c.InternalGrpcToken = "prod-grpc-secret"
 			},
 		},
 		{

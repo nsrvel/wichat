@@ -3,6 +3,7 @@ package grpc
 import (
 	"context"
 	"runtime/debug"
+	"strings"
 	"time"
 
 	"github.com/wichat/wichat/backend/wi-shared/infra/logger"
@@ -14,7 +15,8 @@ import (
 )
 
 // NewServer builds a gRPC server with request ID and panic recovery. Optional extra grpc.ServerOption values append after defaults.
-func NewServer(log logger.Logger, extra ...grpc.ServerOption) *grpc.Server {
+// internalToken when non-empty requires matching x-wichat-internal-token on RPCs except General/Health.
+func NewServer(log logger.Logger, internalToken string, extra ...grpc.ServerOption) *grpc.Server {
 	opts := make([]grpc.ServerOption, 0, len(extra)+3)
 	opts = append(opts, extra...)
 	opts = append(opts,
@@ -27,10 +29,11 @@ func NewServer(log logger.Logger, extra ...grpc.ServerOption) *grpc.Server {
 			PermitWithoutStream: true,
 		}),
 	)
-	opts = append(opts, grpc.ChainUnaryInterceptor(
-		UnaryServerRequestID(),
-		recoveryUnary(log),
-	))
+	interceptors := []grpc.UnaryServerInterceptor{UnaryServerRequestID(), recoveryUnary(log)}
+	if strings.TrimSpace(internalToken) != "" {
+		interceptors = append([]grpc.UnaryServerInterceptor{UnaryServerInternalToken(internalToken)}, interceptors...)
+	}
+	opts = append(opts, grpc.ChainUnaryInterceptor(interceptors...))
 
 	return grpc.NewServer(opts...)
 }

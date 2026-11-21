@@ -10,6 +10,7 @@ import type {
 import {
 	appendOrUpdateInfiniteChannelMessage,
 	removeInfiniteChannelMessage,
+	replaceOptimisticChannelMessage,
 	updateInfiniteChannelMessageReactions,
 } from "@/features/chat/lib/channel-message";
 import { Q_CHANNEL_MESSAGES, Q_PINNED_MESSAGES } from "@/services/message/message.key";
@@ -61,18 +62,26 @@ export function useCreateMessageMutation() {
 				appendOrUpdateInfiniteChannelMessage(prev, optimisticMessage, variables.authorId),
 			);
 
-			return { previousMessages, queryKey };
+			return { previousMessages, queryKey, tempId };
 		},
 		onError: (_err, _variables, context) => {
 			if (context?.queryKey && context.previousMessages) {
 				queryClient.setQueryData(context.queryKey, context.previousMessages);
 			}
 		},
-		onSuccess: (data, variables) => {
+		onSuccess: (data, variables, context) => {
 			if (data?.message) {
 				queryClient.setQueryData<InfiniteData<MessagesList>>(
 					[Q_CHANNEL_MESSAGES, variables.groupId, variables.channelId],
-					(prev) => appendOrUpdateInfiniteChannelMessage(prev, data.message, variables.authorId),
+					(prev) =>
+						context?.tempId
+							? replaceOptimisticChannelMessage(
+									prev,
+									context.tempId,
+									data.message,
+									variables.authorId,
+								)
+							: appendOrUpdateInfiniteChannelMessage(prev, data.message, variables.authorId),
 				);
 			}
 		},

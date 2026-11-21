@@ -8,6 +8,7 @@ import (
 	"github.com/wichat/wichat/backend/ms-chat/internal/message/repository/mock"
 	"github.com/wichat/wichat/backend/ms-chat/internal/message/service"
 	"github.com/wichat/wichat/backend/ms-chat/internal/models"
+	outboxmock "github.com/wichat/wichat/backend/ms-chat/internal/outbox/repository/mock"
 	"github.com/wichat/wichat/backend/ms-chat/pkg/constants"
 	"github.com/wichat/wichat/backend/wi-shared/exception"
 	"github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-user/grpc/channel"
@@ -29,27 +30,20 @@ func (fakeChannel) AssertGroupChannelAccess(context.Context, *userv1.AssertGroup
 	}, nil
 }
 
-type noopPublisher struct{}
-
-func (noopPublisher) PublishMessageCreated(context.Context, string, string, models.PublicMessage) error {
-	return nil
-}
-
-func (noopPublisher) PublishMessageUpdated(context.Context, string, string, models.PublicMessage) error {
-	return nil
-}
-
-func (noopPublisher) PublishMessageDeleted(context.Context, string, string, string) error {
-	return nil
-}
-
-func (noopPublisher) PublishMessageReactionsUpdated(context.Context, string, string, string, []models.MessageReactionSummary) error {
-	return nil
+func newTestService(st *mock.State) service.Service {
+	return service.NewService(
+		mock.NewPgRepositoryMock(st),
+		nil,
+		nil,
+		fakeChannel{},
+		outboxmock.NewPgRepositoryMock(outboxmock.NewState()),
+		nil,
+	)
 }
 
 func TestCreateChannelMessageRejectsEmptyBody(t *testing.T) {
 	st := mock.NewState()
-	svc := service.NewService(mock.NewPgRepositoryMock(st), nil, fakeChannel{}, noopPublisher{}, nil)
+	svc := newTestService(st)
 	_, err := svc.CreateChannelMessage(context.Background(), &models.CreateChannelMessageInput{
 		ResolvedChannelID: "channel-uuid",
 		CallerUserID:      "user-uuid",
@@ -66,7 +60,7 @@ func TestCreateChannelMessageRejectsEmptyBody(t *testing.T) {
 
 func TestCreateChannelMessageRejectsControlChars(t *testing.T) {
 	st := mock.NewState()
-	svc := service.NewService(mock.NewPgRepositoryMock(st), nil, fakeChannel{}, noopPublisher{}, nil)
+	svc := newTestService(st)
 	_, err := svc.CreateChannelMessage(context.Background(), &models.CreateChannelMessageInput{
 		ResolvedChannelID: "channel-uuid",
 		CallerUserID:      "user-uuid",
@@ -83,7 +77,7 @@ func TestCreateChannelMessageEnforcesPermissionsBroadcastAndSlowmode(t *testing.
 	st := mock.NewState()
 	st.Authors["u1"] = "Alice"
 	st.Authors["u2"] = "Bob"
-	svc := service.NewService(mock.NewPgRepositoryMock(st), nil, fakeChannel{}, noopPublisher{}, nil)
+	svc := newTestService(st)
 
 	// 1. Denies when send_messages is missing.
 	_, err := svc.CreateChannelMessage(ctx, &models.CreateChannelMessageInput{
@@ -148,13 +142,13 @@ func TestCreateChannelMessageEnforcesPermissionsBroadcastAndSlowmode(t *testing.
 	}
 
 	// 4. ListChannelMessages returns empty when read_message_history is missing.
-	msgs, err := svc.ListChannelMessages(ctx, &models.ListChannelMessagesInput{
+	msgs, hasMore, err := svc.ListChannelMessages(ctx, &models.ListChannelMessagesInput{
 		ResolvedChannelID: "ch-slow",
 		CallerUserID:      "u1",
 		CallerPermissions: []string{"view_channels"},
 	})
-	if err != nil || len(msgs) != 0 {
-		t.Fatalf("expected empty list without read_message_history, got %d err=%v", len(msgs), err)
+	if err != nil || hasMore || len(msgs) != 0 {
+		t.Fatalf("expected empty list without read_message_history, got %d hasMore=%v err=%v", len(msgs), hasMore, err)
 	}
 }
 
@@ -164,7 +158,7 @@ func TestMessageReplyEditDeleteReactionsAndPins(t *testing.T) {
 	st := mock.NewState()
 	st.Authors["u1"] = "Alice"
 	st.Authors["u2"] = "Bob"
-	svc := service.NewService(mock.NewPgRepositoryMock(st), nil, fakeChannel{}, noopPublisher{}, nil)
+	svc := newTestService(st)
 
 	// Create root message & reply
 	root, err := svc.CreateChannelMessage(ctx, &models.CreateChannelMessageInput{
@@ -312,7 +306,7 @@ func TestUploadChannelAttachment(t *testing.T) {
 
 	t.Run("uploads valid PNG and sanitizes filename", func(t *testing.T) {
 		repo := &fakeMinioRepo{}
-		svc := service.NewService(mock.NewPgRepositoryMock(st), repo, fakeChannel{}, noopPublisher{}, nil)
+		svc := service.NewService(mock.NewPgRepositoryMock(st), repo, nil, fakeChannel{}, outboxmock.NewPgRepositoryMock(outboxmock.NewState()), nil)
 		att, err := svc.UploadChannelAttachment(ctx, &models.UploadChannelAttachmentInput{
 			ResolvedChannelID: "ch-1",
 			CallerUserID:      "u1",
@@ -340,7 +334,7 @@ func TestUploadChannelAttachment(t *testing.T) {
 
 	t.Run("uploads PDF and markdown", func(t *testing.T) {
 		repo := &fakeMinioRepo{}
-		svc := service.NewService(mock.NewPgRepositoryMock(st), repo, fakeChannel{}, noopPublisher{}, nil)
+		svc := service.NewService(mock.NewPgRepositoryMock(st), repo, nil, fakeChannel{}, outboxmock.NewPgRepositoryMock(outboxmock.NewState()), nil)
 
 		pdfAtt, err := svc.UploadChannelAttachment(ctx, &models.UploadChannelAttachmentInput{
 			ResolvedChannelID: "ch-1",
@@ -369,7 +363,7 @@ func TestUploadChannelAttachment(t *testing.T) {
 
 	t.Run("rejects HTML/SVG/executable and oversized files", func(t *testing.T) {
 		repo := &fakeMinioRepo{}
-		svc := service.NewService(mock.NewPgRepositoryMock(st), repo, fakeChannel{}, noopPublisher{}, nil)
+		svc := service.NewService(mock.NewPgRepositoryMock(st), repo, nil, fakeChannel{}, outboxmock.NewPgRepositoryMock(outboxmock.NewState()), nil)
 
 		_, err := svc.UploadChannelAttachment(ctx, &models.UploadChannelAttachmentInput{
 			ResolvedChannelID: "ch-1",
@@ -419,7 +413,7 @@ func TestUploadChannelAttachment(t *testing.T) {
 
 	t.Run("enforces attach_files and broadcast permissions", func(t *testing.T) {
 		repo := &fakeMinioRepo{}
-		svc := service.NewService(mock.NewPgRepositoryMock(st), repo, fakeChannel{}, noopPublisher{}, nil)
+		svc := service.NewService(mock.NewPgRepositoryMock(st), repo, nil, fakeChannel{}, outboxmock.NewPgRepositoryMock(outboxmock.NewState()), nil)
 
 		_, err := svc.UploadChannelAttachment(ctx, &models.UploadChannelAttachmentInput{
 			ResolvedChannelID: "ch-1",
@@ -446,4 +440,51 @@ func TestUploadChannelAttachment(t *testing.T) {
 			t.Fatalf("expected PermissionDenied for broadcast channel, got %v", err)
 		}
 	})
+}
+
+func TestListChannelMessagesPaginationAndHasMore(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	st := mock.NewState()
+	st.Authors["u1"] = "Alice"
+	svc := newTestService(st)
+
+	for _, body := range []string{"m1", "m2", "m3"} {
+		if _, err := svc.CreateChannelMessage(ctx, &models.CreateChannelMessageInput{
+			ResolvedChannelID: "ch-page",
+			CallerUserID:      "u1",
+			CallerPermissions: []string{"view_channels", "send_messages", "read_message_history"},
+			Body:              body,
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	page1, hasMore1, err := svc.ListChannelMessages(ctx, &models.ListChannelMessagesInput{
+		ResolvedChannelID: "ch-page",
+		CallerUserID:      "u1",
+		CallerPermissions: []string{"view_channels", "read_message_history"},
+		Limit:             2,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !hasMore1 || len(page1) != 2 || page1[0].Body != "m2" || page1[1].Body != "m3" {
+		t.Fatalf("unexpected page1: %+v hasMore=%v", page1, hasMore1)
+	}
+
+	page2, hasMore2, err := svc.ListChannelMessages(ctx, &models.ListChannelMessagesInput{
+		ResolvedChannelID: "ch-page",
+		CallerUserID:      "u1",
+		CallerPermissions: []string{"view_channels", "read_message_history"},
+		Limit:             2,
+		BeforeCreatedAt:   &page1[0].CreatedAt,
+		BeforePublicID:    page1[0].ID,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hasMore2 || len(page2) != 1 || page2[0].Body != "m1" {
+		t.Fatalf("unexpected page2: %+v hasMore=%v", page2, hasMore2)
+	}
 }

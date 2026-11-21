@@ -52,18 +52,20 @@ type Handler interface {
 	ListRelationships(w http.ResponseWriter, r *http.Request)
 	SetRelationship(w http.ResponseWriter, r *http.Request)
 	WithPresenceBroadcaster(b PresenceBroadcaster) Handler
+	WithTurnstileRequired(required bool) Handler
 }
 
 // PresenceBroadcaster pushes presence.updated events to subscribed groups.
 type PresenceBroadcaster interface {
-	DeliverGroup(groupID string, payload []byte)
+	DeliverGroup(groupID string, payload []byte) error
 }
 
 type handler struct {
-	ms               *microservices.Clients
-	log              logger.Logger
-	turnstileSiteKey string
-	broadcaster      PresenceBroadcaster
+	ms                *microservices.Clients
+	log               logger.Logger
+	turnstileSiteKey  string
+	turnstileRequired bool
+	broadcaster       PresenceBroadcaster
 }
 
 // NewHandler wires user HTTP to the ms-user client.
@@ -73,6 +75,11 @@ func NewHandler(ms *microservices.Clients, log logger.Logger, turnstileSiteKey .
 		siteKey = strings.TrimSpace(turnstileSiteKey[0])
 	}
 	return handler{ms: ms, log: log, turnstileSiteKey: siteKey}
+}
+
+func (h handler) WithTurnstileRequired(required bool) Handler {
+	h.turnstileRequired = required
+	return h
 }
 
 func (h handler) WithPresenceBroadcaster(b PresenceBroadcaster) Handler {
@@ -90,8 +97,9 @@ func (h handler) SetupStatus(w http.ResponseWriter, r *http.Request) {
 
 	// Response
 	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(authHttp.SetupStatusBody{
-		RegistrationMode: out.GetRegistrationMode(),
-		TurnstileSiteKey: h.turnstileSiteKey,
+		RegistrationMode:  out.GetRegistrationMode(),
+		TurnstileSiteKey:  h.turnstileSiteKey,
+		TurnstileRequired: h.turnstileRequired,
 	}))
 }
 
@@ -1038,7 +1046,7 @@ func (h handler) UpdateMyPresence(w http.ResponseWriter, r *http.Request) {
 			IsOnline:       res.GetIsOnline(),
 		}); mErr == nil {
 			for _, gid := range res.GetGroupIds() {
-				h.broadcaster.DeliverGroup(gid, payload)
+				_ = h.broadcaster.DeliverGroup(gid, payload)
 			}
 		}
 	}

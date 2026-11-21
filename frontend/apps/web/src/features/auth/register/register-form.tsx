@@ -15,6 +15,9 @@ import { TextField } from "@/components/form/text-field";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { AuthEmailOtpStep } from "@/features/auth/components/auth-email-otp-step";
+import { AuthPrivacyNotice } from "@/features/auth/components/auth-privacy-notice";
+import { AuthOr } from "@/features/auth/components/auth-shell";
+import { GoogleButton } from "@/features/auth/components/google-button";
 import { TurnstileWidget } from "@/features/auth/components/turnstile-widget";
 import {
 	authFieldLabelClass,
@@ -31,6 +34,7 @@ import {
 	useVerifyRegisterMutation,
 } from "@/services/auth/auth.mutation";
 import { instancePolicyQueryOpts } from "@/services/auth/auth.query";
+import { authSubmitBlocked } from "@/features/auth/lib/captcha-policy";
 import { checkUsername } from "@/services/auth/auth.service";
 
 const birthDaySchema = z.string().regex(/^\d{2}$/);
@@ -73,17 +77,20 @@ type UsernameCheckState =
 	| { status: "available"; normalized: string }
 	| { status: "taken" };
 
-export function RegisterForm() {
+export function RegisterForm({ authReturnTo = "/" }: { authReturnTo?: string }) {
 	const { t, i18n } = useTranslation();
 	const register = useRegisterMutation();
 	const verify = useVerifyRegisterMutation();
 	const resend = useResendRegisterCodeMutation();
-	const { data: policy } = useQuery(instancePolicyQueryOpts());
+	const { data: policy, isSuccess: policyReady } = useQuery(instancePolicyQueryOpts());
 	const turnstileSiteKey = policy?.turnstile_site_key ?? "";
 	const [challenge, setChallenge] = useState<AuthChallenge | null>(null);
 	const [resendCooldown, setResendCooldown] = useState(0);
 	const [turnstileToken, setTurnstileToken] = useState("");
 	const [turnstileResetKey, setTurnstileResetKey] = useState(0);
+	const [otpTurnstileToken, setOtpTurnstileToken] = useState("");
+	const [otpTurnstileResetKey, setOtpTurnstileResetKey] = useState(0);
+	const credentialBlocked = authSubmitBlocked(policy, policyReady, turnstileToken);
 	const [usernameCheck, setUsernameCheck] = useState<{
 		query: string;
 		result: UsernameCheckState;
@@ -140,7 +147,13 @@ export function RegisterForm() {
 		return (
 			<AuthEmailOtpStep
 				challenge={challenge}
-				leadKey="register.code_lead"
+				policy={policy}
+				policyReady={policyReady}
+				turnstileSiteKey={turnstileSiteKey}
+				turnstileToken={otpTurnstileToken}
+				onTurnstileToken={setOtpTurnstileToken}
+				turnstileResetKey={otpTurnstileResetKey}
+				leadKey="register.code_lead_generic"
 				submitKey="register.confirm_code"
 				submittingKey="register.confirming_code"
 				isPending={verify.isPending}
@@ -151,7 +164,10 @@ export function RegisterForm() {
 				onResend={() => {
 					verify.reset();
 					resend.mutate(
-						{ challenge_id: challenge.challenge_id },
+						{
+							challenge_id: challenge.challenge_id,
+							turnstile_token: otpTurnstileToken || undefined,
+						},
 						{
 							onSuccess: (data) => setResendCooldown(data.resend_after_seconds),
 							onError: (err) => {
@@ -163,26 +179,44 @@ export function RegisterForm() {
 						},
 					);
 				}}
-				onBack={() => {
-					verify.reset();
-					resend.reset();
-					register.reset();
-					setChallenge(null);
-					setResendCooldown(0);
-				}}
 				onSubmit={(code) => {
 					resend.reset();
-					verify.mutate({ challenge_id: challenge.challenge_id, code });
+					verify.mutate(
+						{
+							challenge_id: challenge.challenge_id,
+							code,
+							turnstile_token: otpTurnstileToken || undefined,
+						},
+						{
+							onError: () => {
+								if (turnstileSiteKey) {
+									setOtpTurnstileToken("");
+									setOtpTurnstileResetKey((k) => k + 1);
+								}
+							},
+						},
+					);
 				}}
 			/>
 		);
 	}
 
 	return (
-		<Form {...form}>
-			<form
-				className={authFormClass}
-				onSubmit={form.handleSubmit((values) => {
+		<>
+			<GoogleButton
+				label={t("auth.google")}
+				authReturnTo={authReturnTo}
+				turnstileToken={turnstileToken}
+				disabled={credentialBlocked}
+			/>
+			<AuthOr label={t("auth.or")} />
+			<Form {...form}>
+				<form
+					className={authFormClass}
+					onSubmit={form.handleSubmit((values) => {
+					if (credentialBlocked) {
+						return;
+					}
 					register.mutate(toRegisterRequest(values, i18n.language, turnstileToken), {
 						onSuccess: (step) => {
 							if (step.kind === "challenge") {
@@ -292,13 +326,15 @@ export function RegisterForm() {
 						register.isPending ||
 						effectiveUsernameCheck.status === "checking" ||
 						effectiveUsernameCheck.status === "taken" ||
-						Boolean(turnstileSiteKey && !turnstileToken)
+						credentialBlocked
 					}
 					className={turnstileSiteKey ? authSubmitClass : `mt-2 ${authSubmitClass}`}
 				>
 					{register.isPending ? t("register.submitting") : t("register.submit")}
 				</Button>
-			</form>
-		</Form>
+				</form>
+				<AuthPrivacyNotice />
+			</Form>
+		</>
 	);
 }

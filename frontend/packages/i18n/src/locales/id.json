@@ -10,6 +10,7 @@
     "instance_setup_required": "Selesaikan setup instance sebelum orang baru bisa bergabung.",
     "forbidden": "Anda tidak punya izin untuk melakukan itu.",
     "google_denied": "Masuk dengan Google dibatalkan atau gagal.",
+    "google_mfa_use_password": "Akun ini memakai autentikasi dua faktor. Masuk dengan username atau email dan kata sandi.",
     "google_email_unverified": "Akun Google itu belum memiliki email terverifikasi.",
     "reset_code_invalid": "Kode salah atau sudah kedaluwarsa.",
     "reset_rate_limited": "Tunggu {{retry_after_seconds}} detik sebelum meminta kode lagi.",
@@ -61,6 +62,7 @@
     "login_placeholder": "nama@contoh.com",
     "forgot_password": "Lupa kata sandi?",
     "code_lead": "Kami mengirim kode 6 karakter ke {{email}}",
+    "code_lead_generic": "Masukkan kode 6 karakter yang kami kirim ke email Anda.",
     "confirm_code": "Konfirmasi",
     "confirming_code": "Memverifikasi…",
     "mfa": {
@@ -122,6 +124,7 @@
     "submit": "Buat akun",
     "submitting": "Membuat akun…",
     "code_lead": "Kami mengirim kode 6 karakter ke {{email}}",
+    "code_lead_generic": "Masukkan kode 6 karakter yang kami kirim ke email Anda.",
     "confirm_code": "Konfirmasi",
     "confirming_code": "Memverifikasi…"
   },

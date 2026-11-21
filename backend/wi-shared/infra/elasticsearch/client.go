@@ -28,6 +28,7 @@ type MessageDoc struct {
 type Client interface {
 	EnsureIndex(ctx context.Context) error
 	IndexMessage(ctx context.Context, doc MessageDoc) error
+	DeleteMessage(ctx context.Context, messageID string) error
 }
 
 type esClient struct {
@@ -121,6 +122,33 @@ func (c esClient) IndexMessage(ctx context.Context, doc MessageDoc) error {
 
 	if res.IsError() {
 		return readAPIError("index message", res)
+	}
+
+	return nil
+}
+
+func (c esClient) DeleteMessage(ctx context.Context, messageID string) error {
+	messageID = strings.TrimSpace(messageID)
+	if messageID == "" {
+		return fmt.Errorf("elasticsearch: empty message id")
+	}
+
+	res, err := c.es.Delete(
+		c.index,
+		messageID,
+		c.es.Delete.WithContext(ctx),
+		c.es.Delete.WithRefresh("false"),
+	)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = res.Body.Close() }()
+
+	if res.StatusCode == 404 {
+		return nil
+	}
+	if res.IsError() {
+		return readAPIError("delete message", res)
 	}
 
 	return nil

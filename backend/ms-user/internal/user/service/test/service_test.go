@@ -826,8 +826,8 @@ func TestDisableAndDeleteAccount(t *testing.T) {
 	if _, err := authSvc.Refresh(ctx, ownerSess.RefreshToken, models.ClientMeta{}); codeOf(t, err) != string(exception.MsgUnauthorized) {
 		t.Fatalf("expected revoked refresh after disable, got %v", err)
 	}
-	if _, err := authSvc.Login(ctx, models.LoginInput{Login: ownerIn.Email, Password: ownerIn.Password}); codeOf(t, err) != string(exception.MsgAccountDisabled) {
-		t.Fatalf("expected auth.account_disabled on login, got %v", err)
+	if _, err := authSvc.Login(ctx, models.LoginInput{Login: ownerIn.Email, Password: ownerIn.Password}); codeOf(t, err) != string(exception.MsgInvalidCredentials) {
+		t.Fatalf("expected neutral invalid_credentials on login for disabled account, got %v", err)
 	}
 
 	// 3. DeleteAccount anonymizes PII and revokes sessions.

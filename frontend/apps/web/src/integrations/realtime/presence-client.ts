@@ -17,12 +17,14 @@ export type PresenceConnectionOptions = {
 	onPresenceUpdated: (event: RealtimePresenceUpdated) => void;
 };
 
-function realtimeWebSocketURL(accessToken: string): string {
+function realtimeWebSocketURL(): string {
 	const base = env.NEXT_PUBLIC_API_URL.replace(/\/+$/, "").replace(/^http/, "ws");
 	const pathname = base.endsWith("/api/v1") ? `${base}/realtime` : `${base}/api/v1/realtime`;
-	const url = new URL(pathname);
-	url.searchParams.set("access_token", accessToken);
-	return url.toString();
+	return pathname;
+}
+
+function bearerSubprotocol(token: string): string {
+	return `bearer.${token}`;
 }
 
 /**
@@ -155,7 +157,7 @@ export function connectPresenceRealtime(options: PresenceConnectionOptions): {
 		}
 
 		try {
-			ws = new WebSocket(realtimeWebSocketURL(token));
+			ws = new WebSocket(realtimeWebSocketURL(), [bearerSubprotocol(token)]);
 		} catch {
 			connecting = false;
 			const delay = Math.min(1000 * 2 ** reconnectAttempts, 10_000);

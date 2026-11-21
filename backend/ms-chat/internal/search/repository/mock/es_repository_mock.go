@@ -10,9 +10,10 @@ import (
 
 // State records ES index calls in tests.
 type State struct {
-	mu      sync.Mutex
-	Ensured int
-	Docs    []elasticsearch.MessageDoc
+	mu         sync.Mutex
+	Ensured    int
+	Docs       []elasticsearch.MessageDoc
+	DeletedIDs []string
 }
 
 // NewState returns empty ES mock state.
@@ -41,6 +42,14 @@ func (m esRepositoryMock) IndexMessageCreated(_ context.Context, doc elasticsear
 	m.st.mu.Lock()
 	defer m.st.mu.Unlock()
 	m.st.Docs = append(m.st.Docs, doc)
+
+	return nil
+}
+
+func (m esRepositoryMock) DeleteMessage(_ context.Context, messageID string) error {
+	m.st.mu.Lock()
+	defer m.st.mu.Unlock()
+	m.st.DeletedIDs = append(m.st.DeletedIDs, messageID)
 
 	return nil
 }

@@ -13,12 +13,14 @@ import (
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
 	generalgrpc "github.com/wichat/wichat/backend/ms-chat/internal/general/delivery/grpc"
-	kafkaconsumers "github.com/wichat/wichat/backend/ms-chat/internal/kafka/consumers"
-	kafkaproducers "github.com/wichat/wichat/backend/ms-chat/internal/kafka/producers"
 	messagegrpc "github.com/wichat/wichat/backend/ms-chat/internal/message/delivery/grpc"
 	messagerepo "github.com/wichat/wichat/backend/ms-chat/internal/message/repository"
 	messageservice "github.com/wichat/wichat/backend/ms-chat/internal/message/service"
+	outboxrepo "github.com/wichat/wichat/backend/ms-chat/internal/outbox/repository"
+	outboxservice "github.com/wichat/wichat/backend/ms-chat/internal/outbox/service"
+	searchkafka "github.com/wichat/wichat/backend/ms-chat/internal/search/delivery/kafka"
 	searchrepo "github.com/wichat/wichat/backend/ms-chat/internal/search/repository"
+	searchservice "github.com/wichat/wichat/backend/ms-chat/internal/search/service"
 	"github.com/wichat/wichat/backend/wi-shared/infra/elasticsearch"
 	wikafka "github.com/wichat/wichat/backend/wi-shared/infra/kafka"
 	"github.com/wichat/wichat/backend/wi-shared/infra/minio"
@@ -33,6 +35,10 @@ import (
 const serveShutdownTimeout = 5 * time.Second
 
 func (s *server) Run(ctx context.Context) error {
+	if err := s.cfg.Validate(); err != nil {
+		return err
+	}
+
 	// Database
 	if strings.TrimSpace(s.cfg.DatabaseURL) == "" {
 		return errors.New("DATABASE_URL is required")
@@ -56,7 +62,10 @@ func (s *server) Run(ctx context.Context) error {
 		return errors.New("MS_USER_HOST is required")
 	}
 
-	userConn, err := msgrpc.Dial(s.cfg.MSUserHost, msgrpc.DefaultDialOptions)
+	userConn, err := msgrpc.Dial(s.cfg.MSUserHost, msgrpc.DialOptions{
+		Insecure:      true,
+		InternalToken: s.cfg.InternalGrpcToken,
+	})
 	if err != nil {
 		return fmt.Errorf("ms-user dial: %w", err)
 	}
@@ -116,12 +125,6 @@ func (s *server) Run(ctx context.Context) error {
 	}
 	defer func() { _ = kafkaConsumer.Close() }()
 
-	searchIndexer := kafkaconsumers.NewSearchIndexer(
-		kafkaConsumer,
-		searchrepo.NewEsRepository(esClient),
-		s.log,
-	)
-
 	// MinIO (channel attachments; empty endpoint disables uploads)
 	minioClient, err := minio.New(minio.Config{
 		Endpoint:      s.cfg.MinioEndpoint,
@@ -137,10 +140,13 @@ func (s *server) Run(ctx context.Context) error {
 	}
 
 	// Services
-	messagePg := messagerepo.NewPgRepository(db, s.log)
+	outboxPg := outboxrepo.NewPgRepository(db, s.log)
+	messagePg := messagerepo.NewPgRepository(db, outboxPg, s.log)
 	messageMinio := messagerepo.NewMinioRepository(minioClient)
-	eventPub := kafkaproducers.NewMessageCreated(kafkaProducer, topic, s.log)
-	messageSvc := messageservice.NewService(messagePg, messageMinio, userGRPC.Channel, eventPub, s.log)
+	outboxSvc := outboxservice.NewService(outboxPg, kafkaProducer, topic, s.log)
+	searchSvc := searchservice.NewService(searchrepo.NewEsRepository(esClient), s.log)
+	searchIndexer := searchkafka.NewSearchIndexer(kafkaConsumer, searchSvc, s.log)
+	messageSvc := messageservice.NewService(messagePg, messageMinio, userGRPC.Auth, userGRPC.Channel, outboxPg, s.log)
 
 	// gRPC
 	addr := s.cfg.ListenAddr()
@@ -149,8 +155,8 @@ func (s *server) Run(ctx context.Context) error {
 		return fmt.Errorf("listen %s: %w", addr, err)
 	}
 
-	grpcSrv := newGRPCServer(s.log)
-	chatv1.RegisterMessageServiceServer(grpcSrv, messagegrpc.NewServer(messageSvc, userGRPC.Channel))
+	grpcSrv := newGRPCServer(s.log, s.cfg.InternalGrpcToken)
+	chatv1.RegisterMessageServiceServer(grpcSrv, messagegrpc.NewServer(messageSvc))
 	chatv1.RegisterGeneralServiceServer(grpcSrv, generalgrpc.NewServer("ms-chat"))
 
 	// Listen
@@ -173,6 +179,29 @@ func (s *server) Run(ctx context.Context) error {
 				return
 			}
 			s.log.Warn("search indexer stopped; retrying", "err", err, "retry_in", delay.String())
+			timer := time.NewTimer(delay)
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+				return
+			case <-timer.C:
+			}
+			delay *= 2
+			if delay > maxDelay {
+				delay = maxDelay
+			}
+		}
+	}()
+
+	go func() {
+		delay := 2 * time.Second
+		const maxDelay = 10 * time.Second
+		for {
+			err := outboxSvc.RunRelay(ctx)
+			if err == nil || ctx.Err() != nil {
+				return
+			}
+			s.log.Warn("outbox relay stopped; retrying", "err", err, "retry_in", delay.String())
 			timer := time.NewTimer(delay)
 			select {
 			case <-ctx.Done():

@@ -22,6 +22,7 @@ export const CHANNEL_MESSAGES_PAGE_SIZE = 50;
 export type ListChannelMessagesParams = {
 	limit?: number;
 	beforeCreatedAt?: string;
+	beforeId?: string;
 };
 
 export async function listChannelMessages(
@@ -33,6 +34,9 @@ export async function listChannelMessages(
 	search.set("limit", String(params?.limit ?? CHANNEL_MESSAGES_PAGE_SIZE));
 	if (params?.beforeCreatedAt) {
 		search.set("before_created_at", params.beforeCreatedAt);
+	}
+	if (params?.beforeId) {
+		search.set("before_id", params.beforeId);
 	}
 	const query = search.toString();
 	const path = `/groups/${encodeURIComponent(groupId)}/channels/${encodeURIComponent(channelId)}/messages${query ? `?${query}` : ""}`;

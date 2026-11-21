@@ -93,12 +93,24 @@ func (h handler) ListChannelMessages(w http.ResponseWriter, r *http.Request) {
 		limit = int32(parsed)
 	}
 
+	var beforeChannelSeq int64
+	if raw := strings.TrimSpace(r.URL.Query().Get("before_channel_seq")); raw != "" {
+		parsed, err := strconv.ParseInt(raw, 10, 64)
+		if err != nil || parsed < 0 {
+			authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "before_channel_seq"}))
+			return
+		}
+		beforeChannelSeq = parsed
+	}
+
 	out, err := h.ms.Chat.GRPC.Message.ListChannelMessages(r.Context(), &chatv1.ListChannelMessagesRequest{
-		AccessToken:     token,
-		GroupId:         groupID,
-		ChannelId:       channelID,
-		Limit:           limit,
-		BeforeCreatedAt: strings.TrimSpace(r.URL.Query().Get("before_created_at")),
+		AccessToken:      token,
+		GroupId:          groupID,
+		ChannelId:        channelID,
+		Limit:            limit,
+		BeforeCreatedAt:  strings.TrimSpace(r.URL.Query().Get("before_created_at")),
+		BeforeId:         strings.TrimSpace(r.URL.Query().Get("before_id")),
+		BeforeChannelSeq: beforeChannelSeq,
 	})
 	if err != nil {
 		authHttp.WriteOutbound(w, r, h.log, err)
@@ -107,6 +119,7 @@ func (h handler) ListChannelMessages(w http.ResponseWriter, r *http.Request) {
 
 	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(chatHttp.MessagesListBody{
 		Messages: chatHttp.MessagesFromPB(out.GetMessages()),
+		HasMore:  out.GetHasMore(),
 	}))
 }
 

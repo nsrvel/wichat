@@ -31,6 +31,7 @@ type Config struct {
 	WebAuthnRPID          string `mapstructure:"webauthn_rp_id"`
 	WebAuthnRPOrigins     string `mapstructure:"webauthn_rp_origins"`
 	WebAuthnRPDisplayName string `mapstructure:"webauthn_rp_display_name"`
+	InternalGrpcToken     string `mapstructure:"internal_grpc_token"`
 }
 
 // Defaults are applied when env / .env do not set a value.
@@ -76,5 +77,5 @@ func (c Config) Validate() error {
 	if mfaKey == c.AuthJWTSecret {
 		return fmt.Errorf("MFA_ENCRYPTION_KEY must be distinct from AUTH_JWT_SECRET when ENV=%s", c.Env)
 	}
-	return nil
+	return sharedconfig.RequireInternalGrpcToken(c.Env, c.InternalGrpcToken)
 }

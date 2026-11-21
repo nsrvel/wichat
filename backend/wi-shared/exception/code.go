@@ -24,6 +24,7 @@ const (
 	MsgAgeRestricted         MessageCode = "auth.age_restricted"
 	MsgGoogleDenied          MessageCode = "auth.google_denied"
 	MsgGoogleEmailUnverified MessageCode = "auth.google_email_unverified"
+	MsgGoogleMFAUsePassword  MessageCode = "auth.google_mfa_use_password"
 	MsgResetCodeInvalid      MessageCode = "auth.reset_code_invalid"
 	MsgResetRateLimited      MessageCode = "auth.reset_rate_limited"
 	MsgCaptchaFailed         MessageCode = "auth.captcha_failed"

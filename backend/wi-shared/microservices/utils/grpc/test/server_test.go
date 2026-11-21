@@ -18,7 +18,7 @@ func TestNewServerNonNil(t *testing.T) {
 	t.Parallel()
 
 	log := logger.New(logger.Options{Service: "grpc-test", Env: "test", Level: "error"})
-	if grpcutil.NewServer(log) == nil {
+	if grpcutil.NewServer(log, "") == nil {
 		t.Fatal("expected server")
 	}
 }
@@ -43,7 +43,7 @@ func TestNewServerRecoveryInternalError(t *testing.T) {
 
 	lis := bufconn.Listen(1 << 20)
 	log := logger.New(logger.Options{Service: "grpc-test", Env: "test", Level: "error"})
-	srv := grpcutil.NewServer(log)
+	srv := grpcutil.NewServer(log, "")
 	srv.RegisterService(&grpc.ServiceDesc{
 		ServiceName: "test.Internal",
 		HandlerType: (*panicService)(nil),
@@ -93,7 +93,7 @@ func TestNewServerRecoveryOnPanic(t *testing.T) {
 
 	lis := bufconn.Listen(1 << 20)
 	log := logger.New(logger.Options{Service: "grpc-test", Env: "test", Level: "error"})
-	srv := grpcutil.NewServer(log)
+	srv := grpcutil.NewServer(log, "")
 	srv.RegisterService(&grpc.ServiceDesc{
 		ServiceName: "test.Panic",
 		HandlerType: (*panicService)(nil),

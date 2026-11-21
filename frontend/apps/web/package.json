@@ -17,7 +17,11 @@
 		"test:e2e": "playwright test",
 		"test:e2e:ui": "playwright test --ui",
 		"test:e2e:headed": "playwright test --headed",
-		"check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm build"
+		"check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm build",
+		"check:e2e-auth": "pnpm check:e2e-auth-register && pnpm check:e2e-auth-login",
+		"check:e2e-auth-register": "playwright test e2e/auth/register-flow.spec.ts --workers=1",
+		"check:e2e-auth-login": "playwright test e2e/auth/login-flow.spec.ts --workers=1",
+		"check:full": "pnpm check && pnpm check:e2e-auth"
 	},
 	"dependencies": {
 		"@base-ui/react": "^1.8.0",
@@ -30,6 +34,7 @@
 		"@tanstack/react-query": "^5.104.1",
 		"@tanstack/react-query-devtools": "^5.104.1",
 		"@tanstack/react-table": "^8.21.3",
+		"@tanstack/react-virtual": "^3.14.26",
 		"@tiptap/extension-link": "^3.34.0",
 		"@tiptap/extension-placeholder": "^3.34.0",
 		"@tiptap/pm": "^3.34.0",

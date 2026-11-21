@@ -75,7 +75,7 @@ func (h Handler) broadcastPresenceTransition(tr *userv1.PresenceTransitionRespon
 		return
 	}
 	for _, gid := range tr.GetGroupIds() {
-		h.hub.DeliverGroup(gid, payload)
+		_ = h.hub.DeliverGroup(gid, payload)
 	}
 }
 
@@ -93,14 +93,7 @@ func (h Handler) isGroupMember(ctx context.Context, token, groupID string) bool 
 }
 
 func (h Handler) Realtime(w http.ResponseWriter, r *http.Request) {
-	token := strings.TrimSpace(r.URL.Query().Get("access_token"))
-	if token == "" {
-		authHeader := strings.TrimSpace(r.Header.Get("Authorization"))
-		const prefix = "Bearer "
-		if strings.HasPrefix(authHeader, prefix) {
-			token = strings.TrimSpace(strings.TrimPrefix(authHeader, prefix))
-		}
-	}
+	token := BearerTokenFromRequest(r)
 	if token == "" {
 		responsehttp.WriteError(w, r, exception.Unauthenticated(exception.MsgUnauthorized, nil))
 		return
@@ -116,7 +109,11 @@ func (h Handler) Realtime(w http.ResponseWriter, r *http.Request) {
 		h.log.Error("websocket accept", "err", err)
 		return
 	}
-	defer func() { _ = conn.Close(websocket.StatusNormalClosure, "") }()
+	h.hub.BindConn(conn)
+	defer func() {
+		h.hub.UnbindConn(conn)
+		_ = conn.Close(websocket.StatusNormalClosure, "")
+	}()
 
 	connCtx, cancel := context.WithCancel(r.Context())
 	defer cancel()
@@ -176,7 +173,7 @@ func (h Handler) Realtime(w http.ResponseWriter, r *http.Request) {
 					if authPayload, mErr := json.Marshal(struct {
 						Type string `json:"type"`
 					}{Type: "presence.auth_required"}); mErr == nil {
-						_ = conn.Write(connCtx, websocket.MessageText, authPayload)
+						_ = h.hub.WriteText(connCtx, conn, authPayload)
 					}
 				}
 				continue
@@ -193,7 +190,7 @@ func (h Handler) Realtime(w http.ResponseWriter, r *http.Request) {
 					PresenceStatus: tr.GetEffectiveStatus(),
 					IsOnline:       tr.GetIsOnline(),
 				}); mErr == nil {
-					_ = conn.Write(connCtx, websocket.MessageText, selfPayload)
+					_ = h.hub.WriteText(connCtx, conn, selfPayload)
 				}
 			}
 			h.broadcastPresenceTransition(tr)

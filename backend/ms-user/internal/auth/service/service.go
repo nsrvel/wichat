@@ -69,6 +69,8 @@ type service struct {
 	mfaKey    [32]byte
 	notify    Notifier
 	activity  activitysvc.Recorder
+	devOTP    authrepo.DevOTPStore
+	devE2EOTP bool
 	log       logger.Logger
 	secret    []byte
 	now       func() time.Time
@@ -78,10 +80,12 @@ type service struct {
 
 // Options overrides auth service wiring (tests and optional MFA).
 type Options struct {
-	Now      func() time.Time
-	MFA      authrepo.MFAStore
-	WebAuthn *webauthn.WebAuthn
-	MFAKey   [32]byte
+	Now       func() time.Time
+	MFA       authrepo.MFAStore
+	WebAuthn  *webauthn.WebAuthn
+	MFAKey    [32]byte
+	DevE2EOTP bool
+	DevOTP    authrepo.DevOTPStore
 }
 
 // NewService builds the auth use cases. secret is the HMAC key and must be at least 32 bytes.
@@ -123,6 +127,13 @@ func NewService(
 		mfaKey = opts.MFAKey
 	}
 
+	devE2EOTP := false
+	var devOTP authrepo.DevOTPStore
+	if opts != nil {
+		devE2EOTP = opts.DevE2EOTP
+		devOTP = opts.DevOTP
+	}
+
 	return service{
 		users:     users,
 		sessions:  sessions,
@@ -134,6 +145,8 @@ func NewService(
 		webauthn:  wa,
 		mfaKey:    mfaKey,
 		notify:    notify,
+		devOTP:    devOTP,
+		devE2EOTP: devE2EOTP,
 		log:       log,
 		secret:    copied,
 		now:       now,
@@ -227,6 +240,7 @@ func (s service) Register(ctx context.Context, in models.RegisterInput) (*models
 		_ = s.emailAuth.DeleteRegisterPending(ctx, ch.ChallengeID)
 		return nil, err
 	}
+	s.storeDevE2EOTP(ctx, ch.ChallengeID, code)
 	if err := s.markEmailCodeSent(ctx, ch, email); err != nil {
 		return nil, err
 	}
@@ -343,7 +357,7 @@ func (s service) Login(ctx context.Context, in models.LoginInput) (*models.Passw
 		_ = s.emailAuth.ClearFailedLogin(ctx, login)
 	}
 	if err := ensureAccountActive(user); err != nil {
-		return nil, err
+		return nil, exception.Unauthenticated(exception.MsgInvalidCredentials, nil)
 	}
 
 	if res, ok, err := s.maybeBeginLoginMFA(ctx, user, in.UserAgent, in.ClientIP); err != nil {
@@ -374,6 +388,7 @@ func (s service) Login(ctx context.Context, in models.LoginInput) (*models.Passw
 		_ = s.emailAuth.DeleteLoginChallenge(ctx, ch.ChallengeID)
 		return nil, err
 	}
+	s.storeDevE2EOTP(ctx, ch.ChallengeID, code)
 	if err := s.markEmailCodeSent(ctx, ch, user.Email); err != nil {
 		return nil, err
 	}
@@ -470,6 +485,15 @@ func (s service) beginEmailChallenge(ctx context.Context, email, displayName, lo
 	return ch, code, nil
 }
 
+func (s service) storeDevE2EOTP(ctx context.Context, challengeID, code string) {
+	if !s.devE2EOTP || s.devOTP == nil {
+		return
+	}
+	if err := s.devOTP.Put(ctx, challengeID, code, constants.EmailAuthOTPTTL); err != nil {
+		s.log.Warn("dev e2e otp shadow not stored", "err", err, "challenge_id", challengeID)
+	}
+}
+
 func (s service) markEmailCodeSent(ctx context.Context, ch *models.AuthChallenge, email string) error {
 	wait, err := s.emailAuth.RecordEmailCodeSent(ctx, strings.TrimSpace(email))
 	if err != nil {
@@ -482,7 +506,7 @@ func (s service) markEmailCodeSent(ctx context.Context, ch *models.AuthChallenge
 
 func (s service) resendEmailCode(
 	ctx context.Context,
-	email, displayName, locale, purpose string,
+	challengeID, email, displayName, locale, purpose string,
 	update func(codeHMAC string) error,
 ) (int32, error) {
 	if err := s.requireEmailAuth(); err != nil {
@@ -509,6 +533,7 @@ func (s service) resendEmailCode(
 	if err := s.sendEmailCode(ctx, email, displayName, locale, purpose, code); err != nil {
 		return 0, err
 	}
+	s.storeDevE2EOTP(ctx, challengeID, code)
 
 	wait, err := s.emailAuth.RecordEmailCodeSent(ctx, email)
 	if err != nil {
@@ -592,9 +617,6 @@ func (s service) VerifyLogin(ctx context.Context, challengeID, code string) (*mo
 	if err != nil {
 		return nil, err
 	}
-	if err := s.emailAuth.DeleteLoginChallenge(ctx, challengeID); err != nil {
-		return nil, err
-	}
 	if err := s.emailAuth.ClearEmailCodePenalty(ctx, pending.Email); err != nil {
 		return nil, err
 	}
@@ -618,7 +640,7 @@ func (s service) ResendRegisterCode(ctx context.Context, challengeID string) (in
 		return 0, err
 	}
 
-	return s.resendEmailCode(ctx, pending.Email, pending.DisplayName, pending.Locale, "sign_up", func(hmac string) error {
+	return s.resendEmailCode(ctx, challengeID, pending.Email, pending.DisplayName, pending.Locale, "sign_up", func(hmac string) error {
 		return s.emailAuth.UpdateRegisterCode(ctx, challengeID, hmac, constants.EmailAuthOTPTTL)
 	})
 }
@@ -639,7 +661,7 @@ func (s service) ResendLoginCode(ctx context.Context, challengeID string) (int32
 		return 0, err
 	}
 
-	return s.resendEmailCode(ctx, pending.Email, pending.DisplayName, pending.Locale, "sign_in", func(hmac string) error {
+	return s.resendEmailCode(ctx, challengeID, pending.Email, pending.DisplayName, pending.Locale, "sign_in", func(hmac string) error {
 		return s.emailAuth.UpdateLoginCode(ctx, challengeID, hmac, constants.EmailAuthOTPTTL)
 	})
 }
@@ -1081,6 +1103,16 @@ func (s service) GoogleFinish(ctx context.Context, code, verifier string, meta m
 	}, identityID, constants.GoogleOAuthProvider, profile.Subject)
 	if err != nil {
 		return nil, err
+	}
+
+	if err := ensureAccountActive(user); err != nil {
+		return nil, err
+	}
+
+	if _, mfaRequired, err := s.maybeBeginLoginMFA(ctx, user, meta.UserAgent, meta.ClientIP); err != nil {
+		return nil, err
+	} else if mfaRequired {
+		return nil, exception.Unauthenticated(exception.MsgGoogleMFAUsePassword, nil)
 	}
 
 	return s.openSession(ctx, user, meta)

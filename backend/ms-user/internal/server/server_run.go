@@ -103,7 +103,10 @@ func (s *server) Run(ctx context.Context) error {
 	var notifConn *grpc.ClientConn
 	var notifyClient authservice.Notifier
 	if strings.TrimSpace(s.cfg.NotificationHost) != "" {
-		notifConn, err = msgrpc.Dial(s.cfg.NotificationHost, msgrpc.DefaultDialOptions)
+		notifConn, err = msgrpc.Dial(s.cfg.NotificationHost, msgrpc.DialOptions{
+			Insecure:      true,
+			InternalToken: s.cfg.InternalGrpcToken,
+		})
 		if err != nil {
 			return fmt.Errorf("ms-notification dial: %w", err)
 		}
@@ -185,9 +188,11 @@ func (s *server) Run(ctx context.Context) error {
 		ClientSecret: s.cfg.GoogleClientSecret,
 		RedirectURL:  s.cfg.GoogleRedirectURL,
 	}, authrepo.NewRedisPasswordResetStore(rdb), emailAuthStore, notifyClient, userSvc, &authservice.Options{
-		MFA:      authMFAStore,
-		WebAuthn: wa,
-		MFAKey:   mfaKey,
+		MFA:       authMFAStore,
+		WebAuthn:  wa,
+		MFAKey:    mfaKey,
+		DevE2EOTP: s.cfg.Env == "development",
+		DevOTP:    authrepo.NewRedisDevOTPStore(rdb),
 	})
 	if err != nil {
 		return err
@@ -201,7 +206,7 @@ func (s *server) Run(ctx context.Context) error {
 		return fmt.Errorf("listen %s: %w", addr, err)
 	}
 
-	grpcSrv := newGRPCServer(s.log)
+	grpcSrv := newGRPCServer(s.log, s.cfg.InternalGrpcToken)
 	userv1.RegisterAuthServiceServer(grpcSrv, authgrpc.NewServer(authSvc))
 	userv1.RegisterUserServiceServer(grpcSrv, usergrpc.NewServer(userSvc).WithActivityLog(activitySvc))
 	userv1.RegisterGroupServiceServer(grpcSrv, groupgrpc.NewServer(groupSvc).WithGroupActivityLog(groupActivitySvc))

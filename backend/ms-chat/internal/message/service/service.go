@@ -13,19 +13,22 @@ import (
 	"unicode/utf8"
 
 	"github.com/google/uuid"
-	"github.com/wichat/wichat/backend/ms-chat/internal/kafka/producers"
 	messagerepo "github.com/wichat/wichat/backend/ms-chat/internal/message/repository"
 	"github.com/wichat/wichat/backend/ms-chat/internal/models"
+	outboxrepo "github.com/wichat/wichat/backend/ms-chat/internal/outbox/repository"
+	pkgChatEvents "github.com/wichat/wichat/backend/ms-chat/pkg/chat-events"
 	"github.com/wichat/wichat/backend/ms-chat/pkg/constants"
+	"github.com/wichat/wichat/backend/ms-chat/pkg/token"
 	"github.com/wichat/wichat/backend/wi-shared/exception"
 	"github.com/wichat/wichat/backend/wi-shared/infra/logger"
+	userauth "github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-user/grpc/auth"
 	userchannel "github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-user/grpc/channel"
 	userv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/user/v1"
 )
 
 // Service is channel message use cases.
 type Service interface {
-	ListChannelMessages(ctx context.Context, in *models.ListChannelMessagesInput) ([]models.PublicMessage, error)
+	ListChannelMessages(ctx context.Context, in *models.ListChannelMessagesInput) ([]models.PublicMessage, bool, error)
 	CreateChannelMessage(ctx context.Context, in *models.CreateChannelMessageInput) (models.PublicMessage, error)
 	UpdateChannelMessage(ctx context.Context, in *models.UpdateChannelMessageInput) (models.PublicMessage, error)
 	DeleteChannelMessage(ctx context.Context, in *models.DeleteChannelMessageInput) error
@@ -38,8 +41,9 @@ type Service interface {
 type service struct {
 	messages    messagerepo.PgRepository
 	attachments messagerepo.MinioRepository
+	userAuth    userauth.Client
 	userChannel userchannel.Client
-	events      producers.MessageCreatedPublisher
+	outbox      outboxrepo.PgRepository
 	log         logger.Logger
 	now         func() time.Time
 }
@@ -48,15 +52,17 @@ type service struct {
 func NewService(
 	messages messagerepo.PgRepository,
 	attachments messagerepo.MinioRepository,
+	userAuth userauth.Client,
 	userChannel userchannel.Client,
-	events producers.MessageCreatedPublisher,
+	outbox outboxrepo.PgRepository,
 	log logger.Logger,
 ) Service {
 	return service{
 		messages:    messages,
 		attachments: attachments,
+		userAuth:    userAuth,
 		userChannel: userChannel,
-		events:      events,
+		outbox:      outbox,
 		log:         log,
 		now:         func() time.Time { return time.Now().UTC() },
 	}
@@ -81,15 +87,31 @@ func validateMessageBody(raw string) (string, error) {
 	return body, nil
 }
 
-func (s service) ListChannelMessages(ctx context.Context, in *models.ListChannelMessagesInput) ([]models.PublicMessage, error) {
+func (s service) ListChannelMessages(ctx context.Context, in *models.ListChannelMessagesInput) ([]models.PublicMessage, bool, error) {
+	if err := s.applyChannelAccess(ctx, in.AccessToken, in.GroupPublicID, in.ChannelPublicID, channelAccessInput{
+		callerUserID:      &in.CallerUserID,
+		resolvedChannelID: &in.ResolvedChannelID,
+		callerPermissions: &in.CallerPermissions,
+	}); err != nil {
+		return nil, false, err
+	}
+
 	if len(in.CallerPermissions) > 0 && !hasAnyPerm(in.CallerPermissions, "administrator", "read_message_history") {
-		return []models.PublicMessage{}, nil
+		return []models.PublicMessage{}, false, nil
+	}
+
+	limit := in.Limit
+	if limit <= 0 {
+		limit = constants.DefaultMessageListLimit
+	}
+	if limit > constants.MaxMessageListLimit {
+		limit = constants.MaxMessageListLimit
 	}
 
 	// Repository
-	rows, err := s.messages.ListByChannel(ctx, in.ResolvedChannelID, in.Limit, in.BeforeCreatedAt)
+	rows, hasMore, err := s.messages.ListByChannel(ctx, in.ResolvedChannelID, limit, in.BeforeCreatedAt, in.BeforePublicID, in.BeforeChannelSeq)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	out := make([]models.PublicMessage, len(rows))
@@ -97,10 +119,20 @@ func (s service) ListChannelMessages(ctx context.Context, in *models.ListChannel
 		out[i] = toPublicMessage(row, in.CallerUserID)
 	}
 
-	return out, nil
+	return out, hasMore, nil
 }
 
 func (s service) CreateChannelMessage(ctx context.Context, in *models.CreateChannelMessageInput) (models.PublicMessage, error) {
+	if err := s.applyChannelAccess(ctx, in.AccessToken, in.GroupPublicID, in.ChannelPublicID, channelAccessInput{
+		callerUserID:      &in.CallerUserID,
+		resolvedChannelID: &in.ResolvedChannelID,
+		callerPermissions: &in.CallerPermissions,
+		channelType:       &in.ChannelType,
+		slowmodeSeconds:   &in.SlowmodeSeconds,
+	}); err != nil {
+		return models.PublicMessage{}, err
+	}
+
 	// Permissions & channel policy
 	if len(in.CallerPermissions) > 0 {
 		if !hasAnyPerm(in.CallerPermissions, "administrator", "send_messages") {
@@ -164,35 +196,68 @@ func (s service) CreateChannelMessage(ctx context.Context, in *models.CreateChan
 		}
 	}
 
-	// Repository: resolve author profile before persisting message.
-	displayName, avatarURL, err := s.messages.FindUserProfile(ctx, in.CallerUserID)
+	displayName, avatarURL, err := s.callerProfile(ctx, in.AccessToken, in.CallerUserID)
 	if err != nil {
 		return models.PublicMessage{}, err
 	}
 
 	createdAt := s.now()
-	msg, err := s.messages.Insert(ctx, in.ResolvedChannelID, in.CallerUserID, body, replyToID, createdAt)
-	if err != nil {
-		return models.PublicMessage{}, err
+	preview := models.PublicMessage{
+		AuthorID: in.CallerUserID, AuthorDisplayName: displayName, AuthorAvatarURL: avatarURL,
+		Body: body, CreatedAt: createdAt, ReplyTo: replyPreview, Mine: true,
 	}
 
-	out := models.PublicMessage{
-		ID: msg.PublicID, AuthorID: msg.AuthorID, AuthorDisplayName: displayName, AuthorAvatarURL: avatarURL,
-		Body: msg.Body, CreatedAt: msg.CreatedAt, ReplyTo: replyPreview, Mine: true,
-	}
+	var msg models.Message
+	for range 5 {
+		id, err := token.NewID()
+		if err != nil {
+			return models.PublicMessage{}, err
+		}
+		publicID, err := token.NewPublicID()
+		if err != nil {
+			return models.PublicMessage{}, err
+		}
+		preview.ID = publicID
+		outboxRow, err := pkgChatEvents.EncodeMessageCreated(in.GroupPublicID, in.ChannelPublicID, toPublicMessageWire(preview), createdAt)
+		if err != nil {
+			return models.PublicMessage{}, err
+		}
 
-	pubCtx, pubCancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
-	defer pubCancel()
-	if err := s.events.PublishMessageCreated(pubCtx, in.GroupPublicID, in.ChannelPublicID, out); err != nil {
-		if s.log != nil {
-			s.log.Error("publish message.created", "message_id", msg.ID, "err", err)
+		msg, err = s.messages.InsertWithOutbox(ctx, &models.InsertMessageWithOutboxInput{
+			ID: id, PublicID: publicID,
+			ChannelID: in.ResolvedChannelID,
+			AuthorID:  in.CallerUserID,
+			Body:      body,
+			ReplyToID: replyToID,
+			CreatedAt: createdAt,
+			Outbox:    toEventOutboxInsert(outboxRow),
+		})
+		if err == nil {
+			break
+		}
+		if !errors.Is(err, constants.ErrConflict) {
+			return models.PublicMessage{}, err
 		}
 	}
+	if msg.PublicID == "" {
+		return models.PublicMessage{}, constants.ErrConflict
+	}
 
-	return out, nil
+	return models.PublicMessage{
+		ID: msg.PublicID, ChannelSeq: msg.ChannelSeq, AuthorID: msg.AuthorID,
+		AuthorDisplayName: displayName, AuthorAvatarURL: avatarURL,
+		Body: msg.Body, CreatedAt: msg.CreatedAt, ReplyTo: replyPreview, Mine: true,
+	}, nil
 }
 
 func (s service) UpdateChannelMessage(ctx context.Context, in *models.UpdateChannelMessageInput) (models.PublicMessage, error) {
+	if err := s.applyChannelAccess(ctx, in.AccessToken, in.GroupPublicID, in.ChannelPublicID, channelAccessInput{
+		callerUserID:      &in.CallerUserID,
+		resolvedChannelID: &in.ResolvedChannelID,
+	}); err != nil {
+		return models.PublicMessage{}, err
+	}
+
 	msgPubID := strings.TrimSpace(in.MessagePublicID)
 	if msgPubID == "" {
 		return models.PublicMessage{}, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "message_id"})
@@ -220,16 +285,22 @@ func (s service) UpdateChannelMessage(ctx context.Context, in *models.UpdateChan
 	}
 
 	out := toPublicMessage(updated, in.CallerUserID)
-	pubCtx, pubCancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
-	defer pubCancel()
-	if err := s.events.PublishMessageUpdated(pubCtx, in.GroupPublicID, in.ChannelPublicID, out); err != nil && s.log != nil {
-		s.log.Error("publish message.updated", "message_id", updated.ID, "err", err)
+	if err := s.enqueueOutbox(ctx, in.GroupPublicID, in.ChannelPublicID, out, s.now()); err != nil && s.log != nil {
+		s.log.Error("outbox message.updated", "message_id", updated.PublicID, "err", err)
 	}
 
 	return out, nil
 }
 
 func (s service) DeleteChannelMessage(ctx context.Context, in *models.DeleteChannelMessageInput) error {
+	if err := s.applyChannelAccess(ctx, in.AccessToken, in.GroupPublicID, in.ChannelPublicID, channelAccessInput{
+		callerUserID:      &in.CallerUserID,
+		resolvedChannelID: &in.ResolvedChannelID,
+		callerPermissions: &in.CallerPermissions,
+	}); err != nil {
+		return err
+	}
+
 	msgPubID := strings.TrimSpace(in.MessagePublicID)
 	if msgPubID == "" {
 		return exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "message_id"})
@@ -251,16 +322,22 @@ func (s service) DeleteChannelMessage(ctx context.Context, in *models.DeleteChan
 		return err
 	}
 
-	pubCtx, pubCancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
-	defer pubCancel()
-	if err := s.events.PublishMessageDeleted(pubCtx, in.GroupPublicID, in.ChannelPublicID, msgPubID); err != nil && s.log != nil {
-		s.log.Error("publish message.deleted", "message_id", existing.ID, "err", err)
+	if err := s.enqueueDeleted(ctx, in.GroupPublicID, in.ChannelPublicID, msgPubID, s.now()); err != nil && s.log != nil {
+		s.log.Error("outbox message.deleted", "message_id", msgPubID, "err", err)
 	}
 
 	return nil
 }
 
 func (s service) ToggleMessageReaction(ctx context.Context, in *models.ToggleMessageReactionInput) ([]models.MessageReactionSummary, error) {
+	if err := s.applyChannelAccess(ctx, in.AccessToken, in.GroupPublicID, in.ChannelPublicID, channelAccessInput{
+		callerUserID:      &in.CallerUserID,
+		resolvedChannelID: &in.ResolvedChannelID,
+		callerPermissions: &in.CallerPermissions,
+	}); err != nil {
+		return nil, err
+	}
+
 	msgPubID := strings.TrimSpace(in.MessagePublicID)
 	emoji := strings.TrimSpace(in.Emoji)
 	if msgPubID == "" || emoji == "" || utf8.RuneCountInString(emoji) > 64 {
@@ -292,16 +369,22 @@ func (s service) ToggleMessageReaction(ctx context.Context, in *models.ToggleMes
 		return nil, err
 	}
 
-	pubCtx, pubCancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
-	defer pubCancel()
-	if err := s.events.PublishMessageReactionsUpdated(pubCtx, in.GroupPublicID, in.ChannelPublicID, msgPubID, reactions); err != nil && s.log != nil {
-		s.log.Error("publish message.reactions.updated", "message_id", existing.ID, "err", err)
+	if err := s.enqueueReactions(ctx, in.GroupPublicID, in.ChannelPublicID, msgPubID, reactions, s.now()); err != nil && s.log != nil {
+		s.log.Error("outbox message.reactions.updated", "message_id", msgPubID, "err", err)
 	}
 
 	return reactions, nil
 }
 
 func (s service) SetChannelMessagePinned(ctx context.Context, in *models.SetChannelMessagePinnedInput) (models.PublicMessage, error) {
+	if err := s.applyChannelAccess(ctx, in.AccessToken, in.GroupPublicID, in.ChannelPublicID, channelAccessInput{
+		callerUserID:      &in.CallerUserID,
+		resolvedChannelID: &in.ResolvedChannelID,
+		callerPermissions: &in.CallerPermissions,
+	}); err != nil {
+		return models.PublicMessage{}, err
+	}
+
 	msgPubID := strings.TrimSpace(in.MessagePublicID)
 	if msgPubID == "" {
 		return models.PublicMessage{}, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "message_id"})
@@ -320,16 +403,22 @@ func (s service) SetChannelMessagePinned(ctx context.Context, in *models.SetChan
 	}
 
 	out := toPublicMessage(updated, in.CallerUserID)
-	pubCtx, pubCancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
-	defer pubCancel()
-	if err := s.events.PublishMessageUpdated(pubCtx, in.GroupPublicID, in.ChannelPublicID, out); err != nil && s.log != nil {
-		s.log.Error("publish message.updated", "message_id", updated.ID, "err", err)
+	if err := s.enqueueOutbox(ctx, in.GroupPublicID, in.ChannelPublicID, out, s.now()); err != nil && s.log != nil {
+		s.log.Error("outbox message.updated", "message_id", updated.PublicID, "err", err)
 	}
 
 	return out, nil
 }
 
 func (s service) ListPinnedChannelMessages(ctx context.Context, in *models.ListPinnedChannelMessagesInput) ([]models.PublicMessage, error) {
+	if err := s.applyChannelAccess(ctx, in.AccessToken, in.GroupPublicID, in.ChannelPublicID, channelAccessInput{
+		callerUserID:      &in.CallerUserID,
+		resolvedChannelID: &in.ResolvedChannelID,
+		callerPermissions: &in.CallerPermissions,
+	}); err != nil {
+		return nil, err
+	}
+
 	if len(in.CallerPermissions) > 0 && !hasAnyPerm(in.CallerPermissions, "administrator", "read_message_history") {
 		return []models.PublicMessage{}, nil
 	}
@@ -360,33 +449,74 @@ func hasDangerousControlChars(s string) bool {
 	return false
 }
 
-// ResolveChannelAccess validates the bearer token and resolves internal ids and permissions via ms-user.
-func ResolveChannelAccess(
-	ctx context.Context,
-	userChannel userchannel.Client,
-	accessToken, groupID, channelID string,
-) (models.ChannelAccessInfo, error) {
-	out, err := userChannel.AssertGroupChannelAccess(ctx, &userv1.AssertGroupChannelAccessRequest{
+type channelAccessInput struct {
+	callerUserID      *string
+	resolvedChannelID *string
+	callerPermissions *[]string
+	channelType       *string
+	slowmodeSeconds   *int32
+}
+
+func (s service) applyChannelAccess(ctx context.Context, accessToken, groupID, channelID string, in channelAccessInput) error {
+	if in.resolvedChannelID != nil && strings.TrimSpace(*in.resolvedChannelID) != "" {
+		return nil
+	}
+	if s.userChannel == nil {
+		return errors.New("channel client required")
+	}
+
+	out, err := s.userChannel.AssertGroupChannelAccess(ctx, &userv1.AssertGroupChannelAccessRequest{
 		AccessToken: accessToken,
 		GroupId:     groupID,
 		ChannelId:   channelID,
 	})
 	if err != nil {
-		return models.ChannelAccessInfo{}, err
+		return err
+	}
+	if in.callerUserID != nil {
+		*in.callerUserID = out.GetUserUuid()
+	}
+	if in.resolvedChannelID != nil {
+		*in.resolvedChannelID = out.GetChannelUuid()
+	}
+	if in.callerPermissions != nil {
+		*in.callerPermissions = out.GetPermissions()
+	}
+	if in.channelType != nil {
+		*in.channelType = out.GetChannelType()
+	}
+	if in.slowmodeSeconds != nil {
+		*in.slowmodeSeconds = out.GetSlowmodeSeconds()
 	}
 
-	return models.ChannelAccessInfo{
-		ChannelUUID:     out.GetChannelUuid(),
-		UserUUID:        out.GetUserUuid(),
-		Permissions:     out.GetPermissions(),
-		ChannelType:     out.GetChannelType(),
-		SlowmodeSeconds: out.GetSlowmodeSeconds(),
-	}, nil
+	return nil
+}
+
+func (s service) callerProfile(ctx context.Context, accessToken, callerUserID string) (displayName, avatarURL string, err error) {
+	if s.userAuth == nil {
+		return "", "", nil
+	}
+	token := strings.TrimSpace(accessToken)
+	if token == "" {
+		return "", "", nil
+	}
+
+	me, err := s.userAuth.Me(ctx, &userv1.MeRequest{AccessToken: token})
+	if err != nil {
+		return "", "", err
+	}
+	u := me.GetUser()
+	if u == nil || u.GetId() != callerUserID {
+		return "", "", exception.Unauthenticated(exception.MsgUnauthorized, nil)
+	}
+
+	return u.GetDisplayName(), u.GetAvatarUrl(), nil
 }
 
 func toPublicMessage(row models.MessageWithAuthor, callerUserID string) models.PublicMessage {
 	return models.PublicMessage{
 		ID:                row.PublicID,
+		ChannelSeq:        row.ChannelSeq,
 		AuthorID:          row.AuthorID,
 		AuthorDisplayName: row.AuthorDisplayName,
 		AuthorAvatarURL:   row.AuthorAvatarURL,
@@ -441,6 +571,15 @@ var dangerousAttachmentMIMEs = map[string]bool{
 }
 
 func (s service) UploadChannelAttachment(ctx context.Context, in *models.UploadChannelAttachmentInput) (models.MessageAttachment, error) {
+	if err := s.applyChannelAccess(ctx, in.AccessToken, in.GroupPublicID, in.ChannelPublicID, channelAccessInput{
+		callerUserID:      &in.CallerUserID,
+		resolvedChannelID: &in.ResolvedChannelID,
+		callerPermissions: &in.CallerPermissions,
+		channelType:       &in.ChannelType,
+	}); err != nil {
+		return models.MessageAttachment{}, err
+	}
+
 	// Permissions & channel policy
 	if len(in.CallerPermissions) > 0 {
 		if !hasAnyPerm(in.CallerPermissions, "administrator", "send_messages") ||
@@ -557,4 +696,82 @@ func sanitizeAttachmentFilename(raw string) string {
 		return string(runes[:maxStem]) + ext
 	}
 	return clean
+}
+
+func toEventOutboxInsert(in pkgChatEvents.OutboxInsert) models.EventOutboxInsert {
+	return models.EventOutboxInsert{
+		EventID:      in.EventID,
+		EventType:    in.EventType,
+		PartitionKey: in.PartitionKey,
+		Payload:      in.Payload,
+		CreatedAt:    in.CreatedAt,
+	}
+}
+
+func toPublicMessageWire(msg models.PublicMessage) pkgChatEvents.PublicMessageWire {
+	var reply *pkgChatEvents.ReplyPreviewWire
+	if msg.ReplyTo != nil {
+		reply = &pkgChatEvents.ReplyPreviewWire{
+			ID:                msg.ReplyTo.ID,
+			AuthorID:          msg.ReplyTo.AuthorID,
+			AuthorDisplayName: msg.ReplyTo.AuthorDisplayName,
+			BodyPreview:       msg.ReplyTo.BodyPreview,
+		}
+	}
+	reactions := make([]pkgChatEvents.ReactionSummaryWire, len(msg.Reactions))
+	for i, r := range msg.Reactions {
+		reactions[i] = pkgChatEvents.ReactionSummaryWire{
+			Emoji:   r.Emoji,
+			Count:   r.Count,
+			UserIDs: r.UserIDs,
+		}
+	}
+
+	return pkgChatEvents.PublicMessageWire{
+		ID: msg.ID, AuthorID: msg.AuthorID,
+		AuthorDisplayName: msg.AuthorDisplayName, AuthorAvatarURL: msg.AuthorAvatarURL,
+		Body: msg.Body, CreatedAt: msg.CreatedAt, EditedAt: msg.EditedAt, IsPinned: msg.IsPinned,
+		ReplyTo: reply, Reactions: reactions,
+	}
+}
+
+func toReactionWire(in []models.MessageReactionSummary) []pkgChatEvents.ReactionSummaryWire {
+	out := make([]pkgChatEvents.ReactionSummaryWire, len(in))
+	for i, r := range in {
+		out[i] = pkgChatEvents.ReactionSummaryWire{Emoji: r.Emoji, Count: r.Count, UserIDs: r.UserIDs}
+	}
+
+	return out
+}
+
+func (s service) enqueueOutbox(ctx context.Context, groupID, channelID string, msg models.PublicMessage, at time.Time) error {
+	row, err := pkgChatEvents.EncodeMessageUpdated(groupID, channelID, toPublicMessageWire(msg), at)
+	if err != nil {
+		return err
+	}
+
+	return s.outbox.Insert(ctx, toEventOutboxInsert(row))
+}
+
+func (s service) enqueueDeleted(ctx context.Context, groupID, channelID, messagePublicID string, at time.Time) error {
+	row, err := pkgChatEvents.EncodeMessageDeleted(groupID, channelID, messagePublicID, at)
+	if err != nil {
+		return err
+	}
+
+	return s.outbox.Insert(ctx, toEventOutboxInsert(row))
+}
+
+func (s service) enqueueReactions(
+	ctx context.Context,
+	groupID, channelID, messagePublicID string,
+	reactions []models.MessageReactionSummary,
+	at time.Time,
+) error {
+	row, err := pkgChatEvents.EncodeMessageReactionsUpdated(groupID, channelID, messagePublicID, toReactionWire(reactions), at)
+	if err != nil {
+		return err
+	}
+
+	return s.outbox.Insert(ctx, toEventOutboxInsert(row))
 }

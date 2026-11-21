@@ -1,3 +1,4 @@
 ./pkg/...
 ./internal/middleware
 ./internal/realtime/hub
+./internal/realtime/delivery/ws

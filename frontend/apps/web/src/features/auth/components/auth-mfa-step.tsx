@@ -31,6 +31,10 @@ import {
 	useBeginLoginWebAuthnMutation,
 	useVerifyLoginMfaMutation,
 } from "@/services/auth/auth.mutation";
+import { useQuery } from "@tanstack/react-query";
+import { instancePolicyQueryOpts } from "@/services/auth/auth.query";
+import { TurnstileWidget } from "@/features/auth/components/turnstile-widget";
+import { authSubmitBlocked } from "@/features/auth/lib/captcha-policy";
 
 const TotpSchema = z.object({
 	code: z.string().regex(/^\d{6}$/, "validation.otp"),
@@ -73,6 +77,19 @@ export function AuthMfaStep({ challenge, onSuccess, onBack }: AuthMfaStepProps) 
 
 	const beginWebAuthn = useBeginLoginWebAuthnMutation();
 	const verifyMfa = useVerifyLoginMfaMutation();
+	const { data: policy, isSuccess: policyReady } = useQuery(instancePolicyQueryOpts());
+	const turnstileSiteKey = policy?.turnstile_site_key ?? "";
+	const [turnstileToken, setTurnstileToken] = useState("");
+	const [turnstileResetKey, setTurnstileResetKey] = useState(0);
+	const resetTurnstile = useCallback(() => {
+		if (!turnstileSiteKey) {
+			return;
+		}
+		setTurnstileToken("");
+		setTurnstileResetKey((k) => k + 1);
+	}, [turnstileSiteKey]);
+	const mfaBlocked = authSubmitBlocked(policy, policyReady, turnstileToken);
+	const turnstileField = turnstileToken.trim() !== "" ? turnstileToken : undefined;
 
 	const totpForm = useForm<z.infer<typeof TotpSchema>>({
 		resolver: zodResolver(TotpSchema),
@@ -102,9 +119,11 @@ export function AuthMfaStep({ challenge, onSuccess, onBack }: AuthMfaStepProps) 
 				challenge_id: challenge.challenge_id,
 				method: "webauthn",
 				assertion,
+				turnstile_token: turnstileField,
 			});
 			onSuccess();
 		} catch (err) {
+			resetTurnstile();
 			if (err instanceof Error && err.name === "NotAllowedError") {
 				setWebauthnError(t("login.mfa.webauthn_failed"));
 			} else {
@@ -113,7 +132,16 @@ export function AuthMfaStep({ challenge, onSuccess, onBack }: AuthMfaStepProps) 
 		} finally {
 			setWebauthnBusy(false);
 		}
-	}, [beginWebAuthn, challenge.challenge_id, challenge.webauthn_options, onSuccess, t, verifyMfa]);
+	}, [
+		beginWebAuthn,
+		challenge.challenge_id,
+		challenge.webauthn_options,
+		onSuccess,
+		t,
+		turnstileField,
+		verifyMfa,
+		resetTurnstile,
+	]);
 
 	useEffect(() => {
 		if (activeMethod === "webauthn" && !autoTriggeredRef.current && challenge.webauthn_options) {
@@ -129,10 +157,11 @@ export function AuthMfaStep({ challenge, onSuccess, onBack }: AuthMfaStepProps) 
 				challenge_id: challenge.challenge_id,
 				method: "totp",
 				code,
+				turnstile_token: turnstileField,
 			});
 			onSuccess();
 		} catch {
-			// handled via verifyMfa.error
+			resetTurnstile();
 		}
 	});
 
@@ -143,10 +172,11 @@ export function AuthMfaStep({ challenge, onSuccess, onBack }: AuthMfaStepProps) 
 				challenge_id: challenge.challenge_id,
 				method: "recovery",
 				code,
+				turnstile_token: turnstileField,
 			});
 			onSuccess();
 		} catch {
-			// handled via verifyMfa.error
+			resetTurnstile();
 		}
 	});
 
@@ -226,6 +256,14 @@ export function AuthMfaStep({ challenge, onSuccess, onBack }: AuthMfaStepProps) 
 				</div>
 			) : null}
 
+			{turnstileSiteKey ? (
+				<TurnstileWidget
+					siteKey={turnstileSiteKey}
+					resetKey={turnstileResetKey}
+					onToken={setTurnstileToken}
+				/>
+			) : null}
+
 			{serverError ? (
 				<p role="alert" className="text-center text-sm text-destructive">
 					{serverError}
@@ -240,7 +278,7 @@ export function AuthMfaStep({ challenge, onSuccess, onBack }: AuthMfaStepProps) 
 					<Button
 						type="button"
 						className={authSubmitClass}
-						disabled={webauthnBusy || verifyMfa.isPending}
+						disabled={webauthnBusy || verifyMfa.isPending || mfaBlocked}
 						onClick={() => void runWebAuthn()}
 					>
 						{webauthnBusy || verifyMfa.isPending
@@ -260,7 +298,11 @@ export function AuthMfaStep({ challenge, onSuccess, onBack }: AuthMfaStepProps) 
 							length={6}
 							required
 						/>
-						<Button type="submit" className={authSubmitClass} disabled={verifyMfa.isPending}>
+						<Button
+							type="submit"
+							className={authSubmitClass}
+							disabled={verifyMfa.isPending || mfaBlocked}
+						>
 							{verifyMfa.isPending ? t("login.mfa.verifying") : t("login.mfa.verify_cta")}
 						</Button>
 					</form>
@@ -291,7 +333,11 @@ export function AuthMfaStep({ challenge, onSuccess, onBack }: AuthMfaStepProps) 
 								</FormItem>
 							)}
 						/>
-						<Button type="submit" className={authSubmitClass} disabled={verifyMfa.isPending}>
+						<Button
+							type="submit"
+							className={authSubmitClass}
+							disabled={verifyMfa.isPending || mfaBlocked}
+						>
 							{verifyMfa.isPending ? t("login.mfa.verifying") : t("login.mfa.verify_cta")}
 						</Button>
 					</form>

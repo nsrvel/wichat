@@ -31,11 +31,15 @@ import { ApiError } from "@wichat/api-client/api-error";
 import { env } from "@/lib/env";
 import { api, ensureAccessToken, setAccessToken } from "@/integrations/api-client";
 
-export function googleStartUrl(returnTo?: string) {
+export function googleStartUrl(returnTo?: string, turnstileToken?: string) {
 	const url = new URL("/api/v1/auth/google", env.NEXT_PUBLIC_API_URL);
 	const next = returnTo?.trim();
 	if (next?.startsWith("/") && !next.startsWith("//")) {
 		url.searchParams.set("next", next);
+	}
+	const token = turnstileToken?.trim();
+	if (token) {
+		url.searchParams.set("turnstile_token", token);
 	}
 	return url.toString();
 }

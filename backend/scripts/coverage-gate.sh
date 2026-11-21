@@ -13,8 +13,9 @@ if ! command -v go >/dev/null; then
 fi
 
 COVER_PKGS=()
-if [[ -f coverage.scope ]]; then
-  SCOPE=$(grep -v '^\s*#' coverage.scope | tr '\n' ' ')
+SCOPE_FILE="${COVERAGE_SCOPE_FILE:-coverage.scope}"
+if [[ -f "$SCOPE_FILE" ]]; then
+  SCOPE=$(grep -v '^\s*#' "$SCOPE_FILE" | tr '\n' ' ')
   while IFS= read -r pkg; do
     [[ -n "$pkg" ]] && COVER_PKGS+=("$pkg")
   done < <(go list $SCOPE 2>/dev/null | sort -u)
@@ -51,8 +52,9 @@ fi
 
 ACTUAL=$(go tool cover -func="$PROFILE" | awk '/^total:/ {gsub(/%/,"",$3); print $3}')
 FLOOR="$TARGET"
-if [[ -f .coverage-min ]]; then
-  FLOOR=$(tr -d '[:space:]' < .coverage-min)
+MIN_FILE="${COVERAGE_MIN_FILE:-.coverage-min}"
+if [[ -f "$MIN_FILE" ]]; then
+  FLOOR=$(tr -d '[:space:]' < "$MIN_FILE")
 fi
 
 awk -v actual="$ACTUAL" -v floor="$FLOOR" 'BEGIN {

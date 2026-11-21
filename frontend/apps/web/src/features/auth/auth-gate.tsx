@@ -10,6 +10,7 @@ import {
 	getGatewayStatus,
 	subscribeGatewayStatus,
 } from "@/integrations/realtime/gateway-connection";
+import { Q_SESSION } from "@/services/auth/auth.key";
 import { bootstrapApp, Q_APP_BOOTSTRAP } from "@/services/auth/bootstrap-app";
 
 const getServerSnapshot = () => "connected" as const;
@@ -38,9 +39,18 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 			return;
 		}
 		if (!bootstrap.data) {
+			queryClient.setQueryData([Q_SESSION], null);
 			router.replace("/sign-in");
 		}
-	}, [bootstrap.data, bootstrap.isError, bootstrap.isPending, gatewayStatus, mounted, router]);
+	}, [
+		bootstrap.data,
+		bootstrap.isError,
+		bootstrap.isPending,
+		gatewayStatus,
+		mounted,
+		queryClient,
+		router,
+	]);
 
 	if (!mounted || bootstrap.isPending || bootstrap.isError || gatewayStatus === "reconnecting") {
 		if (bootstrap.data) {

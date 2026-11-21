@@ -23,6 +23,7 @@ type Config struct {
 	MinioPublicBaseURL       string `mapstructure:"minio_public_base_url"`
 	MinioUseSSL              bool   `mapstructure:"minio_use_ssl"`
 	MinioRegion              string `mapstructure:"minio_region"`
+	InternalGrpcToken        string `mapstructure:"internal_grpc_token"`
 }
 
 // Defaults are applied when env / .env do not set a value.
@@ -53,4 +54,9 @@ func Load(envFile string) (Config, error) {
 // ListenAddr returns the address for net.Listen (e.g. ":3002").
 func (c Config) ListenAddr() string {
 	return sharedconfig.ListenAddress(c.Port)
+}
+
+// Validate enforces production safety invariants when Env is not development.
+func (c Config) Validate() error {
+	return sharedconfig.RequireInternalGrpcToken(c.Env, c.InternalGrpcToken)
 }

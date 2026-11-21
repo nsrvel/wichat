@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/wichat/wichat/backend/api-gateway/internal/realtime/hub"
 	chatEvents "github.com/wichat/wichat/backend/wi-shared/chat-events"
@@ -25,6 +26,8 @@ type realtimeFanout struct {
 	log      logger.Logger
 }
 
+var errInvalidFanoutPayload = errors.New("invalid fanout payload")
+
 // NewRealtimeFanout wires the gateway Kafka → WebSocket fanout.
 func NewRealtimeFanout(consumer wikafka.Consumer, h *hub.Hub, log logger.Logger) RealtimeFanout {
 	return realtimeFanout{consumer: consumer, hub: h, log: log}
@@ -42,8 +45,16 @@ func (r realtimeFanout) Run(ctx context.Context) error {
 			return err
 		}
 
-		if err := r.handle(in); err != nil {
-			r.log.Error("realtime fanout handle", "err", err)
+		if err := r.handleWithRetry(ctx, in); err != nil {
+			if errors.Is(err, context.Canceled) || ctx.Err() != nil {
+				return nil
+			}
+			if errors.Is(err, errInvalidFanoutPayload) {
+				r.log.Error("realtime fanout poison payload", "err", err)
+			} else {
+				r.log.Error("realtime fanout handle failed after retries; skipping commit", "err", err)
+				continue
+			}
 		}
 
 		if err := r.consumer.Commit(ctx, in); err != nil {
@@ -52,19 +63,46 @@ func (r realtimeFanout) Run(ctx context.Context) error {
 	}
 }
 
+func fanoutRetryDelays() []time.Duration {
+	return []time.Duration{50 * time.Millisecond, 200 * time.Millisecond, 500 * time.Millisecond}
+}
+
+func (r realtimeFanout) handleWithRetry(ctx context.Context, in wikafka.Incoming) error {
+	backoffs := fanoutRetryDelays()
+	var err error
+	for attempt := 0; attempt <= len(backoffs); attempt++ {
+		err = r.handle(in)
+		if err == nil || errors.Is(err, errInvalidFanoutPayload) {
+			return err
+		}
+		if attempt == len(backoffs) {
+			break
+		}
+		timer := time.NewTimer(backoffs[attempt])
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return ctx.Err()
+		case <-timer.C:
+		}
+	}
+
+	return err
+}
+
 func (r realtimeFanout) handle(in wikafka.Incoming) error {
 	var head struct {
 		Type string `json:"type"`
 	}
 	if err := json.Unmarshal(in.Value, &head); err != nil {
-		return err
+		return fmt.Errorf("%w: %w", errInvalidFanoutPayload, err)
 	}
 
 	switch strings.TrimSpace(head.Type) {
 	case chatEvents.TypeMessageCreated:
 		var ev chatEvents.MessageCreated
 		if err := json.Unmarshal(in.Value, &ev); err != nil {
-			return err
+			return fmt.Errorf("%w: %w", errInvalidFanoutPayload, err)
 		}
 		return r.deliver(ev.GroupID, ev.ChannelID, func() ([]byte, error) {
 			return realtime.MarshalMessageCreatedEvent(ev)
@@ -72,7 +110,7 @@ func (r realtimeFanout) handle(in wikafka.Incoming) error {
 	case chatEvents.TypeMessageUpdated:
 		var ev chatEvents.MessageUpdated
 		if err := json.Unmarshal(in.Value, &ev); err != nil {
-			return err
+			return fmt.Errorf("%w: %w", errInvalidFanoutPayload, err)
 		}
 		return r.deliver(ev.GroupID, ev.ChannelID, func() ([]byte, error) {
 			return realtime.MarshalMessageUpdatedEvent(ev)
@@ -80,7 +118,7 @@ func (r realtimeFanout) handle(in wikafka.Incoming) error {
 	case chatEvents.TypeMessageDeleted:
 		var ev chatEvents.MessageDeleted
 		if err := json.Unmarshal(in.Value, &ev); err != nil {
-			return err
+			return fmt.Errorf("%w: %w", errInvalidFanoutPayload, err)
 		}
 		return r.deliver(ev.GroupID, ev.ChannelID, func() ([]byte, error) {
 			return realtime.MarshalMessageDeletedEvent(ev)
@@ -88,7 +126,7 @@ func (r realtimeFanout) handle(in wikafka.Incoming) error {
 	case chatEvents.TypeMessageReactionsUpdated:
 		var ev chatEvents.MessageReactionsUpdated
 		if err := json.Unmarshal(in.Value, &ev); err != nil {
-			return err
+			return fmt.Errorf("%w: %w", errInvalidFanoutPayload, err)
 		}
 		return r.deliver(ev.GroupID, ev.ChannelID, func() ([]byte, error) {
 			return realtime.MarshalMessageReactionsUpdatedEvent(ev)
@@ -106,7 +144,6 @@ func (r realtimeFanout) deliver(groupID, channelID string, marshalFn func() ([]b
 	if err != nil {
 		return err
 	}
-	r.hub.Deliver(groupID, channelID, payload)
 
-	return nil
+	return r.hub.Deliver(groupID, channelID, payload)
 }

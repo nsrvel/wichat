@@ -24,11 +24,13 @@ export type AuthChallenge = z.infer<typeof AuthChallengeSchema>;
 export const VerifyEmailCodeSchema = z.object({
 	challenge_id: z.string().trim().min(1),
 	code: z.string().trim().min(1).max(16),
+	turnstile_token: z.string().optional(),
 });
 export type VerifyEmailCode = z.infer<typeof VerifyEmailCodeSchema>;
 
 export const ResendEmailCodeSchema = z.object({
 	challenge_id: z.string().trim().min(1),
+	turnstile_token: z.string().optional(),
 });
 export type ResendEmailCode = z.infer<typeof ResendEmailCodeSchema>;
 
@@ -49,6 +51,7 @@ export type RegistrationMode = z.infer<typeof RegistrationModeSchema>;
 export const InstancePolicySchema = z.object({
 	registration_mode: RegistrationModeSchema,
 	turnstile_site_key: z.string().optional().default(""),
+	turnstile_required: z.boolean().optional().default(false),
 });
 export type InstancePolicy = z.infer<typeof InstancePolicySchema>;
 

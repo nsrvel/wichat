@@ -30,19 +30,25 @@ function GoogleIcon() {
 export function GoogleButton({
 	label,
 	authReturnTo = "/",
+	turnstileToken = "",
+	disabled = false,
 }: {
 	label: string;
 	authReturnTo?: string;
+	turnstileToken?: string;
+	disabled?: boolean;
 }) {
 	return (
 		<button
 			type="button"
+			disabled={disabled}
 			className={cn(
 				authInputClass,
 				"inline-flex cursor-pointer items-center justify-center gap-2 px-2.5 font-medium sm:gap-2.5 sm:px-3 [&_svg]:shrink-0",
+				disabled && "pointer-events-none opacity-50",
 			)}
 			onClick={() => {
-				window.location.assign(googleStartUrl(authReturnTo));
+				window.location.assign(googleStartUrl(authReturnTo, turnstileToken || undefined));
 			}}
 		>
 			<GoogleIcon />

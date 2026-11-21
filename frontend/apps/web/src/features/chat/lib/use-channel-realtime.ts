@@ -6,12 +6,17 @@ import { isPublicEntityId } from "@wichat/contracts/common";
 import type { MessagesList } from "@wichat/contracts/chat/message";
 import {
 	appendOrUpdateInfiniteChannelMessage,
+	mergeLatestPageIntoInfiniteMessages,
 	removeInfiniteChannelMessage,
 	updateInfiniteChannelMessageReactions,
 } from "@/features/chat/lib/channel-message";
 import { subscribeChatChannel } from "@/integrations/realtime/chat-channel";
 import { sessionQueryOpts } from "@/services/auth/auth.query";
 import { Q_CHANNEL_MESSAGES, Q_PINNED_MESSAGES } from "@/services/message/message.key";
+import {
+	CHANNEL_MESSAGES_PAGE_SIZE,
+	listChannelMessages,
+} from "@/services/message/message.service";
 
 export function useChannelRealtime(
 	groupId: string,
@@ -61,9 +66,18 @@ export function useChannelRealtime(
 				);
 			},
 			onReconnect: () => {
-				void queryClient.invalidateQueries({
-					queryKey: [Q_CHANNEL_MESSAGES, groupId, channelId],
-				});
+				void listChannelMessages(groupId, channelId, {
+					limit: CHANNEL_MESSAGES_PAGE_SIZE,
+				})
+					.then((latestPage) => {
+						queryClient.setQueryData<InfiniteData<MessagesList>>(
+							[Q_CHANNEL_MESSAGES, groupId, channelId],
+							(prev) => mergeLatestPageIntoInfiniteMessages(prev, latestPage),
+						);
+					})
+					.catch(() => {
+						// Fallback: leave cached messages intact until next reconnect/manual retry.
+					});
 			},
 		});
 	}, [groupId, channelId, queryClient, sessionUser?.id, onMessageReceived]);

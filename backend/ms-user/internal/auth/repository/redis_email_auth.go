@@ -175,41 +175,17 @@ func (s redisEmailAuthStore) GetRegisterPending(ctx context.Context, challengeID
 
 func (s redisEmailAuthStore) VerifyRegisterCode(ctx context.Context, challengeID, code string, secret []byte, maxAttempts int) (models.RegisterPending, error) {
 	key := registerPendingKey(challengeID)
-	raw, err := s.rdb.Get(ctx, key).Bytes()
-	if errors.Is(err, redis.Nil) {
-		return models.RegisterPending{}, constants.ErrNotFound
-	}
+	submitted := authRedis.HMACCode(secret, authRedis.NormalizeOTP(code))
+	raw, err := authRedis.VerifyChallengeJSON(ctx, s.rdb, key, submitted, maxAttempts)
 	if err != nil {
-		return models.RegisterPending{}, err
-	}
-
-	var rec models.RegisterPending
-	if err := json.Unmarshal(raw, &rec); err != nil {
-		return models.RegisterPending{}, err
-	}
-
-	if rec.CodeHMAC != authRedis.HMACCode(secret, authRedis.NormalizeOTP(code)) {
-		rec.Attempts++
-		if rec.Attempts >= maxAttempts {
-			_ = s.rdb.Del(ctx, key).Err()
+		if errors.Is(err, constants.ErrNotFound) {
 			return models.RegisterPending{}, constants.ErrNotFound
 		}
-		payload, err := json.Marshal(rec)
-		if err != nil {
-			return models.RegisterPending{}, err
-		}
-		ttl, err := s.rdb.TTL(ctx, key).Result()
-		if err != nil {
-			return models.RegisterPending{}, err
-		}
-		if ttl <= 0 {
-			ttl = 10 * time.Minute
-		}
-		if err := s.rdb.Set(ctx, key, payload, ttl).Err(); err != nil {
-			return models.RegisterPending{}, err
-		}
-
-		return models.RegisterPending{}, constants.ErrNotFound
+		return models.RegisterPending{}, err
+	}
+	var rec models.RegisterPending
+	if err := authRedis.DecodeJSON(raw, &rec); err != nil {
+		return models.RegisterPending{}, err
 	}
 
 	return rec, nil
@@ -261,41 +237,17 @@ func (s redisEmailAuthStore) GetLoginChallenge(ctx context.Context, challengeID 
 
 func (s redisEmailAuthStore) VerifyLoginCode(ctx context.Context, challengeID, code string, secret []byte, maxAttempts int) (models.LoginPending, error) {
 	key := loginChallengeKey(challengeID)
-	raw, err := s.rdb.Get(ctx, key).Bytes()
-	if errors.Is(err, redis.Nil) {
-		return models.LoginPending{}, constants.ErrNotFound
-	}
+	submitted := authRedis.HMACCode(secret, authRedis.NormalizeOTP(code))
+	raw, err := authRedis.VerifyChallengeJSON(ctx, s.rdb, key, submitted, maxAttempts)
 	if err != nil {
-		return models.LoginPending{}, err
-	}
-
-	var rec models.LoginPending
-	if err := json.Unmarshal(raw, &rec); err != nil {
-		return models.LoginPending{}, err
-	}
-
-	if rec.CodeHMAC != authRedis.HMACCode(secret, authRedis.NormalizeOTP(code)) {
-		rec.Attempts++
-		if rec.Attempts >= maxAttempts {
-			_ = s.rdb.Del(ctx, key).Err()
+		if errors.Is(err, constants.ErrNotFound) {
 			return models.LoginPending{}, constants.ErrNotFound
 		}
-		payload, err := json.Marshal(rec)
-		if err != nil {
-			return models.LoginPending{}, err
-		}
-		ttl, err := s.rdb.TTL(ctx, key).Result()
-		if err != nil {
-			return models.LoginPending{}, err
-		}
-		if ttl <= 0 {
-			ttl = 10 * time.Minute
-		}
-		if err := s.rdb.Set(ctx, key, payload, ttl).Err(); err != nil {
-			return models.LoginPending{}, err
-		}
-
-		return models.LoginPending{}, constants.ErrNotFound
+		return models.LoginPending{}, err
+	}
+	var rec models.LoginPending
+	if err := authRedis.DecodeJSON(raw, &rec); err != nil {
+		return models.LoginPending{}, err
 	}
 
 	return rec, nil

@@ -14,6 +14,9 @@ import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { AuthEmailOtpStep } from "@/features/auth/components/auth-email-otp-step";
 import { AuthMfaStep } from "@/features/auth/components/auth-mfa-step";
+import { AuthPrivacyNotice } from "@/features/auth/components/auth-privacy-notice";
+import { AuthOr } from "@/features/auth/components/auth-shell";
+import { GoogleButton } from "@/features/auth/components/google-button";
 import { TurnstileWidget } from "@/features/auth/components/turnstile-widget";
 import {
 	authFieldLabelClass,
@@ -30,6 +33,7 @@ import {
 	useVerifyLoginMutation,
 } from "@/services/auth/auth.mutation";
 import { instancePolicyQueryOpts } from "@/services/auth/auth.query";
+import { authSubmitBlocked } from "@/features/auth/lib/captcha-policy";
 
 const LoginFormSchema = z.object({
 	login: z.string().trim().min(1, "validation.login").max(254),
@@ -38,18 +42,21 @@ const LoginFormSchema = z.object({
 
 type LoginFormValues = z.infer<typeof LoginFormSchema>;
 
-export function LoginForm() {
+export function LoginForm({ authReturnTo = "/" }: { authReturnTo?: string }) {
 	const { t, i18n } = useTranslation();
 	const login = useLoginMutation();
 	const verify = useVerifyLoginMutation();
 	const resend = useResendLoginCodeMutation();
-	const { data: policy } = useQuery(instancePolicyQueryOpts());
+	const { data: policy, isSuccess: policyReady } = useQuery(instancePolicyQueryOpts());
 	const turnstileSiteKey = policy?.turnstile_site_key ?? "";
 	const [challenge, setChallenge] = useState<AuthChallenge | null>(null);
 	const [mfaChallenge, setMfaChallenge] = useState<AuthChallenge | null>(null);
 	const [resendCooldown, setResendCooldown] = useState(0);
 	const [turnstileToken, setTurnstileToken] = useState("");
 	const [turnstileResetKey, setTurnstileResetKey] = useState(0);
+	const [otpTurnstileToken, setOtpTurnstileToken] = useState("");
+	const [otpTurnstileResetKey, setOtpTurnstileResetKey] = useState(0);
+	const credentialBlocked = authSubmitBlocked(policy, policyReady, turnstileToken);
 	const form = useForm<LoginFormValues>({
 		resolver: zodResolver(LoginFormSchema),
 		defaultValues: { login: "", password: "" },
@@ -74,7 +81,13 @@ export function LoginForm() {
 		return (
 			<AuthEmailOtpStep
 				challenge={challenge}
-				leadKey="login.code_lead"
+				policy={policy}
+				policyReady={policyReady}
+				turnstileSiteKey={turnstileSiteKey}
+				turnstileToken={otpTurnstileToken}
+				onTurnstileToken={setOtpTurnstileToken}
+				turnstileResetKey={otpTurnstileResetKey}
+				leadKey="login.code_lead_generic"
 				submitKey="login.confirm_code"
 				submittingKey="login.confirming_code"
 				isPending={verify.isPending}
@@ -85,7 +98,10 @@ export function LoginForm() {
 				onResend={() => {
 					verify.reset();
 					resend.mutate(
-						{ challenge_id: challenge.challenge_id },
+						{
+							challenge_id: challenge.challenge_id,
+							turnstile_token: otpTurnstileToken || undefined,
+						},
 						{
 							onSuccess: (data) => setResendCooldown(data.resend_after_seconds),
 							onError: (err) => {
@@ -97,26 +113,44 @@ export function LoginForm() {
 						},
 					);
 				}}
-				onBack={() => {
-					verify.reset();
-					resend.reset();
-					login.reset();
-					setChallenge(null);
-					setResendCooldown(0);
-				}}
 				onSubmit={(code) => {
 					resend.reset();
-					verify.mutate({ challenge_id: challenge.challenge_id, code });
+					verify.mutate(
+						{
+							challenge_id: challenge.challenge_id,
+							code,
+							turnstile_token: otpTurnstileToken || undefined,
+						},
+						{
+							onError: () => {
+								if (turnstileSiteKey) {
+									setOtpTurnstileToken("");
+									setOtpTurnstileResetKey((k) => k + 1);
+								}
+							},
+						},
+					);
 				}}
 			/>
 		);
 	}
 
 	return (
-		<Form {...form}>
-			<form
-				className={authFormClass}
-				onSubmit={form.handleSubmit((values) => {
+		<>
+			<GoogleButton
+				label={t("auth.google")}
+				authReturnTo={authReturnTo}
+				turnstileToken={turnstileToken}
+				disabled={credentialBlocked}
+			/>
+			<AuthOr label={t("auth.or")} />
+			<Form {...form}>
+				<form
+					className={authFormClass}
+					onSubmit={form.handleSubmit((values) => {
+					if (credentialBlocked) {
+						return;
+					}
 					const payload: LoginRequest = {
 						...values,
 						locale: i18n.language,
@@ -178,12 +212,14 @@ export function LoginForm() {
 				) : null}
 				<Button
 					type="submit"
-					disabled={login.isPending || Boolean(turnstileSiteKey && !turnstileToken)}
+					disabled={login.isPending || credentialBlocked}
 					className={turnstileSiteKey ? authSubmitClass : `mt-2 ${authSubmitClass}`}
 				>
 					{login.isPending ? t("login.submitting") : t("login.submit")}
 				</Button>
-			</form>
-		</Form>
+				</form>
+				<AuthPrivacyNotice />
+			</Form>
+		</>
 	);
 }

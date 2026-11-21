@@ -11,15 +11,21 @@ import { toast } from "sonner";
 import { GroupMemberProfileHost } from "@/components/group/group-member-profile-host";
 import { toChannelShellNavTarget } from "@/features/channel/lib/channel-shell-nav-target";
 import { ChannelEmptyState } from "@/features/chat/components/channel-empty-state";
-import { ChannelMessageItem } from "@/features/chat/components/channel-message-item";
 import { ChatComposer } from "@/features/chat/components/chat-composer";
 import { ConversationHeader } from "@/features/chat/components/conversation-header";
+import { MessageActionBar } from "@/features/chat/components/message-action-bar";
+import { MessageBody } from "@/features/chat/components/message-body";
+import {
+	MessageBubbleContextMenu,
+	type MessageMenuActionProps,
+} from "@/features/chat/components/message-context-menu";
 import { MessageList } from "@/features/chat/components/message-list";
+import { MessageReactions } from "@/features/chat/components/message-reactions";
+import { MessageRow } from "@/features/chat/components/message-row";
 import { PinnedMessagesPopover } from "@/features/chat/components/pinned-messages-popover";
-import type { ChannelMessage } from "@/features/chat/lib/channel-message";
 import { groupTimelineItems } from "@/features/chat/lib/group-timeline-items";
 import { useChannelMessages } from "@/features/chat/lib/use-channel-messages";
-import { stripInlineReplyBlocks } from "@/features/chat/lib/composer-markdown";
+import { hasInlineReplyBlock, stripInlineReplyBlocks } from "@/features/chat/lib/composer-markdown";
 import { useChannelRealtime } from "@/features/chat/lib/use-channel-realtime";
 import { useChatScroller } from "@/features/chat/lib/use-chat-scroller";
 import { translateError } from "@/integrations/i18n/translate-error";
@@ -163,9 +169,13 @@ export function ChannelChatView({ groupId, channelId, onOpenSidebar }: ChannelCh
 		refetch,
 	} = useChannelMessages(groupId, channelId);
 
+	const timelineItems = useMemo(() => groupTimelineItems(messages), [messages]);
+	const showEmpty = !isPending && !isError && messages.length === 0;
+
 	const {
 		scrollRef,
 		contentRef,
+		virtualizer,
 		showJumpToLatest,
 		unreadNewCount,
 		highlightedMessageId,
@@ -176,9 +186,7 @@ export function ChannelChatView({ groupId, channelId, onOpenSidebar }: ChannelCh
 		prepareForSend,
 	} = useChatScroller({
 		channelId,
-		messageCount: messages.length,
-		firstMessageId: messages[0]?.id,
-		lastMessageId: messages[messages.length - 1]?.id,
+		items: timelineItems,
 		hasOlderMessages,
 		isFetchingOlderMessages,
 		fetchOlderMessages,
@@ -247,9 +255,6 @@ export function ChannelChatView({ groupId, channelId, onOpenSidebar }: ChannelCh
 	const toggleReaction = useToggleReactionMutation();
 	const pinMessage = usePinMessageMutation();
 
-	const timelineItems = useMemo(() => groupTimelineItems(messages), [messages]);
-	const showEmpty = !isPending && !isError && messages.length === 0;
-
 	const resolveReactor = useCallback(
 		(userId: string) => {
 			const m = memberById.get(userId);
@@ -268,79 +273,6 @@ export function ChannelChatView({ groupId, channelId, onOpenSidebar }: ChannelCh
 			return undefined;
 		},
 		[memberById, sessionUser],
-	);
-
-	const handleReplyMessage = useCallback(
-		(message: ChannelMessage) => {
-			setReplyState({
-				channelId,
-				preview: {
-					id: message.id,
-					author_id: message.authorId,
-					author_display_name: message.authorDisplayName,
-					body_preview: stripInlineReplyBlocks(message.bodyPlain).slice(0, 120),
-				},
-				timeLabel: message.timeLabel,
-			});
-		},
-		[channelId],
-	);
-
-	const handleStartEdit = useCallback(
-		(messageId: string) => {
-			setEditingState({ channelId, messageId });
-		},
-		[channelId],
-	);
-
-	const handleSaveEdit = useCallback(
-		(messageId: string, nextBody: string) => {
-			setEditingState(null);
-			updateMessage.mutate(
-				{ groupId, channelId, messageId, body: nextBody },
-				{ onError: (err) => toast.error(translateError(t, err)) },
-			);
-		},
-		[channelId, groupId, t, updateMessage],
-	);
-
-	const handleCancelEdit = useCallback(() => {
-		setEditingState(null);
-	}, []);
-
-	const handleTogglePin = useCallback(
-		(messageId: string, nextPinned: boolean) => {
-			pinMessage.mutate(
-				{ groupId, channelId, messageId, pinned: nextPinned },
-				{ onError: (err) => toast.error(translateError(t, err)) },
-			);
-		},
-		[channelId, groupId, pinMessage, t],
-	);
-
-	const handleDeleteMessage = useCallback(
-		(messageId: string) => {
-			deleteMessage.mutate(
-				{ groupId, channelId, messageId },
-				{ onError: (err) => toast.error(translateError(t, err)) },
-			);
-		},
-		[channelId, deleteMessage, groupId, t],
-	);
-
-	const handleToggleReaction = useCallback(
-		(messageId: string, emoji: string) => {
-			toggleReaction.mutate(
-				{ groupId, channelId, messageId, emoji },
-				{ onError: (err) => toast.error(translateError(t, err)) },
-			);
-		},
-		[channelId, groupId, t, toggleReaction],
-	);
-
-	const handleSelectMember = useMemo(
-		() => (groupId ? (memberId: string) => setSelectedMemberId(memberId) : undefined),
-		[groupId],
 	);
 
 	const handleSendMessage = useCallback(
@@ -370,7 +302,6 @@ export function ChannelChatView({ groupId, channelId, onOpenSidebar }: ChannelCh
 								[channelId]: now + slowmodeSeconds * 1000,
 							}));
 						}
-						scrollToBottom("auto");
 					},
 					onError: (err) => {
 						if (err instanceof ApiError && err.code === "error.rate_limited") {
@@ -400,7 +331,6 @@ export function ChannelChatView({ groupId, channelId, onOpenSidebar }: ChannelCh
 			sessionUser,
 			slowmodeSeconds,
 			canBypassSlowmode,
-			scrollToBottom,
 			t,
 		],
 	);
@@ -458,50 +388,42 @@ export function ChannelChatView({ groupId, channelId, onOpenSidebar }: ChannelCh
 				) : (
 					<>
 						<div className="relative flex min-h-0 flex-1 flex-col">
+							{isFetchingOlderMessages ? (
+								<div className="pointer-events-none absolute top-3 left-1/2 z-10 -translate-x-1/2">
+									<div className="flex items-center gap-2 rounded-full border border-border/80 bg-card/95 px-3 py-1 text-xs text-muted-foreground shadow-sm backdrop-blur-xs">
+										<span className="inline-block size-3 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+										{t("chat.loading_older")}
+									</div>
+								</div>
+							) : null}
+
 							<MessageList
 								scrollRef={scrollRef}
 								contentRef={contentRef}
 								onScroll={handleScroll}
 								innerClassName={showEmpty || isError ? "min-h-full justify-center py-0" : undefined}
-							>
-								{isError ? (
-									<div className="flex flex-col items-center justify-center gap-3 py-8 text-center text-sm">
-										<p className="text-muted-foreground">{t("chat.load_error")}</p>
-										<button
-											type="button"
-											onClick={refetch}
-											className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground shadow-xs transition hover:bg-muted"
-										>
-											{t("chat.retry")}
-										</button>
-									</div>
-								) : null}
-
-								{isFetchingOlderMessages ? (
-									<div className="flex items-center justify-center gap-2 py-3 text-xs text-muted-foreground">
-										<span className="inline-block size-3.5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-										{t("chat.loading_older")}
-									</div>
-								) : null}
-
-								{!hasOlderMessages && messages.length > 0 && !isError ? (
-									<div className="flex flex-col items-center justify-center gap-1.5 border-b border-border/40 pb-6 pt-8 text-center">
-										<h3 className="text-base font-semibold text-foreground">
-											{t("chat.history_start_title", {
-												name: active?.channelName || active?.label || "channel",
-											})}
-										</h3>
-										<p className="max-w-md text-xs text-muted-foreground">
-											{t("chat.history_start_description", {
-												name: active?.channelName || active?.label || "channel",
-											})}
-										</p>
-									</div>
-								) : null}
-
-								{showEmpty ? <ChannelEmptyState /> : null}
-
-								{timelineItems.map((item) => {
+								virtualizer={!isError && !showEmpty ? virtualizer : undefined}
+								header={
+									!hasOlderMessages && messages.length > 0 && !isError ? (
+										<div className="flex flex-col items-center justify-center gap-1.5 border-b border-border/40 pb-6 pt-8 text-center">
+											<h3 className="text-base font-semibold text-foreground">
+												{t("chat.history_start_title", {
+													name: active?.channelName || active?.label || "channel",
+												})}
+											</h3>
+											<p className="max-w-md text-xs text-muted-foreground">
+												{t("chat.history_start_description", {
+													name: active?.channelName || active?.label || "channel",
+												})}
+											</p>
+										</div>
+									) : undefined
+								}
+								renderVirtualItem={(index) => {
+									const item = timelineItems[index];
+									if (!item) {
+										return null;
+									}
 									if (item.kind === "date-divider") {
 										const label = formatDateDividerLabel(
 											item.isoDate,
@@ -523,37 +445,146 @@ export function ChannelChatView({ groupId, channelId, onOpenSidebar }: ChannelCh
 										? resolveMemberNameColor(member.roles, hideRoles)
 										: undefined;
 									const authorIsOwner = member?.role === "owner";
+									const isOpt = message.id.startsWith("opt_");
 									const isMine = Boolean(message.mine);
 									const canDelete = isMine || canManageMessages;
+									const menuActions: MessageMenuActionProps = {
+										isMine,
+										isPinned: Boolean(message.isPinned),
+										canPin,
+										canDelete,
+										onReply: () =>
+											setReplyState({
+												channelId,
+												preview: {
+													id: message.id,
+													author_id: message.authorId,
+													author_display_name: message.authorDisplayName,
+													body_preview: stripInlineReplyBlocks(message.bodyPlain).slice(0, 120),
+												},
+												timeLabel: message.timeLabel,
+											}),
+										onEdit: isMine
+											? () => setEditingState({ channelId, messageId: message.id })
+											: undefined,
+										onTogglePin: canPin
+											? () =>
+													pinMessage.mutate(
+														{
+															groupId,
+															channelId,
+															messageId: message.id,
+															pinned: !message.isPinned,
+														},
+														{ onError: (err) => toast.error(translateError(t, err)) },
+													)
+											: undefined,
+										onCopy: () => {
+											const plain = stripInlineReplyBlocks(message.bodyPlain);
+											if (plain) {
+												void navigator.clipboard.writeText(plain);
+											}
+										},
+										onDelete: canDelete
+											? () =>
+													deleteMessage.mutate(
+														{ groupId, channelId, messageId: message.id },
+														{ onError: (err) => toast.error(translateError(t, err)) },
+													)
+											: undefined,
+									};
 
 									return (
-										<ChannelMessageItem
+										<MessageRow
 											key={item.key}
-											message={message}
-											compact={item.compact}
+											messageId={message.id}
 											authorAvatarUrl={message.authorAvatarUrl || member?.avatar_url || ""}
+											authorDisplayName={message.authorDisplayName}
 											authorNameColor={authorNameColor}
 											authorIsOwner={authorIsOwner}
 											authorPresenceStatus={member?.presence_status}
 											ownerLabel={t("invite.role_owner")}
+											timeLabel={message.timeLabel}
+											mine={isMine}
+											edited={Boolean(message.editedAt)}
+											isPinned={Boolean(message.isPinned)}
 											highlighted={highlightedMessageId === message.id}
+											compact={item.compact}
+											replyTo={message.replyTo}
+											hasInlineReply={hasInlineReplyBlock(message.bodyPlain)}
+											onReplyClick={handleJumpToMessage}
 											isEditing={editingMessageId === message.id}
-											canReact={canReact}
-											canPin={canPin}
-											canDelete={canDelete}
-											onReply={handleReplyMessage}
-											onStartEdit={handleStartEdit}
-											onSaveEdit={handleSaveEdit}
-											onCancelEdit={handleCancelEdit}
-											onTogglePin={handleTogglePin}
-											onDelete={handleDeleteMessage}
-											onToggleReaction={handleToggleReaction}
-											onJumpToMessage={handleJumpToMessage}
-											onSelectMember={handleSelectMember}
-											resolveReactor={resolveReactor}
-										/>
+											initialEditText={message.bodyPlain}
+											onSaveEdit={(nextBody) => {
+												setEditingState(null);
+												updateMessage.mutate(
+													{ groupId, channelId, messageId: message.id, body: nextBody },
+													{ onError: (err) => toast.error(translateError(t, err)) },
+												);
+											}}
+											onCancelEdit={() => setEditingState(null)}
+											onAuthorClick={
+												groupId && message.authorId
+													? () => setSelectedMemberId(message.authorId)
+													: undefined
+											}
+											renderBubbleWrapper={
+												!isOpt
+													? (bubble) => (
+															<MessageBubbleContextMenu {...menuActions}>
+																{bubble}
+															</MessageBubbleContextMenu>
+														)
+													: undefined
+											}
+											actionBar={
+												!isOpt ? (
+													<MessageActionBar
+														{...menuActions}
+														canReact={canReact}
+														onReact={(emoji) =>
+															toggleReaction.mutate(
+																{ groupId, channelId, messageId: message.id, emoji },
+																{ onError: (err) => toast.error(translateError(t, err)) },
+															)
+														}
+													/>
+												) : undefined
+											}
+											reactions={
+												message.reactions && message.reactions.length > 0 ? (
+													<MessageReactions
+														reactions={message.reactions}
+														showAdd={canReact}
+														resolveReactor={resolveReactor}
+														onToggleReaction={(emoji) =>
+															toggleReaction.mutate(
+																{ groupId, channelId, messageId: message.id, emoji },
+																{ onError: (err) => toast.error(translateError(t, err)) },
+															)
+														}
+													/>
+												) : undefined
+											}
+										>
+											<MessageBody text={message.bodyPlain} onReplyClick={handleJumpToMessage} />
+										</MessageRow>
 									);
-								})}
+								}}
+							>
+								{isError ? (
+									<div className="flex flex-col items-center justify-center gap-3 py-8 text-center text-sm">
+										<p className="text-muted-foreground">{t("chat.load_error")}</p>
+										<button
+											type="button"
+											onClick={refetch}
+											className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground shadow-xs transition hover:bg-muted"
+										>
+											{t("chat.retry")}
+										</button>
+									</div>
+								) : null}
+								{showEmpty ? <ChannelEmptyState /> : null}
 							</MessageList>
 
 							{showJumpToLatest ? (

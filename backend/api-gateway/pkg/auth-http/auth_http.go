@@ -57,19 +57,21 @@ type AuthChallengeBody struct {
 	MFAMethods         []string        `json:"mfa_methods,omitempty"`
 	WebAuthnOptions    json.RawMessage `json:"webauthn_options,omitempty"`
 	ChallengeID        string          `json:"challenge_id"`
-	EmailHint          string          `json:"email_hint"`
+	EmailHint          string          `json:"email_hint,omitempty"`
 	ResendAfterSeconds int32           `json:"resend_after_seconds"`
 }
 
 // VerifyEmailCodeBody is POST /api/v1/auth/register/verify and login/verify.
 type VerifyEmailCodeBody struct {
-	ChallengeID string `json:"challenge_id"`
-	Code        string `json:"code"`
+	ChallengeID    string `json:"challenge_id"`
+	Code           string `json:"code"`
+	TurnstileToken string `json:"turnstile_token"`
 }
 
 // ResendEmailCodeBody is POST resend endpoints.
 type ResendEmailCodeBody struct {
-	ChallengeID string `json:"challenge_id"`
+	ChallengeID    string `json:"challenge_id"`
+	TurnstileToken string `json:"turnstile_token"`
 }
 
 // ResendEmailCodeData is resend success payload.
@@ -79,8 +81,9 @@ type ResendEmailCodeData struct {
 
 // SetupStatusBody is the JSON data for GET /api/v1/auth/setup-status (instance policy).
 type SetupStatusBody struct {
-	RegistrationMode string `json:"registration_mode"`
-	TurnstileSiteKey string `json:"turnstile_site_key,omitempty"`
+	RegistrationMode  string `json:"registration_mode"`
+	TurnstileSiteKey  string `json:"turnstile_site_key,omitempty"`
+	TurnstileRequired bool   `json:"turnstile_required,omitempty"`
 }
 
 // InstanceSetupBody is POST /api/v1/auth/instance-setup.
@@ -183,10 +186,11 @@ type UpdatePasswordBody struct {
 
 // VerifyLoginMFABody is POST /api/v1/auth/login/mfa/verify.
 type VerifyLoginMFABody struct {
-	ChallengeID string          `json:"challenge_id"`
-	Method      string          `json:"method"`
-	Code        string          `json:"code"`
-	Assertion   json.RawMessage `json:"assertion"`
+	ChallengeID    string          `json:"challenge_id"`
+	Method         string          `json:"method"`
+	Code           string          `json:"code"`
+	Assertion      json.RawMessage `json:"assertion"`
+	TurnstileToken string          `json:"turnstile_token"`
 }
 
 // BeginLoginWebAuthnBody is POST /api/v1/auth/login/mfa/webauthn/begin.
@@ -942,7 +946,6 @@ func ChallengeFromPB(ch *userv1.AuthChallenge) AuthChallengeBody {
 		MFAMethods:         ch.GetMfaMethods(),
 		WebAuthnOptions:    waOpts,
 		ChallengeID:        ch.GetChallengeId(),
-		EmailHint:          ch.GetEmailHint(),
 		ResendAfterSeconds: ch.GetResendCooldownSeconds(),
 	}
 }

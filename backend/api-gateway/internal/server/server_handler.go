@@ -29,7 +29,7 @@ func (s *server) buildHandler(ms *microservices.Clients, rtHub *hub.Hub, monitor
 	s.mapHandlers(mux, ms, rtHub, monitor)
 
 	// Middleware
-	return middleware.CORS(s.cfg.WebOrigin, middleware.Chain(mux)), nil
+	return middleware.CORS(s.cfg.WebOrigin, middleware.CrossOriginStateChange(s.cfg.WebOrigin, middleware.Chain(mux))), nil
 }
 
 // RegisterHealthRoutes registers /api/v1/healthz and /api/v1/readyz on mux.
@@ -59,8 +59,10 @@ func (s *server) mapHandlers(mux *http.ServeMux, ms *microservices.Clients, rtHu
 	RegisterHealthRoutes(mux, monitor)
 
 	// APIs
-	authdelivery.Register(mux, authdelivery.NewHandler(ms, s.log, s.cfg.SecureCookies(), s.cfg.WebOrigin, s.cfg.TurnstileSecretKey))
-	userdelivery.Register(mux, userdelivery.NewHandler(ms, s.log, s.cfg.TurnstileSiteKey).WithPresenceBroadcaster(rtHub))
+	authdelivery.Register(mux, authdelivery.NewHandler(ms, s.log, s.cfg.SecureCookies(), s.cfg.WebOrigin, s.cfg.TurnstileVerifySecret()))
+	userdelivery.Register(mux, userdelivery.NewHandler(ms, s.log, s.cfg.TurnstileClientSiteKey()).
+		WithTurnstileRequired(s.cfg.TurnstileEnabled).
+		WithPresenceBroadcaster(rtHub))
 	groupdelivery.Register(mux, groupdelivery.NewHandler(ms, s.log))
 	groupmemberdelivery.Register(mux, groupmemberdelivery.NewHandler(ms, s.log))
 	grouproledelivery.Register(mux, grouproledelivery.NewHandler(ms, s.log))

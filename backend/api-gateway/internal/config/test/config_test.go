@@ -6,6 +6,29 @@ import (
 	"github.com/wichat/wichat/backend/api-gateway/internal/config"
 )
 
+func TestTurnstileVerifySecretToggle(t *testing.T) {
+	t.Parallel()
+
+	cfg := config.Defaults
+	cfg.TurnstileSecretKey = "secret-key"
+	cfg.TurnstileSiteKey = "site-key"
+	if got := cfg.TurnstileVerifySecret(); got != "secret-key" {
+		t.Fatalf("enabled: got %q", got)
+	}
+	if got := cfg.TurnstileClientSiteKey(); got != "site-key" {
+		t.Fatalf("enabled site key: got %q", got)
+	}
+
+	cfg.TurnstileEnabled = false
+	if got := cfg.TurnstileVerifySecret(); got != "" {
+		t.Fatalf("disabled verify secret: got %q", got)
+	}
+	cfg.TurnstileSiteKey = "site-key"
+	if got := cfg.TurnstileClientSiteKey(); got != "" {
+		t.Fatalf("disabled client site key: got %q", got)
+	}
+}
+
 func TestConfigValidateProduction(t *testing.T) {
 	t.Parallel()
 
@@ -25,6 +48,7 @@ func TestConfigValidateProduction(t *testing.T) {
 				c.Env = "production"
 				c.WebOrigin = "https://chat.example.com"
 				c.TurnstileSecretKey = "0x4AAAAAAA_real_secret_key"
+				c.InternalGrpcToken = "prod-grpc-secret"
 			},
 		},
 		{
@@ -51,6 +75,16 @@ func TestConfigValidateProduction(t *testing.T) {
 				c.Env = "production"
 				c.WebOrigin = "https://chat.example.com"
 				c.TurnstileSecretKey = "1x0000000000000000000000000000000AA"
+			},
+			wantErr: true,
+		},
+		{
+			name: "turnstile disabled rejected in prod",
+			mutate: func(c *config.Config) {
+				c.Env = "production"
+				c.WebOrigin = "https://chat.example.com"
+				c.TurnstileEnabled = false
+				c.TurnstileSecretKey = "0x4AAAAAAA_real_secret_key"
 			},
 			wantErr: true,
 		},

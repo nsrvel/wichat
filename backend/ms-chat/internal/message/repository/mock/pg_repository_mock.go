@@ -20,19 +20,21 @@ type reactionRecord struct {
 
 // State is shared in-memory storage for message repository tests.
 type State struct {
-	mu        sync.Mutex
-	seq       int
-	Messages  []models.Message
-	Authors   map[string]string
-	Avatars   map[string]string
-	Reactions []reactionRecord
+	mu         sync.Mutex
+	seq        int
+	Messages   []models.Message
+	Authors    map[string]string
+	Avatars    map[string]string
+	Reactions  []reactionRecord
+	ChannelSeq map[string]int64
 }
 
 // NewState returns empty message mock storage.
 func NewState() *State {
 	return &State{
-		Authors: map[string]string{},
-		Avatars: map[string]string{},
+		Authors:    map[string]string{},
+		Avatars:    map[string]string{},
+		ChannelSeq: map[string]int64{},
 	}
 }
 
@@ -98,28 +100,42 @@ func (m pgRepositoryMock) reactionsForMessageLocked(messageID string) []models.M
 	return out
 }
 
-func (m pgRepositoryMock) ListByChannel(_ context.Context, channelID string, limit int, before *time.Time) ([]models.MessageWithAuthor, error) {
+func (m pgRepositoryMock) ListByChannel(_ context.Context, channelID string, limit int, before *time.Time, beforePublicID string, beforeChannelSeq int64) ([]models.MessageWithAuthor, bool, error) {
 	m.st.mu.Lock()
 	defer m.st.mu.Unlock()
 
-	if limit <= 0 {
-		limit = constants.DefaultMessageListLimit
+	var beforeInternalID string
+	if beforePublicID != "" {
+		for _, msg := range m.st.Messages {
+			if msg.ChannelID == channelID && msg.PublicID == beforePublicID {
+				beforeInternalID = msg.ID
+				break
+			}
+		}
 	}
-	var out []models.MessageWithAuthor
+
+	var matching []models.MessageWithAuthor
 	for _, msg := range m.st.Messages {
 		if msg.ChannelID != channelID {
 			continue
 		}
-		if before != nil && !msg.CreatedAt.Before(*before) {
-			continue
+		if before != nil {
+			if msg.CreatedAt.After(*before) {
+				continue
+			}
+			if msg.CreatedAt.Equal(*before) && (beforeInternalID == "" || msg.ID >= beforeInternalID) {
+				continue
+			}
 		}
-		out = append(out, m.buildMessageWithAuthorLocked(msg))
-		if len(out) >= limit {
-			break
-		}
+		matching = append(matching, m.buildMessageWithAuthorLocked(msg))
 	}
 
-	return out, nil
+	hasMore := len(matching) > limit
+	if hasMore {
+		matching = matching[len(matching)-limit:]
+	}
+
+	return matching, hasMore, nil
 }
 
 func (m pgRepositoryMock) ListPinnedByChannel(_ context.Context, channelID string) ([]models.MessageWithAuthor, error) {
@@ -163,6 +179,31 @@ func (m pgRepositoryMock) Insert(_ context.Context, channelID, authorID, body st
 		ReplyToID: replyToID,
 		Body:      body,
 		CreatedAt: createdAt,
+	}
+	m.st.Messages = append(m.st.Messages, msg)
+
+	return msg, nil
+}
+
+func (m pgRepositoryMock) InsertWithOutbox(_ context.Context, in *models.InsertMessageWithOutboxInput) (models.Message, error) {
+	if in == nil {
+		return models.Message{}, fmt.Errorf("insert message input required")
+	}
+
+	m.st.mu.Lock()
+	defer m.st.mu.Unlock()
+
+	m.st.ChannelSeq[in.ChannelID]++
+	channelSeq := m.st.ChannelSeq[in.ChannelID]
+	msg := models.Message{
+		ID:         in.ID,
+		PublicID:   in.PublicID,
+		ChannelID:  in.ChannelID,
+		AuthorID:   in.AuthorID,
+		ReplyToID:  in.ReplyToID,
+		ChannelSeq: channelSeq,
+		Body:       in.Body,
+		CreatedAt:  in.CreatedAt,
 	}
 	m.st.Messages = append(m.st.Messages, msg)
 
@@ -257,23 +298,6 @@ func (m pgRepositoryMock) SetPinned(_ context.Context, channelID, publicID, user
 	}
 
 	return models.MessageWithAuthor{}, constants.ErrNotFound
-}
-
-func (m pgRepositoryMock) FindUserDisplayName(_ context.Context, userID string) (string, error) {
-	name, _, err := m.FindUserProfile(context.Background(), userID)
-
-	return name, err
-}
-
-func (m pgRepositoryMock) FindUserProfile(_ context.Context, userID string) (string, string, error) {
-	m.st.mu.Lock()
-	defer m.st.mu.Unlock()
-
-	if name, ok := m.st.Authors[userID]; ok {
-		return name, m.st.Avatars[userID], nil
-	}
-
-	return "", "", constants.ErrNotFound
 }
 
 func (m pgRepositoryMock) FindLastMessageTimeByAuthor(_ context.Context, channelID, authorID string) (*time.Time, error) {

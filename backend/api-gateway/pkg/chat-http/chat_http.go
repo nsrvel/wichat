@@ -23,6 +23,7 @@ type ReactionSummaryBody struct {
 // MessageBody is one channel message in JSON.
 type MessageBody struct {
 	ID                string                `json:"id"`
+	ChannelSeq        int64                 `json:"channel_seq,omitempty"`
 	AuthorID          string                `json:"author_id"`
 	AuthorDisplayName string                `json:"author_display_name"`
 	AuthorAvatarURL   string                `json:"author_avatar_url,omitempty"`
@@ -38,6 +39,7 @@ type MessageBody struct {
 // MessagesListBody wraps a channel message list.
 type MessagesListBody struct {
 	Messages []MessageBody `json:"messages"`
+	HasMore  bool          `json:"has_more"`
 }
 
 // CreateMessageBody is the JSON body for POST channel messages.
@@ -125,6 +127,7 @@ func MessageFromPB(msg *chatv1.MessageSummary) MessageBody {
 
 	return MessageBody{
 		ID:                msg.GetId(),
+		ChannelSeq:        msg.GetChannelSeq(),
 		AuthorID:          msg.GetAuthorId(),
 		AuthorDisplayName: msg.GetAuthorDisplayName(),
 		AuthorAvatarURL:   msg.GetAuthorAvatarUrl(),

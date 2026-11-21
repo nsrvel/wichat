@@ -46,6 +46,10 @@ func (s userRouteStub) WithPresenceBroadcaster(userhttp.PresenceBroadcaster) use
 	return s
 }
 
+func (s userRouteStub) WithTurnstileRequired(bool) userhttp.Handler {
+	return s
+}
+
 func TestRegisterMountsSetupStatus(t *testing.T) {
 	mux := http.NewServeMux()
 	userhttp.Register(mux, userRouteStub{})

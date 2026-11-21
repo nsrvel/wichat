@@ -12,11 +12,16 @@ import (
 
 // Config wires outbound microservice clients (timeouts, retries, dial targets).
 type Config struct {
-	Log              logger.Logger
-	Settings         utils.Settings
-	UserAddr         string
-	ChatAddr         string
-	NotificationAddr string
+	Log               logger.Logger
+	Settings          utils.Settings
+	UserAddr          string
+	ChatAddr          string
+	NotificationAddr  string
+	InternalGrpcToken string
+}
+
+func dialOpts(token string) msgrpc.DialOptions {
+	return msgrpc.DialOptions{Insecure: true, InternalToken: token}
 }
 
 // Clients holds typed outbound facades. Open once per process; inject into handlers.
@@ -32,7 +37,7 @@ type Clients struct {
 
 // Open dials configured backends and returns Clients. Caller must Close on shutdown.
 func Open(cfg Config) (*Clients, error) {
-	conn, err := msgrpc.Dial(cfg.UserAddr, msgrpc.DefaultDialOptions)
+	conn, err := msgrpc.Dial(cfg.UserAddr, dialOpts(cfg.InternalGrpcToken))
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +50,7 @@ func Open(cfg Config) (*Clients, error) {
 	}
 
 	if cfg.ChatAddr != "" {
-		chatConn, err := msgrpc.Dial(cfg.ChatAddr, msgrpc.DefaultDialOptions)
+		chatConn, err := msgrpc.Dial(cfg.ChatAddr, dialOpts(cfg.InternalGrpcToken))
 		if err != nil {
 			_ = conn.Close()
 			return nil, err
@@ -57,7 +62,7 @@ func Open(cfg Config) (*Clients, error) {
 	}
 
 	if cfg.NotificationAddr != "" {
-		notifConn, err := msgrpc.Dial(cfg.NotificationAddr, msgrpc.DefaultDialOptions)
+		notifConn, err := msgrpc.Dial(cfg.NotificationAddr, dialOpts(cfg.InternalGrpcToken))
 		if err != nil {
 			_ = clients.closeUserAndChat()
 			return nil, err

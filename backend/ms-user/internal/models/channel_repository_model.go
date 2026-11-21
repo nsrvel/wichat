@@ -31,6 +31,7 @@ type ChannelRow struct {
 	VideoQuality          string    `bun:"video_quality"`
 	UserLimit             int32     `bun:"user_limit"`
 	RTCRegion             string    `bun:"rtc_region"`
+	MessageSeq            int64     `bun:"message_seq"`
 	CreatedBy             string    `bun:"created_by,type:uuid"`
 	CreatedAt             time.Time `bun:"created_at"`
 	UpdatedAt             time.Time `bun:"updated_at"`

@@ -23,11 +23,12 @@ func (s *server) Run(ctx context.Context) error {
 
 	// User service
 	ms, err := microservices.Open(microservices.Config{
-		Log:              s.log,
-		Settings:         s.cfg.Microservices,
-		UserAddr:         s.cfg.UserHost,
-		ChatAddr:         s.cfg.ChatHost,
-		NotificationAddr: s.cfg.NotificationHost,
+		Log:               s.log,
+		Settings:          s.cfg.Microservices,
+		UserAddr:          s.cfg.UserHost,
+		ChatAddr:          s.cfg.ChatHost,
+		NotificationAddr:  s.cfg.NotificationHost,
+		InternalGrpcToken: s.cfg.InternalGrpcToken,
 	})
 	if err != nil {
 		return err

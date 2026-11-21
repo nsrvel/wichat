@@ -14,6 +14,8 @@ import (
 type DialOptions struct {
 	// Insecure uses plaintext gRPC (default for local dev).
 	Insecure bool
+	// InternalToken is sent as x-wichat-internal-token metadata when non-empty.
+	InternalToken string
 }
 
 // DefaultDialOptions enables insecure transport for development compose setups.
@@ -41,7 +43,10 @@ func Dial(target string, opts DialOptions, extra ...grpc.DialOption) (*grpc.Clie
 		Timeout:             5 * time.Second,
 		PermitWithoutStream: true,
 	}))
-	dialOpts = append(dialOpts, grpc.WithChainUnaryInterceptor(UnaryClientRequestID()))
+	dialOpts = append(dialOpts, grpc.WithChainUnaryInterceptor(
+		UnaryClientRequestID(),
+		UnaryClientInternalToken(opts.InternalToken),
+	))
 	if opts.Insecure {
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}

@@ -2,8 +2,9 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { getAccessToken } from "@/integrations/api-client";
 import { AuthShell } from "@/features/auth/components/auth-shell";
 import { authPageBackdropClass } from "@/lib/form-field-styles";
 import { AuthFormSkeleton } from "@/features/auth/components/auth-form-skeleton";
@@ -35,12 +36,15 @@ export function AuthSessionLayout({
 	const { t } = useTranslation();
 	const router = useRouter();
 	const mounted = useMounted();
+	const redirectedRef = useRef(false);
 	const session = useQuery({ ...authQuery.sessionQueryOpts(), enabled: mounted });
 
 	useEffect(() => {
-		if (session.data) {
-			router.replace(authenticatedRedirectTo);
+		if (redirectedRef.current || !session.data || !getAccessToken()) {
+			return;
 		}
+		redirectedRef.current = true;
+		router.replace(authenticatedRedirectTo);
 	}, [authenticatedRedirectTo, router, session.data]);
 
 	useEffect(() => {
@@ -52,7 +56,7 @@ export function AuthSessionLayout({
 		}
 	}, [redirectIfUnauthenticated, router, session.data, session.isPending]);
 
-	if (mounted && session.data) {
+	if (mounted && session.data && getAccessToken()) {
 		return <div className={authPageBackdropClass} aria-hidden suppressHydrationWarning />;
 	}
 

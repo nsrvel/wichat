@@ -19,17 +19,18 @@ type MessageReactionSummary struct {
 
 // Message is a stored channel message.
 type Message struct {
-	ID        string
-	PublicID  string
-	ChannelID string
-	AuthorID  string
-	ReplyToID *string
-	Body      string
-	CreatedAt time.Time
-	EditedAt  *time.Time
-	IsPinned  bool
-	PinnedAt  *time.Time
-	PinnedBy  *string
+	ID         string
+	PublicID   string
+	ChannelID  string
+	AuthorID   string
+	ReplyToID  *string
+	ChannelSeq int64
+	Body       string
+	CreatedAt  time.Time
+	EditedAt   *time.Time
+	IsPinned   bool
+	PinnedAt   *time.Time
+	PinnedBy   *string
 }
 
 // MessageWithAuthor is a message row joined with author and reply metadata.
@@ -44,6 +45,7 @@ type MessageWithAuthor struct {
 // PublicMessage is returned through gRPC and REST.
 type PublicMessage struct {
 	ID                string
+	ChannelSeq        int64
 	AuthorID          string
 	AuthorDisplayName string
 	AuthorAvatarURL   string
@@ -75,6 +77,8 @@ type ListChannelMessagesInput struct {
 	CallerPermissions []string
 	Limit             int
 	BeforeCreatedAt   *time.Time
+	BeforePublicID    string
+	BeforeChannelSeq  int64
 }
 
 // CreateChannelMessageInput creates a message after access resolution.
@@ -93,6 +97,7 @@ type CreateChannelMessageInput struct {
 
 // UpdateChannelMessageInput edits an existing message body.
 type UpdateChannelMessageInput struct {
+	AccessToken       string
 	GroupPublicID     string
 	ChannelPublicID   string
 	CallerUserID      string
@@ -103,6 +108,7 @@ type UpdateChannelMessageInput struct {
 
 // DeleteChannelMessageInput deletes an existing message.
 type DeleteChannelMessageInput struct {
+	AccessToken       string
 	GroupPublicID     string
 	ChannelPublicID   string
 	CallerUserID      string
@@ -113,6 +119,7 @@ type DeleteChannelMessageInput struct {
 
 // ToggleMessageReactionInput toggles an emoji reaction on a message.
 type ToggleMessageReactionInput struct {
+	AccessToken       string
 	GroupPublicID     string
 	ChannelPublicID   string
 	CallerUserID      string
@@ -124,6 +131,7 @@ type ToggleMessageReactionInput struct {
 
 // SetChannelMessagePinnedInput pins or unpins a message in a channel.
 type SetChannelMessagePinnedInput struct {
+	AccessToken       string
 	GroupPublicID     string
 	ChannelPublicID   string
 	CallerUserID      string
@@ -135,6 +143,9 @@ type SetChannelMessagePinnedInput struct {
 
 // ListPinnedChannelMessagesInput lists pinned messages in a channel.
 type ListPinnedChannelMessagesInput struct {
+	AccessToken       string
+	GroupPublicID     string
+	ChannelPublicID   string
 	CallerUserID      string
 	ResolvedChannelID string
 	CallerPermissions []string
@@ -151,6 +162,7 @@ type MessageAttachment struct {
 
 // UploadChannelAttachmentInput uploads a file or image attachment to a channel.
 type UploadChannelAttachmentInput struct {
+	AccessToken       string
 	GroupPublicID     string
 	ChannelPublicID   string
 	CallerUserID      string

@@ -15,7 +15,8 @@ type Config struct {
 	SMTPPassword string `mapstructure:"smtp_password"`
 	SMTPFrom     string `mapstructure:"smtp_from"`
 	// SMTPSecure: implicit TLS (typical port 465). false = plain connect + STARTTLS (typical port 587).
-	SMTPSecure bool `mapstructure:"smtp_secure"`
+	SMTPSecure        bool   `mapstructure:"smtp_secure"`
+	InternalGrpcToken string `mapstructure:"internal_grpc_token"`
 }
 
 // Defaults are applied when env / .env do not set a value.
@@ -42,4 +43,9 @@ func Load(envFile string) (Config, error) {
 // ListenAddr returns the address for net.Listen (e.g. ":3005").
 func (c Config) ListenAddr() string {
 	return sharedconfig.ListenAddress(c.Port)
+}
+
+// Validate enforces production safety invariants when Env is not development.
+func (c Config) Validate() error {
+	return sharedconfig.RequireInternalGrpcToken(c.Env, c.InternalGrpcToken)
 }
