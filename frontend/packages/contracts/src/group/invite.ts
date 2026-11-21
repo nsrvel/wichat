@@ -11,6 +11,7 @@ export const SendGroupInvitesRequestSchema = z.object({
 	user_ids: z.array(z.string()).default([]),
 	emails: z.array(z.email()).default([]),
 	channel_id: z.string().optional(),
+	turnstile_token: z.string().optional(),
 });
 
 export const SendGroupInvitesResultSchema = z.object({
@@ -44,6 +45,7 @@ export type InvitePreview = z.infer<typeof InvitePreviewSchema>;
 
 export const RedeemInviteRequestSchema = z.object({
 	token: z.string().trim().min(1),
+	turnstile_token: z.string().optional(),
 });
 
 export const RedeemInviteResultSchema = z.object({

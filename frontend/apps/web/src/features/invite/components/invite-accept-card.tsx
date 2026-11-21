@@ -71,6 +71,7 @@ export function InviteCardBanner({ preview }: InviteCardBannerProps) {
 type InviteAcceptCardProps = {
 	preview: InvitePreview;
 	acceptPending?: boolean;
+	acceptDisabled?: boolean;
 	hasBanner?: boolean;
 	onAccept: () => void;
 	className?: string;
@@ -79,6 +80,7 @@ type InviteAcceptCardProps = {
 export function InviteAcceptCard({
 	preview,
 	acceptPending = false,
+	acceptDisabled = false,
 	hasBanner = false,
 	onAccept,
 	className,
@@ -145,7 +147,7 @@ export function InviteAcceptCard({
 
 			<Button
 				type="button"
-				disabled={acceptPending}
+				disabled={acceptPending || acceptDisabled}
 				className={cn("w-full", authSubmitClass)}
 				onClick={onAccept}
 			>

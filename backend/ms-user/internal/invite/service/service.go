@@ -481,7 +481,7 @@ func (s service) RedeemInvite(ctx context.Context, accessToken, inviteToken stri
 	row, err := s.invites.FindByToken(ctx, inviteToken)
 	if err != nil {
 		if errors.Is(err, constants.ErrNotFound) {
-			return nil, exception.NotFound(exception.MsgInvalidInput, map[string]any{"field": "invite"})
+			return nil, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "invite"})
 		}
 		return nil, err
 	}
@@ -507,7 +507,7 @@ func (s service) RedeemInvite(ctx context.Context, accessToken, inviteToken stri
 	if banned, err := s.members.IsMemberBanned(ctx, group.ID, userID); err != nil {
 		return nil, err
 	} else if banned {
-		return nil, exception.PermissionDenied("user is banned from this group", nil)
+		return nil, exception.PermissionDenied(exception.MsgForbidden, nil)
 	}
 
 	joinedNew := false

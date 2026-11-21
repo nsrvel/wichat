@@ -10,6 +10,20 @@ import (
 	testSupport "github.com/wichat/wichat/backend/ms-user/pkg/test-support"
 )
 
+type stubPresenceReader struct {
+	snap map[string]models.UserPresenceSnapshot
+}
+
+func (s stubPresenceReader) BatchGetEffectivePresence(_ context.Context, userIDs []string) (map[string]models.UserPresenceSnapshot, error) {
+	out := make(map[string]models.UserPresenceSnapshot, len(userIDs))
+	for _, id := range userIDs {
+		if snap, ok := s.snap[id]; ok {
+			out[id] = snap
+		}
+	}
+	return out, nil
+}
+
 func TestGroupRoleService(t *testing.T) {
 	ctx := context.Background()
 	st := usermock.NewState()
@@ -86,6 +100,17 @@ func TestGroupRoleService(t *testing.T) {
 	roleMembers, err := roleSvc.ListGroupRoleMembers(ctx, owner.AccessToken, group.ID, created.PublicID)
 	if err != nil || len(roleMembers) != 1 || roleMembers[0].UserID != member.User.ID {
 		t.Fatalf("ListGroupRoleMembers: %+v, err: %v", roleMembers, err)
+	}
+
+	roleSvc = roleSvc.WithPresence(stubPresenceReader{snap: map[string]models.UserPresenceSnapshot{
+		member.User.ID: {IsOnline: true, PresenceStatus: models.PresenceStatusOnline},
+	}})
+	withPresence, err := roleSvc.ListGroupRoleMembers(ctx, owner.AccessToken, group.ID, created.PublicID)
+	if err != nil {
+		t.Fatalf("ListGroupRoleMembers with presence: %v", err)
+	}
+	if len(withPresence) != 1 || !withPresence[0].IsOnline || withPresence[0].PresenceStatus != models.PresenceStatusOnline {
+		t.Fatalf("expected online presence on role member: %+v", withPresence[0])
 	}
 
 	hide, err := roleSvc.UpdateGroupHideRoles(ctx, owner.AccessToken, group.ID, true)

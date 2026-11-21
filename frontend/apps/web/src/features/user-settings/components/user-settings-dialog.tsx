@@ -16,6 +16,7 @@ import {
 	USER_SETTINGS_NAV_GROUPS,
 	type UserSettingsSectionId,
 } from "@/features/user-settings/lib/user-settings-nav";
+import { useLivePresence } from "@/hooks/use-live-presence";
 import type { UserPresenceStatus } from "@/lib/user-status";
 import { cn } from "@/lib/utils";
 import { useLogoutMutation } from "@/services/auth/auth.mutation";
@@ -29,7 +30,7 @@ type UserSettingsDialogProps = {
 	secondaryText: string;
 	avatarUrl: string;
 	initials: string;
-	status: UserPresenceStatus;
+	status: UserPresenceStatus | "offline";
 	statusNoteLabel?: string;
 };
 
@@ -49,6 +50,8 @@ export function UserSettingsDialog({
 	const titleId = useId();
 	const contentScrollRef = useRef<HTMLDivElement>(null);
 	const logout = useLogoutMutation();
+	const { avatarDot: sidebarPresenceDot } = useLivePresence(open && Boolean(user));
+	const sidebarDot = sidebarPresenceDot ?? status;
 	const [activeSection, setActiveSection] = useState<UserSettingsSectionId>(initialSection);
 	const [activeSubAnchor, setActiveSubAnchor] = useState<string | null>(null);
 	const [searchQuery, setSearchQuery] = useState("");
@@ -139,7 +142,7 @@ export function UserSettingsDialog({
 						secondaryText={secondaryText}
 						avatarUrl={avatarUrl}
 						initials={initials}
-						status={status}
+						status={sidebarDot}
 						activeSection={activeSection}
 						activeSubAnchor={activeSubAnchor}
 						searchQuery={searchQuery}

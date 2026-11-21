@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { OwnerCrownIcon } from "@/components/ui/owner-crown-icon";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { groupMembersForPanel, resolveMemberNameColor } from "@/lib/member-role-display";
+import { memberPresenceDot } from "@/features/presence/presence-dot";
 import { userInitials } from "@/lib/user-initials";
 
 type Member = z.infer<typeof GroupMemberSchema>;
@@ -30,24 +31,23 @@ function MemberAvatar({
 	displayName,
 	username,
 	avatarUrl,
-	presenceStatus,
-	isOnline,
+	member,
 	onlineLabel,
 }: {
 	displayName: string;
 	username: string;
 	avatarUrl?: string;
-	presenceStatus?: Member["presence_status"];
-	isOnline?: boolean;
+	member: Pick<Member, "is_online" | "presence_status">;
 	onlineLabel: string;
 }) {
+	const dot = memberPresenceDot(member);
 	return (
-		<div className="relative shrink-0" aria-label={isOnline ? onlineLabel : undefined}>
+		<div className="relative shrink-0" aria-label={member.is_online ? onlineLabel : undefined}>
 			<UserAvatar
 				src={avatarUrl}
 				initials={userInitials(displayName, username)}
 				size="md"
-				status={presenceStatus ?? (isOnline ? "online" : "offline")}
+				status={dot}
 				statusRingClassName="ring-card"
 			/>
 		</div>
@@ -114,8 +114,7 @@ export function GroupAccessList({
 					displayName={member.display_name}
 					username={member.username}
 					avatarUrl={member.avatar_url}
-					presenceStatus={member.presence_status}
-					isOnline={member.is_online}
+					member={member}
 					onlineLabel={t("invite.member_online")}
 				/>
 				<div className="min-w-0 flex-1">

@@ -99,6 +99,18 @@ func TestPresenceServiceLifecycle(t *testing.T) {
 	require.False(t, batch["other-user"].IsOnline)
 	require.Equal(t, models.PresenceStatusOffline, batch["other-user"].PresenceStatus)
 
+	mr.Del("presence:effective:" + user.User.ID)
+	batch, err = svc.BatchGetEffectivePresence(ctx, []string{user.User.ID})
+	require.NoError(t, err)
+	require.True(t, batch[user.User.ID].IsOnline)
+	require.Equal(t, models.PresenceStatusOnline, batch[user.User.ID].PresenceStatus)
+
+	mr.Del("presence:effective:" + user.User.ID)
+	myView, err = svc.GetMyPresence(ctx, user.AccessToken)
+	require.NoError(t, err)
+	require.True(t, myView.IsOnline)
+	require.Equal(t, models.PresenceStatusOnline, myView.EffectiveStatus)
+
 	// 7. Disconnect tab-1 (tab-2 still idle) -> idle; disconnect tab-2 -> offline
 	tr, err = svc.DisconnectPresence(ctx, user.User.ID, "tab-1")
 	require.NoError(t, err)
@@ -110,7 +122,19 @@ func TestPresenceServiceLifecycle(t *testing.T) {
 	require.False(t, tr.IsOnline)
 	require.Contains(t, tr.GroupIDs, group.ID)
 
-	// 8. Validation errors
+	// 8. Resolve-only read when effective key expired but conns remain
+	tr, err = svc.HeartbeatPresence(ctx, user.AccessToken, "tab-resolve", models.PresenceActivityActive)
+	require.NoError(t, err)
+	require.Equal(t, models.PresenceStatusOnline, tr.EffectiveStatus)
+	mr.Del("presence:effective:" + user.User.ID)
+	myView, err = svc.GetMyPresence(ctx, user.AccessToken)
+	require.NoError(t, err)
+	require.True(t, myView.IsOnline)
+	batch, err = svc.BatchGetEffectivePresence(ctx, []string{user.User.ID})
+	require.NoError(t, err)
+	require.True(t, batch[user.User.ID].IsOnline)
+
+	// 9. Validation errors
 	_, err = svc.HeartbeatPresence(ctx, user.AccessToken, "", models.PresenceActivityActive)
 	require.Error(t, err)
 	_, err = svc.SetManualPresence(ctx, user.AccessToken, "bogus", 0)

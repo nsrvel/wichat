@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/uptrace/bun"
+	channelrepo "github.com/wichat/wichat/backend/ms-user/internal/channel/repository"
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
 	"github.com/wichat/wichat/backend/ms-user/pkg/constants"
 	pgErr "github.com/wichat/wichat/backend/ms-user/pkg/db"
@@ -20,6 +21,13 @@ type PgRepository interface {
 	FindGroupByID(ctx context.Context, id string) (models.Group, error)
 	FindGroupByPublicID(ctx context.Context, publicID string) (models.Group, error)
 	CreateGroupWithOwner(ctx context.Context, group models.Group, owner models.GroupMember) error
+	CreateGroupWithOwnerAndChannels(
+		ctx context.Context,
+		group models.Group,
+		owner models.GroupMember,
+		template string,
+		createdAt time.Time,
+	) error
 	DeleteGroup(ctx context.Context, groupID string) error
 	UpdateGroupDisplayName(ctx context.Context, groupID, name string, now time.Time) error
 	UpdateGroupLogoURL(ctx context.Context, groupID, logoURL string, now time.Time) error
@@ -97,6 +105,26 @@ func (r pgRepository) CreateGroupWithOwner(ctx context.Context, group models.Gro
 		return InsertGroupWithOwnerTx(ctx, tx, group, owner)
 	})
 	r.logIfInfraErr("CreateGroupWithOwner", err)
+
+	return err
+}
+
+// CreateGroupWithOwnerAndChannels inserts the group shell and template channels in one transaction.
+func (r pgRepository) CreateGroupWithOwnerAndChannels(
+	ctx context.Context,
+	group models.Group,
+	owner models.GroupMember,
+	template string,
+	createdAt time.Time,
+) error {
+	err := r.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
+		if err := InsertGroupWithOwnerTx(ctx, tx, group, owner); err != nil {
+			return err
+		}
+
+		return channelrepo.InsertDefaultChannelsWithTemplateTx(ctx, tx, group.ID, owner.UserID, template, createdAt)
+	})
+	r.logIfInfraErr("CreateGroupWithOwnerAndChannels", err)
 
 	return err
 }
@@ -180,9 +208,8 @@ func groupJoinSelect(q *bun.SelectQuery) *bun.SelectQuery {
 		ColumnExpr("s.banner_color AS s_banner_color, s.banner_url AS s_banner_url, s.hide_roles AS s_hide_roles").
 		ColumnExpr("s.retention_days AS s_retention_days, s.trash_retention_days AS s_trash_retention_days").
 		ColumnExpr("s.created_at AS s_created_at, s.updated_at AS s_updated_at").
-		ColumnExpr("ch.public_id AS ch_public_id").
-		Join("JOIN group_settings AS s ON s.group_id = g.id").
-		Join("LEFT JOIN channels AS ch ON ch.group_id = g.id AND lower(ch.name) = ? AND ch.type = ?", constants.DefaultChannelLookupKey, constants.ChannelKindTextOnly)
+		ColumnExpr(`(SELECT ch.public_id FROM channels ch WHERE ch.group_id = g.id AND lower(ch.name) = ? AND ch.type = ? ORDER BY ch.created_at ASC LIMIT 1) AS ch_public_id`, constants.DefaultChannelLookupKey, constants.ChannelKindTextOnly).
+		Join("JOIN group_settings AS s ON s.group_id = g.id")
 }
 
 func groupFromRows(g models.GroupRow, s models.GroupSettingsRow, defaultChannelPublicID, callerRole string) models.Group {

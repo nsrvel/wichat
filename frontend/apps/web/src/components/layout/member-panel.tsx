@@ -20,6 +20,7 @@ import { type ReactNode, useState } from "react";
 import { GroupMemberProfileHost } from "@/components/group/group-member-profile-host";
 import { OwnerCrownIcon } from "@/components/ui/owner-crown-icon";
 import { UserAvatar } from "@/components/ui/user-avatar";
+import { memberPresenceDot } from "@/features/presence/presence-dot";
 import { groupMembersForPanel, resolveMemberNameColor } from "@/lib/member-role-display";
 import type { UserPresenceStatus } from "@/lib/user-status";
 import { userInitials } from "@/lib/user-initials";
@@ -319,7 +320,7 @@ export function MemberPanel({
 											nameColor={nameColor}
 											role={subtitle}
 											isOwner={member.role === "owner"}
-											status={member.presence_status}
+											status={memberPresenceDot(member)}
 											dim={!member.is_online}
 											onClick={() => setSelectedMemberId(member.user_id)}
 										/>

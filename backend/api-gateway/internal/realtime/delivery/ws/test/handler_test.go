@@ -58,6 +58,42 @@ func (s *stubPresenceClient) GetMyPresence(context.Context, *userv1.GetMyPresenc
 	return &userv1.GetMyPresenceResponse{}, nil
 }
 
+type stubGroupClient struct {
+	groups []*userv1.GroupSummary
+}
+
+func (s stubGroupClient) ListMyGroups(context.Context, *userv1.ListMyGroupsRequest) (*userv1.ListMyGroupsResponse, error) {
+	return &userv1.ListMyGroupsResponse{Groups: s.groups}, nil
+}
+
+func (stubGroupClient) CreateGroup(context.Context, *userv1.CreateGroupRequest) (*userv1.CreateGroupResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "unimplemented")
+}
+
+func (stubGroupClient) DeleteGroup(context.Context, *userv1.DeleteGroupRequest) (*userv1.DeleteGroupResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "unimplemented")
+}
+
+func (stubGroupClient) UploadGroupIcon(context.Context, *userv1.UploadGroupIconRequest) (*userv1.UploadGroupIconResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "unimplemented")
+}
+
+func (stubGroupClient) UpdateGroupProfile(context.Context, *userv1.UpdateGroupProfileRequest) (*userv1.UpdateGroupProfileResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "unimplemented")
+}
+
+func (stubGroupClient) UploadGroupBanner(context.Context, *userv1.UploadGroupBannerRequest) (*userv1.UploadGroupBannerResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "unimplemented")
+}
+
+func (stubGroupClient) ReorderMyGroups(context.Context, *userv1.ReorderMyGroupsRequest) (*userv1.ReorderMyGroupsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "unimplemented")
+}
+
+func (stubGroupClient) ListGroupActivityLogs(context.Context, *userv1.ListGroupActivityLogsRequest) (*userv1.ListGroupActivityLogsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "unimplemented")
+}
+
 func TestRealtimeHeartbeatAuthRefreshAndInitialSync(t *testing.T) {
 	t.Parallel()
 
@@ -154,5 +190,78 @@ func TestRealtimeHeartbeatAuthRefreshAndInitialSync(t *testing.T) {
 	defer stub.mu.Unlock()
 	if len(stub.tokens) < 3 || stub.tokens[2] != "fresh-token" {
 		t.Fatalf("expected 3rd heartbeat to use fresh-token, got %v", stub.tokens)
+	}
+}
+
+func TestSubscribeGroupForbiddenKeepsConnectionAlive(t *testing.T) {
+	t.Parallel()
+
+	stub := &stubPresenceClient{}
+	stub.heartbeatFn = func(in *userv1.HeartbeatPresenceRequest) (*userv1.PresenceTransitionResponse, error) {
+		return &userv1.PresenceTransitionResponse{
+			UserId:          "user-1",
+			PreviousStatus:  "offline",
+			EffectiveStatus: "online",
+			IsOnline:        true,
+		}, nil
+	}
+
+	ms := &microservices.Clients{}
+	ms.User.GRPC.Presence = stub
+	ms.User.GRPC.Group = stubGroupClient{}
+
+	h := ws.NewHandler(ms, hub.New(), logger.New(logger.Options{Service: "gateway-test", Env: "test", Level: "error"}), "")
+	srv := httptest.NewServer(http.HandlerFunc(h.Realtime))
+	defer srv.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	wsURL := strings.Replace(srv.URL, "http://", "ws://", 1) + "?access_token=test-token"
+	conn, resp, err := websocket.Dial(ctx, wsURL, nil)
+	if resp != nil && resp.Body != nil {
+		_ = resp.Body.Close()
+	}
+	if err != nil {
+		t.Fatalf("dial websocket: %v", err)
+	}
+	defer func() { _ = conn.Close(websocket.StatusNormalClosure, "") }()
+
+	deniedGroup := "aaaaaaaaaaaaaaaaaaaaaaaa"
+	if err := conn.Write(ctx, websocket.MessageText, []byte(`{"type":"subscribe_group","group_id":"`+deniedGroup+`"}`)); err != nil {
+		t.Fatalf("write subscribe_group: %v", err)
+	}
+	_, msg, err := conn.Read(ctx)
+	if err != nil {
+		t.Fatalf("read subscribe.denied: %v", err)
+	}
+	var denied struct {
+		Type    string `json:"type"`
+		Scope   string `json:"scope"`
+		GroupID string `json:"group_id"`
+		Code    string `json:"code"`
+	}
+	if err := json.Unmarshal(msg, &denied); err != nil {
+		t.Fatalf("unmarshal subscribe.denied: %v", err)
+	}
+	if denied.Type != "subscribe.denied" || denied.Code != "forbidden" || denied.GroupID != deniedGroup {
+		t.Fatalf("unexpected subscribe.denied: %+v", denied)
+	}
+
+	if err := conn.Write(ctx, websocket.MessageText, []byte(`{"type":"presence.heartbeat","activity":"active"}`)); err != nil {
+		t.Fatalf("write heartbeat after denied subscribe: %v", err)
+	}
+	_, msg2, err := conn.Read(ctx)
+	if err != nil {
+		t.Fatalf("read presence.updated after denied subscribe: %v", err)
+	}
+	var updated struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(msg2, &updated); err != nil {
+		t.Fatalf("unmarshal presence.updated: %v", err)
+	}
+	if updated.Type != "presence.updated" {
+		t.Fatalf("expected presence.updated after denied subscribe, got %q", updated.Type)
 	}
 }

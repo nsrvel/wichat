@@ -23,6 +23,7 @@ import {
 import { ApiError } from "@wichat/api-client/api-error";
 import { authInputClass } from "@/lib/form-field-styles";
 import { resolveMemberNameColor } from "@/lib/member-role-display";
+import { memberPresenceDot } from "@/features/presence/presence-dot";
 import { userInitials } from "@/lib/user-initials";
 import { cn } from "@/lib/utils";
 import { useRemoveGroupRoleMemberMutation } from "@/services/group-role/group-role.mutation";
@@ -189,7 +190,7 @@ export function RoleDetailMembersTab({
 										src={member.avatar_url}
 										initials={userInitials(name, member.username)}
 										size="md"
-										status={member.presence_status}
+										status={memberPresenceDot(member)}
 										statusRingClassName="ring-card"
 									/>
 									<div className="min-w-0">

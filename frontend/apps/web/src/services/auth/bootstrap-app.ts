@@ -13,8 +13,6 @@ import * as channelQuery from "@/services/channel/channel.query";
 import { myGroupsQueryOpts } from "@/services/group/group.query";
 import { groupMembersQueryOpts } from "@/services/invite/invite.query";
 import { channelMessagesQueryOpts } from "@/services/message/message.query";
-import { myPresenceQueryOptions } from "@/services/user/user.query";
-
 export const Q_APP_BOOTSTRAP = "app-bootstrap";
 
 async function prefetchWorkspaceSlice(
@@ -39,7 +37,7 @@ async function prefetchWorkspaceSlice(
 }
 
 /**
- * Full app + workspace preload: ensures auth token, fetches session, groups, presence,
+ * Full app + workspace preload: ensures auth token, fetches session, groups,
  * and preloads the active (or destination) group's channels, members, and initial messages
  * in parallel so the UI is ready immediately when WorkspaceLoader dismisses.
  */
@@ -57,7 +55,6 @@ export async function bootstrapApp(
 	const [user, groups] = await Promise.all([
 		queryClient.fetchQuery(authQuery.sessionQueryOpts()),
 		queryClient.fetchQuery(myGroupsQueryOpts()),
-		queryClient.prefetchQuery(myPresenceQueryOptions()),
 		prefetchWorkspaceSlice(queryClient, routeTarget.groupId, routeTarget.channelId),
 	]);
 
