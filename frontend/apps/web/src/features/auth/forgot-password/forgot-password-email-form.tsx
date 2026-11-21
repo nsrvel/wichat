@@ -71,8 +71,7 @@ export function ForgotPasswordEmailForm({
 					<TurnstileWidget
 						siteKey={turnstileSiteKey}
 						resetKey={turnstileResetKey}
-						onVerify={(token) => onTurnstileToken?.(token)}
-						onExpire={() => onTurnstileToken?.("")}
+						onToken={(token) => onTurnstileToken?.(token)}
 					/>
 				) : null}
 				<Button

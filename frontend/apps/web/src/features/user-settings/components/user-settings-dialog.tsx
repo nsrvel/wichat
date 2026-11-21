@@ -50,7 +50,7 @@ export function UserSettingsDialog({
 	const titleId = useId();
 	const contentScrollRef = useRef<HTMLDivElement>(null);
 	const logout = useLogoutMutation();
-	const { avatarDot: sidebarPresenceDot } = useLivePresence(open && Boolean(user));
+	const { avatarDot: sidebarPresenceDot, manualStatus } = useLivePresence(open && Boolean(user));
 	const sidebarDot = sidebarPresenceDot ?? status;
 	const [activeSection, setActiveSection] = useState<UserSettingsSectionId>(initialSection);
 	const [activeSubAnchor, setActiveSubAnchor] = useState<string | null>(null);
@@ -212,7 +212,7 @@ export function UserSettingsDialog({
 								username={username}
 								avatarUrl={avatarUrl}
 								initials={initials}
-								status={status}
+								status={manualStatus}
 								statusNoteLabel={statusNoteLabel}
 								createdAt={user?.created_at ?? ""}
 								initialPronouns={user?.pronouns ?? ""}

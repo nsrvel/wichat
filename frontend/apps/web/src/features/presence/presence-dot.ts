@@ -1,4 +1,4 @@
-import type { GroupMember } from "@wichat/contracts/group/group-member";
+import type { GroupMember } from "@wichat/contracts/group/member";
 import type { MyPresenceResponse, PresenceStatus } from "@wichat/contracts/user/presence";
 import type { UserPresenceStatus } from "@/lib/user-status";
 
