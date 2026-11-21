@@ -19,13 +19,7 @@ describe("presenceDotFromFields", () => {
 
 describe("memberPresenceDot", () => {
 	it("uses member fields", () => {
-		assert.equal(
-			memberPresenceDot({ is_online: true, presence_status: "online" }),
-			"online",
-		);
-		assert.equal(
-			memberPresenceDot({ is_online: false, presence_status: "online" }),
-			"offline",
-		);
+		assert.equal(memberPresenceDot({ is_online: true, presence_status: "online" }), "online");
+		assert.equal(memberPresenceDot({ is_online: false, presence_status: "online" }), "offline");
 	});
 });

@@ -801,11 +801,11 @@ type fakePresence struct {
 	getMy func(context.Context, *userv1.GetMyPresenceRequest) (*userv1.GetMyPresenceResponse, error)
 }
 
-func (fakePresence) HeartbeatPresence(context.Context, *userv1.HeartbeatPresenceRequest) (*userv1.PresenceTransitionResponse, error) {
+func (fakePresence) HeartbeatPresence(context.Context, *userv1.HeartbeatPresenceRequest) (*userv1.HeartbeatPresenceResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
 
-func (fakePresence) DisconnectPresence(context.Context, *userv1.DisconnectPresenceRequest) (*userv1.PresenceTransitionResponse, error) {
+func (fakePresence) DisconnectPresence(context.Context, *userv1.DisconnectPresenceRequest) (*userv1.DisconnectPresenceResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
 

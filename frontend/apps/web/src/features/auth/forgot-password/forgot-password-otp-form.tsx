@@ -71,7 +71,11 @@ export function ForgotPasswordOtpForm({
 						onExpire={() => onTurnstileToken?.("")}
 					/>
 				) : null}
-				<Button type="submit" disabled={isPending || submitDisabled} className={`mt-2 ${authSubmitClass}`}>
+				<Button
+					type="submit"
+					disabled={isPending || submitDisabled}
+					className={`mt-2 ${authSubmitClass}`}
+				>
 					{isPending ? t("forgot_password.confirming_code") : t("forgot_password.confirm_code")}
 				</Button>
 				<ForgotPasswordResendCode cooldownSec={resendCooldownSec} onResend={onResend} />

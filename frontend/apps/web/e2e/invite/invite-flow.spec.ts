@@ -93,11 +93,16 @@ test.describe("invite flow", () => {
 		await page
 			.getByRole("button", { name: /create or join a group|buat atau gabung group/i })
 			.click();
-		await page.getByRole("dialog").getByRole("button", { name: /^Join a group$|^Gabung group$/i }).click();
+		await page
+			.getByRole("dialog")
+			.getByRole("button", { name: /^Join a group$|^Gabung group$/i })
+			.click();
 		await expect(page.locator("#group-invite-code")).toBeVisible();
 		await expect(page.getByText(/^invite code$/i)).toHaveCount(0);
 		const seeded = await createGroupWithInvite(request, owner, uniqueName("Join UI"));
-		await page.locator("#group-invite-code").fill(`http://localhost:8080/invite/${seeded.inviteCode}`);
+		await page
+			.locator("#group-invite-code")
+			.fill(`http://localhost:8080/invite/${seeded.inviteCode}`);
 		await page
 			.getByRole("dialog")
 			.getByRole("button", { name: /^Join group$|^Gabung group$/i })
@@ -111,9 +116,7 @@ test.describe("invite flow", () => {
 		const landingGroup = await createGroupWithInvite(request, owner, uniqueName("Landing"));
 		await loginInBrowser(context, landingUser);
 		await page.goto(`/invite/${encodeURIComponent(landingGroup.inviteCode)}`);
-		await expect(
-			page.getByRole("heading", { name: landingGroup.name, level: 2 }),
-		).toBeVisible({
+		await expect(page.getByRole("heading", { name: landingGroup.name, level: 2 })).toBeVisible({
 			timeout: 20_000,
 		});
 		await page.getByRole("button", { name: /accept invite|terima undangan/i }).click();

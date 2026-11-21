@@ -5,7 +5,9 @@ import type { UserPresenceStatus } from "@/lib/user-status";
 export type AvatarPresenceDot = UserPresenceStatus | "offline";
 
 /** Avatar dot: server effective only (WS-backed `Q_MY_PRESENCE`). */
-export function presenceDotFrom(data: MyPresenceResponse | undefined): AvatarPresenceDot | undefined {
+export function presenceDotFrom(
+	data: MyPresenceResponse | undefined,
+): AvatarPresenceDot | undefined {
 	if (!data) {
 		return undefined;
 	}

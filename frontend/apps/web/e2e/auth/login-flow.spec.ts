@@ -25,7 +25,11 @@ test.describe("auth login e2e", () => {
 				!suiteUser,
 				"run register-flow first (check:e2e-auth) to seed login-suite-user.json",
 			);
-			await expectLoginInvalidCredentials(request, suiteUser!.username, "definitely-wrong-password");
+			await expectLoginInvalidCredentials(
+				request,
+				suiteUser!.username,
+				"definitely-wrong-password",
+			);
 		});
 
 		test("Google start redirects to IdP when captcha disabled", async ({ request }) => {
