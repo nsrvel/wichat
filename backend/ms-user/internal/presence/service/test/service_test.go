@@ -3,6 +3,10 @@ package test
 import (
 	"context"
 	"fmt"
+	"math"
+	"sort"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -267,4 +271,132 @@ func TestPresenceHeartbeatLoadSample(t *testing.T) {
 	elapsed := time.Since(start)
 	t.Logf("ms-user HeartbeatPresence: %d heartbeats in %v (%.0f ops/s, %d logical conns)",
 		heartbeats, elapsed, float64(heartbeats)/elapsed.Seconds(), conns)
+}
+
+func presencePercentile(sorted []time.Duration, p float64) time.Duration {
+	if len(sorted) == 0 {
+		return 0
+	}
+	idx := int(math.Ceil(p*float64(len(sorted)))) - 1
+	if idx < 0 {
+		idx = 0
+	}
+	if idx >= len(sorted) {
+		idx = len(sorted) - 1
+	}
+	return sorted[idx]
+}
+
+func TestPresenceRealisticLoad(t *testing.T) {
+	if testing.Short() {
+		t.Skip("load sample")
+	}
+
+	ctx := context.Background()
+	st := usermock.NewState()
+	authSvc, notify, _, _, groupSvc, _ := testSupport.NewAuthService(t, st, nil)
+	_, groups, sessions := testSupport.TestRepos(st)
+
+	const (
+		users        = 12
+		connsPerUser = 4
+		beatsPerConn = 40
+		jitterMaxMs  = 3
+	)
+
+	type account struct {
+		token string
+		id    string
+	}
+	accounts := make([]account, 0, users)
+	for i := 0; i < users; i++ {
+		u := testSupport.RegisterSession(t, authSvc, notify, models.RegisterInput{
+			Email:       fmt.Sprintf("load-user-%d@example.com", i),
+			Password:    "correct-horse-battery",
+			DisplayName: fmt.Sprintf("Load %d", i),
+			BirthDate:   "2000-01-01",
+		})
+		if _, err := groupSvc.CreateGroup(ctx, u.AccessToken, fmt.Sprintf("G%d", i)); err != nil {
+			t.Fatalf("CreateGroup: %v", err)
+		}
+		accounts = append(accounts, account{token: u.AccessToken, id: u.User.ID})
+	}
+
+	mr := miniredis.RunT(t)
+	rdb := redis.NewClient(&redis.Options{Addr: mr.Addr()})
+	t.Cleanup(func() { _ = rdb.Close() })
+
+	repo := presencerepo.NewRedisRepository(rdb)
+	svc := presencesvc.NewService(
+		repo,
+		groups,
+		sessions,
+		[]byte(testSupport.TestJWTSecret),
+		logger.New(logger.Options{Level: "error"}),
+	)
+
+	var (
+		latMu     sync.Mutex
+		latencies []time.Duration
+		errorsN   atomic.Int32
+	)
+	record := func(d time.Duration, err error) {
+		if err != nil {
+			errorsN.Add(1)
+			return
+		}
+		latMu.Lock()
+		latencies = append(latencies, d)
+		latMu.Unlock()
+	}
+
+	start := time.Now()
+	var wg sync.WaitGroup
+	for ui, acct := range accounts {
+		for ci := 0; ci < connsPerUser; ci++ {
+			wg.Add(1)
+			connID := fmt.Sprintf("u%d-tab%d", ui, ci)
+			go func(token, conn string, userIdx, connIdx int) {
+				defer wg.Done()
+				for beat := 0; beat < beatsPerConn; beat++ {
+					if beat == beatsPerConn/2 {
+						_, _ = svc.DisconnectPresence(ctx, accounts[userIdx].id, conn)
+						time.Sleep(time.Duration((beat+userIdx)%jitterMaxMs) * time.Millisecond)
+						conn = fmt.Sprintf("%s-r%d", conn, beat)
+					}
+					time.Sleep(time.Duration((beat+userIdx+connIdx)%jitterMaxMs) * time.Millisecond)
+					activity := models.PresenceActivityActive
+					if beat%7 == 0 {
+						activity = models.PresenceActivityIdle
+					}
+					t0 := time.Now()
+					_, err := svc.HeartbeatPresence(ctx, token, conn, activity)
+					record(time.Since(t0), err)
+				}
+			}(acct.token, connID, ui, ci)
+		}
+	}
+	wg.Wait()
+	elapsed := time.Since(start)
+
+	latMu.Lock()
+	sort.Slice(latencies, func(i, j int) bool { return latencies[i] < latencies[j] })
+	sorted := append([]time.Duration(nil), latencies...)
+	latMu.Unlock()
+
+	totalOps := users * connsPerUser * beatsPerConn
+	errRate := float64(errorsN.Load()) / float64(totalOps) * 100
+	t.Logf("ms-user realistic load: users=%d conns/user=%d beats/conn=%d total_ops=%d duration=%v throughput=%.0f ops/s errors=%d (%.2f%%)",
+		users, connsPerUser, beatsPerConn, totalOps, elapsed, float64(totalOps)/elapsed.Seconds(), errorsN.Load(), errRate)
+	maxLat := time.Duration(0)
+	if len(sorted) > 0 {
+		maxLat = sorted[len(sorted)-1]
+	}
+	t.Logf("latency ms-user: p50=%v p95=%v p99=%v max=%v",
+		presencePercentile(sorted, 0.50),
+		presencePercentile(sorted, 0.95),
+		presencePercentile(sorted, 0.99),
+		maxLat,
+	)
+	require.Equal(t, int32(0), errorsN.Load())
 }
