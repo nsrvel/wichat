@@ -20,12 +20,12 @@ func NewServer(svc presencesvc.Service) *Server {
 	return &Server{svc: svc}
 }
 
-func (s *Server) HeartbeatPresence(ctx context.Context, req *userv1.HeartbeatPresenceRequest) (*userv1.PresenceTransitionResponse, error) {
+func (s *Server) HeartbeatPresence(ctx context.Context, req *userv1.HeartbeatPresenceRequest) (*userv1.HeartbeatPresenceResponse, error) {
 	tr, err := s.svc.HeartbeatPresence(ctx, req.GetAccessToken(), req.GetConnId(), req.GetActivity())
 	if err != nil {
 		return nil, responsegrpc.ToStatus(err)
 	}
-	return &userv1.PresenceTransitionResponse{
+	return &userv1.HeartbeatPresenceResponse{
 		UserId:          tr.UserID,
 		PreviousStatus:  tr.PreviousStatus,
 		EffectiveStatus: tr.EffectiveStatus,
@@ -34,12 +34,12 @@ func (s *Server) HeartbeatPresence(ctx context.Context, req *userv1.HeartbeatPre
 	}, nil
 }
 
-func (s *Server) DisconnectPresence(ctx context.Context, req *userv1.DisconnectPresenceRequest) (*userv1.PresenceTransitionResponse, error) {
+func (s *Server) DisconnectPresence(ctx context.Context, req *userv1.DisconnectPresenceRequest) (*userv1.DisconnectPresenceResponse, error) {
 	tr, err := s.svc.DisconnectPresence(ctx, req.GetUserId(), req.GetConnId())
 	if err != nil {
 		return nil, responsegrpc.ToStatus(err)
 	}
-	return &userv1.PresenceTransitionResponse{
+	return &userv1.DisconnectPresenceResponse{
 		UserId:          tr.UserID,
 		PreviousStatus:  tr.PreviousStatus,
 		EffectiveStatus: tr.EffectiveStatus,

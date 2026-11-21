@@ -245,7 +245,7 @@ export function ShareDialog({ open, onOpenChange, target }: ShareDialogProps) {
 				<ShareDialogSection label={t("invite.section_members")}>
 					<GroupAccessList
 						members={members}
-						loading={membersPending || membersQuery.isFetching}
+						loading={membersPending}
 						failed={membersFailed}
 						filterQuery={membersFilterQuery}
 						hideRoles={hideRoles}

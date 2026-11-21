@@ -9,8 +9,10 @@ import {
 	onGatewayRecovered,
 	subscribeGatewayStatus,
 } from "@/integrations/realtime/gateway-connection";
+import { invalidateAfterGatewayRecover } from "@/integrations/realtime/invalidate-after-gateway-recover";
 
-const CONNECTION_PROBLEMS_ATTEMPTS = 2;
+/** Full-screen “connection problems” only after sustained outage (not first reconnecting tick). */
+const CONNECTION_PROBLEMS_ATTEMPTS = 3;
 const getServerStatus = () => "connected" as const;
 const getServerAttempt = () => 0;
 
@@ -21,7 +23,7 @@ export function GatewayConnectionWatcher() {
 
 	useEffect(() => {
 		return onGatewayRecovered(() => {
-			void queryClient.invalidateQueries();
+			invalidateAfterGatewayRecover(queryClient);
 		});
 	}, [queryClient]);
 

@@ -20,6 +20,7 @@ const testGroupPublicID = "507f1f77bcf86cd799439011"
 
 type fakeGroupMember struct {
 	joinGroup          func(context.Context, *userv1.JoinGroupRequest) (*userv1.JoinGroupResponse, error)
+	listGroupMembers   func(context.Context, *userv1.ListGroupMembersRequest) (*userv1.ListGroupMembersResponse, error)
 	kickGroupMember    func(context.Context, *userv1.KickGroupMemberRequest) (*userv1.KickGroupMemberResponse, error)
 	banGroupMembers    func(context.Context, *userv1.BanGroupMembersRequest) (*userv1.BanGroupMembersResponse, error)
 	listGroupBans      func(context.Context, *userv1.ListGroupBansRequest) (*userv1.ListGroupBansResponse, error)
@@ -39,7 +40,10 @@ func (fakeGroupMember) LeaveGroup(context.Context, *userv1.LeaveGroupRequest) (*
 	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
 
-func (fakeGroupMember) ListGroupMembers(context.Context, *userv1.ListGroupMembersRequest) (*userv1.ListGroupMembersResponse, error) {
+func (f fakeGroupMember) ListGroupMembers(ctx context.Context, in *userv1.ListGroupMembersRequest) (*userv1.ListGroupMembersResponse, error) {
+	if f.listGroupMembers != nil {
+		return f.listGroupMembers(ctx, in)
+	}
 	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
 
@@ -226,5 +230,29 @@ func TestListAndUnbanGroupMembersWithBearer(t *testing.T) {
 	handler.UnbanGroupMember(unbanRec, unbanReq)
 	if unbanRec.Code != http.StatusOK || gotUnbanUID != "u1" {
 		t.Fatalf("unban status %d uid %q body %s", unbanRec.Code, gotUnbanUID, unbanRec.Body.String())
+	}
+}
+
+func TestListGroupMembersDegradesWhenMSUserUnavailable(t *testing.T) {
+	clients := &microservices.Clients{User: msUser.Service{GRPC: msUser.GRPC{
+		GroupMember: fakeGroupMember{
+			listGroupMembers: func(context.Context, *userv1.ListGroupMembersRequest) (*userv1.ListGroupMembersResponse, error) {
+				return nil, status.Error(codes.Unavailable, "ms-user down")
+			},
+		},
+	}}}
+	handler := groupmemberdelivery.NewHandler(clients, logger.New(logger.Options{Service: "gateway-test", Env: "test", Level: "error"}))
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/groups/"+testGroupPublicID+"/members", nil)
+	req.SetPathValue("id", testGroupPublicID)
+	req.Header.Set("Authorization", "Bearer access-token")
+	rec := httptest.NewRecorder()
+	handler.ListGroupMembers(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status %d body %s", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), `"degraded":true`) {
+		t.Fatalf("expected degraded members page, body %s", rec.Body.String())
 	}
 }

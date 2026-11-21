@@ -83,7 +83,15 @@ func newConnID() string {
 	return hex.EncodeToString(b[:])
 }
 
-func (h Handler) broadcastPresenceTransition(tr *userv1.PresenceTransitionResponse) {
+type presenceTransitionFanout interface {
+	GetUserId() string
+	GetPreviousStatus() string
+	GetEffectiveStatus() string
+	GetIsOnline() bool
+	GetGroupIds() []string
+}
+
+func (h Handler) broadcastPresenceTransition(tr presenceTransitionFanout) {
 	if tr == nil || tr.GetEffectiveStatus() == tr.GetPreviousStatus() || len(tr.GetGroupIds()) == 0 {
 		return
 	}

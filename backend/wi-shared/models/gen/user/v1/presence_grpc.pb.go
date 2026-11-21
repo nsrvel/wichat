@@ -32,9 +32,9 @@ const (
 // PresenceService manages user connection heartbeats and manual presence overrides.
 type PresenceServiceClient interface {
 	// HeartbeatPresence records an active/idle WebSocket heartbeat and returns effective presence transition.
-	HeartbeatPresence(ctx context.Context, in *HeartbeatPresenceRequest, opts ...grpc.CallOption) (*PresenceTransitionResponse, error)
+	HeartbeatPresence(ctx context.Context, in *HeartbeatPresenceRequest, opts ...grpc.CallOption) (*HeartbeatPresenceResponse, error)
 	// DisconnectPresence removes a WebSocket connection and returns effective presence transition.
-	DisconnectPresence(ctx context.Context, in *DisconnectPresenceRequest, opts ...grpc.CallOption) (*PresenceTransitionResponse, error)
+	DisconnectPresence(ctx context.Context, in *DisconnectPresenceRequest, opts ...grpc.CallOption) (*DisconnectPresenceResponse, error)
 	// SetManualPresence sets the caller's manual presence override (online, idle, dnd, invisible).
 	SetManualPresence(ctx context.Context, in *SetManualPresenceRequest, opts ...grpc.CallOption) (*SetManualPresenceResponse, error)
 	// GetMyPresence returns the caller's current manual and effective presence status.
@@ -49,9 +49,9 @@ func NewPresenceServiceClient(cc grpc.ClientConnInterface) PresenceServiceClient
 	return &presenceServiceClient{cc}
 }
 
-func (c *presenceServiceClient) HeartbeatPresence(ctx context.Context, in *HeartbeatPresenceRequest, opts ...grpc.CallOption) (*PresenceTransitionResponse, error) {
+func (c *presenceServiceClient) HeartbeatPresence(ctx context.Context, in *HeartbeatPresenceRequest, opts ...grpc.CallOption) (*HeartbeatPresenceResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(PresenceTransitionResponse)
+	out := new(HeartbeatPresenceResponse)
 	err := c.cc.Invoke(ctx, PresenceService_HeartbeatPresence_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -59,9 +59,9 @@ func (c *presenceServiceClient) HeartbeatPresence(ctx context.Context, in *Heart
 	return out, nil
 }
 
-func (c *presenceServiceClient) DisconnectPresence(ctx context.Context, in *DisconnectPresenceRequest, opts ...grpc.CallOption) (*PresenceTransitionResponse, error) {
+func (c *presenceServiceClient) DisconnectPresence(ctx context.Context, in *DisconnectPresenceRequest, opts ...grpc.CallOption) (*DisconnectPresenceResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(PresenceTransitionResponse)
+	out := new(DisconnectPresenceResponse)
 	err := c.cc.Invoke(ctx, PresenceService_DisconnectPresence_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -96,9 +96,9 @@ func (c *presenceServiceClient) GetMyPresence(ctx context.Context, in *GetMyPres
 // PresenceService manages user connection heartbeats and manual presence overrides.
 type PresenceServiceServer interface {
 	// HeartbeatPresence records an active/idle WebSocket heartbeat and returns effective presence transition.
-	HeartbeatPresence(context.Context, *HeartbeatPresenceRequest) (*PresenceTransitionResponse, error)
+	HeartbeatPresence(context.Context, *HeartbeatPresenceRequest) (*HeartbeatPresenceResponse, error)
 	// DisconnectPresence removes a WebSocket connection and returns effective presence transition.
-	DisconnectPresence(context.Context, *DisconnectPresenceRequest) (*PresenceTransitionResponse, error)
+	DisconnectPresence(context.Context, *DisconnectPresenceRequest) (*DisconnectPresenceResponse, error)
 	// SetManualPresence sets the caller's manual presence override (online, idle, dnd, invisible).
 	SetManualPresence(context.Context, *SetManualPresenceRequest) (*SetManualPresenceResponse, error)
 	// GetMyPresence returns the caller's current manual and effective presence status.
@@ -113,10 +113,10 @@ type PresenceServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedPresenceServiceServer struct{}
 
-func (UnimplementedPresenceServiceServer) HeartbeatPresence(context.Context, *HeartbeatPresenceRequest) (*PresenceTransitionResponse, error) {
+func (UnimplementedPresenceServiceServer) HeartbeatPresence(context.Context, *HeartbeatPresenceRequest) (*HeartbeatPresenceResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method HeartbeatPresence not implemented")
 }
-func (UnimplementedPresenceServiceServer) DisconnectPresence(context.Context, *DisconnectPresenceRequest) (*PresenceTransitionResponse, error) {
+func (UnimplementedPresenceServiceServer) DisconnectPresence(context.Context, *DisconnectPresenceRequest) (*DisconnectPresenceResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DisconnectPresence not implemented")
 }
 func (UnimplementedPresenceServiceServer) SetManualPresence(context.Context, *SetManualPresenceRequest) (*SetManualPresenceResponse, error) {

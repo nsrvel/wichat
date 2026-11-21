@@ -1,5 +1,4 @@
-import type { GroupMember } from "@wichat/contracts/group/group-member";
-import type { GroupMembersPage } from "@wichat/contracts/group/group-member";
+import type { GroupMember, GroupMembersPage } from "@wichat/contracts/group/member";
 import type { MyPresenceResponse, PresenceStatus } from "@wichat/contracts/user/presence";
 import type { QueryClient } from "@tanstack/react-query";
 import { Q_GROUP_ROLE_MEMBERS } from "@/services/group-role/group-role.key";
@@ -35,7 +34,7 @@ function patchPage(
 		return prev;
 	}
 	let changed = false;
-	const members = prev.members.map((m) => {
+	const members = prev.members.map((m: GroupMember) => {
 		const next = patchMemberRow(m, frame);
 		if (!next || next === m) {
 			return m;
@@ -97,16 +96,44 @@ export function scheduleInvitePreviewPresenceRefresh(queryClient: QueryClient): 
 	}, 2_000);
 }
 
+function memberListsWouldChange(queryClient: QueryClient, frame: LivePresenceFrame): boolean {
+	let changed = false;
+	for (const [, page] of queryClient.getQueriesData<GroupMembersPage>({
+		queryKey: [Q_INVITE_MEMBERS],
+	})) {
+		if (page && patchPage(page, frame.user_id, frame) !== page) {
+			changed = true;
+			break;
+		}
+	}
+	if (changed) {
+		return true;
+	}
+	for (const [, members] of queryClient.getQueriesData<GroupMember[]>({
+		queryKey: [Q_GROUP_ROLE_MEMBERS],
+	})) {
+		if (members && patchMemberArray(members, frame) !== members) {
+			return true;
+		}
+	}
+	return false;
+}
+
 export function patchLiveMemberPresence(
 	queryClient: QueryClient,
 	frame: LivePresenceFrame,
 	opts?: { refreshInvitePreview?: boolean },
 ): void {
-	queryClient.setQueriesData<GroupMembersPage>({ queryKey: [Q_INVITE_MEMBERS] }, (prev) =>
-		patchPage(prev, frame.user_id, frame),
+	if (!memberListsWouldChange(queryClient, frame)) {
+		return;
+	}
+	queryClient.setQueriesData<GroupMembersPage>(
+		{ queryKey: [Q_INVITE_MEMBERS] },
+		(prev: GroupMembersPage | undefined) => patchPage(prev, frame.user_id, frame),
 	);
-	queryClient.setQueriesData<GroupMember[]>({ queryKey: [Q_GROUP_ROLE_MEMBERS] }, (prev) =>
-		patchMemberArray(prev, frame),
+	queryClient.setQueriesData<GroupMember[]>(
+		{ queryKey: [Q_GROUP_ROLE_MEMBERS] },
+		(prev: GroupMember[] | undefined) => patchMemberArray(prev, frame),
 	);
 	if (opts?.refreshInvitePreview) {
 		scheduleInvitePreviewPresenceRefresh(queryClient);
@@ -121,10 +148,51 @@ export function upsertLiveMyPresence(
 	if (frame.user_id !== selfUserId) {
 		return;
 	}
-	queryClient.setQueryData<MyPresenceResponse>([Q_MY_PRESENCE], (prev) => ({
-		manual_status: prev?.manual_status ?? "online",
-		effective_status: frame.presence_status,
-		is_online: frame.is_online,
-		expires_at: prev?.expires_at ?? "",
-	}));
+	const hadMyPresence = queryClient.getQueryData<MyPresenceResponse>([Q_MY_PRESENCE]) !== undefined;
+	queryClient.setQueryData<MyPresenceResponse>([Q_MY_PRESENCE], (prev) => {
+		if (!prev) {
+			return prev;
+		}
+		return {
+			...prev,
+			effective_status: frame.presence_status,
+			is_online: frame.is_online,
+		};
+	});
+	if (hadMyPresence) {
+		patchSelfMemberPresenceFromMyPresence(queryClient, selfUserId);
+	} else {
+		patchLiveMemberPresence(queryClient, {
+			user_id: selfUserId,
+			presence_status: frame.presence_status,
+			is_online: frame.is_online,
+		});
+	}
+}
+
+/** Re-apply self row in cached member lists from `Q_MY_PRESENCE` (HTTP refetch / race after WS). */
+export function patchSelfMemberPresenceFromMyPresence(
+	queryClient: QueryClient,
+	selfUserId: string,
+): void {
+	if (!selfUserId) {
+		return;
+	}
+	const my = queryClient.getQueryData<MyPresenceResponse>([Q_MY_PRESENCE]);
+	if (!my) {
+		return;
+	}
+	const frame: LivePresenceFrame = {
+		user_id: selfUserId,
+		presence_status: my.effective_status,
+		is_online: my.is_online,
+	};
+	if (!memberListsWouldChange(queryClient, frame)) {
+		return;
+	}
+	patchLiveMemberPresence(queryClient, {
+		user_id: selfUserId,
+		presence_status: my.effective_status,
+		is_online: my.is_online,
+	});
 }

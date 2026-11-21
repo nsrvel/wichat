@@ -30,7 +30,8 @@ export async function previewInviteApi(request: APIRequestContext, token: string
 	);
 	const text = await res.text();
 	expect(res.ok(), text).toBeTruthy();
-	return (JSON.parse(text) as Envelope<{ valid: boolean; group_name?: string; reason?: string }>).data;
+	return (JSON.parse(text) as Envelope<{ valid: boolean; group_name?: string; reason?: string }>)
+		.data;
 }
 
 export async function sendGroupInvitesByUserId(

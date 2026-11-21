@@ -1,7 +1,6 @@
 import { expect, type APIRequestContext, type BrowserContext } from "@playwright/test";
 
-export const E2E_API_BASE =
-	process.env.E2E_API_URL ?? "http://localhost:8080/api/v1";
+export const E2E_API_BASE = process.env.E2E_API_URL ?? "http://localhost:8080/api/v1";
 
 export type TestUser = {
 	id: string;
@@ -55,8 +54,7 @@ export async function createTestUser(
 	const raw = await res.text();
 	expect(res.ok(), `register failed: ${raw}`).toBeTruthy();
 	const envelope = JSON.parse(raw) as Envelope<
-		| { access_token: string; user: { id: string } }
-		| { challenge_id: string; user?: { id: string } }
+		{ access_token: string; user: { id: string } } | { challenge_id: string; user?: { id: string } }
 	>;
 	const data = envelope.data;
 	let accessToken = "";
@@ -67,13 +65,14 @@ export async function createTestUser(
 	} else if ("challenge_id" in data && data.challenge_id) {
 		const { waitDevOtpForChallenge } = await import("./auth-helpers");
 		const otp = waitDevOtpForChallenge(data.challenge_id);
-		expect(otp, "register verify needs dev Redis OTP shadow (restart ms-user in development)").toBeTruthy();
+		expect(
+			otp,
+			"register verify needs dev Redis OTP shadow (restart ms-user in development)",
+		).toBeTruthy();
 		const verifyRes = await request.post(`${E2E_API_BASE}/auth/register/verify`, {
 			data: { challenge_id: data.challenge_id, code: otp },
 		});
-		const verified = await parseEnvelope<{ access_token: string; user: { id: string } }>(
-			verifyRes,
-		);
+		const verified = await parseEnvelope<{ access_token: string; user: { id: string } }>(verifyRes);
 		accessToken = verified.access_token;
 		userId = verified.user.id;
 	} else {
@@ -93,11 +92,17 @@ export async function loginInBrowser(context: BrowserContext, user: TestUser): P
 	const { loginPasswordChallenge, waitDevOtpForChallenge } = await import("./auth-helpers");
 	const challengeId = await loginPasswordChallenge(context.request, user.username, user.password);
 	const code = waitDevOtpForChallenge(challengeId);
-	expect(code, "browser login needs dev Redis OTP shadow (restart ms-user in development)").toBeTruthy();
+	expect(
+		code,
+		"browser login needs dev Redis OTP shadow (restart ms-user in development)",
+	).toBeTruthy();
 	const res = await context.request.post(`${E2E_API_BASE}/auth/login/verify`, {
 		data: { challenge_id: challengeId, code },
 	});
-	expect(res.ok(), `Browser login verify failed (${res.status()}): ${await res.text()}`).toBeTruthy();
+	expect(
+		res.ok(),
+		`Browser login verify failed (${res.status()}): ${await res.text()}`,
+	).toBeTruthy();
 }
 
 export async function createGroupWithInvite(

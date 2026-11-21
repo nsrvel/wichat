@@ -1,13 +1,6 @@
 import { expect, test } from "@playwright/test";
-import {
-	createGroupApi,
-	listGroupChannelCount,
-} from "../fixtures/group-helpers";
-import {
-	createTestUser,
-	loginInBrowser,
-	type TestUser,
-} from "../fixtures/api-helpers";
+import { createGroupApi, listGroupChannelCount } from "../fixtures/group-helpers";
+import { createTestUser, loginInBrowser, type TestUser } from "../fixtures/api-helpers";
 
 function uniqueName(prefix: string): string {
 	return `E2E ${prefix} ${Date.now().toString(36)}`;
