@@ -548,9 +548,10 @@ type GroupInviteLinkBody struct {
 
 // SendGroupInvitesBody is POST /api/v1/groups/{id}/invites.
 type SendGroupInvitesBody struct {
-	UserIDs   []string `json:"user_ids"`
-	Emails    []string `json:"emails"`
-	ChannelID string   `json:"channel_id,omitempty"`
+	UserIDs        []string `json:"user_ids"`
+	Emails         []string `json:"emails"`
+	ChannelID      string   `json:"channel_id,omitempty"`
+	TurnstileToken string   `json:"turnstile_token"`
 }
 
 // SendGroupInvitesResultBody is the invite batch outcome.
@@ -578,7 +579,8 @@ type InvitePreviewBody struct {
 
 // RedeemInviteBody is POST /api/v1/invites/redeem.
 type RedeemInviteBody struct {
-	Token string `json:"token"`
+	Token          string `json:"token"`
+	TurnstileToken string `json:"turnstile_token"`
 }
 
 // RedeemInviteResultBody is membership after redeem.

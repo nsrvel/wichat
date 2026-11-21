@@ -72,7 +72,7 @@ func (s *server) mapHandlers(mux *http.ServeMux, ms *microservices.Clients, rtHu
 	grouproledelivery.Register(mux, grouproledelivery.NewHandler(ms, s.log))
 	channeldelivery.Register(mux, channeldelivery.NewHandler(ms, s.log))
 	channelcategorydelivery.Register(mux, channelcategorydelivery.NewHandler(ms, s.log))
-	invitedelivery.Register(mux, invitedelivery.NewHandler(ms, s.log, s.cfg.WebOrigin))
+	invitedelivery.Register(mux, invitedelivery.NewHandler(ms, s.log, s.cfg.WebOrigin, s.cfg.TurnstileVerifySecret()))
 	chatdelivery.Register(mux, chatdelivery.NewHandler(ms, s.log))
 	realtimeWs.Register(mux, realtimeWs.NewHandler(ms, rtHub, s.log, s.cfg.WebOrigin))
 

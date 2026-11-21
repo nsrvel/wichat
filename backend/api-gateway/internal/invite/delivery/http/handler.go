@@ -5,7 +5,9 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/wichat/wichat/backend/api-gateway/internal/middleware"
 	authHttp "github.com/wichat/wichat/backend/api-gateway/pkg/auth-http"
+	"github.com/wichat/wichat/backend/api-gateway/pkg/turnstile"
 	"github.com/wichat/wichat/backend/wi-shared/exception"
 	"github.com/wichat/wichat/backend/wi-shared/infra/logger"
 	"github.com/wichat/wichat/backend/wi-shared/microservices"
@@ -26,21 +28,39 @@ type handler struct {
 	ms        *microservices.Clients
 	log       logger.Logger
 	webOrigin string
+	turnstile turnstile.Verifier
 }
 
 // NewHandler wires invite HTTP to the ms-user client.
-func NewHandler(ms *microservices.Clients, log logger.Logger, webOrigin string) Handler {
+func NewHandler(ms *microservices.Clients, log logger.Logger, webOrigin string, turnstileSecret ...string) Handler {
+	secret := ""
+	if len(turnstileSecret) > 0 {
+		secret = turnstileSecret[0]
+	}
 	return handler{
 		ms:        ms,
 		log:       log,
 		webOrigin: strings.TrimRight(strings.TrimSpace(webOrigin), "/"),
+		turnstile: turnstile.NewVerifier(secret),
 	}
+}
+
+func (h handler) verifyTurnstile(w http.ResponseWriter, r *http.Request, token string) bool {
+	if err := h.turnstile.Verify(r.Context(), token, middleware.ClientIP(r)); err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return false
+	}
+	return true
 }
 
 func (h handler) GetGroupInviteLink(w http.ResponseWriter, r *http.Request) {
 	token := authHttp.Bearer(r)
 	if token == "" {
 		authHttp.WriteOutbound(w, r, h.log, exception.Unauthenticated(exception.MsgUnauthorized, nil))
+		return
+	}
+
+	if !h.verifyTurnstile(w, r, r.URL.Query().Get("turnstile_token")) {
 		return
 	}
 
@@ -88,6 +108,10 @@ func (h handler) SendGroupInvites(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !h.verifyTurnstile(w, r, body.TurnstileToken) {
+		return
+	}
+
 	out, err := h.ms.User.GRPC.Invite.SendGroupInvites(r.Context(), &userv1.SendGroupInvitesRequest{
 		AccessToken: token,
 		GroupId:     groupID,
@@ -114,6 +138,10 @@ func (h handler) PreviewGroupInvite(w http.ResponseWriter, r *http.Request) {
 	}
 	if inviteToken == "" {
 		authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "invite"}))
+		return
+	}
+
+	if !h.verifyTurnstile(w, r, r.URL.Query().Get("turnstile_token")) {
 		return
 	}
 
@@ -151,6 +179,10 @@ func (h handler) RedeemGroupInvite(w http.ResponseWriter, r *http.Request) {
 	var body authHttp.RedeemInviteBody
 	if err := authHttp.DecodeJSON(w, r, &body); err != nil {
 		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	if !h.verifyTurnstile(w, r, body.TurnstileToken) {
 		return
 	}
 

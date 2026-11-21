@@ -22,6 +22,8 @@ import { Q_MY_GROUPS } from "@/services/group/group.key";
 import { myGroupsQueryOpts } from "@/services/group/group.query";
 import { copyTextToClipboard } from "@/lib/copy-to-clipboard";
 import { hasGroupPermission } from "@/lib/group-permissions";
+import { TurnstileWidget } from "@/features/auth/components/turnstile-widget";
+import { useInviteTurnstile } from "@/features/invite/hooks/use-invite-turnstile";
 import { searchUsers, sendGroupInvites } from "@/services/invite/invite.service";
 import {
 	Q_INVITE_MEMBERS,
@@ -57,6 +59,7 @@ export function ShareDialog({ open, onOpenChange, target }: ShareDialogProps) {
 	const cursor = cursorStack[cursorStack.length - 1] ?? "";
 
 	const { data: policy } = useQuery({ ...instancePolicyQueryOpts(), enabled: open });
+	const captcha = useInviteTurnstile(open);
 	const { data: myGroups = [] } = useQuery({ ...myGroupsQueryOpts(), enabled: open });
 	const currentGroup = myGroups.find((g) => g.id === groupId);
 	const hideRoles = currentGroup?.hide_roles ?? false;
@@ -82,7 +85,7 @@ export function ShareDialog({ open, onOpenChange, target }: ShareDialogProps) {
 	});
 
 	const inviteLinkQuery = useQuery({
-		...groupInviteLinkQueryOpts(groupId!, channelId),
+		...groupInviteLinkQueryOpts(groupId!, channelId, captcha.turnstileField, captcha.captchaReady),
 		enabled: open && Boolean(groupId),
 	});
 
@@ -98,6 +101,7 @@ export function ShareDialog({ open, onOpenChange, target }: ShareDialogProps) {
 				user_ids: userIds,
 				emails,
 				channel_id: channelId,
+				turnstile_token: captcha.turnstileField,
 			});
 		},
 		onSuccess: (result) => {
@@ -150,7 +154,8 @@ export function ShareDialog({ open, onOpenChange, target }: ShareDialogProps) {
 	}, [debouncedQuery, query]);
 
 	const pendingEmailInvite = parseEmailChip(query);
-	const shareDisabled = chips.length === 0 && !pendingEmailInvite;
+	const shareDisabled =
+		(chips.length === 0 && !pendingEmailInvite) || (canInviteAndCopy && !captcha.captchaReady);
 
 	if (!target || !groupId) {
 		return null;
@@ -187,6 +192,13 @@ export function ShareDialog({ open, onOpenChange, target }: ShareDialogProps) {
 				canInviteAndCopy={canInviteAndCopy}
 			/>
 			<WiChatDialogBody className="space-y-6 pt-1">
+				{captcha.siteKey ? (
+					<TurnstileWidget
+						siteKey={captcha.siteKey}
+						resetKey={captcha.resetKey}
+						onToken={captcha.setToken}
+					/>
+				) : null}
 				{canInviteAndCopy ? (
 					<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
 						<InviteRecipientField

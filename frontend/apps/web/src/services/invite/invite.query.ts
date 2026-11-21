@@ -25,22 +25,31 @@ export function groupMembersQueryOpts(groupId: string, cursor = "") {
 	});
 }
 
-export function groupInviteLinkQueryOpts(groupId: string, channelId?: string) {
+export function groupInviteLinkQueryOpts(
+	groupId: string,
+	channelId?: string,
+	turnstileToken?: string,
+	captchaReady = true,
+) {
 	return queryOptions({
-		queryKey: [Q_INVITE_LINK, groupId, channelId ?? ""],
-		queryFn: () => getGroupInviteLink(groupId, channelId),
+		queryKey: [Q_INVITE_LINK, groupId, channelId ?? "", turnstileToken ?? ""],
+		queryFn: () => getGroupInviteLink(groupId, channelId, turnstileToken),
 		staleTime: 60_000,
 		retry: 1,
-		enabled: Boolean(groupId),
+		enabled: Boolean(groupId) && captchaReady,
 	});
 }
 
-export function invitePreviewQueryOpts(inviteToken: string) {
+export function invitePreviewQueryOpts(
+	inviteToken: string,
+	turnstileToken?: string,
+	captchaReady = true,
+) {
 	const token = inviteToken.trim();
 	return queryOptions({
-		queryKey: [Q_INVITE_PREVIEW, token],
+		queryKey: [Q_INVITE_PREVIEW, token, turnstileToken ?? ""],
 		queryFn: async () => {
-			const next = await previewInvite(token);
+			const next = await previewInvite(token, turnstileToken);
 			writeInvitePreviewCache(token, next);
 			return next;
 		},
@@ -48,6 +57,6 @@ export function invitePreviewQueryOpts(inviteToken: string) {
 		gcTime: 10 * 60_000,
 		retry: 1,
 		refetchOnWindowFocus: false,
-		enabled: Boolean(token),
+		enabled: Boolean(token) && captchaReady,
 	});
 }

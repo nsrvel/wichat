@@ -40,10 +40,18 @@ export async function searchUsers(
 	return api.get(`/users/search?${params.toString()}`, UserSearchSchema);
 }
 
-export async function getGroupInviteLink(groupId: string, channelId?: string) {
+export async function getGroupInviteLink(
+	groupId: string,
+	channelId?: string,
+	turnstileToken?: string,
+) {
 	const params = new URLSearchParams();
 	if (channelId) {
 		params.set("channel_id", channelId);
+	}
+	const captcha = turnstileToken?.trim();
+	if (captcha) {
+		params.set("turnstile_token", captcha);
 	}
 	const qs = params.toString();
 	const path = `/groups/${encodeURIComponent(groupId)}/invite-link${qs ? `?${qs}` : ""}`;
@@ -56,6 +64,7 @@ export async function sendGroupInvites(
 		user_ids: string[];
 		emails: string[];
 		channel_id?: string;
+		turnstile_token?: string;
 	},
 ) {
 	const payload = SendGroupInvitesRequestSchema.parse(body);
@@ -66,12 +75,19 @@ export async function sendGroupInvites(
 	);
 }
 
-export async function previewInvite(token: string) {
+export async function previewInvite(token: string, turnstileToken?: string) {
 	const params = new URLSearchParams({ invite: token });
+	const captcha = turnstileToken?.trim();
+	if (captcha) {
+		params.set("turnstile_token", captcha);
+	}
 	return api.get(`/invites/preview?${params.toString()}`, InvitePreviewSchema);
 }
 
-export async function redeemInvite(token: string) {
-	const body = RedeemInviteRequestSchema.parse({ token });
+export async function redeemInvite(token: string, turnstileToken?: string) {
+	const body = RedeemInviteRequestSchema.parse({
+		token,
+		turnstile_token: turnstileToken?.trim() || undefined,
+	});
 	return api.post("/invites/redeem", RedeemInviteResultSchema, body);
 }

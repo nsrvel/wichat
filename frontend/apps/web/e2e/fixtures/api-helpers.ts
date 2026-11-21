@@ -111,19 +111,20 @@ export async function createGroupWithInvite(
 	});
 	const group = await parseEnvelope<{ id: string; name: string }>(groupRes);
 
-	const inviteRes = await request.post(
-		`${E2E_API_BASE}/groups/${encodeURIComponent(group.id)}/invites`,
+	const { e2eTurnstileQuery } = await import("./invite-turnstile");
+	const turnstileQs = await e2eTurnstileQuery(request);
+	const inviteRes = await request.get(
+		`${E2E_API_BASE}/groups/${encodeURIComponent(group.id)}/invite-link${turnstileQs ? `?${turnstileQs.slice(1)}` : ""}`,
 		{
 			headers: { Authorization: `Bearer ${owner.accessToken}` },
-			data: {},
 		},
 	);
-	const invite = await parseEnvelope<{ code: string }>(inviteRes);
+	const invite = await parseEnvelope<{ token: string }>(inviteRes);
 
 	return {
 		id: group.id,
 		name: group.name,
-		inviteCode: invite.code,
+		inviteCode: invite.token,
 	};
 }
 
@@ -132,9 +133,11 @@ export async function redeemInvite(
 	member: TestUser,
 	inviteCode: string,
 ) {
+	const { e2eTurnstileBody } = await import("./invite-turnstile");
+	const turnstile = await e2eTurnstileBody(request);
 	return request.post(`${E2E_API_BASE}/invites/redeem`, {
 		headers: { Authorization: `Bearer ${member.accessToken}` },
-		data: { code: inviteCode },
+		data: { token: inviteCode, ...turnstile },
 	});
 }
 
