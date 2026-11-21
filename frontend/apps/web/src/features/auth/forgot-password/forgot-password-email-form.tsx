@@ -14,6 +14,7 @@ import {
 	authSubmitClass,
 } from "@/lib/form-field-styles";
 import { translateError } from "@/integrations/i18n/translate-error";
+import { TurnstileWidget } from "@/features/auth/components/turnstile-widget";
 import { ForgotPasswordBackToLogin } from "./forgot-password-back-to-login";
 
 const ForgotPasswordEmailSchema = z.object({
@@ -26,6 +27,10 @@ type ForgotPasswordEmailFormProps = {
 	defaultEmail?: string;
 	isPending?: boolean;
 	error?: unknown;
+	submitDisabled?: boolean;
+	turnstileSiteKey?: string;
+	turnstileResetKey?: number;
+	onTurnstileToken?: (token: string) => void;
 	onSubmit: (values: ForgotPasswordEmailValues) => void;
 };
 
@@ -33,6 +38,10 @@ export function ForgotPasswordEmailForm({
 	defaultEmail = "",
 	isPending = false,
 	error,
+	submitDisabled = false,
+	turnstileSiteKey = "",
+	turnstileResetKey = 0,
+	onTurnstileToken,
 	onSubmit,
 }: ForgotPasswordEmailFormProps) {
 	const { t } = useTranslation();
@@ -58,7 +67,19 @@ export function ForgotPasswordEmailForm({
 				{error ? (
 					<p className="text-destructive text-[11px] font-medium">{translateError(t, error)}</p>
 				) : null}
-				<Button type="submit" disabled={isPending} className={`mt-2 ${authSubmitClass}`}>
+				{turnstileSiteKey ? (
+					<TurnstileWidget
+						siteKey={turnstileSiteKey}
+						resetKey={turnstileResetKey}
+						onVerify={(token) => onTurnstileToken?.(token)}
+						onExpire={() => onTurnstileToken?.("")}
+					/>
+				) : null}
+				<Button
+					type="submit"
+					disabled={isPending || submitDisabled}
+					className={`mt-2 ${authSubmitClass}`}
+				>
 					{isPending ? t("forgot_password.sending_code") : t("forgot_password.send_code")}
 				</Button>
 				<ForgotPasswordBackToLogin />
