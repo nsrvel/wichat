@@ -3,8 +3,11 @@ package test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"math"
 	"net/http"
 	"net/http/httptest"
+	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -346,4 +349,114 @@ func TestRealtimeHeartbeatLoadSample(t *testing.T) {
 	elapsed := time.Since(start)
 	t.Logf("api-gateway WS heartbeat sends: %d writes in %v (%.0f writes/s); downstream HeartbeatPresence calls=%d",
 		heartbeats, elapsed, float64(heartbeats)/elapsed.Seconds(), calls.Load())
+}
+
+func wsWritePercentile(sorted []time.Duration, p float64) time.Duration {
+	if len(sorted) == 0 {
+		return 0
+	}
+	idx := int(math.Ceil(p*float64(len(sorted)))) - 1
+	if idx < 0 {
+		idx = 0
+	}
+	if idx >= len(sorted) {
+		idx = len(sorted) - 1
+	}
+	return sorted[idx]
+}
+
+func TestRealtimeMultiConnRealisticLoad(t *testing.T) {
+	if testing.Short() {
+		t.Skip("load sample")
+	}
+	stub := &stubPresenceClient{}
+	var calls atomic.Int32
+	stub.heartbeatFn = func(_ *userv1.HeartbeatPresenceRequest) (*userv1.HeartbeatPresenceResponse, error) {
+		calls.Add(1)
+		time.Sleep(time.Duration(1+time.Now().UnixNano()%2) * time.Millisecond)
+		return &userv1.HeartbeatPresenceResponse{
+			UserId:          "user-1",
+			PreviousStatus:  "online",
+			EffectiveStatus: "online",
+			IsOnline:        true,
+		}, nil
+	}
+	ms := &microservices.Clients{}
+	ms.User.GRPC.Presence = stub
+	h := ws.NewHandler(ms, hub.New(), logger.New(logger.Options{Service: "gateway-test", Env: "test", Level: "error"}), "")
+	srv := httptest.NewServer(http.HandlerFunc(h.Realtime))
+	defer srv.Close()
+
+	const (
+		conns          = 24
+		heartbeatsEach = 50
+	)
+	frame := []byte(`{"type":"presence.heartbeat","activity":"active"}`)
+	var (
+		latMu sync.Mutex
+		lats  []time.Duration
+		errs  atomic.Int32
+	)
+	var wg sync.WaitGroup
+	start := time.Now()
+	for i := 0; i < conns; i++ {
+		wg.Add(1)
+		go func(id int) {
+			defer wg.Done()
+			ctx := context.Background()
+			wsURL := strings.Replace(srv.URL, "http://", "ws://", 1) + fmt.Sprintf("?access_token=bench-%d", id)
+			conn, resp, err := websocket.Dial(ctx, wsURL, nil)
+			if resp != nil && resp.Body != nil {
+				_ = resp.Body.Close()
+			}
+			if err != nil {
+				errs.Add(int32(heartbeatsEach))
+				return
+			}
+			activeConn := conn
+			defer func() { _ = activeConn.Close(websocket.StatusNormalClosure, "") }()
+			for beat := 0; beat < heartbeatsEach; beat++ {
+				t0 := time.Now()
+				if err := activeConn.Write(ctx, websocket.MessageText, frame); err != nil {
+					errs.Add(1)
+					continue
+				}
+				latMu.Lock()
+				lats = append(lats, time.Since(t0))
+				latMu.Unlock()
+				if beat == heartbeatsEach/2 {
+					_ = activeConn.Close(websocket.StatusNormalClosure, "")
+					var redialResp *http.Response
+					activeConn, redialResp, err = websocket.Dial(ctx, wsURL, nil)
+					if redialResp != nil && redialResp.Body != nil {
+						_ = redialResp.Body.Close()
+					}
+					if err != nil {
+						errs.Add(int32(heartbeatsEach - beat - 1)) //nolint:gosec // G115 test counter
+						return
+					}
+				}
+			}
+		}(i)
+	}
+	wg.Wait()
+	elapsed := time.Since(start)
+
+	latMu.Lock()
+	sort.Slice(lats, func(i, j int) bool { return lats[i] < lats[j] })
+	sorted := append([]time.Duration(nil), lats...)
+	latMu.Unlock()
+
+	t.Logf("api-gateway realistic WS: conns=%d heartbeats/conn=%d client_writes=%d duration=%v throughput=%.0f/s downstream_calls=%d errors=%d",
+		conns, heartbeatsEach, len(sorted), elapsed, float64(len(sorted))/elapsed.Seconds(), calls.Load(), errs.Load())
+	maxLat := time.Duration(0)
+	if len(sorted) > 0 {
+		maxLat = sorted[len(sorted)-1]
+	}
+	t.Logf("gateway client write latency: p50=%v p95=%v p99=%v max=%v",
+		wsWritePercentile(sorted, 0.50),
+		wsWritePercentile(sorted, 0.95),
+		wsWritePercentile(sorted, 0.99),
+		maxLat,
+	)
 }
