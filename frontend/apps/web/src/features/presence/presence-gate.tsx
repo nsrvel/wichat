@@ -13,8 +13,8 @@ import { normalizePublicGroupId } from "@/features/presence/public-group-id";
 import { sessionQueryOpts } from "@/services/auth/auth.query";
 import { useQuery } from "@tanstack/react-query";
 import { ensureAccessToken } from "@/integrations/api-client";
-import { Q_INVITE_MEMBERS } from "@/services/invite/invite.query";
 import { Q_MY_PRESENCE } from "@/services/user/user.key";
+import { myPresenceQueryOptions } from "@/services/user/user.query";
 
 /** One tab-wide WS + heartbeats for every authenticated route under AppProviders. */
 export function PresenceGate() {
@@ -34,6 +34,13 @@ export function PresenceGate() {
 		}
 		void ensureAccessToken();
 	}, [active]);
+
+	useEffect(() => {
+		if (!active) {
+			return;
+		}
+		void queryClient.fetchQuery(myPresenceQueryOptions());
+	}, [active, queryClient]);
 
 	useEffect(() => {
 		if (!active) {
@@ -62,7 +69,7 @@ export function PresenceGate() {
 				return;
 			}
 			const root = event.query.queryKey[0];
-			if (root === Q_INVITE_MEMBERS || root === Q_MY_PRESENCE) {
+			if (root === Q_MY_PRESENCE) {
 				patchSelfMemberPresenceFromMyPresence(queryClient, selfUserId);
 			}
 		});

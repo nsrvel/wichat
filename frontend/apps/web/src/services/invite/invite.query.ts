@@ -25,6 +25,7 @@ export function groupMembersQueryOpts(groupId: string, cursor = "") {
 			}),
 		staleTime: 30_000,
 		retry: 1,
+		refetchOnWindowFocus: false,
 		enabled: Boolean(groupId),
 	});
 }

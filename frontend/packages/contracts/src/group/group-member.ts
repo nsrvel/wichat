@@ -53,6 +53,8 @@ export const GroupMembersPageSchema = z.object({
 	members: z.array(GroupMemberSchema),
 	next_cursor: z.string().optional().default(""),
 	total: z.number().int().nonnegative(),
+	/** Gateway signals ms-user outage — clients should keep cached member rows. */
+	degraded: z.boolean().optional().default(false),
 });
 export type GroupMembersPage = z.infer<typeof GroupMembersPageSchema>;
 

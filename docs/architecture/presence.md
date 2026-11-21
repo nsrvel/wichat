@@ -11,6 +11,8 @@
 
 `resolveUserEffectivePresence` on **GetMyPresence** and **BatchGetEffectivePresence** when effective key is missing but connections exist.
 
+**Degrade (no design change to TTL/heartbeat):** Redis or ms-user read failures must not 500 member lists or `GET /users/me/presence`. ms-user returns offline snapshots / degraded self view; api-gateway maps gRPC `Unavailable` on GetMyPresence to HTTP 200 with `DegradedMyPresenceBody` (manual `online`, effective `offline`).
+
 ## Realtime (api-gateway)
 
 `GET /api/v1/realtime?access_token=…` (WebSocket upgrade)
@@ -32,4 +34,4 @@
 | `use-group-online-count.ts` | Live online tally from member cache |
 | `live-cache.ts` | Patches `Q_INVITE_MEMBERS`, `Q_GROUP_ROLE_MEMBERS`, debounced `Q_INVITE_PREVIEW` on `/invite/*` |
 
-No localStorage for dots. No HTTP prefetch in gate. Member UIs use `memberPresenceDot`; self chrome uses `useLivePresence`.
+No localStorage for dots. `presence-gate` **fetchQuery** bootstraps `Q_MY_PRESENCE` before WS can seed the cache. Member UIs use `memberPresenceDot`; self chrome uses `useLivePresence`.

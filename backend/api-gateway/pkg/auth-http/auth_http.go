@@ -513,6 +513,15 @@ type MyPresenceBody struct {
 	ExpiresAt       string `json:"expires_at,omitempty"`
 }
 
+// DegradedMyPresenceBody is the safe fallback when live presence cannot be loaded.
+func DegradedMyPresenceBody() MyPresenceBody {
+	return MyPresenceBody{
+		ManualStatus:    "online",
+		EffectiveStatus: "offline",
+		IsOnline:        false,
+	}
+}
+
 // UpdateMyPresenceRequestBody is PUT /api/v1/users/me/presence.
 type UpdateMyPresenceRequestBody struct {
 	Status     string `json:"status"`
@@ -524,6 +533,16 @@ type GroupMembersPageBody struct {
 	Members    []GroupMemberBody `json:"members"`
 	NextCursor string            `json:"next_cursor,omitempty"`
 	Total      int               `json:"total"`
+	Degraded   bool              `json:"degraded,omitempty"`
+}
+
+// DegradedGroupMembersPageBody keeps HTTP 200 when ms-user is unavailable so clients can retain cached rows.
+func DegradedGroupMembersPageBody() GroupMembersPageBody {
+	return GroupMembersPageBody{
+		Members:  []GroupMemberBody{},
+		Total:    0,
+		Degraded: true,
+	}
 }
 
 // UserSearchHitBody is one autocomplete row.

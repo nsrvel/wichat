@@ -796,3 +796,49 @@ func TestRelationshipsEndpoints(t *testing.T) {
 		t.Fatalf("set relationship: %d %s", putRec.Code, putRec.Body.String())
 	}
 }
+
+type fakePresence struct {
+	getMy func(context.Context, *userv1.GetMyPresenceRequest) (*userv1.GetMyPresenceResponse, error)
+}
+
+func (fakePresence) HeartbeatPresence(context.Context, *userv1.HeartbeatPresenceRequest) (*userv1.HeartbeatPresenceResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "error.internal")
+}
+
+func (fakePresence) DisconnectPresence(context.Context, *userv1.DisconnectPresenceRequest) (*userv1.DisconnectPresenceResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "error.internal")
+}
+
+func (fakePresence) SetManualPresence(context.Context, *userv1.SetManualPresenceRequest) (*userv1.SetManualPresenceResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "error.internal")
+}
+
+func (f fakePresence) GetMyPresence(ctx context.Context, in *userv1.GetMyPresenceRequest) (*userv1.GetMyPresenceResponse, error) {
+	if f.getMy != nil {
+		return f.getMy(ctx, in)
+	}
+	return nil, status.Error(codes.Unimplemented, "error.internal")
+}
+
+func TestGetMyPresenceDegradesWhenMSUserUnavailable(t *testing.T) {
+	clients := &microservices.Clients{User: msUser.Service{GRPC: msUser.GRPC{
+		Presence: fakePresence{
+			getMy: func(context.Context, *userv1.GetMyPresenceRequest) (*userv1.GetMyPresenceResponse, error) {
+				return nil, status.Error(codes.Unavailable, "ms-user down")
+			},
+		},
+	}}}
+	h := userdelivery.NewHandler(clients, logger.New(logger.Options{Service: "gateway-test", Env: "test", Level: "error"}))
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/users/me/presence", nil)
+	req.Header.Set("Authorization", "Bearer tok")
+	rec := httptest.NewRecorder()
+	h.GetMyPresence(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status %d body %s", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), `"effective_status":"offline"`) || strings.Contains(rec.Body.String(), `"error"`) {
+		t.Fatalf("expected degraded envelope, got %s", rec.Body.String())
+	}
+}

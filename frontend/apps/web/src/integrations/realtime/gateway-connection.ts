@@ -12,6 +12,10 @@ let probeTimer: ReturnType<typeof setTimeout> | null = null;
 let probeInFlight = false;
 let attempt = 0;
 let windowListenersAttached = false;
+let enterReconnectTimer: ReturnType<typeof setTimeout> | null = null;
+
+/** Delay before treating a single 503 as workspace-down (transient blips stay "connected"). */
+const ENTER_RECONNECT_DELAY_MS = 1_200;
 
 function setStatus(next: GatewayConnectionStatus) {
 	if (status === next) {
@@ -28,6 +32,24 @@ function clearProbeTimer() {
 		clearTimeout(probeTimer);
 		probeTimer = null;
 	}
+}
+
+function clearEnterReconnectTimer() {
+	if (enterReconnectTimer !== null) {
+		clearTimeout(enterReconnectTimer);
+		enterReconnectTimer = null;
+	}
+}
+
+function beginReconnecting(): void {
+	if (status === "reconnecting") {
+		scheduleNextProbe();
+		return;
+	}
+	attempt = 0;
+	setStatus("reconnecting");
+	attachWindowListeners();
+	scheduleNextProbe();
 }
 
 function handleWindowWake() {
@@ -97,15 +119,23 @@ export function notifyGatewayUnreachable(): void {
 	if (typeof window === "undefined") {
 		return;
 	}
-	if (status !== "reconnecting") {
-		attempt = 0;
-		setStatus("reconnecting");
-		attachWindowListeners();
+	if (status === "reconnecting") {
+		scheduleNextProbe();
+		return;
 	}
-	scheduleNextProbe();
+	if (enterReconnectTimer !== null) {
+		return;
+	}
+	enterReconnectTimer = setTimeout(() => {
+		enterReconnectTimer = null;
+		if (status === "connected") {
+			beginReconnecting();
+		}
+	}, ENTER_RECONNECT_DELAY_MS);
 }
 
 export function notifyGatewayReachable(): void {
+	clearEnterReconnectTimer();
 	if (status !== "reconnecting") {
 		return;
 	}
