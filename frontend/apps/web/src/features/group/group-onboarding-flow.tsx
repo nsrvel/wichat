@@ -35,6 +35,8 @@ import { translateError } from "@/integrations/i18n/translate-error";
 import { groupNameSchema } from "@wichat/contracts/common";
 import type { Group, GroupTemplateId } from "@wichat/contracts/group";
 import { cn } from "@/lib/utils";
+import { TurnstileWidget } from "@/features/auth/components/turnstile-widget";
+import { useInviteTurnstile } from "@/features/invite/hooks/use-invite-turnstile";
 import { normalizeInviteToken } from "@/features/invite/lib/normalize-invite-token";
 import { channelPath } from "@/lib/app-routes";
 import { Q_MY_GROUPS } from "@/services/group/group.key";
@@ -120,8 +122,9 @@ export function GroupOnboardingFlow({
 	const queryClient = useQueryClient();
 	const createGroup = useCreateGroupMutation();
 	const [inviteCode, setInviteCode] = useState("");
+	const joinCaptcha = useInviteTurnstile(mode === "join");
 	const joinByInvite = useMutation({
-		mutationFn: (token: string) => redeemInvite(token),
+		mutationFn: (token: string) => redeemInvite(token, joinCaptcha.turnstileField),
 		onSuccess: async (result) => {
 			await queryClient.invalidateQueries({ queryKey: [Q_MY_GROUPS] });
 			if (result.channel_id) {
@@ -351,9 +354,6 @@ export function GroupOnboardingFlow({
 			<WiChatDialogBody>
 				<div className="space-y-4 pb-4 sm:pb-5">
 					<div className="space-y-2">
-						<label htmlFor="group-invite-code" className={authFieldLabelClass}>
-							{t("group.home.join_code_label")}
-						</label>
 						<Input
 							id="group-invite-code"
 							value={inviteCode}
@@ -363,6 +363,13 @@ export function GroupOnboardingFlow({
 							autoComplete="off"
 							disabled={joinByInvite.isPending}
 						/>
+						{joinCaptcha.siteKey ? (
+							<TurnstileWidget
+								siteKey={joinCaptcha.siteKey}
+								resetKey={joinCaptcha.resetKey}
+								onToken={joinCaptcha.setToken}
+							/>
+						) : null}
 					</div>
 					{joinByInvite.isError ? (
 						<p className="text-destructive text-[11px] font-medium">
@@ -379,7 +386,9 @@ export function GroupOnboardingFlow({
 						joinByInvite.isPending ? t("group.home.joining") : t("group.home.join_code_submit")
 					}
 					primaryType="button"
-					primaryDisabled={joinByInvite.isPending || !inviteCode.trim()}
+					primaryDisabled={
+						joinByInvite.isPending || !inviteCode.trim() || !joinCaptcha.captchaReady
+					}
 					onPrimary={() => {
 						const token = normalizeInviteToken(inviteCode);
 						if (!token) {

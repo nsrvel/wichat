@@ -205,7 +205,7 @@ func (s service) CreateGroup(ctx context.Context, accessToken, name string, temp
 			JoinMethod: constants.JoinMethodOwner,
 			CreatedAt:  now,
 		}
-		err = s.groups.CreateGroupWithOwner(ctx, group, member)
+		err = s.groups.CreateGroupWithOwnerAndChannels(ctx, group, member, templateKey, now)
 		if err == nil {
 			break
 		}
@@ -219,17 +219,20 @@ func (s service) CreateGroup(ctx context.Context, accessToken, name string, temp
 		return nil, exception.Internal(errors.New("group public id"))
 	}
 
-	if err := s.channels.SeedDefaultChannelsWithTemplate(ctx, groupID, userID, templateKey, now); err != nil {
-		if delErr := s.groups.DeleteGroup(ctx, groupID); delErr != nil {
-			s.log.Error("create group rollback", "group_id", groupID, "seed_err", err, "delete_err", delErr)
-		}
-
-		return nil, err
-	}
-
 	saved, err := s.groups.FindGroupByID(ctx, groupID)
 	if err != nil {
 		return nil, err
+	}
+
+	if saved.DefaultChannelPublicID == "" {
+		return nil, exception.Internal(errors.New("default text general channel missing after create"))
+	}
+
+	if s.roles != nil {
+		perms, err := s.roles.GetEffectivePermissions(ctx, groupID, userID)
+		if err == nil {
+			saved.EffectivePermissions = perms
+		}
 	}
 
 	pub := saved.Public()

@@ -52,6 +52,7 @@ import { hasGroupPermission } from "@/lib/group-permissions";
 import { cn } from "@/lib/utils";
 import { myGroupsQueryOpts } from "@/services/group/group.query";
 import { useSaveGroupProfileMutation } from "@/services/group/group.mutation";
+import { useGroupOnlineCount } from "@/features/presence/use-group-online-count";
 import { groupMembersQueryOpts } from "@/services/invite/invite.query";
 
 export const GROUP_SETTINGS_PROFILE_FORM_ID = "group-settings-profile-form";
@@ -123,8 +124,7 @@ function GroupSettingsProfileForm({ target }: GroupSettingsProfileSectionProps) 
 	const previewMemberCount = membersQuery.data
 		? (membersQuery.data.total ?? membersQuery.data.members.length)
 		: undefined;
-	const previewOnlineCount =
-		membersQuery.data?.members.filter((member) => member.is_online).length ?? 0;
+	const previewOnlineCount = useGroupOnlineCount(target.groupId);
 	const currentGroup = myGroups.find((g) => g.id === target.groupId);
 	const canManageGroup =
 		target.role === "owner" ||

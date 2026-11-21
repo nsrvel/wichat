@@ -492,6 +492,57 @@ func TestRedeemInviteNotFound(t *testing.T) {
 	}
 }
 
+func TestRedeemInviteExpired(t *testing.T) {
+	st := usermock.NewState()
+	st.Groups = []models.Group{{ID: "g1", PublicID: "507f1f77bcf86cd799439011", Name: "Team"}}
+	st.Members = []models.GroupMember{{GroupID: "g1", UserID: "owner", Role: constants.GroupRoleOwner}}
+	st.Invites = []models.GroupInviteRow{{
+		ID: "inv1", Token: "expiredtok", GroupID: "g1",
+		Kind:      constants.GroupInviteKindShareLink,
+		ExpiresAt: time.Now().Add(-time.Hour),
+		CreatedAt: time.Now().Add(-48 * time.Hour),
+	}}
+	authSvc, notify, _, _, _, _ := testSupport.NewAuthService(t, st, nil)
+	member := testSupport.RegisterSession(t, authSvc, notify, testSupportRegisterInput("redeem-exp@example.com"))
+
+	svc := newInviteService(t, st)
+	_, err := svc.RedeemInvite(context.Background(), member.AccessToken, "expiredtok")
+	if codeOf(t, err) != string(exception.MsgInvalidInput) {
+		t.Fatalf("%v", err)
+	}
+}
+
+func TestRedeemInviteRedeemedEmailSameErrorAsMissing(t *testing.T) {
+	st := usermock.NewState()
+	authSvc, notify, _, _, groupSvc, _ := testSupport.NewAuthService(t, st, nil)
+	ctx := context.Background()
+
+	owner := testSupport.RegisterSession(t, authSvc, notify, testSupportRegisterInput("redeem-once@example.com"))
+	created, _ := groupSvc.CreateGroup(ctx, owner.AccessToken, "Once")
+	invitee := testSupport.RegisterSession(t, authSvc, notify, testSupportRegisterInput("email-invitee@example.com"))
+	_, groups, _ := testSupport.TestRepos(st)
+	group, err := groups.FindGroupByPublicID(ctx, created.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	email := invitee.User.Email
+	tokenStr := "email-once"
+	st.Invites = []models.GroupInviteRow{{
+		ID: "inv-once", Token: tokenStr, GroupID: group.ID, Kind: constants.GroupInviteKindEmail,
+		Email: &email, ExpiresAt: time.Now().UTC().Add(24 * time.Hour), CreatedAt: time.Now().UTC(),
+	}}
+
+	svc := newInviteService(t, st)
+	if _, err := svc.RedeemInvite(ctx, invitee.AccessToken, tokenStr); err != nil {
+		t.Fatal(err)
+	}
+	_, err = svc.RedeemInvite(ctx, invitee.AccessToken, tokenStr)
+	if codeOf(t, err) != string(exception.MsgInvalidInput) {
+		t.Fatalf("%v", err)
+	}
+}
+
 func TestSendGroupInvitesSkipsDuplicateUserIDs(t *testing.T) {
 	st := usermock.NewState()
 	authSvc, notify, _, _, groupSvc, _ := testSupport.NewAuthService(t, st, nil)

@@ -23,12 +23,11 @@ const (
 		       s.banner_color AS s_banner_color, s.banner_url AS s_banner_url, s.hide_roles AS s_hide_roles,
 		       s.retention_days AS s_retention_days, s.trash_retention_days AS s_trash_retention_days,
 		       s.created_at AS s_created_at, s.updated_at AS s_updated_at,
-		       ch.public_id AS ch_public_id,
+		       (SELECT ch.public_id FROM channels ch WHERE ch.group_id = g.id AND lower(ch.name) = 'general' AND ch.type = 'text_only' ORDER BY ch.created_at ASC LIMIT 1) AS ch_public_id,
 		       m.role AS member_role
 		FROM groups AS g
 		JOIN group_settings AS s ON s.group_id = g.id
 		JOIN group_members AS m ON m.group_id = g.id
-		LEFT JOIN channels AS ch ON ch.group_id = g.id AND lower(ch.name) = 'general' AND ch.type = 'text_only'
 		WHERE m.user_id = ?
 		ORDER BY m.rail_position ASC NULLS LAST, s.name ASC`
 )

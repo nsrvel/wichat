@@ -178,7 +178,7 @@ func (s *server) Run(ctx context.Context) error {
 	categorySvc := categoryservice.NewService(categoryPg, groupPg, groupMemberPg, groupRolePg, authSessions, secret, s.log).WithGroupActivityLog(groupActivitySvc)
 	groupSvc := groupservice.NewService(groupPg, groupMemberPg, groupRolePg, channelSvc, userPg, groupMinio, authSessions, secret, s.log).WithActivityLog(activitySvc).WithGroupActivityLog(groupActivitySvc)
 	groupMemberSvc := groupmemberservice.NewService(groupMemberPg, groupPg, groupRolePg, authSessions, secret, s.log).WithActivityLog(activitySvc).WithGroupActivityLog(groupActivitySvc).WithPresence(presenceSvc)
-	groupRoleSvc := grouproleservice.NewService(groupRolePg, groupPg, groupMemberPg, authSessions, secret, s.log).WithGroupActivityLog(groupActivitySvc)
+	groupRoleSvc := grouproleservice.NewService(groupRolePg, groupPg, groupMemberPg, authSessions, secret, s.log).WithGroupActivityLog(groupActivitySvc).WithPresence(presenceSvc)
 	inviteSvc := inviteservice.NewService(
 		groupPg, groupMemberPg, groupRolePg, channelPg, invitePg, userPg, authSessions, notifyClient, secret,
 		s.cfg.WebOrigin, s.cfg.MinioPublicBaseURL, s.log,

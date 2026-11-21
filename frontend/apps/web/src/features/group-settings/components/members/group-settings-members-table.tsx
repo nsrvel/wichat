@@ -58,6 +58,7 @@ import { isNativeContextMenuAllowed } from "@/lib/context-menu-chrome";
 import type { GroupPermissionSubject } from "@/lib/group-permissions";
 import { resolveMemberHoistedRole, resolveMemberNameColor } from "@/lib/member-role-display";
 import { menuCheckboxBoxClass } from "@/lib/menu-chrome";
+import { memberPresenceDot } from "@/features/presence/presence-dot";
 import { userInitials } from "@/lib/user-initials";
 import { cn } from "@/lib/utils";
 import { MEMBER_PAGE_SIZE } from "@/services/invite/invite.query";
@@ -339,7 +340,7 @@ export function GroupSettingsMembersTable({
 								src={member.avatar_url}
 								initials={userInitials(member.display_name, member.username)}
 								size="md"
-								status={member.presence_status}
+								status={memberPresenceDot(member)}
 								statusRingClassName="ring-card"
 							/>
 							<div className="min-w-0">

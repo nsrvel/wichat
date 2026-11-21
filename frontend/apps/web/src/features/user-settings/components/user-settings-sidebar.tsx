@@ -26,7 +26,7 @@ type UserSettingsSidebarProps = {
 	secondaryText: string;
 	avatarUrl: string;
 	initials: string;
-	status: UserPresenceStatus;
+	status: UserPresenceStatus | "offline";
 	activeSection: UserSettingsSectionId;
 	activeSubAnchor: string | null;
 	searchQuery: string;

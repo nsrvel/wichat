@@ -100,6 +100,40 @@ func resolveEffectiveStatus(manualStatus string, activities []string) string {
 	}
 }
 
+func (s service) resolveUserEffectivePresence(ctx context.Context, userID string) (models.UserPresenceSnapshot, error) {
+	effective, err := s.repo.GetEffectiveStatus(ctx, userID)
+	if err != nil {
+		return models.UserPresenceSnapshot{}, err
+	}
+	snap := models.UserPresenceSnapshot{
+		IsOnline:       effective != models.PresenceStatusOffline,
+		PresenceStatus: effective,
+	}
+	if snap.IsOnline {
+		return snap, nil
+	}
+
+	activities, actErr := s.repo.ListActiveConnActivities(ctx, userID)
+	if actErr != nil || len(activities) == 0 {
+		return snap, nil
+	}
+
+	manual, manualErr := s.repo.GetManualStatus(ctx, userID)
+	if manualErr != nil {
+		return models.UserPresenceSnapshot{}, manualErr
+	}
+
+	effective = resolveEffectiveStatus(manual.Status, activities)
+	snap = models.UserPresenceSnapshot{
+		IsOnline:       effective != models.PresenceStatusOffline,
+		PresenceStatus: effective,
+	}
+	if snap.IsOnline {
+		_ = s.repo.SetEffectiveStatus(ctx, userID, effective, defaultPresenceTTL)
+	}
+	return snap, nil
+}
+
 func (s service) userGroupPublicIDs(ctx context.Context, userID string) []string {
 	if s.groups == nil {
 		return nil
@@ -244,19 +278,34 @@ func (s service) GetMyPresence(ctx context.Context, accessToken string) (models.
 	if err != nil {
 		return models.MyPresenceView{}, err
 	}
-	effective, err := s.repo.GetEffectiveStatus(ctx, userID)
+	snap, err := s.resolveUserEffectivePresence(ctx, userID)
 	if err != nil {
 		return models.MyPresenceView{}, err
 	}
 
 	return models.MyPresenceView{
 		ManualStatus:    manual.Status,
-		EffectiveStatus: effective,
-		IsOnline:        effective != models.PresenceStatusOffline,
+		EffectiveStatus: snap.PresenceStatus,
+		IsOnline:        snap.IsOnline,
 		ExpiresAt:       manual.ExpiresAt,
 	}, nil
 }
 
 func (s service) BatchGetEffectivePresence(ctx context.Context, userIDs []string) (map[string]models.UserPresenceSnapshot, error) {
-	return s.repo.BatchGetEffectivePresence(ctx, userIDs)
+	out, err := s.repo.BatchGetEffectivePresence(ctx, userIDs)
+	if err != nil {
+		return nil, err
+	}
+	for _, id := range userIDs {
+		snap := out[id]
+		if snap.IsOnline {
+			continue
+		}
+		resolved, resErr := s.resolveUserEffectivePresence(ctx, id)
+		if resErr != nil {
+			continue
+		}
+		out[id] = resolved
+	}
+	return out, nil
 }

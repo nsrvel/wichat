@@ -29,15 +29,14 @@ import {
 	menuSeparatorClass,
 	submenuTriggerClass,
 } from "@/lib/menu-chrome";
+import { memberPresenceDot } from "@/features/presence/presence-dot";
 import { userInitials } from "@/lib/user-initials";
-import {
-	formatStatusNoteLabel,
-	statusNoteFromUser,
-	type UserPresenceStatus,
-} from "@/lib/user-status";
+import { formatStatusNoteLabel, statusNoteFromUser } from "@/lib/user-status";
 import { cn } from "@/lib/utils";
 import { myGroupsQueryOpts } from "@/services/group/group.query";
 import { Q_INVITE_MEMBERS } from "@/services/invite/invite.query";
+import { TurnstileWidget } from "@/features/auth/components/turnstile-widget";
+import { useInviteTurnstile } from "@/features/invite/hooks/use-invite-turnstile";
 import { sendGroupInvites } from "@/services/invite/invite.service";
 
 type MemberProfileDialogProps = {
@@ -92,6 +91,7 @@ export function MemberProfileDialog({
 	const invitableGroups = myGroups.filter(
 		(g) => g.id !== groupId && hasGroupPermission(g, "create_invite"),
 	);
+	const captcha = useInviteTurnstile(member !== null && invitableGroups.length > 0);
 
 	const memberName = member?.display_name.trim() || t("invite.member_name_fallback");
 
@@ -103,6 +103,7 @@ export function MemberProfileDialog({
 			return sendGroupInvites(targetGroup.id, {
 				user_ids: [member.user_id],
 				emails: [],
+				turnstile_token: captcha.turnstileField,
 			});
 		},
 		onSuccess: (result, targetGroup) => {
@@ -134,9 +135,7 @@ export function MemberProfileDialog({
 	});
 	const bannerColor = member?.banner_color?.trim() || "";
 	const isHexBanner = /^#[0-9a-f]{3,8}$/i.test(bannerColor);
-	const presenceStatus: UserPresenceStatus | "offline" = member?.is_online
-		? (member.presence_status as UserPresenceStatus) || "online"
-		: "offline";
+	const presenceStatus = memberPresenceDot(member ?? undefined);
 	const statusNote = statusNoteFromUser(member);
 	const statusNoteLabel = formatStatusNoteLabel(statusNote);
 	const assignableRoleIds = new Set((policy?.assignableRoles ?? []).map((role) => role.id));
@@ -265,7 +264,9 @@ export function MemberProfileDialog({
 																			<Menu.Item
 																				key={targetGroup.id}
 																				className={menuItemClass}
-																				disabled={inviteToGroupMutation.isPending}
+																				disabled={
+																					inviteToGroupMutation.isPending || !captcha.captchaReady
+																				}
 																				onClick={() => inviteToGroupMutation.mutate(targetGroup)}
 																			>
 																				<UserAvatar
@@ -443,6 +444,14 @@ export function MemberProfileDialog({
 										alwaysShowAdd
 									/>
 								</div>
+							) : null}
+
+							{invitableGroups.length > 0 && captcha.siteKey ? (
+								<TurnstileWidget
+									siteKey={captcha.siteKey}
+									resetKey={captcha.resetKey}
+									onToken={captcha.setToken}
+								/>
 							) : null}
 						</div>
 					</div>

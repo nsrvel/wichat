@@ -393,7 +393,7 @@ func (m *pgRepositoryMock) SaveGoogleUser(_ context.Context, user models.User, _
 		if link.provider == provider && link.subject == subject {
 			for i := range m.st.Users {
 				if m.st.Users[i].ID == link.userID {
-					if m.st.Users[i].AvatarURL == "" && user.AvatarURL != "" {
+					if user.AvatarURL != "" && m.st.Users[i].AvatarURL != user.AvatarURL {
 						m.st.Users[i].AvatarURL = user.AvatarURL
 					}
 
@@ -406,7 +406,7 @@ func (m *pgRepositoryMock) SaveGoogleUser(_ context.Context, user models.User, _
 	}
 	for i := range m.st.Users {
 		if m.st.Users[i].Email == user.Email {
-			if m.st.Users[i].AvatarURL == "" && user.AvatarURL != "" {
+			if user.AvatarURL != "" && m.st.Users[i].AvatarURL != user.AvatarURL {
 				m.st.Users[i].AvatarURL = user.AvatarURL
 			}
 			m.st.Links = append(m.st.Links, googleLink{provider: provider, subject: subject, userID: m.st.Users[i].ID})

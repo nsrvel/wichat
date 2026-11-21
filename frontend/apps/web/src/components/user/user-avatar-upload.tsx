@@ -4,6 +4,7 @@ import { Camera, Plus, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { resolvePublicObjectUrl } from "@/lib/public-object-url";
 import { cn } from "@/lib/utils";
 
 const MAX_BYTES = 5 * 1024 * 1024;
@@ -69,7 +70,7 @@ export function UserAvatarUpload({
 	const hasFilePreview = Boolean(previewUrl);
 	const hasRemotePreview = !hasFilePreview && remoteUrl !== "";
 	const hasPreview = hasFilePreview || hasRemotePreview;
-	const previewSrc = hasFilePreview ? previewUrl! : remoteUrl;
+	const previewSrc = hasFilePreview ? previewUrl! : resolvePublicObjectUrl(remoteUrl);
 
 	const clearPhoto = () => {
 		setError(null);
@@ -95,7 +96,9 @@ export function UserAvatarUpload({
 					className={cn(
 						INNER_CLASS,
 						"group/avatar relative z-[1] flex cursor-pointer items-center justify-center overflow-hidden rounded-full",
-						"bg-[radial-gradient(125%_125%_at_50%_0%,color-mix(in_oklch,var(--card-foreground)_6%,var(--field))_0%,var(--field)_50%,color-mix(in_oklch,var(--foreground)_5%,var(--field))_100%)]",
+						hasPreview
+							? "bg-card"
+							: "bg-muted text-muted-foreground",
 						"shadow-[inset_0_1px_0_0_color-mix(in_oklch,var(--card-foreground)_10%,transparent),0_1px_2px_rgb(0_0_0/0.04)]",
 						"transition-[transform,box-shadow,filter] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
 						"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card",
@@ -107,7 +110,7 @@ export function UserAvatarUpload({
 					{hasPreview ? (
 						<Image src={previewSrc} alt="" fill unoptimized sizes="96px" className="object-cover" />
 					) : (
-						<span className="text-xl font-semibold text-foreground/80">{initials}</span>
+						<span className="text-xl font-semibold">{initials}</span>
 					)}
 					<span
 						className="pointer-events-none absolute inset-0 flex items-center justify-center"

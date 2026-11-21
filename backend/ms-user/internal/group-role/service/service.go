@@ -14,6 +14,7 @@ import (
 	grouprolerepo "github.com/wichat/wichat/backend/ms-user/internal/group-role/repository"
 	grouprepo "github.com/wichat/wichat/backend/ms-user/internal/group/repository"
 	"github.com/wichat/wichat/backend/ms-user/internal/models"
+	presencesvc "github.com/wichat/wichat/backend/ms-user/internal/presence/service"
 	"github.com/wichat/wichat/backend/ms-user/pkg/access"
 	"github.com/wichat/wichat/backend/ms-user/pkg/constants"
 	"github.com/wichat/wichat/backend/ms-user/pkg/validator"
@@ -35,6 +36,7 @@ type Service interface {
 	UpdateGroupHideRoles(ctx context.Context, accessToken, groupPublicID string, hideRoles bool) (bool, error)
 	GetEffectivePermissions(ctx context.Context, groupID, userID string) ([]string, error)
 	WithGroupActivityLog(r groupactivitysvc.Recorder) Service
+	WithPresence(p presencesvc.Reader) Service
 }
 
 type service struct {
@@ -43,6 +45,7 @@ type service struct {
 	members       groupmemberrepo.PgRepository
 	sessions      authrepo.SessionRepository
 	groupActivity groupactivitysvc.Recorder
+	presence      presencesvc.Reader
 	secret        []byte
 	log           logger.Logger
 	now           func() time.Time
@@ -74,6 +77,31 @@ func NewService(
 func (s service) WithGroupActivityLog(r groupactivitysvc.Recorder) Service {
 	s.groupActivity = r
 	return s
+}
+
+func (s service) WithPresence(p presencesvc.Reader) Service {
+	s.presence = p
+	return s
+}
+
+func (s service) applyPresence(ctx context.Context, members []models.GroupMemberProfile) {
+	if len(members) == 0 || s.presence == nil {
+		return
+	}
+	userIDs := make([]string, len(members))
+	for i, m := range members {
+		userIDs[i] = m.UserID
+	}
+	presenceMap, err := s.presence.BatchGetEffectivePresence(ctx, userIDs)
+	if err != nil {
+		return
+	}
+	for i := range members {
+		if snap, ok := presenceMap[members[i].UserID]; ok {
+			members[i].IsOnline = snap.IsOnline
+			members[i].PresenceStatus = snap.PresenceStatus
+		}
+	}
 }
 
 func (s service) recordGroupActivity(ctx context.Context, entry models.GroupActivityLogEntry) {
@@ -326,6 +354,7 @@ func (s service) ListGroupRoleMembers(ctx context.Context, accessToken, groupPub
 	if err != nil {
 		return nil, mapRoleErr(err)
 	}
+	s.applyPresence(ctx, members)
 	return members, nil
 }
 

@@ -28,6 +28,8 @@ type UserProfilePopoverProps = {
 	displayName: string;
 	initials: string;
 	status: UserPresenceStatus;
+	/** Effective presence dot on avatars; manual `status` stays for the status picker. */
+	indicatorStatus?: UserPresenceStatus | "offline";
 	onStatusChange: (status: UserPresenceStatus) => void;
 	statusNote: StatusNote;
 	onOpenSetStatus: () => void;
@@ -48,6 +50,7 @@ export function UserProfilePopover({
 	displayName,
 	initials,
 	status,
+	indicatorStatus,
 	onStatusChange,
 	statusNote,
 	onOpenSetStatus,
@@ -67,6 +70,7 @@ export function UserProfilePopover({
 	const bio = user?.bio?.trim() || "";
 	const bannerColor = user?.banner_color?.trim() || "";
 	const activeStatus = USER_STATUS_BY_ID[status];
+	const avatarStatus = indicatorStatus ?? status;
 	const statusNoteLabel = formatStatusNoteLabel(statusNote);
 
 	const handleOpenChange = (nextOpen: boolean) => {
@@ -109,7 +113,7 @@ export function UserProfilePopover({
 								src={avatarUrl}
 								initials={initials}
 								size="2xl"
-								status={status}
+								status={avatarStatus}
 								ringClassName="ring-[6px] ring-card"
 							/>
 

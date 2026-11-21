@@ -38,18 +38,16 @@ export function toSameOriginObjectPath(url: string): string | null {
 	return null;
 }
 
-function shouldPreferSameOriginProxy(): boolean {
-	if (typeof window === "undefined") {
-		return false;
-	}
-	return window.location.protocol === "https:" || !isLoopbackHost(window.location.hostname);
+/** Same-origin `/wichat-public/*` (Next rewrite → MinIO) when the absolute URL is a local object store. */
+function preferSameOriginObjectPath(url: string): string {
+	return toSameOriginObjectPath(url) ?? url;
 }
 
 /**
  * Resolves public object storage URLs (group logos, banners, user avatars) from the API.
- * On HTTPS or non-loopback origins (e.g. Safari on a tunneled domain), local MinIO URLs
- * (`http://localhost:9000/wichat-public/...`) are rewritten to same-origin `/wichat-public/...`
- * so browsers do not block them as Mixed Content or unreachable loopback.
+ * Local MinIO URLs (`http://localhost:9000/wichat-public/...`) are rewritten to same-origin
+ * `/wichat-public/...` whenever possible so the app proxy is used instead of a direct :9000
+ * fetch (mixed content on HTTPS, unreachable loopback on tunneled hosts, MinIO down).
  */
 export function resolvePublicObjectUrl(rawUrl: string): string {
 	let trimmed = rawUrl.trim();
@@ -61,11 +59,12 @@ export function resolvePublicObjectUrl(rawUrl: string): string {
 		trimmed = `/${trimmed}`;
 	}
 
-	if (/^https?:\/\//i.test(trimmed)) {
-		if (shouldPreferSameOriginProxy()) {
-			return toSameOriginObjectPath(trimmed) ?? trimmed;
-		}
+	if (trimmed.startsWith("/wichat-public/")) {
 		return trimmed;
+	}
+
+	if (/^https?:\/\//i.test(trimmed)) {
+		return preferSameOriginObjectPath(trimmed);
 	}
 	if (trimmed.startsWith("//")) {
 		return `https:${trimmed}`;
@@ -92,8 +91,5 @@ export function resolvePublicObjectUrl(rawUrl: string): string {
 		}
 	}
 
-	if (shouldPreferSameOriginProxy()) {
-		return toSameOriginObjectPath(resolved) ?? resolved;
-	}
-	return resolved;
+	return preferSameOriginObjectPath(resolved);
 }
