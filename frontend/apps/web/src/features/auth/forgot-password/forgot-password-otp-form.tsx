@@ -67,11 +67,14 @@ export function ForgotPasswordOtpForm({
 					<TurnstileWidget
 						siteKey={turnstileSiteKey}
 						resetKey={turnstileResetKey}
-						onVerify={(token) => onTurnstileToken?.(token)}
-						onExpire={() => onTurnstileToken?.("")}
+						onToken={(token) => onTurnstileToken?.(token)}
 					/>
 				) : null}
-				<Button type="submit" disabled={isPending || submitDisabled} className={`mt-2 ${authSubmitClass}`}>
+				<Button
+					type="submit"
+					disabled={isPending || submitDisabled}
+					className={`mt-2 ${authSubmitClass}`}
+				>
 					{isPending ? t("forgot_password.confirming_code") : t("forgot_password.confirm_code")}
 				</Button>
 				<ForgotPasswordResendCode cooldownSec={resendCooldownSec} onResend={onResend} />

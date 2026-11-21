@@ -1,5 +1,4 @@
-import type { GroupMember } from "@wichat/contracts/group/group-member";
-import type { GroupMembersPage } from "@wichat/contracts/group/group-member";
+import type { GroupMember, GroupMembersPage } from "@wichat/contracts/group/member";
 import type { MyPresenceResponse, PresenceStatus } from "@wichat/contracts/user/presence";
 import type { QueryClient } from "@tanstack/react-query";
 import { Q_GROUP_ROLE_MEMBERS } from "@/services/group-role/group-role.key";
@@ -35,7 +34,7 @@ function patchPage(
 		return prev;
 	}
 	let changed = false;
-	const members = prev.members.map((m) => {
+	const members = prev.members.map((m: GroupMember) => {
 		const next = patchMemberRow(m, frame);
 		if (!next || next === m) {
 			return m;
@@ -102,11 +101,13 @@ export function patchLiveMemberPresence(
 	frame: LivePresenceFrame,
 	opts?: { refreshInvitePreview?: boolean },
 ): void {
-	queryClient.setQueriesData<GroupMembersPage>({ queryKey: [Q_INVITE_MEMBERS] }, (prev) =>
-		patchPage(prev, frame.user_id, frame),
+	queryClient.setQueriesData<GroupMembersPage>(
+		{ queryKey: [Q_INVITE_MEMBERS] },
+		(prev: GroupMembersPage | undefined) => patchPage(prev, frame.user_id, frame),
 	);
-	queryClient.setQueriesData<GroupMember[]>({ queryKey: [Q_GROUP_ROLE_MEMBERS] }, (prev) =>
-		patchMemberArray(prev, frame),
+	queryClient.setQueriesData<GroupMember[]>(
+		{ queryKey: [Q_GROUP_ROLE_MEMBERS] },
+		(prev: GroupMember[] | undefined) => patchMemberArray(prev, frame),
 	);
 	if (opts?.refreshInvitePreview) {
 		scheduleInvitePreviewPresenceRefresh(queryClient);

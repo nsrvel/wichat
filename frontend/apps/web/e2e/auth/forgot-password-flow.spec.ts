@@ -59,7 +59,10 @@ test.describe("auth forgot-password e2e", () => {
 			test.skip(!process.env.E2E_FULL_AUTH, "set E2E_FULL_AUTH=1 to run full OTP verify");
 			test.skip(!suiteUser, "needs seeded user");
 			test.skip(!e2eAuthSeedingAvailable(), "Redis required for dev OTP shadow");
-			test.skip(await fetchTurnstileRequired(request), "Turnstile blocks API-only verify in this spec");
+			test.skip(
+				await fetchTurnstileRequired(request),
+				"Turnstile blocks API-only verify in this spec",
+			);
 
 			const code = waitDevOtpForPasswordReset(resetEmail);
 			expect(code, "dev Redis OTP shadow missing — restart ms-user (development)").toBeTruthy();

@@ -96,9 +96,7 @@ export function UserAvatarUpload({
 					className={cn(
 						INNER_CLASS,
 						"group/avatar relative z-[1] flex cursor-pointer items-center justify-center overflow-hidden rounded-full",
-						hasPreview
-							? "bg-card"
-							: "bg-muted text-muted-foreground",
+						hasPreview ? "bg-card" : "bg-muted text-muted-foreground",
 						"shadow-[inset_0_1px_0_0_color-mix(in_oklch,var(--card-foreground)_10%,transparent),0_1px_2px_rgb(0_0_0/0.04)]",
 						"transition-[transform,box-shadow,filter] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
 						"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card",
