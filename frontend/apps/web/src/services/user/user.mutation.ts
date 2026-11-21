@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { patchMemberListPresence } from "@/hooks/use-presence-sync";
+import { patchLiveMemberPresence } from "@/features/presence/live-cache";
 import { setAccessToken } from "@/integrations/api-client";
 import { Q_SESSION } from "@/services/auth/auth.key";
 import {
@@ -38,6 +38,7 @@ import type {
 	UpdateUserStatusNoteRequest,
 	User,
 } from "@wichat/contracts/user";
+import type { MyPresenceResponse } from "@wichat/contracts/user/presence";
 
 export function useSaveMyProfileMutation() {
 	const queryClient = useQueryClient();
@@ -278,11 +279,28 @@ export function useUpdateMyPresenceMutation() {
 	const queryClient = useQueryClient();
 	return useMutation({
 		mutationFn: updateMyPresence,
+		onMutate: async (input) => {
+			await queryClient.cancelQueries({ queryKey: [Q_MY_PRESENCE] });
+			const prev = queryClient.getQueryData<MyPresenceResponse>([Q_MY_PRESENCE]);
+			if (prev) {
+				queryClient.setQueryData<MyPresenceResponse>([Q_MY_PRESENCE], {
+					...prev,
+					manual_status: input.status,
+				});
+			}
+			return { prev };
+		},
+		onError: (_err, _input, ctx) => {
+			if (ctx?.prev) {
+				queryClient.setQueryData([Q_MY_PRESENCE], ctx.prev);
+			}
+		},
 		onSuccess: (res) => {
 			queryClient.setQueryData([Q_MY_PRESENCE], res);
 			const sessionUser = queryClient.getQueryData<User>([Q_SESSION]);
 			if (sessionUser?.id) {
-				patchMemberListPresence(queryClient, sessionUser.id, {
+				patchLiveMemberPresence(queryClient, {
+					user_id: sessionUser.id,
 					is_online: res.is_online,
 					presence_status: res.effective_status,
 				});

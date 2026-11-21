@@ -90,23 +90,26 @@ type UserAvatarProps = {
 	imgClassName?: string;
 };
 
-/**
- * Shared circular user avatar matching the UserProfilePopover style:
- * rounded-full photo or primary-tinted initials fallback, with optional presence indicator.
- */
-export function UserAvatar({
-	src,
-	alt = "",
+const AVATAR_INITIALS_CLASS =
+	"flex size-full items-center justify-center rounded-full bg-muted font-semibold text-muted-foreground";
+
+type UserAvatarMediaProps = {
+	resolvedSrc: string;
+	alt: string;
+	styles: (typeof SIZE_STYLES)[UserAvatarSize];
+	initials: string;
+	ringClassName?: string;
+	imgClassName?: string;
+};
+
+function UserAvatarMedia({
+	resolvedSrc,
+	alt,
+	styles,
 	initials,
-	size = "md",
-	status,
 	ringClassName,
-	statusRingClassName = "ring-card",
-	className,
 	imgClassName,
-}: UserAvatarProps) {
-	const styles = SIZE_STYLES[size];
-	const resolvedSrc = resolvePublicObjectUrl(src ?? "");
+}: UserAvatarMediaProps) {
 	const [failedPrimarySrc, setFailedPrimarySrc] = useState<string | null>(null);
 	const [failedFallbackSrc, setFailedFallbackSrc] = useState<string | null>(null);
 
@@ -121,45 +124,71 @@ export function UserAvatar({
 				? ""
 				: resolvedSrc;
 
-	const showImage = Boolean(activeSrc);
+	if (!activeSrc) {
+		return (
+			<span
+				className={cn(AVATAR_INITIALS_CLASS, styles.textClass, ringClassName, imgClassName)}
+				aria-hidden={alt === "" ? true : undefined}
+			>
+				{initials}
+			</span>
+		);
+	}
+
+	return (
+		/* eslint-disable-next-line @next/next/no-img-element */
+		<img
+			src={activeSrc}
+			alt={alt}
+			width={styles.px}
+			height={styles.px}
+			referrerPolicy="no-referrer"
+			draggable={false}
+			onError={() => {
+				if (activeSrc === resolvedSrc) {
+					setFailedPrimarySrc(resolvedSrc);
+				} else {
+					setFailedFallbackSrc(activeSrc);
+				}
+			}}
+			className={cn(
+				"pointer-events-none size-full rounded-full bg-card object-cover select-none",
+				ringClassName,
+				imgClassName,
+			)}
+		/>
+	);
+}
+
+/**
+ * Shared circular user avatar: photo via object-store URL, or neutral initials fallback.
+ */
+export function UserAvatar({
+	src,
+	alt = "",
+	initials,
+	size = "md",
+	status,
+	ringClassName,
+	statusRingClassName = "ring-card",
+	className,
+	imgClassName,
+}: UserAvatarProps) {
+	const styles = SIZE_STYLES[size];
+	const raw = (src ?? "").trim();
+	const resolvedSrc = /^https?:\/\//i.test(raw) ? raw : resolvePublicObjectUrl(raw);
 
 	return (
 		<div className={cn("relative shrink-0 select-none", styles.avatarClass, className)}>
-			{showImage ? (
-				/* eslint-disable-next-line @next/next/no-img-element */
-				<img
-					key={activeSrc}
-					src={activeSrc}
-					alt={alt}
-					width={styles.px}
-					height={styles.px}
-					draggable={false}
-					onError={() => {
-						if (activeSrc === resolvedSrc) {
-							setFailedPrimarySrc(resolvedSrc);
-						} else {
-							setFailedFallbackSrc(activeSrc);
-						}
-					}}
-					className={cn(
-						"pointer-events-none size-full rounded-full bg-card object-cover select-none",
-						ringClassName,
-						imgClassName,
-					)}
-				/>
-			) : (
-				<span
-					className={cn(
-						"flex size-full items-center justify-center rounded-full bg-primary/15 font-semibold text-primary",
-						styles.textClass,
-						ringClassName,
-						imgClassName,
-					)}
-					aria-hidden={alt === "" ? true : undefined}
-				>
-					{initials}
-				</span>
-			)}
+			<UserAvatarMedia
+				key={resolvedSrc || "initials"}
+				resolvedSrc={resolvedSrc}
+				alt={alt}
+				styles={styles}
+				initials={initials}
+				ringClassName={ringClassName}
+				imgClassName={imgClassName}
+			/>
 			{status ? (
 				<UserProfileIndicator
 					status={status}

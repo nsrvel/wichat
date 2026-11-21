@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
+import { setLivePresenceGroupId } from "@/features/presence/live-connection";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { WiChatDialog, WiChatDialogBody } from "@/components/ui/wichat-dialog";
@@ -52,6 +53,15 @@ export function ShareDialog({ open, onOpenChange, target }: ShareDialogProps) {
 	const channelId = target?.scope === "channel" ? target.channelId : undefined;
 
 	useEffect(() => {
+		if (!open || !groupId) {
+			return;
+		}
+		setLivePresenceGroupId(groupId);
+		void queryClient.invalidateQueries({ queryKey: [Q_INVITE_MEMBERS, groupId] });
+		return () => setLivePresenceGroupId(undefined);
+	}, [open, groupId, queryClient]);
+
+	useEffect(() => {
 		const id = window.setTimeout(() => setDebouncedQuery(query.trim()), 300);
 		return () => window.clearTimeout(id);
 	}, [query]);
@@ -68,6 +78,8 @@ export function ShareDialog({ open, onOpenChange, target }: ShareDialogProps) {
 	const membersQuery = useQuery({
 		...groupMembersQueryOpts(groupId!, cursor),
 		enabled: open && Boolean(groupId),
+		refetchOnMount: "always",
+		staleTime: 0,
 	});
 
 	const searchQuery = useQuery({

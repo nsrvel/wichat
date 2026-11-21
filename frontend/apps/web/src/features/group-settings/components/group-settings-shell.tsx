@@ -16,6 +16,8 @@ import type {
 	GroupSettingsTarget,
 } from "@/features/group-settings/lib/group-settings-target";
 import { useGroupSettingsUnsaved } from "@/features/group-settings/lib/group-settings-unsaved-guard";
+import { setLivePresenceGroupId } from "@/features/presence/live-connection";
+import { normalizePublicGroupId } from "@/features/presence/public-group-id";
 
 const GROUP_SETTINGS_TITLE_ID = "group-settings-dialog-title";
 
@@ -37,6 +39,12 @@ export function GroupSettingsShell({ target, section, onClose }: GroupSettingsSh
 		isOwner || hasAnyGroupPermission(currentGroup, ["kick_members", "ban_members", "manage_roles"]);
 	const canAccessBans = isOwner || hasGroupPermission(currentGroup, "ban_members");
 	const canAccessAuditLogs = isOwner || hasGroupPermission(currentGroup, "view_audit_log");
+
+	useEffect(() => {
+		const groupId = normalizePublicGroupId(target.groupId);
+		setLivePresenceGroupId(groupId);
+		return () => setLivePresenceGroupId(undefined);
+	}, [target.groupId]);
 
 	const syncKey = `${target.groupId}:${section}`;
 	const baseSection: GroupSettingsSection =

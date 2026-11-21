@@ -30,6 +30,10 @@ export function myPresenceQueryOptions() {
 	return queryOptions({
 		queryKey: [Q_MY_PRESENCE],
 		queryFn: getMyPresence,
+		staleTime: Number.POSITIVE_INFINITY,
+		gcTime: 30 * 60_000,
+		refetchOnWindowFocus: false,
+		refetchOnReconnect: false,
 	});
 }
 

@@ -255,7 +255,7 @@ func (r pgRepository) SaveGoogleUser(ctx context.Context, user models.User, iden
 
 		linked, err := findUserByIdentity(ctx, tx, provider, subject)
 		if err == nil {
-			if linked.AvatarURL == "" && user.AvatarURL != "" {
+			if user.AvatarURL != "" && linked.AvatarURL != user.AvatarURL {
 				if _, uerr := tx.NewUpdate().Model((*models.UserRow)(nil)).
 					Set("avatar_url = ?", user.AvatarURL).
 					Set("updated_at = ?", user.UpdatedAt).
@@ -278,7 +278,7 @@ func (r pgRepository) SaveGoogleUser(ctx context.Context, user models.User, iden
 			if err := insertLoginConnection(ctx, tx, identityID, existing.ID, provider, subject, user.CreatedAt); err != nil {
 				return err
 			}
-			if existing.AvatarURL == "" && user.AvatarURL != "" {
+			if user.AvatarURL != "" && existing.AvatarURL != user.AvatarURL {
 				if _, uerr := tx.NewUpdate().Model((*models.UserRow)(nil)).
 					Set("avatar_url = ?", user.AvatarURL).
 					Set("updated_at = ?", user.UpdatedAt).

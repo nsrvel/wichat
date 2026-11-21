@@ -29,12 +29,9 @@ import {
 	menuSeparatorClass,
 	submenuTriggerClass,
 } from "@/lib/menu-chrome";
+import { memberPresenceDot } from "@/features/presence/presence-dot";
 import { userInitials } from "@/lib/user-initials";
-import {
-	formatStatusNoteLabel,
-	statusNoteFromUser,
-	type UserPresenceStatus,
-} from "@/lib/user-status";
+import { formatStatusNoteLabel, statusNoteFromUser } from "@/lib/user-status";
 import { cn } from "@/lib/utils";
 import { myGroupsQueryOpts } from "@/services/group/group.query";
 import { Q_INVITE_MEMBERS } from "@/services/invite/invite.query";
@@ -138,9 +135,7 @@ export function MemberProfileDialog({
 	});
 	const bannerColor = member?.banner_color?.trim() || "";
 	const isHexBanner = /^#[0-9a-f]{3,8}$/i.test(bannerColor);
-	const presenceStatus: UserPresenceStatus | "offline" = member?.is_online
-		? (member.presence_status as UserPresenceStatus) || "online"
-		: "offline";
+	const presenceStatus = memberPresenceDot(member ?? undefined);
 	const statusNote = statusNoteFromUser(member);
 	const statusNoteLabel = formatStatusNoteLabel(statusNote);
 	const assignableRoleIds = new Set((policy?.assignableRoles ?? []).map((role) => role.id));
