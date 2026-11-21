@@ -595,14 +595,16 @@ type ForgotPasswordRequestData struct {
 
 // ForgotPasswordRequestBody is POST /api/v1/auth/forgot-password.
 type ForgotPasswordRequestBody struct {
-	Email  string `json:"email"`
-	Locale string `json:"locale"`
+	Email          string `json:"email"`
+	Locale         string `json:"locale"`
+	TurnstileToken string `json:"turnstile_token"`
 }
 
 // ForgotPasswordVerifyBody is POST /api/v1/auth/forgot-password/verify.
 type ForgotPasswordVerifyBody struct {
-	Email string `json:"email"`
-	Code  string `json:"code"`
+	Email          string `json:"email"`
+	Code           string `json:"code"`
+	TurnstileToken string `json:"turnstile_token"`
 }
 
 // ForgotPasswordResetBody is POST /api/v1/auth/forgot-password/reset.

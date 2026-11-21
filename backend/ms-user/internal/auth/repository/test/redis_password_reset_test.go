@@ -126,6 +126,31 @@ func TestPasswordResetResendCooldown(t *testing.T) {
 	}
 }
 
+func TestPasswordResetGetTokenBeforeDelete(t *testing.T) {
+	store := newPasswordResetStore(t)
+	ctx := context.Background()
+
+	if err := store.SaveResetToken(ctx, "tok-peek", "user-1", "peek@example.com", 15*time.Minute); err != nil {
+		t.Fatal(err)
+	}
+
+	userID, em, err := store.GetResetToken(ctx, "tok-peek")
+	if err != nil || userID != "user-1" || em != "peek@example.com" {
+		t.Fatalf("get: %q %q %v", userID, em, err)
+	}
+	userID, em, err = store.GetResetToken(ctx, "tok-peek")
+	if err != nil || userID != "user-1" || em != "peek@example.com" {
+		t.Fatalf("get again: %q %q %v", userID, em, err)
+	}
+	if err := store.DeleteResetToken(ctx, "tok-peek"); err != nil {
+		t.Fatal(err)
+	}
+	_, _, err = store.GetResetToken(ctx, "tok-peek")
+	if !errors.Is(err, constants.ErrNotFound) {
+		t.Fatalf("after delete: %v", err)
+	}
+}
+
 func TestPasswordResetTokenConsumeOnce(t *testing.T) {
 	store := newPasswordResetStore(t)
 	ctx := context.Background()

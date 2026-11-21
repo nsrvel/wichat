@@ -375,6 +375,9 @@ func (h handler) ForgotPasswordRequest(w http.ResponseWriter, r *http.Request) {
 		authHttp.WriteOutbound(w, r, h.log, err)
 		return
 	}
+	if !h.verifyTurnstile(w, r, body.TurnstileToken) {
+		return
+	}
 
 	// Service
 	out, err := h.ms.User.GRPC.Auth.RequestPasswordReset(r.Context(), &userv1.RequestPasswordResetRequest{
@@ -400,6 +403,9 @@ func (h handler) ForgotPasswordVerify(w http.ResponseWriter, r *http.Request) {
 	var body authHttp.ForgotPasswordVerifyBody
 	if err := authHttp.DecodeJSON(w, r, &body); err != nil {
 		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+	if !h.verifyTurnstile(w, r, body.TurnstileToken) {
 		return
 	}
 

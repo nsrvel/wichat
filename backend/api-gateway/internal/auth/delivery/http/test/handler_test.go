@@ -964,3 +964,27 @@ func TestResendLoginRejectsMissingTurnstileWhenEnabled(t *testing.T) {
 		t.Fatalf("status %d body %s", rec.Code, rec.Body.String())
 	}
 }
+
+func TestForgotPasswordRequestRejectsMissingTurnstileWhenEnabled(t *testing.T) {
+	handler := authdelivery.NewHandler(testClients(msUserFakes{}), testLog(), false, "http://localhost:8080", turnstileTestSecret)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/forgot-password", strings.NewReader(`{"email":"ada@example.com","locale":"en"}`))
+	rec := httptest.NewRecorder()
+	handler.ForgotPasswordRequest(rec, req)
+
+	if rec.Code != http.StatusForbidden || !strings.Contains(rec.Body.String(), "captcha_failed") {
+		t.Fatalf("status %d body %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestForgotPasswordVerifyRejectsMissingTurnstileWhenEnabled(t *testing.T) {
+	handler := authdelivery.NewHandler(testClients(msUserFakes{}), testLog(), false, "http://localhost:8080", turnstileTestSecret)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/forgot-password/verify", strings.NewReader(`{"email":"ada@example.com","code":"ABC123"}`))
+	rec := httptest.NewRecorder()
+	handler.ForgotPasswordVerify(rec, req)
+
+	if rec.Code != http.StatusForbidden || !strings.Contains(rec.Body.String(), "captcha_failed") {
+		t.Fatalf("status %d body %s", rec.Code, rec.Body.String())
+	}
+}
