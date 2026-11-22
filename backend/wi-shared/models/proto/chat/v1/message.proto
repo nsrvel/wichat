@@ -24,6 +24,7 @@ message ListChannelMessagesRequest {
   string before_created_at = 5;
   string before_id = 6;
   int64 before_channel_seq = 7;
+  int64 after_channel_seq = 8;
 }
 
 message ListChannelMessagesResponse {

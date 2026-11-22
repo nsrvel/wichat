@@ -103,7 +103,14 @@ func (m pgRepositoryMock) reactionsForMessageLocked(messageID string) []models.M
 	return out
 }
 
-func (m pgRepositoryMock) ListByChannel(_ context.Context, channelID string, limit int, before *time.Time, beforePublicID string, beforeChannelSeq int64) ([]models.MessageWithAuthor, bool, error) {
+func (m pgRepositoryMock) ListByChannel(
+	_ context.Context,
+	channelID string,
+	limit int,
+	before *time.Time,
+	beforePublicID string,
+	beforeChannelSeq, afterChannelSeq int64,
+) ([]models.MessageWithAuthor, bool, error) {
 	m.st.mu.Lock()
 	defer m.st.mu.Unlock()
 

@@ -32,6 +32,7 @@ func wireMessage(msg PublicMessageWire) events.Message {
 
 	return events.Message{
 		ID:                msg.ID,
+		ChannelSeq:        msg.ChannelSeq,
 		AuthorID:          msg.AuthorID,
 		AuthorDisplayName: msg.AuthorDisplayName,
 		AuthorAvatarURL:   msg.AuthorAvatarURL,

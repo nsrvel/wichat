@@ -103,6 +103,16 @@ func (h handler) ListChannelMessages(w http.ResponseWriter, r *http.Request) {
 		beforeChannelSeq = parsed
 	}
 
+	var afterChannelSeq int64
+	if raw := strings.TrimSpace(r.URL.Query().Get("after_channel_seq")); raw != "" {
+		parsed, err := strconv.ParseInt(raw, 10, 64)
+		if err != nil || parsed < 0 {
+			authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "after_channel_seq"}))
+			return
+		}
+		afterChannelSeq = parsed
+	}
+
 	out, err := h.ms.Chat.GRPC.Message.ListChannelMessages(r.Context(), &chatv1.ListChannelMessagesRequest{
 		AccessToken:      token,
 		GroupId:          groupID,
@@ -111,6 +121,7 @@ func (h handler) ListChannelMessages(w http.ResponseWriter, r *http.Request) {
 		BeforeCreatedAt:  strings.TrimSpace(r.URL.Query().Get("before_created_at")),
 		BeforeId:         strings.TrimSpace(r.URL.Query().Get("before_id")),
 		BeforeChannelSeq: beforeChannelSeq,
+		AfterChannelSeq:  afterChannelSeq,
 	})
 	if err != nil {
 		authHttp.WriteOutbound(w, r, h.log, err)

@@ -55,6 +55,7 @@ func (s *server) ListChannelMessages(ctx context.Context, req *chatv1.ListChanne
 		BeforeCreatedAt:  before,
 		BeforePublicID:   req.GetBeforeId(),
 		BeforeChannelSeq: req.GetBeforeChannelSeq(),
+		AfterChannelSeq:  req.GetAfterChannelSeq(),
 	})
 	if err != nil {
 		return nil, responsegrpc.ToStatus(err)

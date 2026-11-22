@@ -2,6 +2,8 @@
 package chatHttp
 
 import (
+	"strconv"
+
 	chatv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/chat/v1"
 )
 
@@ -23,7 +25,7 @@ type ReactionSummaryBody struct {
 // MessageBody is one channel message in JSON.
 type MessageBody struct {
 	ID                string                `json:"id"`
-	ChannelSeq        int64                 `json:"channel_seq,omitempty"`
+	ChannelSeq        string                `json:"channel_seq,omitempty"`
 	AuthorID          string                `json:"author_id"`
 	AuthorDisplayName string                `json:"author_display_name"`
 	AuthorAvatarURL   string                `json:"author_avatar_url,omitempty"`
@@ -125,9 +127,14 @@ func MessageFromPB(msg *chatv1.MessageSummary) MessageBody {
 		}
 	}
 
+	var channelSeq string
+	if seq := msg.GetChannelSeq(); seq > 0 {
+		channelSeq = strconv.FormatInt(seq, 10)
+	}
+
 	return MessageBody{
 		ID:                msg.GetId(),
-		ChannelSeq:        msg.GetChannelSeq(),
+		ChannelSeq:        channelSeq,
 		AuthorID:          msg.GetAuthorId(),
 		AuthorDisplayName: msg.GetAuthorDisplayName(),
 		AuthorAvatarURL:   msg.GetAuthorAvatarUrl(),

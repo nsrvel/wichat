@@ -79,6 +79,7 @@ type ListChannelMessagesInput struct {
 	BeforeCreatedAt   *time.Time
 	BeforePublicID    string
 	BeforeChannelSeq  int64
+	AfterChannelSeq   int64
 }
 
 // CreateChannelMessageInput creates a message after access resolution.
