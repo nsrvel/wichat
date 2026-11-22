@@ -29,6 +29,7 @@ export function useChannelMessages(groupId: string, channelId: string): UseChann
 		const rawMessages = flattenInfiniteChannelMessages(query.data);
 		return rawMessages.map((msg) => ({
 			id: msg.id,
+			clientMsgId: msg.client_msg_id,
 			authorId: msg.author_id,
 			authorDisplayName: msg.author_display_name,
 			authorAvatarUrl: msg.author_avatar_url ?? "",

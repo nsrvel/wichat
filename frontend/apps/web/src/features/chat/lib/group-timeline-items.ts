@@ -55,9 +55,10 @@ export function groupTimelineItems(messages: ChannelMessage[]): TimelineItem[] {
 			}
 		}
 
+		const stableKey = msg.clientMsgId ? `cm:${msg.clientMsgId}` : msg.id;
 		items.push({
 			kind: "message",
-			key: msg.id,
+			key: stableKey,
 			message: msg,
 			compact,
 		});

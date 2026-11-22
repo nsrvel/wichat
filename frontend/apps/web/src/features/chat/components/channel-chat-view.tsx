@@ -26,6 +26,7 @@ import { PinnedMessagesPopover } from "@/features/chat/components/pinned-message
 import { groupTimelineItems } from "@/features/chat/lib/group-timeline-items";
 import { useChannelMessages } from "@/features/chat/lib/use-channel-messages";
 import { hasInlineReplyBlock, stripInlineReplyBlocks } from "@/features/chat/lib/composer-markdown";
+import { isPendingMessageId } from "@/features/chat/lib/message-seq";
 import { useChannelRealtime } from "@/features/chat/lib/use-channel-realtime";
 import { useChatScroller } from "@/features/chat/lib/use-chat-scroller";
 import { translateError } from "@/integrations/i18n/translate-error";
@@ -446,7 +447,7 @@ export function ChannelChatView({ groupId, channelId, onOpenSidebar }: ChannelCh
 										? resolveMemberNameColor(member.roles, hideRoles)
 										: undefined;
 									const authorIsOwner = member?.role === "owner";
-									const isOpt = message.id.startsWith("opt_");
+									const isOpt = isPendingMessageId(message.id);
 									const isMine = Boolean(message.mine);
 									const canDelete = isMine || canManageMessages;
 									const menuActions: MessageMenuActionProps = {
