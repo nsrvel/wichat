@@ -20,6 +20,7 @@ type Client interface {
 	SetChannelMessagePinned(ctx context.Context, in *chatv1.SetChannelMessagePinnedRequest) (*chatv1.SetChannelMessagePinnedResponse, error)
 	ListPinnedChannelMessages(ctx context.Context, in *chatv1.ListPinnedChannelMessagesRequest) (*chatv1.ListPinnedChannelMessagesResponse, error)
 	UploadChannelAttachment(ctx context.Context, in *chatv1.UploadChannelAttachmentRequest) (*chatv1.UploadChannelAttachmentResponse, error)
+	ResolveMessageChannelSeq(ctx context.Context, in *chatv1.ResolveMessageChannelSeqRequest) (*chatv1.ResolveMessageChannelSeqResponse, error)
 }
 
 type client struct {
@@ -90,5 +91,11 @@ func (c *client) ListPinnedChannelMessages(ctx context.Context, in *chatv1.ListP
 func (c *client) UploadChannelAttachment(ctx context.Context, in *chatv1.UploadChannelAttachmentRequest) (*chatv1.UploadChannelAttachmentResponse, error) {
 	return utils.CallUnaryResult(ctx, c.none, c.log, "chat.MessageService/UploadChannelAttachment", func(callCtx context.Context) (*chatv1.UploadChannelAttachmentResponse, error) {
 		return c.stub.UploadChannelAttachment(callCtx, in, grpc.MaxCallSendMsgSize(32<<20))
+	})
+}
+
+func (c *client) ResolveMessageChannelSeq(ctx context.Context, in *chatv1.ResolveMessageChannelSeqRequest) (*chatv1.ResolveMessageChannelSeqResponse, error) {
+	return utils.CallUnaryResult(ctx, c.read, c.log, "chat.MessageService/ResolveMessageChannelSeq", func(callCtx context.Context) (*chatv1.ResolveMessageChannelSeqResponse, error) {
+		return c.stub.ResolveMessageChannelSeq(callCtx, in)
 	})
 }

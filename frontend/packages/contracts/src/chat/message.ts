@@ -41,6 +41,14 @@ export const MessagesListSchema = z.object({
 });
 export type MessagesList = z.infer<typeof MessagesListSchema>;
 
+export const MessageChannelSeqSchema = z.object({
+	message_id: publicEntityIdSchema,
+	group_id: publicEntityIdSchema,
+	channel_id: publicEntityIdSchema,
+	channel_seq: z.number().int().positive(),
+});
+export type MessageChannelSeq = z.infer<typeof MessageChannelSeqSchema>;
+
 export const CreateMessageBodySchema = z.object({
 	body: z.string().trim().min(1).max(4096),
 	reply_to_id: publicEntityIdSchema.optional(),

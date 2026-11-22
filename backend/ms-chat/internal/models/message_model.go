@@ -162,6 +162,25 @@ type MessageAttachment struct {
 	SizeBytes   int64
 }
 
+// ResolveMessageChannelSeqInput resolves a message public id to its channel_seq after access checks.
+type ResolveMessageChannelSeqInput struct {
+	AccessToken       string
+	GroupPublicID     string
+	ChannelPublicID   string
+	MessagePublicID   string
+	CallerUserID      string
+	ResolvedChannelID string
+	CallerPermissions []string
+}
+
+// MessageChannelSeqResult is the location of a message in channel order.
+type MessageChannelSeqResult struct {
+	MessagePublicID string
+	GroupPublicID   string
+	ChannelPublicID string
+	ChannelSeq      int64
+}
+
 // UploadChannelAttachmentInput uploads a file or image attachment to a channel.
 type UploadChannelAttachmentInput struct {
 	AccessToken       string

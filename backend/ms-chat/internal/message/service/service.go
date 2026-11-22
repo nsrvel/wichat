@@ -37,6 +37,7 @@ type Service interface {
 	SetChannelMessagePinned(ctx context.Context, in *models.SetChannelMessagePinnedInput) (models.PublicMessage, error)
 	ListPinnedChannelMessages(ctx context.Context, in *models.ListPinnedChannelMessagesInput) ([]models.PublicMessage, error)
 	UploadChannelAttachment(ctx context.Context, in *models.UploadChannelAttachmentInput) (models.MessageAttachment, error)
+	ResolveMessageChannelSeq(ctx context.Context, in *models.ResolveMessageChannelSeqInput) (models.MessageChannelSeqResult, error)
 }
 
 type service struct {
@@ -554,6 +555,43 @@ func (s service) ListPinnedChannelMessages(ctx context.Context, in *models.ListP
 	}
 
 	return out, nil
+}
+
+func (s service) ResolveMessageChannelSeq(ctx context.Context, in *models.ResolveMessageChannelSeqInput) (models.MessageChannelSeqResult, error) {
+	// Validation
+	msgPubID := strings.TrimSpace(in.MessagePublicID)
+	if msgPubID == "" {
+		return models.MessageChannelSeqResult{}, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "message_id"})
+	}
+
+	if err := s.applyChannelAccess(ctx, in.AccessToken, in.GroupPublicID, in.ChannelPublicID, channelAccessInput{
+		callerUserID:      &in.CallerUserID,
+		resolvedChannelID: &in.ResolvedChannelID,
+		callerPermissions: &in.CallerPermissions,
+	}); err != nil {
+		return models.MessageChannelSeqResult{}, err
+	}
+
+	if !hasAnyPerm(in.CallerPermissions, "administrator", "read_message_history") {
+		return models.MessageChannelSeqResult{}, exception.PermissionDenied(exception.MsgForbidden, nil)
+	}
+
+	// Repository
+	row, err := s.messages.FindByPublicIDInChannel(ctx, in.ResolvedChannelID, msgPubID)
+	if err != nil {
+		if errors.Is(err, constants.ErrNotFound) {
+			return models.MessageChannelSeqResult{}, exception.NotFound(exception.MsgInvalidInput, map[string]any{"field": "message_id"})
+		}
+
+		return models.MessageChannelSeqResult{}, err
+	}
+
+	return models.MessageChannelSeqResult{
+		MessagePublicID: row.PublicID,
+		GroupPublicID:   in.GroupPublicID,
+		ChannelPublicID: in.ChannelPublicID,
+		ChannelSeq:      row.ChannelSeq,
+	}, nil
 }
 
 func hasDangerousControlChars(s string) bool {

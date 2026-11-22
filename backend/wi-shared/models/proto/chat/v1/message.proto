@@ -14,6 +14,7 @@ service MessageService {
   rpc SetChannelMessagePinned(SetChannelMessagePinnedRequest) returns (SetChannelMessagePinnedResponse);
   rpc ListPinnedChannelMessages(ListPinnedChannelMessagesRequest) returns (ListPinnedChannelMessagesResponse);
   rpc UploadChannelAttachment(UploadChannelAttachmentRequest) returns (UploadChannelAttachmentResponse);
+  rpc ResolveMessageChannelSeq(ResolveMessageChannelSeqRequest) returns (ResolveMessageChannelSeqResponse);
 }
 
 message ListChannelMessagesRequest {
@@ -151,4 +152,18 @@ message MessageAttachment {
 
 message UploadChannelAttachmentResponse {
   MessageAttachment attachment = 1;
+}
+
+message ResolveMessageChannelSeqRequest {
+  string access_token = 1;
+  string group_id = 2;
+  string channel_id = 3;
+  string message_id = 4;
+}
+
+message ResolveMessageChannelSeqResponse {
+  string message_id = 1;
+  string group_id = 2;
+  string channel_id = 3;
+  int64 channel_seq = 4;
 }

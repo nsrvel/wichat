@@ -1341,6 +1341,142 @@ func (x *UploadChannelAttachmentResponse) GetAttachment() *MessageAttachment {
 	return nil
 }
 
+type ResolveMessageChannelSeqRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	GroupId       string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	ChannelId     string                 `protobuf:"bytes,3,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
+	MessageId     string                 `protobuf:"bytes,4,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResolveMessageChannelSeqRequest) Reset() {
+	*x = ResolveMessageChannelSeqRequest{}
+	mi := &file_chat_v1_message_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResolveMessageChannelSeqRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResolveMessageChannelSeqRequest) ProtoMessage() {}
+
+func (x *ResolveMessageChannelSeqRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_chat_v1_message_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResolveMessageChannelSeqRequest.ProtoReflect.Descriptor instead.
+func (*ResolveMessageChannelSeqRequest) Descriptor() ([]byte, []int) {
+	return file_chat_v1_message_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *ResolveMessageChannelSeqRequest) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
+func (x *ResolveMessageChannelSeqRequest) GetGroupId() string {
+	if x != nil {
+		return x.GroupId
+	}
+	return ""
+}
+
+func (x *ResolveMessageChannelSeqRequest) GetChannelId() string {
+	if x != nil {
+		return x.ChannelId
+	}
+	return ""
+}
+
+func (x *ResolveMessageChannelSeqRequest) GetMessageId() string {
+	if x != nil {
+		return x.MessageId
+	}
+	return ""
+}
+
+type ResolveMessageChannelSeqResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	MessageId     string                 `protobuf:"bytes,1,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
+	GroupId       string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	ChannelId     string                 `protobuf:"bytes,3,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
+	ChannelSeq    int64                  `protobuf:"varint,4,opt,name=channel_seq,json=channelSeq,proto3" json:"channel_seq,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResolveMessageChannelSeqResponse) Reset() {
+	*x = ResolveMessageChannelSeqResponse{}
+	mi := &file_chat_v1_message_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResolveMessageChannelSeqResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResolveMessageChannelSeqResponse) ProtoMessage() {}
+
+func (x *ResolveMessageChannelSeqResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_chat_v1_message_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResolveMessageChannelSeqResponse.ProtoReflect.Descriptor instead.
+func (*ResolveMessageChannelSeqResponse) Descriptor() ([]byte, []int) {
+	return file_chat_v1_message_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *ResolveMessageChannelSeqResponse) GetMessageId() string {
+	if x != nil {
+		return x.MessageId
+	}
+	return ""
+}
+
+func (x *ResolveMessageChannelSeqResponse) GetGroupId() string {
+	if x != nil {
+		return x.GroupId
+	}
+	return ""
+}
+
+func (x *ResolveMessageChannelSeqResponse) GetChannelId() string {
+	if x != nil {
+		return x.ChannelId
+	}
+	return ""
+}
+
+func (x *ResolveMessageChannelSeqResponse) GetChannelSeq() int64 {
+	if x != nil {
+		return x.ChannelSeq
+	}
+	return 0
+}
+
 var File_chat_v1_message_proto protoreflect.FileDescriptor
 
 const file_chat_v1_message_proto_rawDesc = "" +
@@ -1458,7 +1594,22 @@ const file_chat_v1_message_proto_rawDesc = "" +
 	"\x1fUploadChannelAttachmentResponse\x12:\n" +
 	"\n" +
 	"attachment\x18\x01 \x01(\v2\x1a.chat.v1.MessageAttachmentR\n" +
-	"attachment2\xd9\x06\n" +
+	"attachment\"\x9d\x01\n" +
+	"\x1fResolveMessageChannelSeqRequest\x12!\n" +
+	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
+	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x1d\n" +
+	"\n" +
+	"channel_id\x18\x03 \x01(\tR\tchannelId\x12\x1d\n" +
+	"\n" +
+	"message_id\x18\x04 \x01(\tR\tmessageId\"\x9c\x01\n" +
+	" ResolveMessageChannelSeqResponse\x12\x1d\n" +
+	"\n" +
+	"message_id\x18\x01 \x01(\tR\tmessageId\x12\x19\n" +
+	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x1d\n" +
+	"\n" +
+	"channel_id\x18\x03 \x01(\tR\tchannelId\x12\x1f\n" +
+	"\vchannel_seq\x18\x04 \x01(\x03R\n" +
+	"channelSeq2\xca\a\n" +
 	"\x0eMessageService\x12`\n" +
 	"\x13ListChannelMessages\x12#.chat.v1.ListChannelMessagesRequest\x1a$.chat.v1.ListChannelMessagesResponse\x12c\n" +
 	"\x14CreateChannelMessage\x12$.chat.v1.CreateChannelMessageRequest\x1a%.chat.v1.CreateChannelMessageResponse\x12c\n" +
@@ -1467,7 +1618,8 @@ const file_chat_v1_message_proto_rawDesc = "" +
 	"\x15ToggleMessageReaction\x12%.chat.v1.ToggleMessageReactionRequest\x1a&.chat.v1.ToggleMessageReactionResponse\x12l\n" +
 	"\x17SetChannelMessagePinned\x12'.chat.v1.SetChannelMessagePinnedRequest\x1a(.chat.v1.SetChannelMessagePinnedResponse\x12r\n" +
 	"\x19ListPinnedChannelMessages\x12).chat.v1.ListPinnedChannelMessagesRequest\x1a*.chat.v1.ListPinnedChannelMessagesResponse\x12l\n" +
-	"\x17UploadChannelAttachment\x12'.chat.v1.UploadChannelAttachmentRequest\x1a(.chat.v1.UploadChannelAttachmentResponseB\x9e\x01\n" +
+	"\x17UploadChannelAttachment\x12'.chat.v1.UploadChannelAttachmentRequest\x1a(.chat.v1.UploadChannelAttachmentResponse\x12o\n" +
+	"\x18ResolveMessageChannelSeq\x12(.chat.v1.ResolveMessageChannelSeqRequest\x1a).chat.v1.ResolveMessageChannelSeqResponseB\x9e\x01\n" +
 	"\vcom.chat.v1B\fMessageProtoP\x01ZDgithub.com/wichat/wichat/backend/wi-shared/models/gen/chat/v1;chatv1\xa2\x02\x03CXX\xaa\x02\aChat.V1\xca\x02\aChat\\V1\xe2\x02\x13Chat\\V1\\GPBMetadata\xea\x02\bChat::V1b\x06proto3"
 
 var (
@@ -1482,7 +1634,7 @@ func file_chat_v1_message_proto_rawDescGZIP() []byte {
 	return file_chat_v1_message_proto_rawDescData
 }
 
-var file_chat_v1_message_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
+var file_chat_v1_message_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
 var file_chat_v1_message_proto_goTypes = []any{
 	(*ListChannelMessagesRequest)(nil),        // 0: chat.v1.ListChannelMessagesRequest
 	(*ListChannelMessagesResponse)(nil),       // 1: chat.v1.ListChannelMessagesResponse
@@ -1504,6 +1656,8 @@ var file_chat_v1_message_proto_goTypes = []any{
 	(*UploadChannelAttachmentRequest)(nil),    // 17: chat.v1.UploadChannelAttachmentRequest
 	(*MessageAttachment)(nil),                 // 18: chat.v1.MessageAttachment
 	(*UploadChannelAttachmentResponse)(nil),   // 19: chat.v1.UploadChannelAttachmentResponse
+	(*ResolveMessageChannelSeqRequest)(nil),   // 20: chat.v1.ResolveMessageChannelSeqRequest
+	(*ResolveMessageChannelSeqResponse)(nil),  // 21: chat.v1.ResolveMessageChannelSeqResponse
 }
 var file_chat_v1_message_proto_depIdxs = []int32{
 	16, // 0: chat.v1.ListChannelMessagesResponse.messages:type_name -> chat.v1.MessageSummary
@@ -1523,16 +1677,18 @@ var file_chat_v1_message_proto_depIdxs = []int32{
 	10, // 14: chat.v1.MessageService.SetChannelMessagePinned:input_type -> chat.v1.SetChannelMessagePinnedRequest
 	12, // 15: chat.v1.MessageService.ListPinnedChannelMessages:input_type -> chat.v1.ListPinnedChannelMessagesRequest
 	17, // 16: chat.v1.MessageService.UploadChannelAttachment:input_type -> chat.v1.UploadChannelAttachmentRequest
-	1,  // 17: chat.v1.MessageService.ListChannelMessages:output_type -> chat.v1.ListChannelMessagesResponse
-	3,  // 18: chat.v1.MessageService.CreateChannelMessage:output_type -> chat.v1.CreateChannelMessageResponse
-	5,  // 19: chat.v1.MessageService.UpdateChannelMessage:output_type -> chat.v1.UpdateChannelMessageResponse
-	7,  // 20: chat.v1.MessageService.DeleteChannelMessage:output_type -> chat.v1.DeleteChannelMessageResponse
-	9,  // 21: chat.v1.MessageService.ToggleMessageReaction:output_type -> chat.v1.ToggleMessageReactionResponse
-	11, // 22: chat.v1.MessageService.SetChannelMessagePinned:output_type -> chat.v1.SetChannelMessagePinnedResponse
-	13, // 23: chat.v1.MessageService.ListPinnedChannelMessages:output_type -> chat.v1.ListPinnedChannelMessagesResponse
-	19, // 24: chat.v1.MessageService.UploadChannelAttachment:output_type -> chat.v1.UploadChannelAttachmentResponse
-	17, // [17:25] is the sub-list for method output_type
-	9,  // [9:17] is the sub-list for method input_type
+	20, // 17: chat.v1.MessageService.ResolveMessageChannelSeq:input_type -> chat.v1.ResolveMessageChannelSeqRequest
+	1,  // 18: chat.v1.MessageService.ListChannelMessages:output_type -> chat.v1.ListChannelMessagesResponse
+	3,  // 19: chat.v1.MessageService.CreateChannelMessage:output_type -> chat.v1.CreateChannelMessageResponse
+	5,  // 20: chat.v1.MessageService.UpdateChannelMessage:output_type -> chat.v1.UpdateChannelMessageResponse
+	7,  // 21: chat.v1.MessageService.DeleteChannelMessage:output_type -> chat.v1.DeleteChannelMessageResponse
+	9,  // 22: chat.v1.MessageService.ToggleMessageReaction:output_type -> chat.v1.ToggleMessageReactionResponse
+	11, // 23: chat.v1.MessageService.SetChannelMessagePinned:output_type -> chat.v1.SetChannelMessagePinnedResponse
+	13, // 24: chat.v1.MessageService.ListPinnedChannelMessages:output_type -> chat.v1.ListPinnedChannelMessagesResponse
+	19, // 25: chat.v1.MessageService.UploadChannelAttachment:output_type -> chat.v1.UploadChannelAttachmentResponse
+	21, // 26: chat.v1.MessageService.ResolveMessageChannelSeq:output_type -> chat.v1.ResolveMessageChannelSeqResponse
+	18, // [18:27] is the sub-list for method output_type
+	9,  // [9:18] is the sub-list for method input_type
 	9,  // [9:9] is the sub-list for extension type_name
 	9,  // [9:9] is the sub-list for extension extendee
 	0,  // [0:9] is the sub-list for field type_name
@@ -1549,7 +1705,7 @@ func file_chat_v1_message_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_chat_v1_message_proto_rawDesc), len(file_chat_v1_message_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   20,
+			NumMessages:   22,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

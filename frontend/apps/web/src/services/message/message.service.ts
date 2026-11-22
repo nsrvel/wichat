@@ -1,6 +1,7 @@
 import {
 	CreateMessageBodySchema,
 	CreateMessageResponseSchema,
+	MessageChannelSeqSchema,
 	MessagesListSchema,
 	ReactionsResponseSchema,
 	ToggleReactionBodySchema,
@@ -9,6 +10,7 @@ import {
 	type CreateMessageBody,
 	type CreateMessageResponse,
 	type MessageAttachment,
+	type MessageChannelSeq,
 	type MessagesList,
 	type ReactionsResponse,
 	type ToggleReactionBody,
@@ -18,6 +20,7 @@ import { OkSchema } from "@wichat/contracts/common";
 import { api } from "@/integrations/api-client";
 
 export const CHANNEL_MESSAGES_PAGE_SIZE = 50;
+const JUMP_CONTEXT_HALF = 60;
 
 export type ListChannelMessagesParams = {
 	limit?: number;
@@ -42,6 +45,67 @@ export async function listChannelMessages(
 	const query = search.toString();
 	const path = `/groups/${encodeURIComponent(groupId)}/channels/${encodeURIComponent(channelId)}/messages${query ? `?${query}` : ""}`;
 	return api.get(path, MessagesListSchema, { signal: params?.signal });
+}
+
+export async function resolveMessageChannelSeq(
+	groupId: string,
+	channelId: string,
+	messageId: string,
+	signal?: AbortSignal,
+): Promise<MessageChannelSeq> {
+	return api.get(
+		`/groups/${encodeURIComponent(groupId)}/channels/${encodeURIComponent(channelId)}/messages/${encodeURIComponent(messageId)}/seq`,
+		MessageChannelSeqSchema,
+		{ signal },
+	);
+}
+
+export type ChannelMessagesContextWindow = {
+	messages: MessagesList["messages"];
+	hasOlder: boolean;
+	hasNewer: boolean;
+};
+
+/** Fetches a bounded window around channel_seq (no walk from latest). */
+export async function listChannelMessagesAroundSeq(
+	groupId: string,
+	channelId: string,
+	centerSeq: number,
+	opts?: { half?: number; signal?: AbortSignal },
+): Promise<ChannelMessagesContextWindow> {
+	if (centerSeq <= 0) {
+		return { messages: [], hasOlder: false, hasNewer: false };
+	}
+	const half = opts?.half ?? JUMP_CONTEXT_HALF;
+	const [older, newer] = await Promise.all([
+		listChannelMessages(groupId, channelId, {
+			limit: half,
+			beforeChannelSeq: centerSeq,
+			signal: opts?.signal,
+		}),
+		listChannelMessages(groupId, channelId, {
+			limit: half,
+			afterChannelSeq: Math.max(0, centerSeq - 1),
+			signal: opts?.signal,
+		}),
+	]);
+
+	const byId = new Map<string, MessagesList["messages"][number]>();
+	for (const msg of older.messages) {
+		byId.set(msg.id, msg);
+	}
+	for (const msg of newer.messages) {
+		byId.set(msg.id, msg);
+	}
+	const messages = [...byId.values()].sort(
+		(a, b) => (a.channel_seq ?? 0) - (b.channel_seq ?? 0) || a.id.localeCompare(b.id),
+	);
+
+	return {
+		messages,
+		hasOlder: older.has_more !== false && older.messages.length > 0,
+		hasNewer: newer.has_more !== false && newer.messages.length > 0,
+	};
 }
 
 export async function createChannelMessage(

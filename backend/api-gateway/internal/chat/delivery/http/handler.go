@@ -34,6 +34,8 @@ type Handler interface {
 	ListPinnedChannelMessages(w http.ResponseWriter, r *http.Request)
 	PinChannelMessage(w http.ResponseWriter, r *http.Request)
 	UnpinChannelMessage(w http.ResponseWriter, r *http.Request)
+	ResolveMessageChannelSeq(w http.ResponseWriter, r *http.Request)
+	ResolveMessageChannelSeqGlobal(w http.ResponseWriter, r *http.Request)
 }
 
 type handler struct {
@@ -350,4 +352,55 @@ func (h handler) UploadChannelAttachment(w http.ResponseWriter, r *http.Request)
 	responsehttp.WriteJSON(w, http.StatusCreated, response.NewDataEnvelope(chatHttp.UploadAttachmentResponseBody{
 		Attachment: chatHttp.AttachmentFromPB(out.GetAttachment()),
 	}))
+}
+
+func (h handler) writeResolveMessageChannelSeq(
+	w http.ResponseWriter,
+	r *http.Request,
+	token, groupID, channelID, messageID string,
+) {
+	out, err := h.ms.Chat.GRPC.Message.ResolveMessageChannelSeq(r.Context(), &chatv1.ResolveMessageChannelSeqRequest{
+		AccessToken: token,
+		GroupId:     groupID,
+		ChannelId:   channelID,
+		MessageId:   messageID,
+	})
+	if err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(chatHttp.MessageChannelSeqBody{
+		MessageID:  out.GetMessageId(),
+		GroupID:    out.GetGroupId(),
+		ChannelID:  out.GetChannelId(),
+		ChannelSeq: out.GetChannelSeq(),
+	}))
+}
+
+func (h handler) ResolveMessageChannelSeq(w http.ResponseWriter, r *http.Request) {
+	token, groupID, channelID, messageID, ok := h.requireMessageContext(w, r)
+	if !ok {
+		return
+	}
+
+	h.writeResolveMessageChannelSeq(w, r, token, groupID, channelID, messageID)
+}
+
+func (h handler) ResolveMessageChannelSeqGlobal(w http.ResponseWriter, r *http.Request) {
+	token := authHttp.Bearer(r)
+	if token == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.Unauthenticated(exception.MsgUnauthorized, nil))
+		return
+	}
+
+	messageID := strings.TrimSpace(r.PathValue("messageId"))
+	groupID := strings.TrimSpace(r.URL.Query().Get("group_id"))
+	channelID := strings.TrimSpace(r.URL.Query().Get("channel_id"))
+	if messageID == "" || groupID == "" || channelID == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, nil))
+		return
+	}
+
+	h.writeResolveMessageChannelSeq(w, r, token, groupID, channelID, messageID)
 }
