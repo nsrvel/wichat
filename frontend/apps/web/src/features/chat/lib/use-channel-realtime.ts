@@ -10,7 +10,10 @@ import {
 	highestSeqInInfinite,
 	mergeGapFillIntoInfinite,
 } from "@/features/chat/lib/message-sync";
-import { removeInfiniteChannelMessage, updateInfiniteChannelMessageReactions } from "@/features/chat/lib/channel-message";
+import {
+	removeInfiniteChannelMessage,
+	updateInfiniteChannelMessageReactions,
+} from "@/features/chat/lib/channel-message";
 import { channelSeqValue } from "@/features/chat/lib/message-seq";
 import { subscribeChatChannel } from "@/integrations/realtime/chat-channel";
 import { sessionQueryOpts } from "@/services/auth/auth.query";

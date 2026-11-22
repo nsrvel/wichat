@@ -11,7 +11,7 @@ import (
 type Config struct {
 	Env                   string `mapstructure:"env"`
 	LogLevel              string `mapstructure:"log_level"`
-	Port                  string `mapstructure:"port"`     // gRPC listen port
+	Port                  string `mapstructure:"port"`      // gRPC listen port
 	GrpcBind              string `mapstructure:"grpc_bind"` // loopback by default in dev
 	DatabaseURL           string `mapstructure:"database_url"`
 	AuthJWTSecret         string `mapstructure:"auth_jwt_secret"`

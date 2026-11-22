@@ -45,7 +45,10 @@ describe("applyBoundedMessageCache", () => {
 
 	it("trims oldest when near bottom", () => {
 		const page0 = { messages: [msg("n-1", 5001), msg("n-2", 5002)], has_more: false };
-		const page1 = { messages: Array.from({ length: 2_999 }, (_, i) => msg(`o-${i}`, i + 1)), has_more: true };
+		const page1 = {
+			messages: Array.from({ length: 2_999 }, (_, i) => msg(`o-${i}`, i + 1)),
+			has_more: true,
+		};
 		const input: ChannelMessagesInfiniteData = {
 			pages: [page0, page1],
 			pageParams: [undefined, { beforeChannelSeq: 1 }],

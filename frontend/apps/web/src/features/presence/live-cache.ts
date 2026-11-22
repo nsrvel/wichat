@@ -83,8 +83,7 @@ export function mergeHttpMyPresence(
 		return { ...http, manual_status };
 	}
 
-	const wsLive =
-		ws.frame.is_online && ws.frame.presence_status !== "offline";
+	const wsLive = ws.frame.is_online && ws.frame.presence_status !== "offline";
 	const httpOffline = !http.is_online || http.effective_status === "offline";
 
 	if (httpOffline && wsLive) {

@@ -1,9 +1,6 @@
 import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
 import { isPublicEntityId } from "@wichat/contracts/common";
-import {
-	oldestPageCursor,
-	type ChannelMessagesPageParam,
-} from "@/features/chat/lib/message-sync";
+import { oldestPageCursor, type ChannelMessagesPageParam } from "@/features/chat/lib/message-sync";
 import { Q_CHANNEL_MESSAGES, Q_PINNED_MESSAGES } from "@/services/message/message.key";
 import {
 	CHANNEL_MESSAGES_PAGE_SIZE,

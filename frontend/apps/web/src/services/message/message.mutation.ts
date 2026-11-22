@@ -7,7 +7,10 @@ import type {
 	MessageReplyPreview,
 	MessagesList,
 } from "@wichat/contracts/chat/message";
-import { removeInfiniteChannelMessage, updateInfiniteChannelMessageReactions } from "@/features/chat/lib/channel-message";
+import {
+	removeInfiniteChannelMessage,
+	updateInfiniteChannelMessageReactions,
+} from "@/features/chat/lib/channel-message";
 import { applyMessageToInfinite, replacePendingMessage } from "@/features/chat/lib/message-sync";
 import { newClientMessageId } from "@/features/chat/lib/message-seq";
 import { Q_CHANNEL_MESSAGES, Q_PINNED_MESSAGES } from "@/services/message/message.key";
