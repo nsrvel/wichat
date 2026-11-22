@@ -19,6 +19,7 @@ type PgRepository interface {
 	ListByChannel(ctx context.Context, channelID string, limit int, before *time.Time, beforePublicID string, beforeChannelSeq, afterChannelSeq int64) ([]models.MessageWithAuthor, bool, error)
 	ListPinnedByChannel(ctx context.Context, channelID string) ([]models.MessageWithAuthor, error)
 	FindByPublicIDInChannel(ctx context.Context, channelID, publicID string) (models.MessageWithAuthor, error)
+	FindByClientMsgIDInChannel(ctx context.Context, channelID, authorID, clientMsgID string) (models.MessageWithAuthor, error)
 	Insert(ctx context.Context, channelID, authorID, body string, replyToID *string, createdAt time.Time) (models.Message, error)
 	InsertWithOutbox(ctx context.Context, in *models.InsertMessageWithOutboxInput) (models.Message, error)
 	UpdateBody(ctx context.Context, channelID, publicID, authorID, body string, editedAt time.Time) (models.MessageWithAuthor, error)
@@ -27,7 +28,9 @@ type PgRepository interface {
 	DeleteByPublicID(ctx context.Context, channelID, publicID string) error
 	DeleteByPublicIDWithOutbox(ctx context.Context, in *models.DeleteMessageWithOutboxInput) error
 	ToggleReaction(ctx context.Context, messageID, userID, emoji string, now time.Time) ([]models.MessageReactionSummary, error)
+	ToggleReactionWithOutbox(ctx context.Context, in *models.ToggleReactionWithOutboxInput) ([]models.MessageReactionSummary, error)
 	SetPinned(ctx context.Context, channelID, publicID, userID string, pinned bool, now time.Time) (models.MessageWithAuthor, error)
+	SetPinnedWithOutbox(ctx context.Context, in *models.SetPinnedWithOutboxInput) (models.MessageWithAuthor, error)
 	FindLastMessageTimeByAuthor(ctx context.Context, channelID, authorID string) (*time.Time, error)
 }
 
@@ -242,6 +245,31 @@ func (r pgRepository) FindByPublicIDInChannel(ctx context.Context, channelID, pu
 	return hydrated[0], nil
 }
 
+func (r pgRepository) FindByClientMsgIDInChannel(ctx context.Context, channelID, authorID, clientMsgID string) (models.MessageWithAuthor, error) {
+	var rows []models.MessageListRow
+	err := r.baseMessageSelect(&rows).
+		Where("m.channel_id = ? AND m.author_id = ? AND m.client_msg_id = ?", channelID, authorID, clientMsgID).
+		Limit(1).
+		Scan(ctx)
+	if err != nil {
+		r.logIfInfraErr("FindByClientMsgIDInChannel", err)
+
+		return models.MessageWithAuthor{}, err
+	}
+	if len(rows) == 0 {
+		return models.MessageWithAuthor{}, constants.ErrNotFound
+	}
+
+	hydrated, err := r.hydrateRows(ctx, rows)
+	if err != nil {
+		r.logIfInfraErr("FindByClientMsgIDInChannel.hydrate", err)
+
+		return models.MessageWithAuthor{}, err
+	}
+
+	return hydrated[0], nil
+}
+
 func (r pgRepository) Insert(ctx context.Context, channelID, authorID, body string, replyToID *string, createdAt time.Time) (models.Message, error) {
 	for range 5 {
 		id, err := token.NewID()
@@ -426,6 +454,106 @@ func (r pgRepository) ToggleReaction(ctx context.Context, messageID, userID, emo
 	return m[messageID], nil
 }
 
+func (r pgRepository) ToggleReactionWithOutbox(ctx context.Context, in *models.ToggleReactionWithOutboxInput) ([]models.MessageReactionSummary, error) {
+	if in == nil {
+		return nil, errors.New("toggle reaction input required")
+	}
+
+	var reactions []models.MessageReactionSummary
+	err := r.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
+		var toggleErr error
+		reactions, toggleErr = r.toggleReactionInTx(ctx, tx, in.MessageID, in.UserID, in.Emoji, in.Now)
+		if toggleErr != nil {
+			return toggleErr
+		}
+
+		return r.outbox.InsertInTx(ctx, tx, in.Outbox)
+	})
+	if err != nil {
+		r.logIfInfraErr("ToggleReactionWithOutbox", err)
+
+		return nil, err
+	}
+
+	return reactions, nil
+}
+
+func (r pgRepository) toggleReactionInTx(ctx context.Context, tx bun.Tx, messageID, userID, emoji string, now time.Time) ([]models.MessageReactionSummary, error) {
+	res, err := tx.NewDelete().
+		Model((*models.MessageReactionRow)(nil)).
+		Where("message_id = ? AND user_id = ? AND emoji = ?", messageID, userID, emoji).
+		Exec(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		id, err := token.NewID()
+		if err != nil {
+			return nil, err
+		}
+		row := models.MessageReactionRow{
+			ID:        id,
+			MessageID: messageID,
+			UserID:    userID,
+			Emoji:     emoji,
+			CreatedAt: now,
+		}
+		if _, err := tx.NewInsert().Model(&row).On("CONFLICT (message_id, user_id, emoji) DO NOTHING").Exec(ctx); err != nil {
+			return nil, err
+		}
+	}
+
+	m, err := r.loadReactionsByMessageIDsInTx(ctx, tx, []string{messageID})
+	if err != nil {
+		return nil, err
+	}
+
+	return m[messageID], nil
+}
+
+func (r pgRepository) loadReactionsByMessageIDsInTx(ctx context.Context, tx bun.Tx, messageIDs []string) (map[string][]models.MessageReactionSummary, error) {
+	out := make(map[string][]models.MessageReactionSummary)
+	if len(messageIDs) == 0 {
+		return out, nil
+	}
+
+	var rows []models.MessageReactionRow
+	if err := tx.NewSelect().Model(&rows).
+		Where("mr.message_id IN (?)", bun.List(messageIDs)).
+		OrderExpr("mr.created_at ASC").
+		Scan(ctx); err != nil {
+		return nil, err
+	}
+
+	byMsgEmoji := make(map[string]map[string]*models.MessageReactionSummary)
+	order := make(map[string][]string)
+	for _, row := range rows {
+		m, ok := byMsgEmoji[row.MessageID]
+		if !ok {
+			m = make(map[string]*models.MessageReactionSummary)
+			byMsgEmoji[row.MessageID] = m
+		}
+		summary, exists := m[row.Emoji]
+		if !exists {
+			summary = &models.MessageReactionSummary{Emoji: row.Emoji}
+			m[row.Emoji] = summary
+			order[row.MessageID] = append(order[row.MessageID], row.Emoji)
+		}
+		summary.Count++
+		summary.UserIDs = append(summary.UserIDs, row.UserID)
+	}
+
+	for msgID, emojis := range order {
+		list := make([]models.MessageReactionSummary, 0, len(emojis))
+		for _, emoji := range emojis {
+			list = append(list, *byMsgEmoji[msgID][emoji])
+		}
+		out[msgID] = list
+	}
+
+	return out, nil
+}
+
 func (r pgRepository) SetPinned(ctx context.Context, channelID, publicID, userID string, pinned bool, now time.Time) (models.MessageWithAuthor, error) {
 	q := r.db.NewUpdate().
 		Model((*models.MessageRow)(nil)).
@@ -448,6 +576,44 @@ func (r pgRepository) SetPinned(ctx context.Context, channelID, publicID, userID
 	}
 
 	return r.FindByPublicIDInChannel(ctx, channelID, publicID)
+}
+
+func (r pgRepository) SetPinnedWithOutbox(ctx context.Context, in *models.SetPinnedWithOutboxInput) (models.MessageWithAuthor, error) {
+	if in == nil {
+		return models.MessageWithAuthor{}, errors.New("set pinned input required")
+	}
+
+	err := r.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
+		q := tx.NewUpdate().
+			Model((*models.MessageRow)(nil)).
+			Set("is_pinned = ?", in.Pinned).
+			Where("channel_id = ? AND public_id = ?", in.ChannelID, in.PublicID)
+		if in.Pinned {
+			q = q.Set("pinned_at = ?", in.Now).Set("pinned_by = ?", in.UserID)
+		} else {
+			q = q.Set("pinned_at = NULL").Set("pinned_by = NULL")
+		}
+
+		res, err := q.Exec(ctx)
+		if err != nil {
+			return err
+		}
+		if n, _ := res.RowsAffected(); n == 0 {
+			return constants.ErrNotFound
+		}
+
+		return r.outbox.InsertInTx(ctx, tx, in.Outbox)
+	})
+	if err != nil {
+		if errors.Is(err, constants.ErrNotFound) {
+			return models.MessageWithAuthor{}, constants.ErrNotFound
+		}
+		r.logIfInfraErr("SetPinnedWithOutbox", err)
+
+		return models.MessageWithAuthor{}, err
+	}
+
+	return r.FindByPublicIDInChannel(ctx, in.ChannelID, in.PublicID)
 }
 
 func (r pgRepository) FindLastMessageTimeByAuthor(ctx context.Context, channelID, authorID string) (*time.Time, error) {
@@ -489,7 +655,7 @@ func (r pgRepository) InsertWithOutbox(ctx context.Context, in *models.InsertMes
 
 		row := models.MessageRowFrom(models.Message{
 			ID: in.ID, PublicID: in.PublicID, ChannelID: in.ChannelID, AuthorID: in.AuthorID,
-			ReplyToID: in.ReplyToID, ChannelSeq: channelSeq, Body: in.Body, CreatedAt: in.CreatedAt,
+			ClientMsgID: in.ClientMsgID, ReplyToID: in.ReplyToID, ChannelSeq: channelSeq, Body: in.Body, CreatedAt: in.CreatedAt,
 		})
 		if _, err := tx.NewInsert().Model(&row).Exec(ctx); err != nil {
 			return err

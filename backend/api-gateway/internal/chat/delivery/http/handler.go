@@ -153,6 +153,7 @@ func (h handler) CreateChannelMessage(w http.ResponseWriter, r *http.Request) {
 		ChannelId:   channelID,
 		Body:        body.Body,
 		ReplyToId:   body.ReplyToID,
+		ClientMsgId: body.ClientMsgID,
 	})
 	if err != nil {
 		authHttp.WriteOutbound(w, r, h.log, err)

@@ -180,6 +180,7 @@ type CreateChannelMessageRequest struct {
 	ChannelId     string                 `protobuf:"bytes,3,opt,name=channel_id,json=channelId,proto3" json:"channel_id,omitempty"`
 	Body          string                 `protobuf:"bytes,4,opt,name=body,proto3" json:"body,omitempty"`
 	ReplyToId     string                 `protobuf:"bytes,5,opt,name=reply_to_id,json=replyToId,proto3" json:"reply_to_id,omitempty"`
+	ClientMsgId   string                 `protobuf:"bytes,6,opt,name=client_msg_id,json=clientMsgId,proto3" json:"client_msg_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -245,6 +246,13 @@ func (x *CreateChannelMessageRequest) GetBody() string {
 func (x *CreateChannelMessageRequest) GetReplyToId() string {
 	if x != nil {
 		return x.ReplyToId
+	}
+	return ""
+}
+
+func (x *CreateChannelMessageRequest) GetClientMsgId() string {
+	if x != nil {
+		return x.ClientMsgId
 	}
 	return ""
 }
@@ -1011,6 +1019,7 @@ type MessageSummary struct {
 	ReplyTo           *MessageReplyPreview      `protobuf:"bytes,10,opt,name=reply_to,json=replyTo,proto3" json:"reply_to,omitempty"`
 	Reactions         []*MessageReactionSummary `protobuf:"bytes,11,rep,name=reactions,proto3" json:"reactions,omitempty"`
 	ChannelSeq        int64                     `protobuf:"varint,12,opt,name=channel_seq,json=channelSeq,proto3" json:"channel_seq,omitempty"`
+	ClientMsgId       string                    `protobuf:"bytes,13,opt,name=client_msg_id,json=clientMsgId,proto3" json:"client_msg_id,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -1127,6 +1136,13 @@ func (x *MessageSummary) GetChannelSeq() int64 {
 		return x.ChannelSeq
 	}
 	return 0
+}
+
+func (x *MessageSummary) GetClientMsgId() string {
+	if x != nil {
+		return x.ClientMsgId
+	}
+	return ""
 }
 
 type UploadChannelAttachmentRequest struct {
@@ -1358,14 +1374,15 @@ const file_chat_v1_message_proto_rawDesc = "" +
 	"\x11after_channel_seq\x18\b \x01(\x03R\x0fafterChannelSeq\"m\n" +
 	"\x1bListChannelMessagesResponse\x123\n" +
 	"\bmessages\x18\x01 \x03(\v2\x17.chat.v1.MessageSummaryR\bmessages\x12\x19\n" +
-	"\bhas_more\x18\x02 \x01(\bR\ahasMore\"\xae\x01\n" +
+	"\bhas_more\x18\x02 \x01(\bR\ahasMore\"\xd2\x01\n" +
 	"\x1bCreateChannelMessageRequest\x12!\n" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
 	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x1d\n" +
 	"\n" +
 	"channel_id\x18\x03 \x01(\tR\tchannelId\x12\x12\n" +
 	"\x04body\x18\x04 \x01(\tR\x04body\x12\x1e\n" +
-	"\vreply_to_id\x18\x05 \x01(\tR\treplyToId\"Q\n" +
+	"\vreply_to_id\x18\x05 \x01(\tR\treplyToId\x12\"\n" +
+	"\rclient_msg_id\x18\x06 \x01(\tR\vclientMsgId\"Q\n" +
 	"\x1cCreateChannelMessageResponse\x121\n" +
 	"\amessage\x18\x01 \x01(\v2\x17.chat.v1.MessageSummaryR\amessage\"\xad\x01\n" +
 	"\x1bUpdateChannelMessageRequest\x12!\n" +
@@ -1422,7 +1439,7 @@ const file_chat_v1_message_proto_rawDesc = "" +
 	"\x16MessageReactionSummary\x12\x14\n" +
 	"\x05emoji\x18\x01 \x01(\tR\x05emoji\x12\x14\n" +
 	"\x05count\x18\x02 \x01(\x05R\x05count\x12\x19\n" +
-	"\buser_ids\x18\x03 \x03(\tR\auserIds\"\xb3\x03\n" +
+	"\buser_ids\x18\x03 \x03(\tR\auserIds\"\xd7\x03\n" +
 	"\x0eMessageSummary\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1b\n" +
 	"\tauthor_id\x18\x02 \x01(\tR\bauthorId\x12.\n" +
@@ -1438,7 +1455,8 @@ const file_chat_v1_message_proto_rawDesc = "" +
 	" \x01(\v2\x1c.chat.v1.MessageReplyPreviewR\areplyTo\x12=\n" +
 	"\treactions\x18\v \x03(\v2\x1f.chat.v1.MessageReactionSummaryR\treactions\x12\x1f\n" +
 	"\vchannel_seq\x18\f \x01(\x03R\n" +
-	"channelSeq\"\xd0\x01\n" +
+	"channelSeq\x12\"\n" +
+	"\rclient_msg_id\x18\r \x01(\tR\vclientMsgId\"\xd0\x01\n" +
 	"\x1eUploadChannelAttachmentRequest\x12!\n" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
 	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x1d\n" +

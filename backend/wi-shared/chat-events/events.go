@@ -32,6 +32,7 @@ type ReactionSummary struct {
 type Message struct {
 	ID                string            `json:"id"`
 	ChannelSeq        int64             `json:"channel_seq,omitempty"`
+	ClientMsgID       string            `json:"client_msg_id,omitempty"`
 	AuthorID          string            `json:"author_id"`
 	AuthorDisplayName string            `json:"author_display_name"`
 	AuthorAvatarURL   string            `json:"author_avatar_url,omitempty"`
