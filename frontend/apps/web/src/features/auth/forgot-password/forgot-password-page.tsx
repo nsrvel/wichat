@@ -138,6 +138,7 @@ export function ForgotPasswordPage({ notice }: { notice?: string }) {
 							{
 								onSuccess: (data) => {
 									applyResendCooldown(data.resend_cooldown_seconds);
+									bumpOtpTurnstile();
 								},
 								onError: (err) => {
 									applyResendRateLimit(err);
