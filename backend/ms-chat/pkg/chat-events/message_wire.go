@@ -20,6 +20,7 @@ type ReactionSummaryWire struct {
 // PublicMessageWire is the message shape for Kafka chat-events (no internal/models).
 type PublicMessageWire struct {
 	ID                string
+	ChannelSeq        int64
 	AuthorID          string
 	AuthorDisplayName string
 	AuthorAvatarURL   string

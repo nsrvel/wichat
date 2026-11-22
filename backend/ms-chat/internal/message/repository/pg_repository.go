@@ -16,7 +16,7 @@ import (
 
 // PgRepository persists channel messages and reactions.
 type PgRepository interface {
-	ListByChannel(ctx context.Context, channelID string, limit int, before *time.Time, beforePublicID string, beforeChannelSeq int64) ([]models.MessageWithAuthor, bool, error)
+	ListByChannel(ctx context.Context, channelID string, limit int, before *time.Time, beforePublicID string, beforeChannelSeq, afterChannelSeq int64) ([]models.MessageWithAuthor, bool, error)
 	ListPinnedByChannel(ctx context.Context, channelID string) ([]models.MessageWithAuthor, error)
 	FindByPublicIDInChannel(ctx context.Context, channelID, publicID string) (models.MessageWithAuthor, error)
 	Insert(ctx context.Context, channelID, authorID, body string, replyToID *string, createdAt time.Time) (models.Message, error)
@@ -115,16 +115,26 @@ func (r pgRepository) hydrateRows(ctx context.Context, rows []models.MessageList
 	return out, nil
 }
 
-func (r pgRepository) ListByChannel(ctx context.Context, channelID string, limit int, before *time.Time, beforePublicID string, beforeChannelSeq int64) ([]models.MessageWithAuthor, bool, error) {
+func (r pgRepository) ListByChannel(
+	ctx context.Context,
+	channelID string,
+	limit int,
+	before *time.Time,
+	beforePublicID string,
+	beforeChannelSeq, afterChannelSeq int64,
+) ([]models.MessageWithAuthor, bool, error) {
+	if afterChannelSeq > 0 {
+		return r.listAfterChannelSeq(ctx, channelID, limit, afterChannelSeq)
+	}
+
 	var rows []models.MessageListRow
 	q := r.baseMessageSelect(&rows).
 		Where("m.channel_id = ?", channelID).
-		OrderExpr("m.created_at DESC, m.id DESC").
+		OrderExpr("m.channel_seq DESC, m.id DESC").
 		Limit(int64(limit + 1))
 	if beforeChannelSeq > 0 {
 		q = q.Where("m.channel_seq < ?", beforeChannelSeq)
-	}
-	if before != nil {
+	} else if before != nil {
 		if beforePublicID != "" {
 			q = q.Where(
 				"(m.created_at < ? OR (m.created_at = ? AND m.id < (SELECT id FROM messages WHERE channel_id = ? AND public_id = ? LIMIT 1)))",
@@ -159,6 +169,32 @@ func (r pgRepository) ListByChannel(ctx context.Context, channelID string, limit
 	}
 
 	return out, hasMore, nil
+}
+
+func (r pgRepository) listAfterChannelSeq(ctx context.Context, channelID string, limit int, afterChannelSeq int64) ([]models.MessageWithAuthor, bool, error) {
+	var rows []models.MessageListRow
+	err := r.baseMessageSelect(&rows).
+		Where("m.channel_id = ? AND m.channel_seq > ?", channelID, afterChannelSeq).
+		OrderExpr("m.channel_seq ASC, m.id ASC").
+		Limit(int64(limit + 1)).
+		Scan(ctx)
+	if err != nil {
+		r.logIfInfraErr("listAfterChannelSeq", err)
+
+		return nil, false, err
+	}
+
+	hasMore := len(rows) > limit
+	if hasMore {
+		rows = rows[:limit]
+	}
+
+	hydrated, err := r.hydrateRows(ctx, rows)
+	if err != nil {
+		return nil, false, err
+	}
+
+	return hydrated, hasMore, nil
 }
 
 func (r pgRepository) ListPinnedByChannel(ctx context.Context, channelID string) ([]models.MessageWithAuthor, error) {

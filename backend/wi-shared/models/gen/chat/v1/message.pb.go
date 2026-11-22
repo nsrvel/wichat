@@ -30,6 +30,7 @@ type ListChannelMessagesRequest struct {
 	BeforeCreatedAt  string                 `protobuf:"bytes,5,opt,name=before_created_at,json=beforeCreatedAt,proto3" json:"before_created_at,omitempty"`
 	BeforeId         string                 `protobuf:"bytes,6,opt,name=before_id,json=beforeId,proto3" json:"before_id,omitempty"`
 	BeforeChannelSeq int64                  `protobuf:"varint,7,opt,name=before_channel_seq,json=beforeChannelSeq,proto3" json:"before_channel_seq,omitempty"`
+	AfterChannelSeq  int64                  `protobuf:"varint,8,opt,name=after_channel_seq,json=afterChannelSeq,proto3" json:"after_channel_seq,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -109,6 +110,13 @@ func (x *ListChannelMessagesRequest) GetBeforeId() string {
 func (x *ListChannelMessagesRequest) GetBeforeChannelSeq() int64 {
 	if x != nil {
 		return x.BeforeChannelSeq
+	}
+	return 0
+}
+
+func (x *ListChannelMessagesRequest) GetAfterChannelSeq() int64 {
+	if x != nil {
+		return x.AfterChannelSeq
 	}
 	return 0
 }
@@ -1337,7 +1345,7 @@ var File_chat_v1_message_proto protoreflect.FileDescriptor
 
 const file_chat_v1_message_proto_rawDesc = "" +
 	"\n" +
-	"\x15chat/v1/message.proto\x12\achat.v1\"\x86\x02\n" +
+	"\x15chat/v1/message.proto\x12\achat.v1\"\xb2\x02\n" +
 	"\x1aListChannelMessagesRequest\x12!\n" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
 	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12\x1d\n" +
@@ -1346,7 +1354,8 @@ const file_chat_v1_message_proto_rawDesc = "" +
 	"\x05limit\x18\x04 \x01(\x05R\x05limit\x12*\n" +
 	"\x11before_created_at\x18\x05 \x01(\tR\x0fbeforeCreatedAt\x12\x1b\n" +
 	"\tbefore_id\x18\x06 \x01(\tR\bbeforeId\x12,\n" +
-	"\x12before_channel_seq\x18\a \x01(\x03R\x10beforeChannelSeq\"m\n" +
+	"\x12before_channel_seq\x18\a \x01(\x03R\x10beforeChannelSeq\x12*\n" +
+	"\x11after_channel_seq\x18\b \x01(\x03R\x0fafterChannelSeq\"m\n" +
 	"\x1bListChannelMessagesResponse\x123\n" +
 	"\bmessages\x18\x01 \x03(\v2\x17.chat.v1.MessageSummaryR\bmessages\x12\x19\n" +
 	"\bhas_more\x18\x02 \x01(\bR\ahasMore\"\xae\x01\n" +

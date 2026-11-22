@@ -101,15 +101,32 @@ func (s service) ListChannelMessages(ctx context.Context, in *models.ListChannel
 	}
 
 	limit := in.Limit
-	if limit <= 0 {
-		limit = constants.DefaultMessageListLimit
-	}
-	if limit > constants.MaxMessageListLimit {
-		limit = constants.MaxMessageListLimit
+	if in.AfterChannelSeq > 0 {
+		if limit <= 0 {
+			limit = constants.DefaultMessageListLimit
+		}
+		if limit > constants.MaxGapFillListLimit {
+			limit = constants.MaxGapFillListLimit
+		}
+	} else {
+		if limit <= 0 {
+			limit = constants.DefaultMessageListLimit
+		}
+		if limit > constants.MaxMessageListLimit {
+			limit = constants.MaxMessageListLimit
+		}
 	}
 
 	// Repository
-	rows, hasMore, err := s.messages.ListByChannel(ctx, in.ResolvedChannelID, limit, in.BeforeCreatedAt, in.BeforePublicID, in.BeforeChannelSeq)
+	beforeAt := in.BeforeCreatedAt
+	beforeID := in.BeforePublicID
+	beforeSeq := in.BeforeChannelSeq
+	if in.AfterChannelSeq > 0 {
+		beforeAt = nil
+		beforeID = ""
+		beforeSeq = 0
+	}
+	rows, hasMore, err := s.messages.ListByChannel(ctx, in.ResolvedChannelID, limit, beforeAt, beforeID, beforeSeq, in.AfterChannelSeq)
 	if err != nil {
 		return nil, false, err
 	}
@@ -746,7 +763,7 @@ func toPublicMessageWire(msg models.PublicMessage) pkgChatEvents.PublicMessageWi
 	}
 
 	return pkgChatEvents.PublicMessageWire{
-		ID: msg.ID, AuthorID: msg.AuthorID,
+		ID: msg.ID, ChannelSeq: msg.ChannelSeq, AuthorID: msg.AuthorID,
 		AuthorDisplayName: msg.AuthorDisplayName, AuthorAvatarURL: msg.AuthorAvatarURL,
 		Body: msg.Body, CreatedAt: msg.CreatedAt, EditedAt: msg.EditedAt, IsPinned: msg.IsPinned,
 		ReplyTo: reply, Reactions: reactions,

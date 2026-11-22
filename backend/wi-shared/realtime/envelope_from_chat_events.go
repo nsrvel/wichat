@@ -2,6 +2,7 @@ package realtime
 
 import (
 	"encoding/json"
+	"strconv"
 
 	chatEvents "github.com/wichat/wichat/backend/wi-shared/chat-events"
 )
@@ -28,8 +29,14 @@ func messagePayloadFromEvent(m chatEvents.Message) MessagePayload {
 		}
 	}
 
+	var channelSeq string
+	if m.ChannelSeq > 0 {
+		channelSeq = strconv.FormatInt(m.ChannelSeq, 10)
+	}
+
 	return MessagePayload{
 		ID:                m.ID,
+		ChannelSeq:        channelSeq,
 		AuthorID:          m.AuthorID,
 		AuthorDisplayName: m.AuthorDisplayName,
 		AuthorAvatarURL:   m.AuthorAvatarURL,
