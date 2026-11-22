@@ -1,6 +1,6 @@
 "use client";
 
-import hljs from "highlight.js";
+import hljs from "highlight.js/lib/common";
 import "highlight.js/styles/github-dark.css";
 import { Check, Copy, Download, Maximize2 } from "lucide-react";
 import { memo, useEffect, useMemo, useRef, useState, type ComponentPropsWithoutRef } from "react";

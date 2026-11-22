@@ -1,6 +1,6 @@
 "use client";
 
-import hljs from "highlight.js";
+import hljs from "highlight.js/lib/common";
 import { Check, ChevronLeft, ChevronRight, Copy, Download, Loader2, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
