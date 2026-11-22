@@ -11,14 +11,14 @@ import (
 type chatRouteStub struct{}
 
 func (chatRouteStub) ListChannelMessages(http.ResponseWriter, *http.Request)            {}
-func (chatRouteStub) CreateChannelMessage(http.ResponseWriter, *http.Request)          {}
-func (chatRouteStub) UploadChannelAttachment(http.ResponseWriter, *http.Request)     {}
-func (chatRouteStub) UpdateChannelMessage(http.ResponseWriter, *http.Request)          {}
-func (chatRouteStub) DeleteChannelMessage(http.ResponseWriter, *http.Request)          {}
-func (chatRouteStub) ToggleMessageReaction(http.ResponseWriter, *http.Request)       {}
-func (chatRouteStub) ListPinnedChannelMessages(http.ResponseWriter, *http.Request)     {}
-func (chatRouteStub) PinChannelMessage(http.ResponseWriter, *http.Request)             {}
-func (chatRouteStub) UnpinChannelMessage(http.ResponseWriter, *http.Request)           {}
+func (chatRouteStub) CreateChannelMessage(http.ResponseWriter, *http.Request)           {}
+func (chatRouteStub) UploadChannelAttachment(http.ResponseWriter, *http.Request)        {}
+func (chatRouteStub) UpdateChannelMessage(http.ResponseWriter, *http.Request)           {}
+func (chatRouteStub) DeleteChannelMessage(http.ResponseWriter, *http.Request)           {}
+func (chatRouteStub) ToggleMessageReaction(http.ResponseWriter, *http.Request)          {}
+func (chatRouteStub) ListPinnedChannelMessages(http.ResponseWriter, *http.Request)      {}
+func (chatRouteStub) PinChannelMessage(http.ResponseWriter, *http.Request)              {}
+func (chatRouteStub) UnpinChannelMessage(http.ResponseWriter, *http.Request)            {}
 func (chatRouteStub) ResolveMessageChannelSeq(http.ResponseWriter, *http.Request)       {}
 func (chatRouteStub) ResolveMessageChannelSeqGlobal(http.ResponseWriter, *http.Request) {}
 
