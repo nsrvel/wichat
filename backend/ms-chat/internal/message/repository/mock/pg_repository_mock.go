@@ -175,6 +175,19 @@ func (m pgRepositoryMock) FindByPublicIDInChannel(_ context.Context, channelID, 
 	return models.MessageWithAuthor{}, constants.ErrNotFound
 }
 
+func (m pgRepositoryMock) FindByClientMsgIDInChannel(_ context.Context, channelID, authorID, clientMsgID string) (models.MessageWithAuthor, error) {
+	m.st.mu.Lock()
+	defer m.st.mu.Unlock()
+
+	for _, msg := range m.st.Messages {
+		if msg.ChannelID == channelID && msg.AuthorID == authorID && msg.ClientMsgID != nil && *msg.ClientMsgID == clientMsgID {
+			return m.buildMessageWithAuthorLocked(msg), nil
+		}
+	}
+
+	return models.MessageWithAuthor{}, constants.ErrNotFound
+}
+
 func (m pgRepositoryMock) Insert(_ context.Context, channelID, authorID, body string, replyToID *string, createdAt time.Time) (models.Message, error) {
 	m.st.mu.Lock()
 	defer m.st.mu.Unlock()
@@ -203,19 +216,29 @@ func (m pgRepositoryMock) InsertWithOutbox(_ context.Context, in *models.InsertM
 	m.st.mu.Lock()
 	defer m.st.mu.Unlock()
 
+	if in.ClientMsgID != nil {
+		for _, msg := range m.st.Messages {
+			if msg.ChannelID == in.ChannelID && msg.AuthorID == in.AuthorID && msg.ClientMsgID != nil && *msg.ClientMsgID == *in.ClientMsgID {
+				return models.Message{}, constants.ErrConflict
+			}
+		}
+	}
+
 	m.st.ChannelSeq[in.ChannelID]++
 	channelSeq := m.st.ChannelSeq[in.ChannelID]
 	msg := models.Message{
-		ID:         in.ID,
-		PublicID:   in.PublicID,
-		ChannelID:  in.ChannelID,
-		AuthorID:   in.AuthorID,
-		ReplyToID:  in.ReplyToID,
-		ChannelSeq: channelSeq,
-		Body:       in.Body,
-		CreatedAt:  in.CreatedAt,
+		ID:          in.ID,
+		PublicID:    in.PublicID,
+		ChannelID:   in.ChannelID,
+		AuthorID:    in.AuthorID,
+		ClientMsgID: in.ClientMsgID,
+		ReplyToID:   in.ReplyToID,
+		ChannelSeq:  channelSeq,
+		Body:        in.Body,
+		CreatedAt:   in.CreatedAt,
 	}
 	m.st.Messages = append(m.st.Messages, msg)
+	m.st.Outbox = append(m.st.Outbox, in.Outbox)
 
 	return msg, nil
 }
@@ -335,6 +358,25 @@ func (m pgRepositoryMock) ToggleReaction(_ context.Context, messageID, userID, e
 	return m.reactionsForMessageLocked(messageID), nil
 }
 
+func (m pgRepositoryMock) ToggleReactionWithOutbox(_ context.Context, in *models.ToggleReactionWithOutboxInput) ([]models.MessageReactionSummary, error) {
+	if in == nil {
+		return nil, fmt.Errorf("toggle reaction input required")
+	}
+	if m.st.FailOutbox {
+		return nil, fmt.Errorf("outbox insert failed")
+	}
+
+	reactions, err := m.ToggleReaction(context.Background(), in.MessageID, in.UserID, in.Emoji, in.Now)
+	if err != nil {
+		return nil, err
+	}
+	m.st.mu.Lock()
+	m.st.Outbox = append(m.st.Outbox, in.Outbox)
+	m.st.mu.Unlock()
+
+	return reactions, nil
+}
+
 func (m pgRepositoryMock) SetPinned(_ context.Context, channelID, publicID, userID string, pinned bool, now time.Time) (models.MessageWithAuthor, error) {
 	m.st.mu.Lock()
 	defer m.st.mu.Unlock()
@@ -356,6 +398,25 @@ func (m pgRepositoryMock) SetPinned(_ context.Context, channelID, publicID, user
 	}
 
 	return models.MessageWithAuthor{}, constants.ErrNotFound
+}
+
+func (m pgRepositoryMock) SetPinnedWithOutbox(_ context.Context, in *models.SetPinnedWithOutboxInput) (models.MessageWithAuthor, error) {
+	if in == nil {
+		return models.MessageWithAuthor{}, fmt.Errorf("set pinned input required")
+	}
+	if m.st.FailOutbox {
+		return models.MessageWithAuthor{}, fmt.Errorf("outbox insert failed")
+	}
+
+	updated, err := m.SetPinned(context.Background(), in.ChannelID, in.PublicID, in.UserID, in.Pinned, in.Now)
+	if err != nil {
+		return models.MessageWithAuthor{}, err
+	}
+	m.st.mu.Lock()
+	m.st.Outbox = append(m.st.Outbox, in.Outbox)
+	m.st.mu.Unlock()
+
+	return updated, nil
 }
 
 func (m pgRepositoryMock) FindLastMessageTimeByAuthor(_ context.Context, channelID, authorID string) (*time.Time, error) {

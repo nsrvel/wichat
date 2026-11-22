@@ -19,18 +19,19 @@ type MessageReactionSummary struct {
 
 // Message is a stored channel message.
 type Message struct {
-	ID         string
-	PublicID   string
-	ChannelID  string
-	AuthorID   string
-	ReplyToID  *string
-	ChannelSeq int64
-	Body       string
-	CreatedAt  time.Time
-	EditedAt   *time.Time
-	IsPinned   bool
-	PinnedAt   *time.Time
-	PinnedBy   *string
+	ID          string
+	PublicID    string
+	ChannelID   string
+	AuthorID    string
+	ClientMsgID *string
+	ReplyToID   *string
+	ChannelSeq  int64
+	Body        string
+	CreatedAt   time.Time
+	EditedAt    *time.Time
+	IsPinned    bool
+	PinnedAt    *time.Time
+	PinnedBy    *string
 }
 
 // MessageWithAuthor is a message row joined with author and reply metadata.
@@ -46,6 +47,7 @@ type MessageWithAuthor struct {
 type PublicMessage struct {
 	ID                string
 	ChannelSeq        int64
+	ClientMsgID       string
 	AuthorID          string
 	AuthorDisplayName string
 	AuthorAvatarURL   string
@@ -94,6 +96,7 @@ type CreateChannelMessageInput struct {
 	SlowmodeSeconds   int32
 	Body              string
 	ReplyToPublicID   string
+	ClientMsgID       string
 }
 
 // UpdateChannelMessageInput edits an existing message body.

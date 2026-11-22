@@ -21,6 +21,7 @@ type ReactionSummaryWire struct {
 type PublicMessageWire struct {
 	ID                string
 	ChannelSeq        int64
+	ClientMsgID       string
 	AuthorID          string
 	AuthorDisplayName string
 	AuthorAvatarURL   string

@@ -27,6 +27,7 @@ func MessageSummary(msg models.PublicMessage) *chatv1.MessageSummary {
 	return &chatv1.MessageSummary{
 		Id:                msg.ID,
 		ChannelSeq:        msg.ChannelSeq,
+		ClientMsgId:       msg.ClientMsgID,
 		AuthorId:          msg.AuthorID,
 		AuthorDisplayName: msg.AuthorDisplayName,
 		AuthorAvatarUrl:   msg.AuthorAvatarURL,

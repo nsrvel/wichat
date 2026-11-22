@@ -76,6 +76,7 @@ func (s *server) CreateChannelMessage(ctx context.Context, req *chatv1.CreateCha
 		ChannelPublicID: req.GetChannelId(),
 		Body:            req.GetBody(),
 		ReplyToPublicID: req.GetReplyToId(),
+		ClientMsgID:     req.GetClientMsgId(),
 	})
 	if err != nil {
 		return nil, responsegrpc.ToStatus(err)

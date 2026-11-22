@@ -38,6 +38,7 @@ message CreateChannelMessageRequest {
   string channel_id = 3;
   string body = 4;
   string reply_to_id = 5;
+  string client_msg_id = 6;
 }
 
 message CreateChannelMessageResponse {
@@ -127,6 +128,7 @@ message MessageSummary {
   MessageReplyPreview reply_to = 10;
   repeated MessageReactionSummary reactions = 11;
   int64 channel_seq = 12;
+  string client_msg_id = 13;
 }
 
 message UploadChannelAttachmentRequest {

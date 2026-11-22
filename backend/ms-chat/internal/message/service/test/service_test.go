@@ -518,8 +518,8 @@ func TestUpdateDeleteChannelMessageOutboxWithRepository(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	if len(st.Outbox) != 1 || st.Outbox[0].EventType != chatEvents.TypeMessageUpdated {
-		t.Fatalf("expected one message.updated outbox row, got %+v", st.Outbox)
+	if len(st.Outbox) != 2 || st.Outbox[1].EventType != chatEvents.TypeMessageUpdated {
+		t.Fatalf("expected message.updated outbox row, got %+v", st.Outbox)
 	}
 
 	st.FailOutbox = true
@@ -553,7 +553,7 @@ func TestUpdateDeleteChannelMessageOutboxWithRepository(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	if len(st.Outbox) != 2 || st.Outbox[1].EventType != chatEvents.TypeMessageDeleted {
+	if len(st.Outbox) != 3 || st.Outbox[2].EventType != chatEvents.TypeMessageDeleted {
 		t.Fatalf("expected message.deleted outbox row, got %+v", st.Outbox)
 	}
 	got, _, err = svc.ListChannelMessages(ctx, &models.ListChannelMessagesInput{
@@ -564,5 +564,104 @@ func TestUpdateDeleteChannelMessageOutboxWithRepository(t *testing.T) {
 	})
 	if err != nil || len(got) != 0 {
 		t.Fatalf("expected message deleted, got %+v err=%v", got, err)
+	}
+}
+
+func TestCreateChannelMessageClientMsgID(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	st := mock.NewState()
+	st.Authors["u1"] = "Alice"
+	svc := newTestService(st)
+
+	clientID := "550e8400-e29b-41d4-a716-446655440000"
+	first, err := svc.CreateChannelMessage(ctx, &models.CreateChannelMessageInput{
+		ResolvedChannelID: "ch-client",
+		CallerUserID:      "u1",
+		CallerPermissions: []string{"view_channels", "send_messages"},
+		Body:              "hello once",
+		ClientMsgID:       clientID,
+	})
+	if err != nil || first.ClientMsgID != clientID {
+		t.Fatalf("first create: %+v err=%v", first, err)
+	}
+
+	second, err := svc.CreateChannelMessage(ctx, &models.CreateChannelMessageInput{
+		ResolvedChannelID: "ch-client",
+		CallerUserID:      "u1",
+		CallerPermissions: []string{"view_channels", "send_messages"},
+		Body:              "hello once",
+		ClientMsgID:       clientID,
+	})
+	if err != nil || second.ID != first.ID {
+		t.Fatalf("idempotent retry: want same id %s got %+v err=%v", first.ID, second, err)
+	}
+
+	if _, err := svc.CreateChannelMessage(ctx, &models.CreateChannelMessageInput{
+		ResolvedChannelID: "ch-client",
+		CallerUserID:      "u1",
+		CallerPermissions: []string{"view_channels", "send_messages"},
+		Body:              "other",
+		ClientMsgID:       "not-a-uuid",
+	}); err == nil {
+		t.Fatal("expected invalid client_msg_id")
+	}
+}
+
+func TestReactionAndPinOutboxSameTransaction(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	st := mock.NewState()
+	st.Authors["u1"] = "Alice"
+	st.Authors["u2"] = "Bob"
+	svc := newTestService(st)
+
+	root, err := svc.CreateChannelMessage(ctx, &models.CreateChannelMessageInput{
+		ResolvedChannelID: "ch-tx",
+		CallerUserID:      "u1",
+		CallerPermissions: []string{"view_channels", "send_messages", "read_message_history"},
+		Body:              "pin me",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	st.Outbox = nil
+
+	if _, err := svc.ToggleMessageReaction(ctx, &models.ToggleMessageReactionInput{
+		ResolvedChannelID: "ch-tx",
+		CallerUserID:      "u2",
+		CallerPermissions: []string{"view_channels", "add_reactions"},
+		MessagePublicID:   root.ID,
+		Emoji:             "🔥",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if len(st.Outbox) != 1 || st.Outbox[0].EventType != chatEvents.TypeMessageReactionsUpdated {
+		t.Fatalf("reaction outbox: %+v", st.Outbox)
+	}
+
+	st.Outbox = nil
+	if _, err := svc.SetChannelMessagePinned(ctx, &models.SetChannelMessagePinnedInput{
+		ResolvedChannelID: "ch-tx",
+		CallerUserID:      "u1",
+		CallerPermissions: []string{"view_channels", "pin_messages"},
+		MessagePublicID:   root.ID,
+		Pinned:            true,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if len(st.Outbox) != 1 || st.Outbox[0].EventType != chatEvents.TypeMessageUpdated {
+		t.Fatalf("pin outbox: %+v", st.Outbox)
+	}
+
+	st.FailOutbox = true
+	if _, err := svc.ToggleMessageReaction(ctx, &models.ToggleMessageReactionInput{
+		ResolvedChannelID: "ch-tx",
+		CallerUserID:      "u2",
+		CallerPermissions: []string{"view_channels", "add_reactions"},
+		MessagePublicID:   root.ID,
+		Emoji:             "🔥",
+	}); err == nil {
+		t.Fatal("expected error when reaction outbox fails")
 	}
 }
