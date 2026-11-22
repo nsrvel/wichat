@@ -23,6 +23,8 @@ export type ListChannelMessagesParams = {
 	limit?: number;
 	beforeCreatedAt?: string;
 	beforeId?: string;
+	beforeChannelSeq?: string;
+	afterChannelSeq?: string;
 };
 
 export async function listChannelMessages(
@@ -37,6 +39,12 @@ export async function listChannelMessages(
 	}
 	if (params?.beforeId) {
 		search.set("before_id", params.beforeId);
+	}
+	if (params?.beforeChannelSeq) {
+		search.set("before_channel_seq", params.beforeChannelSeq);
+	}
+	if (params?.afterChannelSeq) {
+		search.set("after_channel_seq", params.afterChannelSeq);
 	}
 	const query = search.toString();
 	const path = `/groups/${encodeURIComponent(groupId)}/channels/${encodeURIComponent(channelId)}/messages${query ? `?${query}` : ""}`;

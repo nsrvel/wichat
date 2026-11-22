@@ -1,5 +1,9 @@
 import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
 import { isPublicEntityId } from "@wichat/contracts/common";
+import {
+	oldestPageCursor,
+	type ChannelMessagesPageParam,
+} from "@/features/chat/lib/message-sync";
 import { Q_CHANNEL_MESSAGES, Q_PINNED_MESSAGES } from "@/services/message/message.key";
 import {
 	CHANNEL_MESSAGES_PAGE_SIZE,
@@ -7,10 +11,7 @@ import {
 	listPinnedChannelMessages,
 } from "@/services/message/message.service";
 
-export type ChannelMessagesPageParam = {
-	beforeCreatedAt?: string;
-	beforeId?: string;
-};
+export type { ChannelMessagesPageParam };
 
 export function channelMessagesQueryOpts(groupId: string, channelId: string) {
 	return infiniteQueryOptions({
@@ -21,6 +22,7 @@ export function channelMessagesQueryOpts(groupId: string, channelId: string) {
 				limit: CHANNEL_MESSAGES_PAGE_SIZE,
 				beforeCreatedAt: pageParam?.beforeCreatedAt,
 				beforeId: pageParam?.beforeId,
+				beforeChannelSeq: pageParam?.beforeChannelSeq,
 			}),
 		getNextPageParam: (lastPage) => {
 			if (!lastPage?.messages || lastPage.messages.length === 0) {
@@ -33,8 +35,7 @@ export function channelMessagesQueryOpts(groupId: string, channelId: string) {
 			if (!hasMore) {
 				return undefined;
 			}
-			const oldest = lastPage.messages[0];
-			return oldest ? { beforeCreatedAt: oldest.created_at, beforeId: oldest.id } : undefined;
+			return oldestPageCursor(lastPage);
 		},
 		enabled: isPublicEntityId(groupId) && isPublicEntityId(channelId),
 		staleTime: 30_000,
