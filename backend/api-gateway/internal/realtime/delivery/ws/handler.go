@@ -124,12 +124,14 @@ func (h Handler) isGroupMember(ctx context.Context, token, groupID string) bool 
 
 func (h Handler) Realtime(w http.ResponseWriter, r *http.Request) {
 	token := BearerTokenFromRequest(r)
-	if token == "" {
+	if token == "" && !AllowsDeferredBearerAuth(r) {
 		responsehttp.WriteError(w, r, exception.Unauthenticated(exception.MsgUnauthorized, nil))
 		return
 	}
 
-	opts := &websocket.AcceptOptions{}
+	opts := &websocket.AcceptOptions{
+		Subprotocols: NegotiatedSubprotocols(r),
+	}
 	if origin := h.allowedOriginPattern(); origin != "" {
 		opts.OriginPatterns = []string{origin}
 	}

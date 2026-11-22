@@ -1,5 +1,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { patchLiveMemberPresence } from "@/features/presence/live-cache";
+import {
+	clearPendingManualPresence,
+	mergeHttpMyPresence,
+	patchLiveMemberPresence,
+	setPendingManualPresence,
+} from "@/features/presence/live-cache";
+import { nudgePresenceHeartbeat } from "@/integrations/realtime/gateway-socket";
 import { setAccessToken } from "@/integrations/api-client";
 import { Q_SESSION } from "@/services/auth/auth.key";
 import {
@@ -319,6 +325,7 @@ export function useUpdateMyPresenceMutation() {
 		mutationFn: updateMyPresence,
 		onMutate: async (input) => {
 			await queryClient.cancelQueries({ queryKey: [Q_MY_PRESENCE] });
+			setPendingManualPresence(input.status);
 			const prev = queryClient.getQueryData<MyPresenceResponse>([Q_MY_PRESENCE]);
 			const next = optimisticMyPresence(input.status, prev);
 			queryClient.setQueryData<MyPresenceResponse>([Q_MY_PRESENCE], next);
@@ -333,12 +340,15 @@ export function useUpdateMyPresenceMutation() {
 			return { prev };
 		},
 		onError: (_err, _input, ctx) => {
+			clearPendingManualPresence();
 			if (ctx?.prev) {
 				queryClient.setQueryData([Q_MY_PRESENCE], ctx.prev);
 			}
 		},
 		onSuccess: (res) => {
-			queryClient.setQueryData([Q_MY_PRESENCE], res);
+			clearPendingManualPresence();
+			const prev = queryClient.getQueryData<MyPresenceResponse>([Q_MY_PRESENCE]);
+			queryClient.setQueryData([Q_MY_PRESENCE], mergeHttpMyPresence(res, prev));
 			const sessionUser = queryClient.getQueryData<User>([Q_SESSION]);
 			if (sessionUser?.id) {
 				patchLiveMemberPresence(queryClient, {
@@ -347,6 +357,7 @@ export function useUpdateMyPresenceMutation() {
 					presence_status: res.effective_status,
 				});
 			}
+			nudgePresenceHeartbeat();
 		},
 	});
 }

@@ -39,7 +39,7 @@ export function PresenceGate() {
 		if (!active) {
 			return;
 		}
-		void queryClient.fetchQuery(myPresenceQueryOptions());
+		void queryClient.fetchQuery(myPresenceQueryOptions(queryClient));
 	}, [active, queryClient]);
 
 	useEffect(() => {

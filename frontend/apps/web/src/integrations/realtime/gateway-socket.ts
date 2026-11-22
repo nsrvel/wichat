@@ -4,24 +4,18 @@ import {
 	type MessageReactionSummary,
 } from "@wichat/contracts/chat/message";
 import { RealtimePresenceUpdatedSchema } from "@wichat/contracts/user/presence";
-import { ensureAccessToken, getAccessToken } from "@/integrations/api-client";
+import {
+	ensureAccessToken,
+	forceRefreshAccessToken,
+	getAccessToken,
+} from "@/integrations/api-client";
 import { onGatewayRecovered } from "@/integrations/realtime/gateway-connection";
 import { normalizePublicGroupId } from "@/features/presence/public-group-id";
-import { env } from "@/lib/env";
+import { realtimeHttpUrl } from "@/lib/realtime-url";
 
-function realtimeHttpUrl(): string {
-	const base = env.NEXT_PUBLIC_API_URL.replace(/\/+$/, "");
-	return base.endsWith("/api/v1") ? `${base}/realtime` : `${base}/api/v1/realtime`;
-}
-
-const WS_BEARER_SUBPROTOCOL_PREFIX = "bearer.";
-
-export function realtimeWsSubprotocols(token: string): string[] {
-	const trimmed = token.trim();
-	if (!trimmed) {
-		return [];
-	}
-	return [WS_BEARER_SUBPROTOCOL_PREFIX + trimmed];
+/** Short marker only — Chromium rejects `bearer.<jwt>` when the JWT exceeds subprotocol length. */
+export function realtimeWsSubprotocols(): string[] {
+	return ["bearer"];
 }
 
 export function buildRealtimeWsUrl(): string {
@@ -63,6 +57,19 @@ type Runtime = {
 };
 
 let rt: Runtime | null = null;
+let presenceAuthRequiredStreak = 0;
+
+async function handlePresenceAuthRequired(ws: WebSocket): Promise<void> {
+	const token = (await forceRefreshAccessToken()) || (await ensureAccessToken());
+	if (!token || ws.readyState !== WebSocket.OPEN) {
+		return;
+	}
+	sendJson(ws, {
+		type: "presence.heartbeat",
+		activity: rt?.activity ?? "active",
+		access_token: token,
+	});
+}
 
 function ensureRuntime(): Runtime {
 	if (!rt) {
@@ -86,13 +93,20 @@ function sendJson(ws: WebSocket, payload: Record<string, unknown>): void {
 	}
 }
 
-function heartbeat(ws: WebSocket): void {
-	const token = getAccessToken();
+async function sendPresenceHeartbeat(ws: WebSocket): Promise<void> {
+	if (ws.readyState !== WebSocket.OPEN) {
+		return;
+	}
+	const token = (await ensureAccessToken()) || getAccessToken();
 	sendJson(ws, {
 		type: "presence.heartbeat",
 		activity: rt?.activity ?? "active",
 		...(token ? { access_token: token } : {}),
 	});
+}
+
+function heartbeat(ws: WebSocket): void {
+	void sendPresenceHeartbeat(ws);
 }
 
 function subscribePresence(ws: WebSocket): void {
@@ -158,21 +172,21 @@ async function connect(): Promise<void> {
 	}
 
 	state.connecting = true;
-	let token = getAccessToken();
-	if (!token) {
-		token = await ensureAccessToken();
-	}
+	await ensureAccessToken().catch(() => null);
 	state.connecting = false;
 
-	if (state.closed || !token) {
-		scheduleReconnect();
+	if (state.closed) {
 		return;
 	}
 
+	const wsUrl = buildRealtimeWsUrl();
 	let ws: WebSocket;
 	try {
-		ws = new WebSocket(buildRealtimeWsUrl(), realtimeWsSubprotocols(token));
-	} catch {
+		ws = new WebSocket(wsUrl, realtimeWsSubprotocols());
+	} catch (err) {
+		if (process.env.NODE_ENV === "development") {
+			console.warn("[wichat] websocket constructor failed", wsUrl, err);
+		}
 		scheduleReconnect();
 		return;
 	}
@@ -180,17 +194,33 @@ async function connect(): Promise<void> {
 
 	ws.addEventListener("open", () => {
 		state.reconnectAttempts = 0;
-		subscribePresence(ws);
-		subscribeChannel(ws);
-		heartbeat(ws);
-		if (state.heartbeatTimer) {
-			clearInterval(state.heartbeatTimer);
+		presenceAuthRequiredStreak = 0;
+		void (async () => {
+			const token = (await forceRefreshAccessToken()) || (await ensureAccessToken());
+			if (!token || ws.readyState !== WebSocket.OPEN) {
+				ws.close(4003, "missing access token");
+				scheduleReconnect();
+				return;
+			}
+			await sendPresenceHeartbeat(ws);
+			subscribePresence(ws);
+			subscribeChannel(ws);
+			heartbeat(ws);
+			if (state.heartbeatTimer) {
+				clearInterval(state.heartbeatTimer);
+			}
+			state.heartbeatTimer = setInterval(() => heartbeat(ws), HEARTBEAT_MS);
+			if (state.hasConnectedOnce) {
+				state.channel?.onReconnect?.();
+			}
+			state.hasConnectedOnce = true;
+		})();
+	});
+
+	ws.addEventListener("error", () => {
+		if (process.env.NODE_ENV === "development") {
+			console.warn("[wichat] websocket error", wsUrl);
 		}
-		state.heartbeatTimer = setInterval(() => heartbeat(ws), HEARTBEAT_MS);
-		if (state.hasConnectedOnce) {
-			state.channel?.onReconnect?.();
-		}
-		state.hasConnectedOnce = true;
 	});
 
 	ws.addEventListener("message", (event) => {
@@ -210,11 +240,21 @@ async function connect(): Promise<void> {
 			dispatchChatFrame(raw);
 			return;
 		}
-		if (head.type === "subscribe.denied" || head.type === "presence.auth_required") {
+		if (head.type === "subscribe.denied") {
+			return;
+		}
+		if (head.type === "presence.auth_required") {
+			presenceAuthRequiredStreak += 1;
+			void handlePresenceAuthRequired(ws);
+			if (presenceAuthRequiredStreak >= 3) {
+				presenceAuthRequiredStreak = 0;
+				ws.close(4001, "presence auth refresh");
+			}
 			return;
 		}
 		try {
 			const parsed = RealtimePresenceUpdatedSchema.parse(raw);
+			presenceAuthRequiredStreak = 0;
 			const frame = {
 				user_id: parsed.user_id,
 				presence_status: parsed.presence_status,
@@ -228,7 +268,10 @@ async function connect(): Promise<void> {
 		}
 	});
 
-	ws.addEventListener("close", () => {
+	ws.addEventListener("close", (event) => {
+		if (process.env.NODE_ENV === "development" && event.code !== 1000) {
+			console.warn("[wichat] websocket closed", wsUrl, event.code, event.reason);
+		}
 		state.ws = null;
 		if (state.heartbeatTimer) {
 			clearInterval(state.heartbeatTimer);
@@ -362,6 +405,20 @@ export function acquireGatewaySocketChannel(handlers: ChannelRealtimeHandlers): 
 		}
 		release();
 	};
+}
+
+/** After manual presence PUT, push a heartbeat so ms-user registers the open conn. */
+export function nudgePresenceHeartbeat(): void {
+	const state = rt;
+	if (!state?.ws || state.ws.readyState !== WebSocket.OPEN) {
+		return;
+	}
+	void ensureAccessToken().then((token) => {
+		if (!token || state.ws?.readyState !== WebSocket.OPEN) {
+			return;
+		}
+		heartbeat(state.ws);
+	});
 }
 
 export function setGatewaySocketActivity(activity: "active" | "idle"): void {

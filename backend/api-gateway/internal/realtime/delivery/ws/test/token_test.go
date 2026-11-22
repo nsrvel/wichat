@@ -24,6 +24,23 @@ func TestBearerTokenFromRequestRejectsQueryToken(t *testing.T) {
 	}
 }
 
+func TestNegotiatedSubprotocolsLegacyJWT(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/realtime", nil)
+	req.Header.Set("Sec-WebSocket-Protocol", "bearer, bearer.legacy-jwt")
+	got := wsdelivery.NegotiatedSubprotocols(req)
+	if len(got) != 2 || got[0] != "bearer" || got[1] != "bearer.legacy-jwt" {
+		t.Fatalf("got %v", got)
+	}
+}
+
+func TestAllowsDeferredBearerAuth(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/realtime", nil)
+	req.Header.Set("Sec-WebSocket-Protocol", "bearer")
+	if !wsdelivery.AllowsDeferredBearerAuth(req) {
+		t.Fatal("expected deferred bearer")
+	}
+}
+
 func TestBearerTokenFromRequestAuthorization(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/realtime", nil)
 	req.Header.Set("Authorization", "Bearer hdr")
