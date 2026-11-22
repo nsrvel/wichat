@@ -34,6 +34,7 @@ import { cn } from "@/lib/utils";
 import { sessionQueryOpts } from "@/services/auth/auth.query";
 import { myGroupsQueryOpts } from "@/services/group/group.query";
 import { groupRolesQueryOpts } from "@/services/group-role/group-role.query";
+import { isQueryFailureWithoutData } from "@/lib/query-display";
 import { groupMembersQueryOpts } from "@/services/invite/invite.query";
 
 type GroupSettingsMembersSectionProps = {
@@ -100,7 +101,7 @@ export function GroupSettingsMembersSection({
 	const members = useMemo(() => membersPage?.members ?? [], [membersPage?.members]);
 	const total = membersPage?.total ?? members.length;
 	const membersPending = membersQuery.isPending && !membersPage;
-	const membersFailed = membersQuery.isError;
+	const membersFailed = isQueryFailureWithoutData(membersQuery.isError, membersQuery.data);
 	const hasNext = Boolean(membersPage?.next_cursor);
 	const hasPrev = cursorStack.length > 1;
 

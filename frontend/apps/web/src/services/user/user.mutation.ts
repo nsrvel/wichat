@@ -38,7 +38,45 @@ import type {
 	UpdateUserStatusNoteRequest,
 	User,
 } from "@wichat/contracts/user";
-import type { MyPresenceResponse } from "@wichat/contracts/user/presence";
+import type { ManualPresenceStatus, MyPresenceResponse } from "@wichat/contracts/user/presence";
+
+function optimisticMyPresence(
+	manual: ManualPresenceStatus,
+	prev: MyPresenceResponse | undefined,
+): MyPresenceResponse {
+	const base = prev ?? {
+		manual_status: "online",
+		effective_status: "online",
+		is_online: true,
+		expires_at: "",
+	};
+	let effective = base.effective_status;
+	let isOnline = base.is_online;
+	switch (manual) {
+		case "invisible":
+			effective = "offline";
+			isOnline = false;
+			break;
+		case "dnd":
+			effective = "dnd";
+			isOnline = true;
+			break;
+		case "idle":
+			effective = "idle";
+			isOnline = true;
+			break;
+		default:
+			effective = "online";
+			isOnline = true;
+			break;
+	}
+	return {
+		...base,
+		manual_status: manual,
+		effective_status: effective,
+		is_online: isOnline,
+	};
+}
 
 export function useSaveMyProfileMutation() {
 	const queryClient = useQueryClient();
@@ -282,10 +320,14 @@ export function useUpdateMyPresenceMutation() {
 		onMutate: async (input) => {
 			await queryClient.cancelQueries({ queryKey: [Q_MY_PRESENCE] });
 			const prev = queryClient.getQueryData<MyPresenceResponse>([Q_MY_PRESENCE]);
-			if (prev) {
-				queryClient.setQueryData<MyPresenceResponse>([Q_MY_PRESENCE], {
-					...prev,
-					manual_status: input.status,
+			const next = optimisticMyPresence(input.status, prev);
+			queryClient.setQueryData<MyPresenceResponse>([Q_MY_PRESENCE], next);
+			const sessionUser = queryClient.getQueryData<User>([Q_SESSION]);
+			if (sessionUser?.id) {
+				patchLiveMemberPresence(queryClient, {
+					user_id: sessionUser.id,
+					is_online: next.is_online,
+					presence_status: next.effective_status,
 				});
 			}
 			return { prev };

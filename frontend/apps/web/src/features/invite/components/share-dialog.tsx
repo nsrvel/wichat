@@ -25,6 +25,7 @@ import { instancePolicyQueryOpts } from "@/services/auth/auth.query";
 import { Q_MY_GROUPS } from "@/services/group/group.key";
 import { myGroupsQueryOpts } from "@/services/group/group.query";
 import { copyTextToClipboard } from "@/lib/copy-to-clipboard";
+import { isQueryFailureWithoutData } from "@/lib/query-display";
 import { hasGroupPermission } from "@/lib/group-permissions";
 import { TurnstileWidget } from "@/features/auth/components/turnstile-widget";
 import { useInviteTurnstile } from "@/features/invite/hooks/use-invite-turnstile";
@@ -180,7 +181,7 @@ export function ShareDialog({ open, onOpenChange, target }: ShareDialogProps) {
 	const membersPage = membersQuery.data;
 	const members = membersPage?.members ?? [];
 	const membersPending = membersQuery.isPending && !membersPage;
-	const membersFailed = membersQuery.isError;
+	const membersFailed = isQueryFailureWithoutData(membersQuery.isError, membersQuery.data);
 	const hasNext = Boolean(membersPage?.next_cursor);
 	const hasPrev = cursorStack.length > 1;
 
