@@ -34,6 +34,8 @@ type Handler interface {
 	ListPinnedChannelMessages(w http.ResponseWriter, r *http.Request)
 	PinChannelMessage(w http.ResponseWriter, r *http.Request)
 	UnpinChannelMessage(w http.ResponseWriter, r *http.Request)
+	ResolveMessageChannelSeq(w http.ResponseWriter, r *http.Request)
+	ResolveMessageChannelSeqGlobal(w http.ResponseWriter, r *http.Request)
 }
 
 type handler struct {
@@ -103,14 +105,23 @@ func (h handler) ListChannelMessages(w http.ResponseWriter, r *http.Request) {
 		beforeChannelSeq = parsed
 	}
 
+	var afterChannelSeq int64
+	if raw := strings.TrimSpace(r.URL.Query().Get("after_channel_seq")); raw != "" {
+		parsed, err := strconv.ParseInt(raw, 10, 64)
+		if err != nil || parsed < 0 {
+			authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "after_channel_seq"}))
+			return
+		}
+		afterChannelSeq = parsed
+	}
+
 	out, err := h.ms.Chat.GRPC.Message.ListChannelMessages(r.Context(), &chatv1.ListChannelMessagesRequest{
 		AccessToken:      token,
 		GroupId:          groupID,
 		ChannelId:        channelID,
 		Limit:            limit,
-		BeforeCreatedAt:  strings.TrimSpace(r.URL.Query().Get("before_created_at")),
-		BeforeId:         strings.TrimSpace(r.URL.Query().Get("before_id")),
 		BeforeChannelSeq: beforeChannelSeq,
+		AfterChannelSeq:  afterChannelSeq,
 	})
 	if err != nil {
 		authHttp.WriteOutbound(w, r, h.log, err)
@@ -142,6 +153,7 @@ func (h handler) CreateChannelMessage(w http.ResponseWriter, r *http.Request) {
 		ChannelId:   channelID,
 		Body:        body.Body,
 		ReplyToId:   body.ReplyToID,
+		ClientMsgId: body.ClientMsgID,
 	})
 	if err != nil {
 		authHttp.WriteOutbound(w, r, h.log, err)
@@ -340,4 +352,55 @@ func (h handler) UploadChannelAttachment(w http.ResponseWriter, r *http.Request)
 	responsehttp.WriteJSON(w, http.StatusCreated, response.NewDataEnvelope(chatHttp.UploadAttachmentResponseBody{
 		Attachment: chatHttp.AttachmentFromPB(out.GetAttachment()),
 	}))
+}
+
+func (h handler) writeResolveMessageChannelSeq(
+	w http.ResponseWriter,
+	r *http.Request,
+	token, groupID, channelID, messageID string,
+) {
+	out, err := h.ms.Chat.GRPC.Message.ResolveMessageChannelSeq(r.Context(), &chatv1.ResolveMessageChannelSeqRequest{
+		AccessToken: token,
+		GroupId:     groupID,
+		ChannelId:   channelID,
+		MessageId:   messageID,
+	})
+	if err != nil {
+		authHttp.WriteOutbound(w, r, h.log, err)
+		return
+	}
+
+	responsehttp.WriteJSON(w, http.StatusOK, response.NewDataEnvelope(chatHttp.MessageChannelSeqBody{
+		MessageID:  out.GetMessageId(),
+		GroupID:    out.GetGroupId(),
+		ChannelID:  out.GetChannelId(),
+		ChannelSeq: out.GetChannelSeq(),
+	}))
+}
+
+func (h handler) ResolveMessageChannelSeq(w http.ResponseWriter, r *http.Request) {
+	token, groupID, channelID, messageID, ok := h.requireMessageContext(w, r)
+	if !ok {
+		return
+	}
+
+	h.writeResolveMessageChannelSeq(w, r, token, groupID, channelID, messageID)
+}
+
+func (h handler) ResolveMessageChannelSeqGlobal(w http.ResponseWriter, r *http.Request) {
+	token := authHttp.Bearer(r)
+	if token == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.Unauthenticated(exception.MsgUnauthorized, nil))
+		return
+	}
+
+	messageID := strings.TrimSpace(r.PathValue("messageId"))
+	groupID := strings.TrimSpace(r.URL.Query().Get("group_id"))
+	channelID := strings.TrimSpace(r.URL.Query().Get("channel_id"))
+	if messageID == "" || groupID == "" || channelID == "" {
+		authHttp.WriteOutbound(w, r, h.log, exception.InvalidInput(exception.MsgInvalidInput, nil))
+		return
+	}
+
+	h.writeResolveMessageChannelSeq(w, r, token, groupID, channelID, messageID)
 }

@@ -20,6 +20,8 @@ export type MessageReactionSummary = z.infer<
 
 export const MessageSchema = z.object({
 	id: publicEntityIdSchema,
+	channel_seq: z.number().int().positive().optional(),
+	client_msg_id: z.string().uuid().optional(),
 	author_id: z.string(),
 	author_display_name: z.string(),
 	author_avatar_url: z.string().default(""),
@@ -39,9 +41,18 @@ export const MessagesListSchema = z.object({
 });
 export type MessagesList = z.infer<typeof MessagesListSchema>;
 
+export const MessageChannelSeqSchema = z.object({
+	message_id: publicEntityIdSchema,
+	group_id: publicEntityIdSchema,
+	channel_id: publicEntityIdSchema,
+	channel_seq: z.number().int().positive(),
+});
+export type MessageChannelSeq = z.infer<typeof MessageChannelSeqSchema>;
+
 export const CreateMessageBodySchema = z.object({
 	body: z.string().trim().min(1).max(4096),
 	reply_to_id: publicEntityIdSchema.optional(),
+	client_msg_id: z.string().uuid().optional(),
 });
 export type CreateMessageBody = z.infer<typeof CreateMessageBodySchema>;
 

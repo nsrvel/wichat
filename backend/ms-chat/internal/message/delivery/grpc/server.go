@@ -2,13 +2,11 @@ package grpc
 
 import (
 	"context"
-	"time"
 
 	messageservice "github.com/wichat/wichat/backend/ms-chat/internal/message/service"
 	"github.com/wichat/wichat/backend/ms-chat/internal/models"
 	chatPb "github.com/wichat/wichat/backend/ms-chat/pkg/chat-pb"
 	"github.com/wichat/wichat/backend/ms-chat/pkg/constants"
-	"github.com/wichat/wichat/backend/wi-shared/exception"
 	chatv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/chat/v1"
 	responsegrpc "github.com/wichat/wichat/backend/wi-shared/response/grpc"
 )
@@ -34,27 +32,14 @@ func (s *server) ListChannelMessages(ctx context.Context, req *chatv1.ListChanne
 	if limit <= 0 {
 		limit = constants.DefaultMessageListLimit
 	}
-	var before *time.Time
-	if raw := req.GetBeforeCreatedAt(); raw != "" {
-		parsed, err := time.Parse(time.RFC3339Nano, raw)
-		if err != nil {
-			parsed, err = time.Parse(time.RFC3339, raw)
-			if err != nil {
-				return nil, responsegrpc.ToStatus(exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "before_created_at"}))
-			}
-		}
-		before = &parsed
-	}
-
 	// Service
 	messages, hasMore, err := s.svc.ListChannelMessages(ctx, &models.ListChannelMessagesInput{
 		AccessToken:      req.GetAccessToken(),
 		GroupPublicID:    req.GetGroupId(),
 		ChannelPublicID:  req.GetChannelId(),
 		Limit:            limit,
-		BeforeCreatedAt:  before,
-		BeforePublicID:   req.GetBeforeId(),
 		BeforeChannelSeq: req.GetBeforeChannelSeq(),
+		AfterChannelSeq:  req.GetAfterChannelSeq(),
 	})
 	if err != nil {
 		return nil, responsegrpc.ToStatus(err)
@@ -75,6 +60,7 @@ func (s *server) CreateChannelMessage(ctx context.Context, req *chatv1.CreateCha
 		ChannelPublicID: req.GetChannelId(),
 		Body:            req.GetBody(),
 		ReplyToPublicID: req.GetReplyToId(),
+		ClientMsgID:     req.GetClientMsgId(),
 	})
 	if err != nil {
 		return nil, responsegrpc.ToStatus(err)
@@ -153,6 +139,25 @@ func (s *server) ListPinnedChannelMessages(ctx context.Context, req *chatv1.List
 	}
 
 	return &chatv1.ListPinnedChannelMessagesResponse{Messages: chatPb.MessageSummaries(messages)}, nil
+}
+
+func (s *server) ResolveMessageChannelSeq(ctx context.Context, req *chatv1.ResolveMessageChannelSeqRequest) (*chatv1.ResolveMessageChannelSeqResponse, error) {
+	out, err := s.svc.ResolveMessageChannelSeq(ctx, &models.ResolveMessageChannelSeqInput{
+		AccessToken:     req.GetAccessToken(),
+		GroupPublicID:   req.GetGroupId(),
+		ChannelPublicID: req.GetChannelId(),
+		MessagePublicID: req.GetMessageId(),
+	})
+	if err != nil {
+		return nil, responsegrpc.ToStatus(err)
+	}
+
+	return &chatv1.ResolveMessageChannelSeqResponse{
+		MessageId:  out.MessagePublicID,
+		GroupId:    out.GroupPublicID,
+		ChannelId:  out.ChannelPublicID,
+		ChannelSeq: out.ChannelSeq,
+	}, nil
 }
 
 func (s *server) UploadChannelAttachment(ctx context.Context, req *chatv1.UploadChannelAttachmentRequest) (*chatv1.UploadChannelAttachmentResponse, error) {

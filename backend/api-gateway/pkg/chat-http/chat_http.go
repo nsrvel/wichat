@@ -24,6 +24,7 @@ type ReactionSummaryBody struct {
 type MessageBody struct {
 	ID                string                `json:"id"`
 	ChannelSeq        int64                 `json:"channel_seq,omitempty"`
+	ClientMsgID       string                `json:"client_msg_id,omitempty"`
 	AuthorID          string                `json:"author_id"`
 	AuthorDisplayName string                `json:"author_display_name"`
 	AuthorAvatarURL   string                `json:"author_avatar_url,omitempty"`
@@ -42,10 +43,19 @@ type MessagesListBody struct {
 	HasMore  bool          `json:"has_more"`
 }
 
+// MessageChannelSeqBody resolves a message id to channel_seq.
+type MessageChannelSeqBody struct {
+	MessageID  string `json:"message_id"`
+	GroupID    string `json:"group_id"`
+	ChannelID  string `json:"channel_id"`
+	ChannelSeq int64  `json:"channel_seq"`
+}
+
 // CreateMessageBody is the JSON body for POST channel messages.
 type CreateMessageBody struct {
-	Body      string `json:"body"`
-	ReplyToID string `json:"reply_to_id,omitempty"`
+	Body        string `json:"body"`
+	ReplyToID   string `json:"reply_to_id,omitempty"`
+	ClientMsgID string `json:"client_msg_id,omitempty"`
 }
 
 // UpdateMessageBody is the JSON body for PATCH channel messages.
@@ -128,6 +138,7 @@ func MessageFromPB(msg *chatv1.MessageSummary) MessageBody {
 	return MessageBody{
 		ID:                msg.GetId(),
 		ChannelSeq:        msg.GetChannelSeq(),
+		ClientMsgID:       msg.GetClientMsgId(),
 		AuthorID:          msg.GetAuthorId(),
 		AuthorDisplayName: msg.GetAuthorDisplayName(),
 		AuthorAvatarURL:   msg.GetAuthorAvatarUrl(),

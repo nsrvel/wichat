@@ -5,18 +5,51 @@ import { useEffect } from "react";
 import { isPublicEntityId } from "@wichat/contracts/common";
 import type { MessagesList } from "@wichat/contracts/chat/message";
 import {
-	appendOrUpdateInfiniteChannelMessage,
-	mergeLatestPageIntoInfiniteMessages,
-	removeInfiniteChannelMessage,
-	updateInfiniteChannelMessageReactions,
-} from "@/features/chat/lib/channel-message";
+	applyMessageToInfinite,
+	GAP_FILL_BURST_MESSAGES,
+	highestSeqInInfinite,
+	mergeGapFillIntoInfinite,
+} from "@/features/chat/lib/message-sync";
+import { removeInfiniteChannelMessage, updateInfiniteChannelMessageReactions } from "@/features/chat/lib/channel-message";
+import { channelSeqValue } from "@/features/chat/lib/message-seq";
 import { subscribeChatChannel } from "@/integrations/realtime/chat-channel";
 import { sessionQueryOpts } from "@/services/auth/auth.query";
 import { Q_CHANNEL_MESSAGES, Q_PINNED_MESSAGES } from "@/services/message/message.key";
-import {
-	CHANNEL_MESSAGES_PAGE_SIZE,
-	listChannelMessages,
-} from "@/services/message/message.service";
+import { GAP_FILL_PAGE_SIZE } from "@/features/chat/lib/message-sync";
+import { listChannelMessages } from "@/services/message/message.service";
+
+async function replayGapAfterSeq(
+	groupId: string,
+	channelId: string,
+	afterSeq: number,
+): Promise<MessagesList> {
+	const merged: MessagesList = { messages: [] };
+	let cursor = afterSeq;
+	let fetched = 0;
+
+	while (fetched < GAP_FILL_BURST_MESSAGES) {
+		const page = await listChannelMessages(groupId, channelId, {
+			limit: GAP_FILL_PAGE_SIZE,
+			afterChannelSeq: cursor > 0 ? cursor : undefined,
+		});
+		if (!page.messages.length) {
+			break;
+		}
+		merged.messages.push(...page.messages);
+		fetched += page.messages.length;
+		const last = page.messages[page.messages.length - 1];
+		const lastSeq = channelSeqValue(last.channel_seq);
+		if (lastSeq <= cursor) {
+			break;
+		}
+		cursor = lastSeq;
+		if (!page.has_more) {
+			break;
+		}
+	}
+
+	return merged;
+}
 
 export function useChannelRealtime(
 	groupId: string,
@@ -31,52 +64,56 @@ export function useChannelRealtime(
 			return;
 		}
 
+		const queryKey = [Q_CHANNEL_MESSAGES, groupId, channelId];
+
 		return subscribeChatChannel({
 			groupId,
 			channelId,
 			onMessageCreated: (message) => {
-				queryClient.setQueryData<InfiniteData<MessagesList>>(
-					[Q_CHANNEL_MESSAGES, groupId, channelId],
-					(prev) => appendOrUpdateInfiniteChannelMessage(prev, message, sessionUser?.id),
+				queryClient.setQueryData<InfiniteData<MessagesList>>(queryKey, (prev) =>
+					applyMessageToInfinite(prev, message, sessionUser?.id),
 				);
 				onMessageReceived?.(message.author_id);
 			},
 			onMessageUpdated: (message) => {
-				queryClient.setQueryData<InfiniteData<MessagesList>>(
-					[Q_CHANNEL_MESSAGES, groupId, channelId],
-					(prev) => appendOrUpdateInfiniteChannelMessage(prev, message, sessionUser?.id),
+				queryClient.setQueryData<InfiniteData<MessagesList>>(queryKey, (prev) =>
+					applyMessageToInfinite(prev, message, sessionUser?.id),
 				);
 				void queryClient.invalidateQueries({
 					queryKey: [Q_PINNED_MESSAGES, groupId, channelId],
 				});
 			},
 			onMessageDeleted: (messageId) => {
-				queryClient.setQueryData<InfiniteData<MessagesList>>(
-					[Q_CHANNEL_MESSAGES, groupId, channelId],
-					(prev) => removeInfiniteChannelMessage(prev, messageId),
+				queryClient.setQueryData<InfiniteData<MessagesList>>(queryKey, (prev) =>
+					removeInfiniteChannelMessage(prev, messageId),
 				);
 				void queryClient.invalidateQueries({
 					queryKey: [Q_PINNED_MESSAGES, groupId, channelId],
 				});
 			},
 			onMessageReactionsUpdated: (messageId, reactions) => {
-				queryClient.setQueryData<InfiniteData<MessagesList>>(
-					[Q_CHANNEL_MESSAGES, groupId, channelId],
-					(prev) => updateInfiniteChannelMessageReactions(prev, messageId, reactions),
+				queryClient.setQueryData<InfiniteData<MessagesList>>(queryKey, (prev) =>
+					updateInfiniteChannelMessageReactions(prev, messageId, reactions),
 				);
 			},
 			onReconnect: () => {
-				void listChannelMessages(groupId, channelId, {
-					limit: CHANNEL_MESSAGES_PAGE_SIZE,
-				})
-					.then((latestPage) => {
-						queryClient.setQueryData<InfiniteData<MessagesList>>(
-							[Q_CHANNEL_MESSAGES, groupId, channelId],
-							(prev) => mergeLatestPageIntoInfiniteMessages(prev, latestPage),
+				const prev = queryClient.getQueryData<InfiniteData<MessagesList>>(queryKey);
+				const afterSeq = highestSeqInInfinite(prev);
+				if (afterSeq === 0) {
+					void queryClient.invalidateQueries({ queryKey });
+					return;
+				}
+				void replayGapAfterSeq(groupId, channelId, afterSeq)
+					.then((gapPage) => {
+						if (!gapPage.messages.length) {
+							return;
+						}
+						queryClient.setQueryData<InfiniteData<MessagesList>>(queryKey, (current) =>
+							mergeGapFillIntoInfinite(current, gapPage, sessionUser?.id),
 						);
 					})
 					.catch(() => {
-						// Fallback: leave cached messages intact until next reconnect/manual retry.
+						// keep cache until manual refresh
 					});
 			},
 		});

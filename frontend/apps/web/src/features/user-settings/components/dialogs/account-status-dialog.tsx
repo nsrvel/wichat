@@ -109,7 +109,7 @@ function AccountStatusDialogBody({
 			}
 			onClose();
 			onAccountClosed?.();
-			router.replace("/login");
+			router.replace("/sign-in");
 		} catch (err) {
 			applySettingsFormError(form, err, t, {
 				passwordField: hasPassword ? "currentPassword" : undefined,

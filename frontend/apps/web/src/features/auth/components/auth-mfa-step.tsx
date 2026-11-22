@@ -144,11 +144,16 @@ export function AuthMfaStep({ challenge, onSuccess, onBack }: AuthMfaStepProps) 
 	]);
 
 	useEffect(() => {
-		if (activeMethod === "webauthn" && !autoTriggeredRef.current && challenge.webauthn_options) {
+		if (
+			activeMethod === "webauthn" &&
+			!mfaBlocked &&
+			!autoTriggeredRef.current &&
+			challenge.webauthn_options
+		) {
 			autoTriggeredRef.current = true;
 			void runWebAuthn();
 		}
-	}, [activeMethod, challenge.webauthn_options, runWebAuthn]);
+	}, [activeMethod, challenge.webauthn_options, mfaBlocked, runWebAuthn]);
 
 	const handleTotpSubmit = totpForm.handleSubmit(async ({ code }) => {
 		verifyMfa.reset();

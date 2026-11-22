@@ -114,14 +114,8 @@ func (h *Hub) deliverToBucket(bucketMap map[string]map[*websocket.Conn]struct{},
 	}
 
 	writeCtx := context.Background()
-	var firstErr error
 	for _, conn := range targets {
-		if err := h.WriteText(writeCtx, conn, payload); err != nil && firstErr == nil {
-			firstErr = err
-		}
-	}
-	if firstErr != nil {
-		return firstErr
+		_ = h.WriteText(writeCtx, conn, payload)
 	}
 
 	return nil

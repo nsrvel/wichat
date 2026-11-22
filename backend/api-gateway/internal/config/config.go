@@ -46,6 +46,7 @@ var Defaults = Config{
 	InstanceID:                 "local",
 	TurnstileEnabled:           true,
 	Microservices:              utils.DefaultSettings,
+	InternalGrpcToken:          "dev-internal-grpc-token",
 }
 
 // Load reads configuration from defaults, optional envFile, and environment.
@@ -93,6 +94,9 @@ func (c Config) TurnstileClientSiteKey() string {
 
 // Validate enforces production safety invariants when Env is not development.
 func (c Config) Validate() error {
+	if err := sharedconfig.RequireInternalGrpcToken(c.Env, c.InternalGrpcToken); err != nil {
+		return err
+	}
 	if !c.SecureCookies() {
 		return nil
 	}
@@ -110,7 +114,7 @@ func (c Config) Validate() error {
 	if strings.HasPrefix(secret, "1x0000") || strings.HasPrefix(secret, "2x0000") || strings.HasPrefix(secret, "3x0000") {
 		return fmt.Errorf("TURNSTILE_SECRET_KEY must not use Cloudflare test keys when ENV=%s", c.Env)
 	}
-	return sharedconfig.RequireInternalGrpcToken(c.Env, c.InternalGrpcToken)
+	return nil
 }
 
 // RealtimeKafkaGroupID is a per-instance consumer group for broadcast fanout.

@@ -27,6 +27,7 @@ const (
 	MessageService_SetChannelMessagePinned_FullMethodName   = "/chat.v1.MessageService/SetChannelMessagePinned"
 	MessageService_ListPinnedChannelMessages_FullMethodName = "/chat.v1.MessageService/ListPinnedChannelMessages"
 	MessageService_UploadChannelAttachment_FullMethodName   = "/chat.v1.MessageService/UploadChannelAttachment"
+	MessageService_ResolveMessageChannelSeq_FullMethodName  = "/chat.v1.MessageService/ResolveMessageChannelSeq"
 )
 
 // MessageServiceClient is the client API for MessageService service.
@@ -43,6 +44,7 @@ type MessageServiceClient interface {
 	SetChannelMessagePinned(ctx context.Context, in *SetChannelMessagePinnedRequest, opts ...grpc.CallOption) (*SetChannelMessagePinnedResponse, error)
 	ListPinnedChannelMessages(ctx context.Context, in *ListPinnedChannelMessagesRequest, opts ...grpc.CallOption) (*ListPinnedChannelMessagesResponse, error)
 	UploadChannelAttachment(ctx context.Context, in *UploadChannelAttachmentRequest, opts ...grpc.CallOption) (*UploadChannelAttachmentResponse, error)
+	ResolveMessageChannelSeq(ctx context.Context, in *ResolveMessageChannelSeqRequest, opts ...grpc.CallOption) (*ResolveMessageChannelSeqResponse, error)
 }
 
 type messageServiceClient struct {
@@ -133,6 +135,16 @@ func (c *messageServiceClient) UploadChannelAttachment(ctx context.Context, in *
 	return out, nil
 }
 
+func (c *messageServiceClient) ResolveMessageChannelSeq(ctx context.Context, in *ResolveMessageChannelSeqRequest, opts ...grpc.CallOption) (*ResolveMessageChannelSeqResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ResolveMessageChannelSeqResponse)
+	err := c.cc.Invoke(ctx, MessageService_ResolveMessageChannelSeq_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MessageServiceServer is the server API for MessageService service.
 // All implementations must embed UnimplementedMessageServiceServer
 // for forward compatibility.
@@ -147,6 +159,7 @@ type MessageServiceServer interface {
 	SetChannelMessagePinned(context.Context, *SetChannelMessagePinnedRequest) (*SetChannelMessagePinnedResponse, error)
 	ListPinnedChannelMessages(context.Context, *ListPinnedChannelMessagesRequest) (*ListPinnedChannelMessagesResponse, error)
 	UploadChannelAttachment(context.Context, *UploadChannelAttachmentRequest) (*UploadChannelAttachmentResponse, error)
+	ResolveMessageChannelSeq(context.Context, *ResolveMessageChannelSeqRequest) (*ResolveMessageChannelSeqResponse, error)
 	mustEmbedUnimplementedMessageServiceServer()
 }
 
@@ -180,6 +193,9 @@ func (UnimplementedMessageServiceServer) ListPinnedChannelMessages(context.Conte
 }
 func (UnimplementedMessageServiceServer) UploadChannelAttachment(context.Context, *UploadChannelAttachmentRequest) (*UploadChannelAttachmentResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method UploadChannelAttachment not implemented")
+}
+func (UnimplementedMessageServiceServer) ResolveMessageChannelSeq(context.Context, *ResolveMessageChannelSeqRequest) (*ResolveMessageChannelSeqResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ResolveMessageChannelSeq not implemented")
 }
 func (UnimplementedMessageServiceServer) mustEmbedUnimplementedMessageServiceServer() {}
 func (UnimplementedMessageServiceServer) testEmbeddedByValue()                        {}
@@ -346,6 +362,24 @@ func _MessageService_UploadChannelAttachment_Handler(srv interface{}, ctx contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _MessageService_ResolveMessageChannelSeq_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResolveMessageChannelSeqRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MessageServiceServer).ResolveMessageChannelSeq(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: MessageService_ResolveMessageChannelSeq_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MessageServiceServer).ResolveMessageChannelSeq(ctx, req.(*ResolveMessageChannelSeqRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // MessageService_ServiceDesc is the grpc.ServiceDesc for MessageService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -384,6 +418,10 @@ var MessageService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UploadChannelAttachment",
 			Handler:    _MessageService_UploadChannelAttachment_Handler,
+		},
+		{
+			MethodName: "ResolveMessageChannelSeq",
+			Handler:    _MessageService_ResolveMessageChannelSeq_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

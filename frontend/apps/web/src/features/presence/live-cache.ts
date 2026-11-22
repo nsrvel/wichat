@@ -30,19 +30,24 @@ function patchPage(
 	userId: string,
 	frame: LivePresenceFrame,
 ): GroupMembersPage | undefined {
-	if (!prev) {
+	if (!prev?.members.length) {
 		return prev;
 	}
-	let changed = false;
-	const members = prev.members.map((m: GroupMember) => {
-		const next = patchMemberRow(m, frame);
-		if (!next || next === m) {
-			return m;
-		}
-		changed = true;
-		return next;
-	});
-	return changed ? { ...prev, members } : prev;
+	const idx = prev.members.findIndex((m) => m.user_id === userId);
+	if (idx < 0) {
+		return prev;
+	}
+	const current = prev.members[idx];
+	if (!current) {
+		return prev;
+	}
+	const next = patchMemberRow(current, frame);
+	if (!next || next === current) {
+		return prev;
+	}
+	const members = [...prev.members];
+	members[idx] = next;
+	return { ...prev, members };
 }
 
 function patchMemberArray(
@@ -52,16 +57,21 @@ function patchMemberArray(
 	if (!prev?.length) {
 		return prev;
 	}
-	let changed = false;
-	const members = prev.map((m) => {
-		const next = patchMemberRow(m, frame);
-		if (!next || next === m) {
-			return m;
-		}
-		changed = true;
-		return next;
-	});
-	return changed ? members : prev;
+	const idx = prev.findIndex((m) => m.user_id === frame.user_id);
+	if (idx < 0) {
+		return prev;
+	}
+	const current = prev[idx];
+	if (!current) {
+		return prev;
+	}
+	const next = patchMemberRow(current, frame);
+	if (!next || next === current) {
+		return prev;
+	}
+	const members = [...prev];
+	members[idx] = next;
+	return members;
 }
 
 /** Unique online members across all cached member-list pages for a group. */
@@ -96,46 +106,33 @@ export function scheduleInvitePreviewPresenceRefresh(queryClient: QueryClient): 
 	}, 2_000);
 }
 
-function memberListsWouldChange(queryClient: QueryClient, frame: LivePresenceFrame): boolean {
-	let changed = false;
-	for (const [, page] of queryClient.getQueriesData<GroupMembersPage>({
-		queryKey: [Q_INVITE_MEMBERS],
-	})) {
-		if (page && patchPage(page, frame.user_id, frame) !== page) {
-			changed = true;
-			break;
-		}
-	}
-	if (changed) {
-		return true;
-	}
-	for (const [, members] of queryClient.getQueriesData<GroupMember[]>({
-		queryKey: [Q_GROUP_ROLE_MEMBERS],
-	})) {
-		if (members && patchMemberArray(members, frame) !== members) {
-			return true;
-		}
-	}
-	return false;
-}
-
 export function patchLiveMemberPresence(
 	queryClient: QueryClient,
 	frame: LivePresenceFrame,
 	opts?: { refreshInvitePreview?: boolean },
 ): void {
-	if (!memberListsWouldChange(queryClient, frame)) {
-		return;
-	}
+	let changed = false;
 	queryClient.setQueriesData<GroupMembersPage>(
 		{ queryKey: [Q_INVITE_MEMBERS] },
-		(prev: GroupMembersPage | undefined) => patchPage(prev, frame.user_id, frame),
+		(prev: GroupMembersPage | undefined) => {
+			const next = patchPage(prev, frame.user_id, frame);
+			if (next !== prev) {
+				changed = true;
+			}
+			return next;
+		},
 	);
 	queryClient.setQueriesData<GroupMember[]>(
 		{ queryKey: [Q_GROUP_ROLE_MEMBERS] },
-		(prev: GroupMember[] | undefined) => patchMemberArray(prev, frame),
+		(prev: GroupMember[] | undefined) => {
+			const next = patchMemberArray(prev, frame);
+			if (next !== prev) {
+				changed = true;
+			}
+			return next;
+		},
 	);
-	if (opts?.refreshInvitePreview) {
+	if (changed && opts?.refreshInvitePreview) {
 		scheduleInvitePreviewPresenceRefresh(queryClient);
 	}
 }
@@ -180,14 +177,6 @@ export function patchSelfMemberPresenceFromMyPresence(
 	}
 	const my = queryClient.getQueryData<MyPresenceResponse>([Q_MY_PRESENCE]);
 	if (!my) {
-		return;
-	}
-	const frame: LivePresenceFrame = {
-		user_id: selfUserId,
-		presence_status: my.effective_status,
-		is_online: my.is_online,
-	};
-	if (!memberListsWouldChange(queryClient, frame)) {
 		return;
 	}
 	patchLiveMemberPresence(queryClient, {

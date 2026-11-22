@@ -3,6 +3,7 @@ package mock
 import (
 	"context"
 	"fmt"
+	"sort"
 	"sync"
 	"time"
 	"unicode/utf8"
@@ -103,42 +104,63 @@ func (m pgRepositoryMock) reactionsForMessageLocked(messageID string) []models.M
 	return out
 }
 
-func (m pgRepositoryMock) ListByChannel(_ context.Context, channelID string, limit int, before *time.Time, beforePublicID string, beforeChannelSeq int64) ([]models.MessageWithAuthor, bool, error) {
+func (m pgRepositoryMock) ListByChannel(
+	_ context.Context,
+	channelID string,
+	limit int,
+	beforeChannelSeq, afterChannelSeq int64,
+) ([]models.MessageWithAuthor, bool, error) {
 	m.st.mu.Lock()
 	defer m.st.mu.Unlock()
 
-	var beforeInternalID string
-	if beforePublicID != "" {
-		for _, msg := range m.st.Messages {
-			if msg.ChannelID == channelID && msg.PublicID == beforePublicID {
-				beforeInternalID = msg.ID
-				break
-			}
-		}
-	}
-
-	var matching []models.MessageWithAuthor
+	var rows []models.Message
 	for _, msg := range m.st.Messages {
 		if msg.ChannelID != channelID {
 			continue
 		}
-		if before != nil {
-			if msg.CreatedAt.After(*before) {
+		if afterChannelSeq > 0 {
+			if msg.ChannelSeq <= afterChannelSeq {
 				continue
 			}
-			if msg.CreatedAt.Equal(*before) && (beforeInternalID == "" || msg.ID >= beforeInternalID) {
-				continue
-			}
+		} else if beforeChannelSeq > 0 && msg.ChannelSeq >= beforeChannelSeq {
+			continue
 		}
-		matching = append(matching, m.buildMessageWithAuthorLocked(msg))
+		rows = append(rows, msg)
 	}
 
-	hasMore := len(matching) > limit
+	if afterChannelSeq > 0 {
+		sort.Slice(rows, func(i, j int) bool {
+			if rows[i].ChannelSeq == rows[j].ChannelSeq {
+				return rows[i].ID < rows[j].ID
+			}
+			return rows[i].ChannelSeq < rows[j].ChannelSeq
+		})
+	} else {
+		sort.Slice(rows, func(i, j int) bool {
+			if rows[i].ChannelSeq == rows[j].ChannelSeq {
+				return rows[i].ID > rows[j].ID
+			}
+			return rows[i].ChannelSeq > rows[j].ChannelSeq
+		})
+	}
+
+	hasMore := len(rows) > limit
 	if hasMore {
-		matching = matching[len(matching)-limit:]
+		rows = rows[:limit]
 	}
 
-	return matching, hasMore, nil
+	out := make([]models.MessageWithAuthor, len(rows))
+	for i, msg := range rows {
+		out[i] = m.buildMessageWithAuthorLocked(msg)
+	}
+
+	if afterChannelSeq == 0 && len(out) > 1 {
+		for i, j := 0, len(out)-1; i < j; i, j = i+1, j-1 {
+			out[i], out[j] = out[j], out[i]
+		}
+	}
+
+	return out, hasMore, nil
 }
 
 func (m pgRepositoryMock) ListPinnedByChannel(_ context.Context, channelID string) ([]models.MessageWithAuthor, error) {
@@ -161,6 +183,19 @@ func (m pgRepositoryMock) FindByPublicIDInChannel(_ context.Context, channelID, 
 
 	for _, msg := range m.st.Messages {
 		if msg.ChannelID == channelID && msg.PublicID == publicID {
+			return m.buildMessageWithAuthorLocked(msg), nil
+		}
+	}
+
+	return models.MessageWithAuthor{}, constants.ErrNotFound
+}
+
+func (m pgRepositoryMock) FindByClientMsgIDInChannel(_ context.Context, channelID, authorID, clientMsgID string) (models.MessageWithAuthor, error) {
+	m.st.mu.Lock()
+	defer m.st.mu.Unlock()
+
+	for _, msg := range m.st.Messages {
+		if msg.ChannelID == channelID && msg.AuthorID == authorID && msg.ClientMsgID != nil && *msg.ClientMsgID == clientMsgID {
 			return m.buildMessageWithAuthorLocked(msg), nil
 		}
 	}
@@ -196,19 +231,35 @@ func (m pgRepositoryMock) InsertWithOutbox(_ context.Context, in *models.InsertM
 	m.st.mu.Lock()
 	defer m.st.mu.Unlock()
 
+	if in.ClientMsgID != nil {
+		for _, msg := range m.st.Messages {
+			if msg.ChannelID == in.ChannelID && msg.AuthorID == in.AuthorID && msg.ClientMsgID != nil && *msg.ClientMsgID == *in.ClientMsgID {
+				return models.Message{}, constants.ErrConflict
+			}
+		}
+	}
+
 	m.st.ChannelSeq[in.ChannelID]++
 	channelSeq := m.st.ChannelSeq[in.ChannelID]
 	msg := models.Message{
-		ID:         in.ID,
-		PublicID:   in.PublicID,
-		ChannelID:  in.ChannelID,
-		AuthorID:   in.AuthorID,
-		ReplyToID:  in.ReplyToID,
-		ChannelSeq: channelSeq,
-		Body:       in.Body,
-		CreatedAt:  in.CreatedAt,
+		ID:          in.ID,
+		PublicID:    in.PublicID,
+		ChannelID:   in.ChannelID,
+		AuthorID:    in.AuthorID,
+		ClientMsgID: in.ClientMsgID,
+		ReplyToID:   in.ReplyToID,
+		ChannelSeq:  channelSeq,
+		Body:        in.Body,
+		CreatedAt:   in.CreatedAt,
 	}
 	m.st.Messages = append(m.st.Messages, msg)
+	if in.BuildOutbox != nil {
+		outbox, err := in.BuildOutbox(channelSeq)
+		if err != nil {
+			return models.Message{}, err
+		}
+		m.st.Outbox = append(m.st.Outbox, outbox)
+	}
 
 	return msg, nil
 }
@@ -328,6 +379,25 @@ func (m pgRepositoryMock) ToggleReaction(_ context.Context, messageID, userID, e
 	return m.reactionsForMessageLocked(messageID), nil
 }
 
+func (m pgRepositoryMock) ToggleReactionWithOutbox(_ context.Context, in *models.ToggleReactionWithOutboxInput) ([]models.MessageReactionSummary, error) {
+	if in == nil {
+		return nil, fmt.Errorf("toggle reaction input required")
+	}
+	if m.st.FailOutbox {
+		return nil, fmt.Errorf("outbox insert failed")
+	}
+
+	reactions, err := m.ToggleReaction(context.Background(), in.MessageID, in.UserID, in.Emoji, in.Now)
+	if err != nil {
+		return nil, err
+	}
+	m.st.mu.Lock()
+	m.st.Outbox = append(m.st.Outbox, in.Outbox)
+	m.st.mu.Unlock()
+
+	return reactions, nil
+}
+
 func (m pgRepositoryMock) SetPinned(_ context.Context, channelID, publicID, userID string, pinned bool, now time.Time) (models.MessageWithAuthor, error) {
 	m.st.mu.Lock()
 	defer m.st.mu.Unlock()
@@ -349,6 +419,25 @@ func (m pgRepositoryMock) SetPinned(_ context.Context, channelID, publicID, user
 	}
 
 	return models.MessageWithAuthor{}, constants.ErrNotFound
+}
+
+func (m pgRepositoryMock) SetPinnedWithOutbox(_ context.Context, in *models.SetPinnedWithOutboxInput) (models.MessageWithAuthor, error) {
+	if in == nil {
+		return models.MessageWithAuthor{}, fmt.Errorf("set pinned input required")
+	}
+	if m.st.FailOutbox {
+		return models.MessageWithAuthor{}, fmt.Errorf("outbox insert failed")
+	}
+
+	updated, err := m.SetPinned(context.Background(), in.ChannelID, in.PublicID, in.UserID, in.Pinned, in.Now)
+	if err != nil {
+		return models.MessageWithAuthor{}, err
+	}
+	m.st.mu.Lock()
+	m.st.Outbox = append(m.st.Outbox, in.Outbox)
+	m.st.mu.Unlock()
+
+	return updated, nil
 }
 
 func (m pgRepositoryMock) FindLastMessageTimeByAuthor(_ context.Context, channelID, authorID string) (*time.Time, error) {

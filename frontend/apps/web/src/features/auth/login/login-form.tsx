@@ -103,8 +103,14 @@ export function LoginForm({ authReturnTo = "/" }: { authReturnTo?: string }) {
 							turnstile_token: otpTurnstileToken || undefined,
 						},
 						{
-							onSuccess: (data) => setResendCooldown(data.resend_after_seconds),
+							onSuccess: (data) => {
+								setResendCooldown(data.resend_after_seconds);
+								setOtpTurnstileToken("");
+								setOtpTurnstileResetKey((k) => k + 1);
+							},
 							onError: (err) => {
+								setOtpTurnstileToken("");
+								setOtpTurnstileResetKey((k) => k + 1);
 								const wait = resendRateLimitCooldownSec(err);
 								if (wait !== null) {
 									setResendCooldown(wait);

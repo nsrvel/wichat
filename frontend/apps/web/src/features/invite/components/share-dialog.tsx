@@ -2,7 +2,10 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { setLivePresenceGroupId } from "@/features/presence/live-connection";
+import {
+	getLivePresenceGroupId,
+	setLivePresenceGroupId,
+} from "@/features/presence/live-connection";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { WiChatDialog, WiChatDialogBody } from "@/components/ui/wichat-dialog";
@@ -56,9 +59,10 @@ export function ShareDialog({ open, onOpenChange, target }: ShareDialogProps) {
 		if (!open || !groupId) {
 			return;
 		}
+		const previousGroupId = getLivePresenceGroupId();
 		setLivePresenceGroupId(groupId);
 		void queryClient.invalidateQueries({ queryKey: [Q_INVITE_MEMBERS, groupId] });
-		return () => setLivePresenceGroupId(undefined);
+		return () => setLivePresenceGroupId(previousGroupId);
 	}, [open, groupId, queryClient]);
 
 	useEffect(() => {

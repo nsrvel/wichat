@@ -37,6 +37,7 @@ export type SortableChannelRowProps = {
 	activeMenuId: string | null;
 	onActiveMenuIdChange: (id: string | null) => void;
 	onSelect: () => void;
+	onPrefetch?: () => void;
 	onInvite?: () => void;
 	onMoveToCategory?: (targetCategoryId: string | null) => void;
 	onMoveToFirstInCategory?: () => void;
@@ -59,6 +60,7 @@ export function SortableChannelRow({
 	activeMenuId,
 	onActiveMenuIdChange,
 	onSelect,
+	onPrefetch,
 	onInvite,
 	onMoveToCategory,
 	onMoveToFirstInCategory,
@@ -117,6 +119,7 @@ export function SortableChannelRow({
 					label={formatChannelDisplayName(channel.name)}
 					selected={selected}
 					onSelect={onSelect}
+					onPrefetch={onPrefetch}
 				/>
 			</SidebarChannelContextMenu>
 		</div>
@@ -131,6 +134,7 @@ type SortableChannelListProps = {
 	activeMenuId: string | null;
 	onActiveMenuIdChange: (id: string | null) => void;
 	onSelectChannel: (channelId: string) => void;
+	onPrefetchChannel?: (channelId: string) => void;
 	onReorder: (channelIds: string[]) => void;
 };
 
@@ -142,6 +146,7 @@ export function SortableChannelList({
 	activeMenuId,
 	onActiveMenuIdChange,
 	onSelectChannel,
+	onPrefetchChannel,
 	onReorder,
 }: SortableChannelListProps) {
 	const sensors = useSensors(
@@ -174,6 +179,7 @@ export function SortableChannelList({
 					activeMenuId={activeMenuId}
 					onActiveMenuIdChange={onActiveMenuIdChange}
 					onSelect={() => onSelectChannel(ch.id)}
+					onPrefetch={onPrefetchChannel ? () => onPrefetchChannel(ch.id) : undefined}
 				/>
 			))}
 		</div>

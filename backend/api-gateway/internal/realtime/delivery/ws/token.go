@@ -5,11 +5,8 @@ import (
 	"strings"
 )
 
-// BearerTokenFromRequest resolves an access token for the realtime upgrade (query deprecated; prefer subprotocol).
+// BearerTokenFromRequest resolves an access token for the realtime upgrade (Sec-WebSocket-Protocol bearer.* or Authorization).
 func BearerTokenFromRequest(r *http.Request) string {
-	if t := strings.TrimSpace(r.URL.Query().Get("access_token")); t != "" {
-		return t
-	}
 	authHeader := strings.TrimSpace(r.Header.Get("Authorization"))
 	const prefix = "Bearer "
 	if strings.HasPrefix(authHeader, prefix) {

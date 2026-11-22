@@ -1,9 +1,20 @@
 "use client";
 
-import hljs from "highlight.js";
+import hljs from "highlight.js/lib/common";
 import "highlight.js/styles/github-dark.css";
 import { Check, Copy, Download, Maximize2 } from "lucide-react";
-import { memo, useEffect, useMemo, useRef, useState, type ComponentPropsWithoutRef } from "react";
+import {
+	createContext,
+	memo,
+	useCallback,
+	useContext,
+	useEffect,
+	useLayoutEffect,
+	useMemo,
+	useRef,
+	useState,
+	type ComponentPropsWithoutRef,
+} from "react";
 import { useTranslation } from "react-i18next";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -26,7 +37,56 @@ type MessageBodyProps = {
 	onReplyClick?: (messageId: string) => void;
 };
 
-function CodeBlock({ language, code }: { language: string; code: string }) {
+type FittedImageDimensions = {
+	width: number;
+	height: number;
+};
+
+const MAX_ATTACHMENT_IMAGE_WIDTH = 320;
+const MAX_ATTACHMENT_IMAGE_HEIGHT = 240;
+const MAX_IMAGE_DIM_CACHE_ENTRIES = 500;
+const imageDimensionCache = new Map<string, FittedImageDimensions>();
+
+function computeFittedImageSize(
+	naturalWidth: number,
+	naturalHeight: number,
+	maxWidth = MAX_ATTACHMENT_IMAGE_WIDTH,
+	maxHeight = MAX_ATTACHMENT_IMAGE_HEIGHT,
+): FittedImageDimensions | null {
+	if (naturalWidth <= 0 || naturalHeight <= 0) {
+		return null;
+	}
+	const scale = Math.min(1, maxWidth / naturalWidth, maxHeight / naturalHeight);
+	return {
+		width: Math.max(1, Math.round(naturalWidth * scale)),
+		height: Math.max(1, Math.round(naturalHeight * scale)),
+	};
+}
+
+function rememberImageDimensions(url: string, dims: FittedImageDimensions): void {
+	if (!url) {
+		return;
+	}
+	if (imageDimensionCache.has(url)) {
+		imageDimensionCache.delete(url);
+	} else if (imageDimensionCache.size >= MAX_IMAGE_DIM_CACHE_ENTRIES) {
+		const oldestKey = imageDimensionCache.keys().next().value;
+		if (oldestKey !== undefined) {
+			imageDimensionCache.delete(oldestKey);
+		}
+	}
+	imageDimensionCache.set(url, dims);
+}
+
+type MessageBodyContextValue = {
+	hasReplyClick: boolean;
+	onReplyClick: (messageId: string) => void;
+	onOpenLightbox: (att: InlineAttachmentPayload) => void;
+};
+
+const MessageBodyContext = createContext<MessageBodyContextValue | null>(null);
+
+const CodeBlock = memo(function CodeBlock({ language, code }: { language: string; code: string }) {
 	const { t } = useTranslation();
 	const codeRef = useRef<HTMLElement>(null);
 	const [copied, setCopied] = useState(false);
@@ -79,41 +139,122 @@ function CodeBlock({ language, code }: { language: string; code: string }) {
 			</pre>
 		</div>
 	);
-}
+});
+
+type AttachmentPreviewProps = {
+	id: string;
+	url: string;
+	filename: string;
+	contentType: string;
+	sizeBytes: number;
+	onOpenLightbox: (att: InlineAttachmentPayload) => void;
+};
 
 /** GFM Markdown body with syntax-highlighted code blocks, safe for both human and AI Bot output. */
-function AttachmentPreview({
-	attachment,
+const AttachmentPreview = memo(function AttachmentPreview({
+	id,
+	url,
+	filename,
+	contentType,
+	sizeBytes,
 	onOpenLightbox,
-}: {
-	attachment: InlineAttachmentPayload;
-	onOpenLightbox: (att: InlineAttachmentPayload) => void;
-}) {
+}: AttachmentPreviewProps) {
 	const { t } = useTranslation();
-	const resolvedUrl = resolvePublicObjectUrl(attachment.url);
-	const isImage = isImageContentType(attachment.content_type);
+	const resolvedUrl = resolvePublicObjectUrl(url);
+	const isImage = isImageContentType(contentType);
+	const [dims, setDims] = useState<FittedImageDimensions | null>(
+		() => imageDimensionCache.get(resolvedUrl) ?? null,
+	);
+	const [loaded, setLoaded] = useState(() => imageDimensionCache.has(resolvedUrl));
+	const [errored, setErrored] = useState(false);
+
+	const openLightbox = useCallback(() => {
+		onOpenLightbox({
+			id,
+			url,
+			filename,
+			content_type: contentType,
+			size_bytes: sizeBytes,
+		});
+	}, [contentType, filename, id, onOpenLightbox, sizeBytes, url]);
+
+	const handleImgRef = useCallback(
+		(node: HTMLImageElement | null) => {
+			if (!node || !node.complete || node.naturalWidth <= 0) {
+				return;
+			}
+			const fitted = computeFittedImageSize(node.naturalWidth, node.naturalHeight);
+			if (!fitted) {
+				return;
+			}
+			const existing = imageDimensionCache.get(resolvedUrl);
+			if (!existing || existing.width !== fitted.width || existing.height !== fitted.height) {
+				rememberImageDimensions(resolvedUrl, fitted);
+				setDims(fitted);
+			}
+			setLoaded(true);
+		},
+		[resolvedUrl],
+	);
 
 	if (isImage) {
+		const activeDims = dims ?? imageDimensionCache.get(resolvedUrl) ?? null;
+		const reservePlaceholder = !activeDims && !loaded && !errored;
+
 		return (
-			<div className="group/img relative my-2 inline-block w-fit max-w-[min(320px,100%)] overflow-hidden rounded-xl border border-border/60 bg-muted/20">
+			<div
+				className={cn(
+					"group/img relative my-2 inline-block w-fit max-w-[min(320px,100%)] overflow-hidden rounded-xl border border-border/60 bg-muted/20",
+					reservePlaceholder && "min-h-[140px] min-w-[180px]",
+				)}
+			>
 				<button
 					type="button"
-					onClick={() => onOpenLightbox(attachment)}
+					onClick={openLightbox}
 					className="block cursor-zoom-in focus:outline-none"
 					aria-label={t("chat.attachment_expand")}
 				>
 					{/* eslint-disable-next-line @next/next/no-img-element */}
 					<img
+						ref={handleImgRef}
 						src={resolvedUrl}
-						alt={attachment.filename}
-						loading="lazy"
+						alt={filename}
+						width={activeDims?.width}
+						height={activeDims?.height}
+						decoding="async"
+						draggable={false}
+						onLoad={(event) => {
+							const img = event.currentTarget;
+							const fitted = computeFittedImageSize(img.naturalWidth, img.naturalHeight);
+							if (fitted) {
+								rememberImageDimensions(resolvedUrl, fitted);
+								setDims((prev) =>
+									prev && prev.width === fitted.width && prev.height === fitted.height
+										? prev
+										: fitted,
+								);
+							}
+							setLoaded(true);
+						}}
+						onError={() => {
+							setErrored(true);
+							setLoaded(true);
+						}}
+						style={
+							activeDims
+								? {
+										width: `${activeDims.width}px`,
+										aspectRatio: `${activeDims.width} / ${activeDims.height}`,
+									}
+								: undefined
+						}
 						className="block max-h-[240px] w-auto max-w-full rounded-xl object-contain"
 					/>
 				</button>
 				<div className="pointer-events-none absolute right-2 top-2 flex items-center gap-1 rounded-lg border border-white/10 bg-black/70 p-1 opacity-0 shadow-md backdrop-blur-sm transition-opacity group-hover/img:pointer-events-auto group-hover/img:opacity-100">
 					<button
 						type="button"
-						onClick={() => onOpenLightbox(attachment)}
+						onClick={openLightbox}
 						title={t("chat.attachment_expand")}
 						aria-label={t("chat.attachment_expand")}
 						className="inline-flex size-7 items-center justify-center rounded-md text-zinc-200 transition hover:bg-white/15 hover:text-white"
@@ -122,7 +263,7 @@ function AttachmentPreview({
 					</button>
 					<a
 						href={resolvedUrl}
-						download={attachment.filename}
+						download={filename}
 						target="_blank"
 						rel="noopener noreferrer"
 						title={t("chat.attachment_download")}
@@ -140,18 +281,157 @@ function AttachmentPreview({
 		<div className="my-2">
 			<FileAttachmentCard
 				variant="message"
-				id={attachment.id}
-				filename={attachment.filename}
-				contentType={attachment.content_type}
-				sizeBytes={attachment.size_bytes}
-				url={attachment.url}
-				onOpenPreview={() => onOpenLightbox(attachment)}
+				id={id}
+				filename={filename}
+				contentType={contentType}
+				sizeBytes={sizeBytes}
+				url={url}
+				onOpenPreview={openLightbox}
 			/>
 		</div>
+	);
+});
+
+function MarkdownLink({ href, children, ...props }: ComponentPropsWithoutRef<"a">) {
+	const safeHref = href && /^(https?:\/\/|mailto:|\/)/i.test(href) ? href : undefined;
+	return (
+		<a
+			{...props}
+			href={safeHref}
+			target="_blank"
+			rel="noopener noreferrer"
+			className="font-medium text-primary underline decoration-primary/40 underline-offset-2 hover:decoration-primary"
+		>
+			{children}
+		</a>
+	);
+}
+
+function MarkdownPre({ children }: ComponentPropsWithoutRef<"pre">) {
+	return <>{children}</>;
+}
+
+function MarkdownImg({ src, alt }: ComponentPropsWithoutRef<"img">) {
+	const rawSrc = typeof src === "string" ? src.trim() : "";
+	const safeSrc = rawSrc && /^(https?:\/\/|\/)/i.test(rawSrc) ? resolvePublicObjectUrl(rawSrc) : "";
+	const [dims, setDims] = useState<FittedImageDimensions | null>(() =>
+		safeSrc ? (imageDimensionCache.get(safeSrc) ?? null) : null,
+	);
+	const [loaded, setLoaded] = useState(() => Boolean(safeSrc && imageDimensionCache.has(safeSrc)));
+	const [errored, setErrored] = useState(false);
+
+	if (!safeSrc) {
+		return null;
+	}
+
+	const activeDims = dims ?? imageDimensionCache.get(safeSrc) ?? null;
+	const reservePlaceholder = !activeDims && !loaded && !errored;
+
+	return (
+		<span
+			className={cn(
+				"my-2 inline-block w-fit max-w-[min(320px,100%)] overflow-hidden rounded-xl border border-border/60 bg-muted/20",
+				reservePlaceholder && "min-h-[140px] min-w-[180px]",
+			)}
+		>
+			{/* eslint-disable-next-line @next/next/no-img-element */}
+			<img
+				src={safeSrc}
+				alt={alt ?? ""}
+				width={activeDims?.width}
+				height={activeDims?.height}
+				decoding="async"
+				draggable={false}
+				onLoad={(event) => {
+					const img = event.currentTarget;
+					const fitted = computeFittedImageSize(img.naturalWidth, img.naturalHeight);
+					if (fitted) {
+						rememberImageDimensions(safeSrc, fitted);
+						setDims((prev) =>
+							prev && prev.width === fitted.width && prev.height === fitted.height ? prev : fitted,
+						);
+					}
+					setLoaded(true);
+				}}
+				onError={() => {
+					setErrored(true);
+					setLoaded(true);
+				}}
+				style={
+					activeDims
+						? {
+								width: `${activeDims.width}px`,
+								aspectRatio: `${activeDims.width} / ${activeDims.height}`,
+							}
+						: undefined
+				}
+				className="block max-h-[240px] w-auto max-w-full rounded-xl object-contain"
+			/>
+		</span>
+	);
+}
+
+function MarkdownCode({
+	className: codeClassName,
+	children,
+	...props
+}: ComponentPropsWithoutRef<"code">) {
+	const ctx = useContext(MessageBodyContext);
+	const match = /language-([\w-]+)/.exec(codeClassName ?? "");
+	const raw = String(children).replace(/\n$/, "");
+	if (match?.[1] === "wichat-reply") {
+		const reply = parseInlineReplyPayload(raw);
+		if (reply) {
+			return (
+				<div className="my-1.5">
+					<ReplyPreviewCard
+						messageId={reply.id}
+						authorName={reply.author}
+						timeLabel={reply.time}
+						bodyPreview={reply.preview}
+						onClick={reply.id && ctx?.hasReplyClick ? () => ctx.onReplyClick(reply.id) : undefined}
+					/>
+				</div>
+			);
+		}
+	}
+	if (match?.[1] === "wichat-attachment") {
+		const att = parseInlineAttachmentPayload(raw);
+		if (att && ctx) {
+			return (
+				<AttachmentPreview
+					id={att.id}
+					url={att.url}
+					filename={att.filename}
+					contentType={att.content_type}
+					sizeBytes={att.size_bytes}
+					onOpenLightbox={ctx.onOpenLightbox}
+				/>
+			);
+		}
+	}
+	const isBlock = Boolean(match) || raw.includes("\n");
+	if (isBlock) {
+		return <CodeBlock language={match?.[1] ?? ""} code={raw} />;
+	}
+	return (
+		<code
+			{...props}
+			className="rounded bg-muted/80 px-1.5 py-0.5 font-mono text-[12.5px] text-foreground"
+		>
+			{children}
+		</code>
 	);
 }
 
 const REMARK_PLUGINS = [remarkGfm, remarkUnderline];
+
+const MARKDOWN_COMPONENTS: Components = {
+	a: MarkdownLink,
+	pre: MarkdownPre,
+	code: MarkdownCode,
+	img: MarkdownImg,
+};
 
 export const MessageBody = memo(function MessageBody({
 	text,
@@ -161,71 +441,19 @@ export const MessageBody = memo(function MessageBody({
 	const [lightboxAttachment, setLightboxAttachment] = useState<InlineAttachmentPayload | null>(
 		null,
 	);
+	const onReplyClickRef = useRef(onReplyClick);
+	useLayoutEffect(() => {
+		onReplyClickRef.current = onReplyClick;
+	}, [onReplyClick]);
 
-	const markdownComponents = useMemo<Components>(
+	const hasReplyClick = Boolean(onReplyClick);
+	const contextValue = useMemo<MessageBodyContextValue>(
 		() => ({
-			a({ href, children, ...props }: ComponentPropsWithoutRef<"a">) {
-				const safeHref = href && /^(https?:\/\/|mailto:|\/)/i.test(href) ? href : undefined;
-				return (
-					<a
-						{...props}
-						href={safeHref}
-						target="_blank"
-						rel="noopener noreferrer"
-						className="font-medium text-primary underline decoration-primary/40 underline-offset-2 hover:decoration-primary"
-					>
-						{children}
-					</a>
-				);
-			},
-			pre({ children }) {
-				return <>{children}</>;
-			},
-			code({ className: codeClassName, children, ...props }: ComponentPropsWithoutRef<"code">) {
-				const match = /language-([\w-]+)/.exec(codeClassName ?? "");
-				const raw = String(children).replace(/\n$/, "");
-				if (match?.[1] === "wichat-reply") {
-					const reply = parseInlineReplyPayload(raw);
-					if (reply) {
-						return (
-							<div className="my-1.5">
-								<ReplyPreviewCard
-									messageId={reply.id}
-									authorName={reply.author}
-									timeLabel={reply.time}
-									bodyPreview={reply.preview}
-									onClick={reply.id && onReplyClick ? () => onReplyClick(reply.id) : undefined}
-								/>
-							</div>
-						);
-					}
-				}
-				if (match?.[1] === "wichat-attachment") {
-					const att = parseInlineAttachmentPayload(raw);
-					if (att) {
-						return (
-							<AttachmentPreview
-								attachment={att}
-								onOpenLightbox={(item) => setLightboxAttachment(item)}
-							/>
-						);
-					}
-				}
-				const isBlock = Boolean(match) || raw.includes("\n");
-				if (isBlock) {
-					return <CodeBlock language={match?.[1] ?? ""} code={raw} />;
-				}
-				return (
-					<code
-						{...props}
-						className="rounded bg-muted/80 px-1.5 py-0.5 font-mono text-[12.5px] text-foreground"
-					>
-						{children}
-					</code>
-				);
-			},
+			hasReplyClick,
+			onReplyClick: (messageId: string) => onReplyClickRef.current?.(messageId),
+			onOpenLightbox: (item: InlineAttachmentPayload) => setLightboxAttachment(item),
 		}),
-		[onReplyClick],
+		[hasReplyClick],
 	);
 
 	if (!text.trim()) {
@@ -240,9 +468,11 @@ export const MessageBody = memo(function MessageBody({
 			)}
 			data-wichat-selectable="true"
 		>
-			<ReactMarkdown remarkPlugins={REMARK_PLUGINS} components={markdownComponents}>
-				{text}
-			</ReactMarkdown>
+			<MessageBodyContext.Provider value={contextValue}>
+				<ReactMarkdown remarkPlugins={REMARK_PLUGINS} components={MARKDOWN_COMPONENTS}>
+					{text}
+				</ReactMarkdown>
+			</MessageBodyContext.Provider>
 			{lightboxAttachment && (
 				<AttachmentPreviewModal
 					attachment={lightboxAttachment}

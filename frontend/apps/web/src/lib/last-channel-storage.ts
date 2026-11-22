@@ -33,6 +33,13 @@ export function writeLastChannel(ref: LastChannelRef) {
 	window.localStorage.setItem(STORAGE_KEY, JSON.stringify(ref));
 }
 
+export function clearLastChannel() {
+	if (typeof window === "undefined") {
+		return;
+	}
+	window.localStorage.removeItem(STORAGE_KEY);
+}
+
 export function clearLastChannelIfGroup(groupId: string) {
 	if (typeof window === "undefined") {
 		return;
