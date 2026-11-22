@@ -18,6 +18,15 @@ func (stubService) ListChannelMessages(context.Context, *models.ListChannelMessa
 	return []models.PublicMessage{{ID: "m1", Body: "hello"}}, false, nil
 }
 
+func (stubService) ResolveMessageChannelSeq(context.Context, *models.ResolveMessageChannelSeqInput) (models.MessageChannelSeqResult, error) {
+	return models.MessageChannelSeqResult{
+		MessagePublicID: "m1",
+		GroupPublicID:   "aaaaaaaaaaaaaaaaaaaaaaaa",
+		ChannelPublicID: "bbbbbbbbbbbbbbbbbbbbbbbb",
+		ChannelSeq:      99,
+	}, nil
+}
+
 func TestListChannelMessages_deliveryBind(t *testing.T) {
 	srv := messagegrpc.NewServer(stubService{})
 	res, err := srv.ListChannelMessages(context.Background(), &chatv1.ListChannelMessagesRequest{
@@ -30,5 +39,21 @@ func TestListChannelMessages_deliveryBind(t *testing.T) {
 	}
 	if len(res.GetMessages()) != 1 || res.GetMessages()[0].GetBody() != "hello" {
 		t.Fatalf("unexpected response: %+v", res)
+	}
+}
+
+func TestResolveMessageChannelSeq_deliveryBind(t *testing.T) {
+	srv := messagegrpc.NewServer(stubService{})
+	res, err := srv.ResolveMessageChannelSeq(context.Background(), &chatv1.ResolveMessageChannelSeqRequest{
+		AccessToken: "tok",
+		GroupId:     "aaaaaaaaaaaaaaaaaaaaaaaa",
+		ChannelId:   "bbbbbbbbbbbbbbbbbbbbbbbb",
+		MessageId:   "cccccccccccccccccccccccc",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.GetChannelSeq() != 99 || res.GetMessageId() != "m1" {
+		t.Fatalf("unexpected %+v", res)
 	}
 }

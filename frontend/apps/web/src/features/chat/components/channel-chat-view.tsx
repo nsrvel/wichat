@@ -1,7 +1,7 @@
 "use client";
 
 import { ApiError } from "@wichat/api-client/api-error";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { MessageReplyPreview } from "@wichat/contracts/chat/message";
 import type { GroupMember } from "@wichat/contracts/group/member";
 import { ChevronDown, EyeOff, ShieldAlert } from "lucide-react";
@@ -29,7 +29,11 @@ import { MessageRow } from "@/features/chat/components/message-row";
 import { PinnedMessagesPopover } from "@/features/chat/components/pinned-messages-popover";
 import type { ChannelMessage } from "@/features/chat/lib/channel-message";
 import { groupTimelineItems } from "@/features/chat/lib/group-timeline-items";
+import { ChatCacheTrimHintProvider } from "@/features/chat/lib/chat-cache-trim-hint";
+import { type ChannelMessagesInfiniteData } from "@/features/chat/lib/message-cache-window";
+import { resolveJumpSeq } from "@/features/chat/lib/resolve-message-jump";
 import { useChannelMessages } from "@/features/chat/lib/use-channel-messages";
+import { Q_CHANNEL_MESSAGES } from "@/services/message/message.key";
 import { hasInlineReplyBlock, stripInlineReplyBlocks } from "@/features/chat/lib/composer-markdown";
 import { isPendingMessageId } from "@/features/chat/lib/message-seq";
 import { useChannelRealtime } from "@/features/chat/lib/use-channel-realtime";
@@ -318,8 +322,17 @@ const ChannelSlowmodeComposer = memo(function ChannelSlowmodeComposer({
 	);
 });
 
-export function ChannelChatView({ groupId, channelId, onOpenSidebar }: ChannelChatViewProps) {
+export function ChannelChatView(props: ChannelChatViewProps) {
+	return (
+		<ChatCacheTrimHintProvider>
+			<ChannelChatViewBody {...props} />
+		</ChatCacheTrimHintProvider>
+	);
+}
+
+function ChannelChatViewBody({ groupId, channelId, onOpenSidebar }: ChannelChatViewProps) {
 	const { t } = useTranslation();
+	const queryClient = useQueryClient();
 	const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
 	const [replyState, setReplyState] = useState<{
 		channelId: string;
@@ -399,7 +412,9 @@ export function ChannelChatView({ groupId, channelId, onOpenSidebar }: ChannelCh
 		isError,
 		hasOlderMessages,
 		isFetchingOlderMessages,
+		isHistoryLoadPaused,
 		fetchOlderMessages,
+		loadContextAroundSeq,
 		refetch,
 	} = useChannelMessages(groupId, channelId);
 
@@ -433,16 +448,24 @@ export function ChannelChatView({ groupId, channelId, onOpenSidebar }: ChannelCh
 		hasOlderMessages,
 		isFetchingOlderMessages,
 		fetchOlderMessages,
+		loadContextAroundSeq,
 		scrollToMessage,
 		t,
+		queryClient,
+		groupId,
+		channelId,
 	});
 	useLayoutEffect(() => {
 		jumpDepsRef.current = {
 			hasOlderMessages,
 			isFetchingOlderMessages,
 			fetchOlderMessages,
+			loadContextAroundSeq,
 			scrollToMessage,
 			t,
+			queryClient,
+			groupId,
+			channelId,
 		};
 	});
 
@@ -455,24 +478,48 @@ export function ChannelChatView({ groupId, channelId, onOpenSidebar }: ChannelCh
 			return;
 		}
 		const {
-			hasOlderMessages: canLoadMore,
-			isFetchingOlderMessages: busy,
-			fetchOlderMessages: loadOlder,
+			loadContextAroundSeq: loadAround,
 			scrollToMessage: jumpNow,
+			queryClient: qc,
+			groupId: gid,
+			channelId: cid,
 			t: translate,
 		} = jumpDepsRef.current;
 		if (jumpNow(targetId)) {
 			pendingJumpRef.current = null;
 			return;
 		}
-		if (canLoadMore) {
-			pendingJumpRef.current = { targetId, attempts: 0 };
-			if (!busy) {
-				loadOlder();
+
+		pendingJumpRef.current = { targetId, attempts: 0 };
+		void (async () => {
+			try {
+				const seq = await resolveJumpSeq({
+					groupId: gid,
+					channelId: cid,
+					messageId: targetId,
+					cache: qc.getQueryData<ChannelMessagesInfiniteData>([Q_CHANNEL_MESSAGES, gid, cid]),
+				});
+				if (seq <= 0) {
+					pendingJumpRef.current = null;
+					toast.info(translate("chat.reply_target_unavailable"));
+					return;
+				}
+				const loaded = await loadAround(seq);
+				if (!loaded) {
+					pendingJumpRef.current = null;
+					toast.info(translate("chat.reply_target_unavailable"));
+					return;
+				}
+				requestAnimationFrame(() => {
+					if (jumpNow(targetId)) {
+						pendingJumpRef.current = null;
+					}
+				});
+			} catch {
+				pendingJumpRef.current = null;
+				toast.info(translate("chat.reply_target_unavailable"));
 			}
-			return;
-		}
-		toast.info(translate("chat.reply_target_unavailable"));
+		})();
 	}, []);
 
 	useEffect(() => {
@@ -482,19 +529,8 @@ export function ChannelChatView({ groupId, channelId, onOpenSidebar }: ChannelCh
 		}
 		if (scrollToMessage(pending.targetId)) {
 			pendingJumpRef.current = null;
-			return;
 		}
-		if (isFetchingOlderMessages) {
-			return;
-		}
-		if (hasOlderMessages && pending.attempts < 5) {
-			pending.attempts += 1;
-			fetchOlderMessages();
-			return;
-		}
-		pendingJumpRef.current = null;
-		toast.info(t("chat.reply_target_unavailable"));
-	}, [fetchOlderMessages, hasOlderMessages, isFetchingOlderMessages, messages, scrollToMessage, t]);
+	}, [messages, scrollToMessage]);
 
 	const handleRealtimeMessage = useCallback(
 		(authorId: string) => {
@@ -769,6 +805,13 @@ export function ChannelChatView({ groupId, channelId, onOpenSidebar }: ChannelCh
 									<div className="flex items-center gap-2 rounded-full border border-border/80 bg-card/95 px-3 py-1 text-xs text-muted-foreground shadow-sm backdrop-blur-xs">
 										<span className="inline-block size-3 animate-spin rounded-full border-2 border-primary border-t-transparent" />
 										{t("chat.loading_older")}
+									</div>
+								</div>
+							) : null}
+							{isHistoryLoadPaused ? (
+								<div className="pointer-events-none absolute top-3 left-1/2 z-10 -translate-x-1/2">
+									<div className="max-w-sm rounded-full border border-border/80 bg-card/95 px-3 py-1 text-center text-xs text-muted-foreground shadow-sm backdrop-blur-xs">
+										{t("chat.history_rate_limited")}
 									</div>
 								</div>
 							) : null}

@@ -892,6 +892,7 @@
     "mention": "Mention",
     "more": "Lainnya",
     "loading_older": "Memuat pesan sebelumnya…",
+    "history_rate_limited": "Memuat riwayat dijeda — coba lagi sebentar.",
     "load_older": "Muat pesan sebelumnya",
     "history_start_title": "Selamat datang di {{name}}",
     "history_start_description": "Ini adalah awal dari riwayat percakapan di channel {{name}}.",

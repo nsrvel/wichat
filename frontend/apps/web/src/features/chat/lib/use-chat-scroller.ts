@@ -2,6 +2,8 @@
 
 import { useVirtualizer, type Virtualizer } from "@tanstack/react-virtual";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
+import { useChatCacheTrimHintRef } from "@/features/chat/lib/chat-cache-trim-hint";
+import type { CacheTrimHint } from "@/features/chat/lib/message-cache-window";
 import type { TimelineItem } from "@/features/chat/lib/group-timeline-items";
 
 type ScrollMode = "sticky-bottom" | "free-scroll" | "jump-target";
@@ -78,6 +80,7 @@ export function useChatScroller({
 }: UseChatScrollerOptions): UseChatScrollerResult {
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const contentRef = useRef<HTMLDivElement>(null);
+	const cacheTrimHintRef = useChatCacheTrimHintRef();
 
 	const savedScroll = channelScrollMemory.get(channelId);
 	const modeRef = useRef<ScrollMode>(savedScroll?.mode ?? "sticky-bottom");
@@ -284,6 +287,14 @@ export function useChatScroller({
 		const atExactBottom = distanceFromBottom <= 8;
 		const nearBottomMovingDown = !scrollingUp && distanceFromBottom <= BOTTOM_THRESHOLD_PX;
 
+		let trimHint: CacheTrimHint = "middle";
+		if (distanceFromBottom <= JUMP_PILL_THRESHOLD_PX) {
+			trimHint = "near-bottom";
+		} else if (currentTop <= TOP_LOAD_THRESHOLD_PX) {
+			trimHint = "near-top";
+		}
+		cacheTrimHintRef.current = trimHint;
+
 		if (atExactBottom || nearBottomMovingDown) {
 			modeRef.current = "sticky-bottom";
 			setShowJumpToLatest((prev) => (prev ? false : prev));
@@ -312,7 +323,7 @@ export function useChatScroller({
 		) {
 			loadOlder();
 		}
-	}, []);
+	}, [cacheTrimHintRef]);
 
 	const scrollToBottom = useCallback(
 		(behavior: ScrollBehavior = "smooth") => {

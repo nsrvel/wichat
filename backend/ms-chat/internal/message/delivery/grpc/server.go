@@ -141,6 +141,25 @@ func (s *server) ListPinnedChannelMessages(ctx context.Context, req *chatv1.List
 	return &chatv1.ListPinnedChannelMessagesResponse{Messages: chatPb.MessageSummaries(messages)}, nil
 }
 
+func (s *server) ResolveMessageChannelSeq(ctx context.Context, req *chatv1.ResolveMessageChannelSeqRequest) (*chatv1.ResolveMessageChannelSeqResponse, error) {
+	out, err := s.svc.ResolveMessageChannelSeq(ctx, &models.ResolveMessageChannelSeqInput{
+		AccessToken:     req.GetAccessToken(),
+		GroupPublicID:   req.GetGroupId(),
+		ChannelPublicID: req.GetChannelId(),
+		MessagePublicID: req.GetMessageId(),
+	})
+	if err != nil {
+		return nil, responsegrpc.ToStatus(err)
+	}
+
+	return &chatv1.ResolveMessageChannelSeqResponse{
+		MessageId:  out.MessagePublicID,
+		GroupId:    out.GroupPublicID,
+		ChannelId:  out.ChannelPublicID,
+		ChannelSeq: out.ChannelSeq,
+	}, nil
+}
+
 func (s *server) UploadChannelAttachment(ctx context.Context, req *chatv1.UploadChannelAttachmentRequest) (*chatv1.UploadChannelAttachmentResponse, error) {
 	att, err := s.svc.UploadChannelAttachment(ctx, &models.UploadChannelAttachmentInput{
 		AccessToken:     req.GetAccessToken(),

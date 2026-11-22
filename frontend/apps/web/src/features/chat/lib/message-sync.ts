@@ -1,13 +1,23 @@
 import type { InfiniteData } from "@tanstack/react-query";
 import type { Message, MessagesList } from "@wichat/contracts/chat/message";
 import {
+	applyBoundedMessageCache,
+	type ChannelMessagesInfiniteData,
+} from "@/features/chat/lib/message-cache-window";
+import {
 	channelSeqValue,
 	compareChannelSeq,
 	highestChannelSeq,
 	isPendingMessageId,
 } from "@/features/chat/lib/message-seq";
 
-export const CHANNEL_MESSAGES_MAX_CACHED = 3_000;
+export {
+	CHANNEL_MESSAGES_MAX_CACHED,
+	trimInfiniteCache,
+	type CacheTrimHint,
+	type ChannelMessagesCacheMeta,
+	type ChannelMessagesInfiniteData,
+} from "@/features/chat/lib/message-cache-window";
 export const GAP_FILL_BURST_MESSAGES = 10_000;
 export const GAP_FILL_PAGE_SIZE = 500;
 
@@ -138,54 +148,10 @@ export function mergeGapFillIntoInfinite(
 	for (const msg of gapPage.messages) {
 		next = applyMessageToInfinite(next, msg, currentUserId);
 	}
-	return trimInfiniteCache(next);
+	return applyBoundedMessageCache(next as ChannelMessagesInfiniteData, "near-bottom");
 }
 
-export function trimInfiniteCache(
-	prev: InfiniteData<MessagesList> | undefined,
-): InfiniteData<MessagesList> {
-	if (!prev?.pages?.length) {
-		return prev ?? { pages: [], pageParams: [] };
-	}
-
-	let total = 0;
-	for (const page of prev.pages) {
-		total += page.messages.length;
-	}
-	if (total <= CHANNEL_MESSAGES_MAX_CACHED) {
-		return prev;
-	}
-
-	const pages = [...prev.pages];
-	let excess = total - CHANNEL_MESSAGES_MAX_CACHED;
-	while (excess > 0 && pages.length > 1) {
-		const oldestPage = pages[pages.length - 1];
-		if (oldestPage.messages.length <= excess) {
-			excess -= oldestPage.messages.length;
-			pages.pop();
-			continue;
-		}
-		pages[pages.length - 1] = {
-			...oldestPage,
-			messages: oldestPage.messages.slice(excess),
-		};
-		excess = 0;
-	}
-
-	return { ...prev, pages };
-}
-
-export function oldestPageCursor(page: MessagesList): ChannelMessagesPageParam | undefined {
-	if (!page.messages.length) {
-		return undefined;
-	}
-	const oldest = page.messages[0];
-	const seq = channelSeqValue(oldest.channel_seq);
-	if (seq <= 0) {
-		return undefined;
-	}
-	return { beforeChannelSeq: seq };
-}
+export { oldestPageCursor } from "@/features/chat/lib/message-cache-window";
 
 export function stripPendingForDedup(messages: Message[]): Message[] {
 	return messages.filter((m) => !isPendingMessageId(m.id));

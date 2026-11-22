@@ -943,6 +943,7 @@
     "mention": "Mention",
     "more": "More",
     "loading_older": "Loading older messages…",
+    "history_rate_limited": "History loading paused — try again in a minute.",
     "load_older": "Load older messages",
     "history_start_title": "Welcome to {{name}}",
     "history_start_description": "This is the start of the {{name}} channel history.",

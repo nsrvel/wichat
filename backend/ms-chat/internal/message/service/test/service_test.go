@@ -739,3 +739,42 @@ func TestReactionAndPinOutboxSameTransaction(t *testing.T) {
 		t.Fatal("expected error when reaction outbox fails")
 	}
 }
+
+func TestResolveMessageChannelSeq(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	st := mock.NewState()
+	svc := newTestService(st, fakeChannel{})
+
+	created, err := svc.CreateChannelMessage(ctx, &models.CreateChannelMessageInput{
+		GroupPublicID:     testGroupPublicID,
+		ChannelPublicID:   "ch-seq",
+		AccessToken:       testAccessToken("u1"),
+		CallerUserID:      "u1",
+		CallerPermissions: []string{"view_channels", "send_messages", "read_message_history"},
+		Body:              "target",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := svc.ResolveMessageChannelSeq(ctx, &models.ResolveMessageChannelSeqInput{
+		GroupPublicID:   testGroupPublicID,
+		ChannelPublicID: "ch-seq",
+		AccessToken:     testAccessToken("u1"),
+		MessagePublicID: created.ID,
+	})
+	if err != nil || got.ChannelSeq <= 0 || got.MessagePublicID != created.ID {
+		t.Fatalf("resolve: %+v err=%v", got, err)
+	}
+
+	svcNoRead := newTestService(st, fakeChannel{perms: []string{"view_channels"}})
+	if _, err := svcNoRead.ResolveMessageChannelSeq(ctx, &models.ResolveMessageChannelSeqInput{
+		GroupPublicID:   testGroupPublicID,
+		ChannelPublicID: "ch-seq",
+		AccessToken:     testAccessToken("u1"),
+		MessagePublicID: created.ID,
+	}); err == nil {
+		t.Fatal("expected permission denied without read_message_history")
+	}
+}
