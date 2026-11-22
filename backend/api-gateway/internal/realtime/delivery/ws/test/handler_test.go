@@ -47,6 +47,13 @@ func (s *stubPresenceClient) HeartbeatPresence(_ context.Context, in *userv1.Hea
 	}, nil
 }
 
+func dialRealtimeWS(ctx context.Context, httpURL, token string) (*websocket.Conn, *http.Response, error) {
+	wsURL := strings.Replace(httpURL, "http://", "ws://", 1)
+	return websocket.Dial(ctx, wsURL, &websocket.DialOptions{
+		Subprotocols: []string{"bearer." + token},
+	})
+}
+
 func (s *stubPresenceClient) DisconnectPresence(_ context.Context, in *userv1.DisconnectPresenceRequest) (*userv1.DisconnectPresenceResponse, error) {
 	if s.disconnectFn != nil {
 		return s.disconnectFn(in)
@@ -124,8 +131,7 @@ func TestRealtimeHeartbeatAuthRefreshAndInitialSync(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	wsURL := strings.Replace(srv.URL, "http://", "ws://", 1) + "?access_token=expired-token"
-	conn, resp, err := websocket.Dial(ctx, wsURL, nil)
+	conn, resp, err := dialRealtimeWS(ctx, srv.URL, "expired-token")
 	if resp != nil && resp.Body != nil {
 		_ = resp.Body.Close()
 	}
@@ -221,8 +227,7 @@ func TestSubscribeGroupForbiddenKeepsConnectionAlive(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	wsURL := strings.Replace(srv.URL, "http://", "ws://", 1) + "?access_token=test-token"
-	conn, resp, err := websocket.Dial(ctx, wsURL, nil)
+	conn, resp, err := dialRealtimeWS(ctx, srv.URL, "test-token")
 	if resp != nil && resp.Body != nil {
 		_ = resp.Body.Close()
 	}
@@ -287,8 +292,7 @@ func TestHeartbeatDegradesWhenPresenceUnavailable(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	wsURL := strings.Replace(srv.URL, "http://", "ws://", 1) + "?access_token=test-token"
-	conn, resp, err := websocket.Dial(ctx, wsURL, nil)
+	conn, resp, err := dialRealtimeWS(ctx, srv.URL, "test-token")
 	if resp != nil && resp.Body != nil {
 		_ = resp.Body.Close()
 	}
@@ -328,8 +332,7 @@ func TestRealtimeHeartbeatLoadSample(t *testing.T) {
 	defer srv.Close()
 
 	ctx := context.Background()
-	wsURL := strings.Replace(srv.URL, "http://", "ws://", 1) + "?access_token=bench-token"
-	conn, resp, err := websocket.Dial(ctx, wsURL, nil)
+	conn, resp, err := dialRealtimeWS(ctx, srv.URL, "bench-token")
 	if resp != nil && resp.Body != nil {
 		_ = resp.Body.Close()
 	}
@@ -404,8 +407,7 @@ func TestRealtimeMultiConnRealisticLoad(t *testing.T) {
 		go func(id int) {
 			defer wg.Done()
 			ctx := context.Background()
-			wsURL := strings.Replace(srv.URL, "http://", "ws://", 1) + fmt.Sprintf("?access_token=bench-%d", id)
-			conn, resp, err := websocket.Dial(ctx, wsURL, nil)
+			conn, resp, err := dialRealtimeWS(ctx, srv.URL, fmt.Sprintf("bench-%d", id))
 			if resp != nil && resp.Body != nil {
 				_ = resp.Body.Close()
 			}
@@ -427,7 +429,7 @@ func TestRealtimeMultiConnRealisticLoad(t *testing.T) {
 				if beat == heartbeatsEach/2 {
 					_ = activeConn.Close(websocket.StatusNormalClosure, "")
 					var redialResp *http.Response
-					activeConn, redialResp, err = websocket.Dial(ctx, wsURL, nil)
+					activeConn, redialResp, err = dialRealtimeWS(ctx, srv.URL, fmt.Sprintf("bench-%d", id))
 					if redialResp != nil && redialResp.Body != nil {
 						_ = redialResp.Body.Close()
 					}

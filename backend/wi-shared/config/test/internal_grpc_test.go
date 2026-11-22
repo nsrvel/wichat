@@ -8,8 +8,8 @@ import (
 
 func TestRequireInternalGrpcToken(t *testing.T) {
 	t.Parallel()
-	if err := sharedconfig.RequireInternalGrpcToken("development", ""); err != nil {
-		t.Fatalf("dev: %v", err)
+	if err := sharedconfig.RequireInternalGrpcToken("development", ""); err == nil {
+		t.Fatal("expected error when token missing in development")
 	}
 	if err := sharedconfig.RequireInternalGrpcToken("production", "secret"); err != nil {
 		t.Fatalf("prod ok: %v", err)

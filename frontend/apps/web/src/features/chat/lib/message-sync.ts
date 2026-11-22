@@ -1,10 +1,10 @@
 import type { InfiniteData } from "@tanstack/react-query";
 import type { Message, MessagesList } from "@wichat/contracts/chat/message";
 import {
+	channelSeqValue,
 	compareChannelSeq,
 	highestChannelSeq,
 	isPendingMessageId,
-	parseChannelSeq,
 } from "@/features/chat/lib/message-seq";
 
 export const CHANNEL_MESSAGES_MAX_CACHED = 3_000;
@@ -12,9 +12,7 @@ export const GAP_FILL_BURST_MESSAGES = 10_000;
 export const GAP_FILL_PAGE_SIZE = 500;
 
 export type ChannelMessagesPageParam = {
-	beforeChannelSeq?: string;
-	beforeCreatedAt?: string;
-	beforeId?: string;
+	beforeChannelSeq?: number;
 };
 
 function normalizeMine(incoming: Message, currentUserId?: string | null): Message {
@@ -66,7 +64,11 @@ export function applyMessageToInfinite(
 		found = true;
 		const updated = [...page.messages];
 		const existing = page.messages[idx];
-		updated[idx] = { ...normalized, mine: existing.mine || normalized.mine };
+		updated[idx] = {
+			...normalized,
+			client_msg_id: existing.client_msg_id ?? normalized.client_msg_id,
+			mine: existing.mine || normalized.mine,
+		};
 		return { ...page, messages: updated };
 	});
 
@@ -76,8 +78,8 @@ export function applyMessageToInfinite(
 
 	const page0 = nextPages[0] ?? { messages: [] };
 	const page0Messages = [...page0.messages, normalized].sort((a, b) => {
-		const seqA = parseChannelSeq(a.channel_seq);
-		const seqB = parseChannelSeq(b.channel_seq);
+		const seqA = channelSeqValue(a.channel_seq);
+		const seqB = channelSeqValue(b.channel_seq);
 		const pendingA = isPendingMessageId(a.id);
 		const pendingB = isPendingMessageId(b.id);
 		if (seqA > 0 && seqB > 0) {
@@ -108,11 +110,7 @@ export function replacePendingMessage(
 	realMessage: Message,
 	currentUserId?: string | null,
 ): InfiniteData<MessagesList> {
-	return applyMessageToInfinite(
-		removeInfiniteMessage(prev, pendingId),
-		realMessage,
-		currentUserId,
-	);
+	return applyMessageToInfinite(removeInfiniteMessage(prev, pendingId), realMessage, currentUserId);
 }
 
 function removeInfiniteMessage(
@@ -182,13 +180,11 @@ export function oldestPageCursor(page: MessagesList): ChannelMessagesPageParam |
 		return undefined;
 	}
 	const oldest = page.messages[0];
-	if (oldest.channel_seq) {
-		return { beforeChannelSeq: oldest.channel_seq };
+	const seq = channelSeqValue(oldest.channel_seq);
+	if (seq <= 0) {
+		return undefined;
 	}
-	return {
-		beforeCreatedAt: oldest.created_at,
-		beforeId: oldest.id,
-	};
+	return { beforeChannelSeq: seq };
 }
 
 export function stripPendingForDedup(messages: Message[]): Message[] {

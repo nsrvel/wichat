@@ -20,6 +20,8 @@ export type ChannelMessage = {
 	authorDisplayName: string;
 	authorAvatarUrl: string;
 	createdAt: string;
+	createdAtMs?: number;
+	dayKey?: string;
 	editedAt?: string;
 	isPinned?: boolean;
 	replyTo?: MessageReplyPreview | null;

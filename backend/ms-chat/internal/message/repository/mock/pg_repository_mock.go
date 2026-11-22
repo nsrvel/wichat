@@ -3,6 +3,7 @@ package mock
 import (
 	"context"
 	"fmt"
+	"sort"
 	"sync"
 	"time"
 	"unicode/utf8"
@@ -107,45 +108,59 @@ func (m pgRepositoryMock) ListByChannel(
 	_ context.Context,
 	channelID string,
 	limit int,
-	before *time.Time,
-	beforePublicID string,
 	beforeChannelSeq, afterChannelSeq int64,
 ) ([]models.MessageWithAuthor, bool, error) {
 	m.st.mu.Lock()
 	defer m.st.mu.Unlock()
 
-	var beforeInternalID string
-	if beforePublicID != "" {
-		for _, msg := range m.st.Messages {
-			if msg.ChannelID == channelID && msg.PublicID == beforePublicID {
-				beforeInternalID = msg.ID
-				break
-			}
-		}
-	}
-
-	var matching []models.MessageWithAuthor
+	var rows []models.Message
 	for _, msg := range m.st.Messages {
 		if msg.ChannelID != channelID {
 			continue
 		}
-		if before != nil {
-			if msg.CreatedAt.After(*before) {
+		if afterChannelSeq > 0 {
+			if msg.ChannelSeq <= afterChannelSeq {
 				continue
 			}
-			if msg.CreatedAt.Equal(*before) && (beforeInternalID == "" || msg.ID >= beforeInternalID) {
-				continue
-			}
+		} else if beforeChannelSeq > 0 && msg.ChannelSeq >= beforeChannelSeq {
+			continue
 		}
-		matching = append(matching, m.buildMessageWithAuthorLocked(msg))
+		rows = append(rows, msg)
 	}
 
-	hasMore := len(matching) > limit
+	if afterChannelSeq > 0 {
+		sort.Slice(rows, func(i, j int) bool {
+			if rows[i].ChannelSeq == rows[j].ChannelSeq {
+				return rows[i].ID < rows[j].ID
+			}
+			return rows[i].ChannelSeq < rows[j].ChannelSeq
+		})
+	} else {
+		sort.Slice(rows, func(i, j int) bool {
+			if rows[i].ChannelSeq == rows[j].ChannelSeq {
+				return rows[i].ID > rows[j].ID
+			}
+			return rows[i].ChannelSeq > rows[j].ChannelSeq
+		})
+	}
+
+	hasMore := len(rows) > limit
 	if hasMore {
-		matching = matching[len(matching)-limit:]
+		rows = rows[:limit]
 	}
 
-	return matching, hasMore, nil
+	out := make([]models.MessageWithAuthor, len(rows))
+	for i, msg := range rows {
+		out[i] = m.buildMessageWithAuthorLocked(msg)
+	}
+
+	if afterChannelSeq == 0 && len(out) > 1 {
+		for i, j := 0, len(out)-1; i < j; i, j = i+1, j-1 {
+			out[i], out[j] = out[j], out[i]
+		}
+	}
+
+	return out, hasMore, nil
 }
 
 func (m pgRepositoryMock) ListPinnedByChannel(_ context.Context, channelID string) ([]models.MessageWithAuthor, error) {

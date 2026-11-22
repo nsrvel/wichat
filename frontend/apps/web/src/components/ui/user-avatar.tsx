@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useState } from "react";
 import { resolvePublicObjectUrl, toSameOriginObjectPath } from "@/lib/public-object-url";
 import { cn } from "@/lib/utils";
 import { USER_STATUS_BY_ID, type UserPresenceStatus } from "@/lib/user-status";
@@ -54,7 +54,7 @@ const SIZE_STYLES: Record<
 	},
 };
 
-export function UserProfileIndicator({
+export const UserProfileIndicator = memo(function UserProfileIndicator({
 	status,
 	className,
 }: {
@@ -76,7 +76,7 @@ export function UserProfileIndicator({
 			{resolvedStatus === "invisible" ? <span className="size-1.5 rounded-full bg-card" /> : null}
 		</span>
 	);
-}
+});
 
 type UserAvatarProps = {
 	src?: string | null;
@@ -93,6 +93,22 @@ type UserAvatarProps = {
 const AVATAR_INITIALS_CLASS =
 	"flex size-full items-center justify-center rounded-full bg-muted font-semibold text-muted-foreground";
 
+const MAX_FAILED_AVATAR_URLS = 500;
+const failedAvatarUrlCache = new Set<string>();
+
+function markFailedAvatarUrl(url: string): void {
+	if (!url) {
+		return;
+	}
+	if (failedAvatarUrlCache.size >= MAX_FAILED_AVATAR_URLS) {
+		const oldest = failedAvatarUrlCache.values().next().value;
+		if (oldest !== undefined) {
+			failedAvatarUrlCache.delete(oldest);
+		}
+	}
+	failedAvatarUrlCache.add(url);
+}
+
 type UserAvatarMediaProps = {
 	resolvedSrc: string;
 	alt: string;
@@ -102,7 +118,7 @@ type UserAvatarMediaProps = {
 	imgClassName?: string;
 };
 
-function UserAvatarMedia({
+const UserAvatarMedia = memo(function UserAvatarMedia({
 	resolvedSrc,
 	alt,
 	styles,
@@ -110,14 +126,16 @@ function UserAvatarMedia({
 	ringClassName,
 	imgClassName,
 }: UserAvatarMediaProps) {
-	const [failedPrimarySrc, setFailedPrimarySrc] = useState<string | null>(null);
+	const [failedPrimarySrc, setFailedPrimarySrc] = useState<string | null>(() =>
+		resolvedSrc && failedAvatarUrlCache.has(resolvedSrc) ? resolvedSrc : null,
+	);
 	const [failedFallbackSrc, setFailedFallbackSrc] = useState<string | null>(null);
 
 	const fallbackSrc =
 		resolvedSrc && failedPrimarySrc === resolvedSrc ? toSameOriginObjectPath(resolvedSrc) : null;
 	const activeSrc =
 		fallbackSrc && fallbackSrc !== resolvedSrc
-			? failedFallbackSrc === fallbackSrc
+			? failedFallbackSrc === fallbackSrc || failedAvatarUrlCache.has(fallbackSrc)
 				? ""
 				: fallbackSrc
 			: failedPrimarySrc === resolvedSrc
@@ -142,9 +160,11 @@ function UserAvatarMedia({
 			alt={alt}
 			width={styles.px}
 			height={styles.px}
+			decoding="async"
 			referrerPolicy="no-referrer"
 			draggable={false}
 			onError={() => {
+				markFailedAvatarUrl(activeSrc);
 				if (activeSrc === resolvedSrc) {
 					setFailedPrimarySrc(resolvedSrc);
 				} else {
@@ -158,12 +178,12 @@ function UserAvatarMedia({
 			)}
 		/>
 	);
-}
+});
 
 /**
  * Shared circular user avatar: photo via object-store URL, or neutral initials fallback.
  */
-export function UserAvatar({
+export const UserAvatar = memo(function UserAvatar({
 	src,
 	alt = "",
 	initials,
@@ -176,7 +196,7 @@ export function UserAvatar({
 }: UserAvatarProps) {
 	const styles = SIZE_STYLES[size];
 	const raw = (src ?? "").trim();
-	const resolvedSrc = /^https?:\/\//i.test(raw) ? raw : resolvePublicObjectUrl(raw);
+	const resolvedSrc = raw ? resolvePublicObjectUrl(raw) : "";
 
 	return (
 		<div className={cn("relative shrink-0 select-none", styles.avatarClass, className)}>
@@ -197,4 +217,4 @@ export function UserAvatar({
 			) : null}
 		</div>
 	);
-}
+});

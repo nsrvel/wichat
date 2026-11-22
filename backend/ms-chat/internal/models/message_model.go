@@ -78,8 +78,6 @@ type ListChannelMessagesInput struct {
 	ResolvedChannelID string
 	CallerPermissions []string
 	Limit             int
-	BeforeCreatedAt   *time.Time
-	BeforePublicID    string
 	BeforeChannelSeq  int64
 	AfterChannelSeq   int64
 }

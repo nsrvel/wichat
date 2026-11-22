@@ -43,7 +43,9 @@ export function InviteDialogProvider({ children }: { children: ReactNode }) {
 	return (
 		<InviteDialogContext.Provider value={value}>
 			{children}
-			<InviteDialog open={open} onOpenChange={onOpenChange} target={target} />
+			{open && target ? (
+				<InviteDialog open={open} onOpenChange={onOpenChange} target={target} />
+			) : null}
 		</InviteDialogContext.Provider>
 	);
 }

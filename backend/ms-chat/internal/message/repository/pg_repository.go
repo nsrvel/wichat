@@ -16,7 +16,7 @@ import (
 
 // PgRepository persists channel messages and reactions.
 type PgRepository interface {
-	ListByChannel(ctx context.Context, channelID string, limit int, before *time.Time, beforePublicID string, beforeChannelSeq, afterChannelSeq int64) ([]models.MessageWithAuthor, bool, error)
+	ListByChannel(ctx context.Context, channelID string, limit int, beforeChannelSeq, afterChannelSeq int64) ([]models.MessageWithAuthor, bool, error)
 	ListPinnedByChannel(ctx context.Context, channelID string) ([]models.MessageWithAuthor, error)
 	FindByPublicIDInChannel(ctx context.Context, channelID, publicID string) (models.MessageWithAuthor, error)
 	FindByClientMsgIDInChannel(ctx context.Context, channelID, authorID, clientMsgID string) (models.MessageWithAuthor, error)
@@ -122,8 +122,6 @@ func (r pgRepository) ListByChannel(
 	ctx context.Context,
 	channelID string,
 	limit int,
-	before *time.Time,
-	beforePublicID string,
 	beforeChannelSeq, afterChannelSeq int64,
 ) ([]models.MessageWithAuthor, bool, error) {
 	if afterChannelSeq > 0 {
@@ -137,15 +135,6 @@ func (r pgRepository) ListByChannel(
 		Limit(int64(limit + 1))
 	if beforeChannelSeq > 0 {
 		q = q.Where("m.channel_seq < ?", beforeChannelSeq)
-	} else if before != nil {
-		if beforePublicID != "" {
-			q = q.Where(
-				"(m.created_at < ? OR (m.created_at = ? AND m.id < (SELECT id FROM messages WHERE channel_id = ? AND public_id = ? LIMIT 1)))",
-				*before, *before, channelID, beforePublicID,
-			)
-		} else {
-			q = q.Where("m.created_at < ?", *before)
-		}
 	}
 
 	if err := q.Scan(ctx); err != nil {

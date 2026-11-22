@@ -23,6 +23,18 @@ func TestListenAddressEmpty(t *testing.T) {
 	}
 }
 
+func TestGrpcListenAddress(t *testing.T) {
+	if config.GrpcListenAddress("", "3001") != "127.0.0.1:3001" {
+		t.Fatal("default loopback bind")
+	}
+	if config.GrpcListenAddress("10.0.0.1", "3002") != "10.0.0.1:3002" {
+		t.Fatal("explicit bind host")
+	}
+	if config.GrpcListenAddress("", "127.0.0.1:3003") != "127.0.0.1:3003" {
+		t.Fatal("host:port passthrough")
+	}
+}
+
 func TestLoad_emptyEnvStringUsesDefault(t *testing.T) {
 	t.Setenv("GRPC_ADDR", "")
 

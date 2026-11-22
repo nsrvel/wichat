@@ -1,21 +1,20 @@
 import type { Message } from "@wichat/contracts/chat/message";
 
-export function parseChannelSeq(seq: string | undefined): number {
-	if (!seq || !/^\d+$/.test(seq)) {
+export function channelSeqValue(seq: number | undefined): number {
+	if (seq == null || !Number.isSafeInteger(seq) || seq <= 0) {
 		return 0;
 	}
-	const n = Number(seq);
-	return Number.isSafeInteger(n) ? n : 0;
+	return seq;
 }
 
-export function compareChannelSeq(a: string | undefined, b: string | undefined): number {
-	return parseChannelSeq(a) - parseChannelSeq(b);
+export function compareChannelSeq(a: number | undefined, b: number | undefined): number {
+	return channelSeqValue(a) - channelSeqValue(b);
 }
 
 export function highestChannelSeq(messages: Message[]): number {
 	let max = 0;
 	for (const msg of messages) {
-		const seq = parseChannelSeq(msg.channel_seq);
+		const seq = channelSeqValue(msg.channel_seq);
 		if (seq > max) {
 			max = seq;
 		}

@@ -97,7 +97,7 @@ func (s service) ListChannelMessages(ctx context.Context, in *models.ListChannel
 		return nil, false, err
 	}
 
-	if len(in.CallerPermissions) > 0 && !hasAnyPerm(in.CallerPermissions, "administrator", "read_message_history") {
+	if !hasAnyPerm(in.CallerPermissions, "administrator", "read_message_history") {
 		return []models.PublicMessage{}, false, nil
 	}
 
@@ -119,15 +119,11 @@ func (s service) ListChannelMessages(ctx context.Context, in *models.ListChannel
 	}
 
 	// Repository
-	beforeAt := in.BeforeCreatedAt
-	beforeID := in.BeforePublicID
 	beforeSeq := in.BeforeChannelSeq
 	if in.AfterChannelSeq > 0 {
-		beforeAt = nil
-		beforeID = ""
 		beforeSeq = 0
 	}
-	rows, hasMore, err := s.messages.ListByChannel(ctx, in.ResolvedChannelID, limit, beforeAt, beforeID, beforeSeq, in.AfterChannelSeq)
+	rows, hasMore, err := s.messages.ListByChannel(ctx, in.ResolvedChannelID, limit, beforeSeq, in.AfterChannelSeq)
 	if err != nil {
 		return nil, false, err
 	}
@@ -543,7 +539,7 @@ func (s service) ListPinnedChannelMessages(ctx context.Context, in *models.ListP
 		return nil, err
 	}
 
-	if len(in.CallerPermissions) > 0 && !hasAnyPerm(in.CallerPermissions, "administrator", "read_message_history") {
+	if !hasAnyPerm(in.CallerPermissions, "administrator", "read_message_history") {
 		return []models.PublicMessage{}, nil
 	}
 
@@ -582,9 +578,6 @@ type channelAccessInput struct {
 }
 
 func (s service) applyChannelAccess(ctx context.Context, accessToken, groupID, channelID string, in channelAccessInput) error {
-	if in.resolvedChannelID != nil && strings.TrimSpace(*in.resolvedChannelID) != "" {
-		return nil
-	}
 	if s.userChannel == nil {
 		return errors.New("channel client required")
 	}
@@ -597,11 +590,16 @@ func (s service) applyChannelAccess(ctx context.Context, accessToken, groupID, c
 	if err != nil {
 		return err
 	}
+
+	resolved := strings.TrimSpace(out.GetChannelUuid())
+	if in.resolvedChannelID != nil {
+		if prev := strings.TrimSpace(*in.resolvedChannelID); prev != "" && prev != resolved {
+			return exception.PermissionDenied(exception.MsgForbidden, nil)
+		}
+		*in.resolvedChannelID = resolved
+	}
 	if in.callerUserID != nil {
 		*in.callerUserID = out.GetUserUuid()
-	}
-	if in.resolvedChannelID != nil {
-		*in.resolvedChannelID = out.GetChannelUuid()
 	}
 	if in.callerPermissions != nil {
 		*in.callerPermissions = out.GetPermissions()

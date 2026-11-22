@@ -4,7 +4,7 @@ import { createGroupWithInvite, createTestUser, E2E_API_BASE, type TestUser } fr
 type MessageRow = {
 	id: string;
 	body: string;
-	channel_seq?: string;
+	channel_seq?: number;
 };
 
 async function listChannels(request: APIRequestContext, user: TestUser, groupId: string) {
@@ -56,12 +56,8 @@ async function listMessages(
 	return json.data;
 }
 
-function parseSeq(seq: string | undefined): number {
-	if (!seq) {
-		return 0;
-	}
-	const n = Number.parseInt(seq, 10);
-	return Number.isFinite(n) ? n : 0;
+function seqValue(seq: number | undefined): number {
+	return typeof seq === "number" && Number.isFinite(seq) && seq > 0 ? seq : 0;
 }
 
 test.describe("Reconnect gap replay (after_channel_seq)", () => {
@@ -71,7 +67,7 @@ test.describe("Reconnect gap replay (after_channel_seq)", () => {
 		const channel = await listChannels(request, owner, group.id);
 
 		const anchor = await postMessage(request, owner, group.id, channel.id, "gap anchor");
-		const anchorSeq = parseSeq(anchor.channel_seq);
+		const anchorSeq = seqValue(anchor.channel_seq);
 		expect(anchorSeq).toBeGreaterThan(0);
 
 		const bodies = ["gap one", "gap two", "gap three"];
@@ -90,7 +86,7 @@ test.describe("Reconnect gap replay (after_channel_seq)", () => {
 
 		let prev = anchorSeq;
 		for (const msg of gapPage.messages) {
-			const seq = parseSeq(msg.channel_seq);
+			const seq = seqValue(msg.channel_seq);
 			expect(seq).toBeGreaterThan(prev);
 			prev = seq;
 		}

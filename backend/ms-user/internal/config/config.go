@@ -11,7 +11,8 @@ import (
 type Config struct {
 	Env                   string `mapstructure:"env"`
 	LogLevel              string `mapstructure:"log_level"`
-	Port                  string `mapstructure:"port"` // gRPC listen port
+	Port                  string `mapstructure:"port"`     // gRPC listen port
+	GrpcBind              string `mapstructure:"grpc_bind"` // loopback by default in dev
 	DatabaseURL           string `mapstructure:"database_url"`
 	AuthJWTSecret         string `mapstructure:"auth_jwt_secret"`
 	GoogleClientID        string `mapstructure:"google_client_id"`
@@ -40,6 +41,8 @@ var Defaults = Config{
 	Env:                   "development",
 	LogLevel:              "info",
 	Port:                  "3001",
+	GrpcBind:              "127.0.0.1",
+	InternalGrpcToken:     "dev-internal-grpc-token",
 	RedisURL:              "redis://localhost:6379/0",
 	NotificationHost:      "localhost:3005",
 	WebOrigin:             "http://localhost:8080",
@@ -57,13 +60,16 @@ func Load(envFile string) (Config, error) {
 	return cfg, nil
 }
 
-// ListenAddr returns the address for net.Listen (e.g. ":3001").
+// ListenAddr returns the address for net.Listen (e.g. "127.0.0.1:3001").
 func (c Config) ListenAddr() string {
-	return sharedconfig.ListenAddress(c.Port)
+	return sharedconfig.GrpcListenAddress(c.GrpcBind, c.Port)
 }
 
 // Validate enforces production safety invariants when Env is not development.
 func (c Config) Validate() error {
+	if err := sharedconfig.RequireInternalGrpcToken(c.Env, c.InternalGrpcToken); err != nil {
+		return err
+	}
 	if strings.EqualFold(strings.TrimSpace(c.Env), "development") {
 		return nil
 	}
@@ -78,5 +84,5 @@ func (c Config) Validate() error {
 	if mfaKey == c.AuthJWTSecret {
 		return fmt.Errorf("MFA_ENCRYPTION_KEY must be distinct from AUTH_JWT_SECRET when ENV=%s", c.Env)
 	}
-	return sharedconfig.RequireInternalGrpcToken(c.Env, c.InternalGrpcToken)
+	return nil
 }
