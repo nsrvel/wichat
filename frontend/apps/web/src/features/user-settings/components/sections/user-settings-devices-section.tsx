@@ -8,6 +8,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { isQueryFailureWithoutData } from "@/lib/query-display";
 import {
 	DeviceLogoutDialog,
 	type DeviceLogoutTarget,
@@ -104,6 +105,7 @@ export function UserSettingsDevicesSection({
 	const [logoutTarget, setLogoutTarget] = useState<DeviceLogoutTarget | null>(null);
 	const [verifiedPassword, setVerifiedPassword] = useState<string | null>(null);
 	const { data, isPending, isError, refetch } = useQuery(myDevicesQueryOptions());
+	const showLoadError = isQueryFailureWithoutData(isError, data);
 	const revokeDevice = useRevokeMyDeviceMutation();
 
 	const handleLogoutSingleClick = (deviceId: string, label: string) => {
@@ -143,7 +145,7 @@ export function UserSettingsDevicesSection({
 				</h3>
 				{isPending ? (
 					<DeviceRowSkeleton />
-				) : isError ? (
+				) : showLoadError ? (
 					<div className="flex items-center justify-between gap-4 py-1">
 						<p className="text-xs text-muted-foreground">{t("user_settings.devices.load_error")}</p>
 						<Button type="button" variant="secondary" size="sm" onClick={() => void refetch()}>
