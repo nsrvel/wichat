@@ -15,10 +15,8 @@ import { parseChannelSeq } from "@/features/chat/lib/message-seq";
 import { subscribeChatChannel } from "@/integrations/realtime/chat-channel";
 import { sessionQueryOpts } from "@/services/auth/auth.query";
 import { Q_CHANNEL_MESSAGES, Q_PINNED_MESSAGES } from "@/services/message/message.key";
-import {
-	CHANNEL_MESSAGES_PAGE_SIZE,
-	listChannelMessages,
-} from "@/services/message/message.service";
+import { GAP_FILL_PAGE_SIZE } from "@/features/chat/lib/message-sync";
+import { listChannelMessages } from "@/services/message/message.service";
 
 async function replayGapAfterSeq(
 	groupId: string,
@@ -31,7 +29,7 @@ async function replayGapAfterSeq(
 
 	while (fetched < GAP_FILL_BURST_MESSAGES) {
 		const page = await listChannelMessages(groupId, channelId, {
-			limit: CHANNEL_MESSAGES_PAGE_SIZE,
+			limit: GAP_FILL_PAGE_SIZE,
 			afterChannelSeq: cursor > 0 ? String(cursor) : undefined,
 		});
 		if (!page.messages.length) {
@@ -101,6 +99,10 @@ export function useChannelRealtime(
 			onReconnect: () => {
 				const prev = queryClient.getQueryData<InfiniteData<MessagesList>>(queryKey);
 				const afterSeq = highestSeqInInfinite(prev);
+				if (afterSeq === 0) {
+					void queryClient.invalidateQueries({ queryKey });
+					return;
+				}
 				void replayGapAfterSeq(groupId, channelId, afterSeq)
 					.then((gapPage) => {
 						if (!gapPage.messages.length) {
@@ -116,4 +118,15 @@ export function useChannelRealtime(
 			},
 		});
 	}, [groupId, channelId, queryClient, sessionUser?.id, onMessageReceived]);
+
+	useEffect(() => {
+		if (!isPublicEntityId(groupId) || !isPublicEntityId(channelId)) {
+			return;
+		}
+		const queryKey = [Q_CHANNEL_MESSAGES, groupId, channelId];
+		return () => {
+			queryClient.removeQueries({ queryKey });
+			queryClient.removeQueries({ queryKey: [Q_PINNED_MESSAGES, groupId, channelId] });
+		};
+	}, [groupId, channelId, queryClient]);
 }

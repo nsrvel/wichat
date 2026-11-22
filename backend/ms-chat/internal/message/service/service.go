@@ -259,10 +259,7 @@ func (s service) CreateChannelMessage(ctx context.Context, in *models.CreateChan
 			return models.PublicMessage{}, err
 		}
 		preview.ID = publicID
-		outboxRow, err := pkgChatEvents.EncodeMessageCreated(in.GroupPublicID, in.ChannelPublicID, toPublicMessageWire(preview), createdAt)
-		if err != nil {
-			return models.PublicMessage{}, err
-		}
+		wire := toPublicMessageWire(preview)
 
 		msg, err = s.messages.InsertWithOutbox(ctx, &models.InsertMessageWithOutboxInput{
 			ID: id, PublicID: publicID,
@@ -272,7 +269,20 @@ func (s service) CreateChannelMessage(ctx context.Context, in *models.CreateChan
 			Body:        body,
 			ReplyToID:   replyToID,
 			CreatedAt:   createdAt,
-			Outbox:      toEventOutboxInsert(outboxRow),
+			BuildOutbox: func(channelSeq int64) (models.EventOutboxInsert, error) {
+				wire.ChannelSeq = channelSeq
+				outboxRow, err := pkgChatEvents.EncodeMessageCreated(
+					in.GroupPublicID,
+					in.ChannelPublicID,
+					wire,
+					createdAt,
+				)
+				if err != nil {
+					return models.EventOutboxInsert{}, err
+				}
+
+				return toEventOutboxInsert(outboxRow), nil
+			},
 		})
 		if err == nil {
 			break
