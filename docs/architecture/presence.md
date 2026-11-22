@@ -15,7 +15,7 @@
 
 ## Realtime (api-gateway)
 
-`GET /api/v1/realtime?access_token=…` (WebSocket upgrade)
+`GET /api/v1/realtime` — WebSocket upgrade with `Sec-WebSocket-Protocol: bearer` (short marker) or legacy `bearer.<jwt>`. First `presence.heartbeat` carries `access_token` when the upgrade used deferred auth. Query `access_token` is rejected.
 
 | Client → server | Server → client |
 |-----------------|-----------------|
@@ -26,7 +26,7 @@
 
 | File | Role |
 |------|------|
-| `live-connection.ts` | One WS/tab; query-string token auth |
+| `gateway-socket.ts` / `live-connection.ts` | One WS/tab via unified gateway socket |
 | `live-cache.ts` | Patches `Q_MY_PRESENCE` + `Q_INVITE_MEMBERS` |
 | `presence-gate.tsx` | Mounted in `AppProviders` when session exists |
 | `use-live-presence.ts` | Avatar dot + manual status for picker |
