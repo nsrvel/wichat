@@ -18,6 +18,7 @@ export type SidebarChannelRowProps = {
 	activeMenuId: string | null;
 	onActiveMenuIdChange: (id: string | null) => void;
 	onSelect: () => void;
+	onPrefetch?: () => void;
 };
 
 export function SidebarChannelRow({
@@ -29,6 +30,7 @@ export function SidebarChannelRow({
 	activeMenuId,
 	onActiveMenuIdChange,
 	onSelect,
+	onPrefetch,
 }: SidebarChannelRowProps) {
 	return (
 		<SidebarRowShell
@@ -46,6 +48,7 @@ export function SidebarChannelRow({
 					selected ? "font-semibold text-sidebar-foreground" : sidebarRowLabelClass(unread),
 				)}
 				onClick={onSelect}
+				onPointerEnter={onPrefetch}
 			>
 				{icon}
 				<span className="min-w-0 flex-1 truncate text-left">{label}</span>

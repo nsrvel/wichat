@@ -9,6 +9,7 @@ type Config struct {
 	Env          string `mapstructure:"env"`
 	LogLevel     string `mapstructure:"log_level"`
 	Port         string `mapstructure:"port"`
+	GrpcBind     string `mapstructure:"grpc_bind"`
 	SMTPHost     string `mapstructure:"smtp_host"`
 	SMTPPort     int    `mapstructure:"smtp_port"`
 	SMTPUser     string `mapstructure:"smtp_user"`
@@ -23,7 +24,9 @@ type Config struct {
 var Defaults = Config{
 	Env:      "development",
 	LogLevel: "info",
-	Port:     "3005",
+	Port:                 "3005",
+	GrpcBind:             "127.0.0.1",
+	InternalGrpcToken:    "dev-internal-grpc-token",
 	SMTPHost: "localhost",
 	SMTPPort: 587,
 	SMTPFrom: "WiChat <noreply@localhost>",
@@ -40,9 +43,9 @@ func Load(envFile string) (Config, error) {
 	return cfg, nil
 }
 
-// ListenAddr returns the address for net.Listen (e.g. ":3005").
+// ListenAddr returns the address for net.Listen (e.g. "127.0.0.1:3005").
 func (c Config) ListenAddr() string {
-	return sharedconfig.ListenAddress(c.Port)
+	return sharedconfig.GrpcListenAddress(c.GrpcBind, c.Port)
 }
 
 // Validate enforces production safety invariants when Env is not development.

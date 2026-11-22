@@ -30,6 +30,8 @@ func messagePayloadFromEvent(m chatEvents.Message) MessagePayload {
 
 	return MessagePayload{
 		ID:                m.ID,
+		ChannelSeq:        m.ChannelSeq,
+		ClientMsgID:       m.ClientMsgID,
 		AuthorID:          m.AuthorID,
 		AuthorDisplayName: m.AuthorDisplayName,
 		AuthorAvatarURL:   m.AuthorAvatarURL,

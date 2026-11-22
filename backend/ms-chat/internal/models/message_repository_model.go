@@ -16,6 +16,7 @@ type MessageRow struct {
 	PublicID      string     `bun:"public_id"`
 	ChannelID     string     `bun:"channel_id"`
 	AuthorID      string     `bun:"author_id"`
+	ClientMsgID   *string    `bun:"client_msg_id,type:uuid"`
 	ReplyToID     *string    `bun:"reply_to_id,type:uuid"`
 	ChannelSeq    int64      `bun:"channel_seq,notnull"`
 	Body          string     `bun:"body"`
@@ -30,7 +31,7 @@ type MessageRow struct {
 func MessageRowFrom(m Message) MessageRow {
 	return MessageRow{
 		ID: m.ID, PublicID: m.PublicID, ChannelID: m.ChannelID, AuthorID: m.AuthorID,
-		ReplyToID: m.ReplyToID, ChannelSeq: m.ChannelSeq, Body: m.Body, CreatedAt: m.CreatedAt,
+		ClientMsgID: m.ClientMsgID, ReplyToID: m.ReplyToID, ChannelSeq: m.ChannelSeq, Body: m.Body, CreatedAt: m.CreatedAt,
 		EditedAt: m.EditedAt, IsPinned: m.IsPinned, PinnedAt: m.PinnedAt, PinnedBy: m.PinnedBy,
 	}
 }
@@ -39,7 +40,7 @@ func MessageRowFrom(m Message) MessageRow {
 func (r MessageRow) ToModel() Message {
 	return Message{
 		ID: r.ID, PublicID: r.PublicID, ChannelID: r.ChannelID, AuthorID: r.AuthorID,
-		ReplyToID: r.ReplyToID, ChannelSeq: r.ChannelSeq, Body: r.Body, CreatedAt: r.CreatedAt,
+		ClientMsgID: r.ClientMsgID, ReplyToID: r.ReplyToID, ChannelSeq: r.ChannelSeq, Body: r.Body, CreatedAt: r.CreatedAt,
 		EditedAt: r.EditedAt, IsPinned: r.IsPinned, PinnedAt: r.PinnedAt, PinnedBy: r.PinnedBy,
 	}
 }
@@ -61,6 +62,7 @@ type MessageListRow struct {
 	PublicID          string     `bun:"public_id"`
 	ChannelID         string     `bun:"channel_id,type:uuid"`
 	AuthorID          string     `bun:"author_id,type:uuid"`
+	ClientMsgID       *string    `bun:"client_msg_id,type:uuid"`
 	ReplyToID         *string    `bun:"reply_to_id,type:uuid"`
 	ChannelSeq        int64      `bun:"channel_seq"`
 	Body              string     `bun:"body"`
@@ -111,7 +113,7 @@ func (r MessageListRow) ToMessageWithAuthor() MessageWithAuthor {
 	return MessageWithAuthor{
 		Message: Message{
 			ID: r.ID, PublicID: r.PublicID, ChannelID: r.ChannelID, AuthorID: r.AuthorID,
-			ReplyToID: r.ReplyToID, ChannelSeq: r.ChannelSeq, Body: r.Body, CreatedAt: r.CreatedAt,
+			ClientMsgID: r.ClientMsgID, ReplyToID: r.ReplyToID, ChannelSeq: r.ChannelSeq, Body: r.Body, CreatedAt: r.CreatedAt,
 			EditedAt: r.EditedAt, IsPinned: r.IsPinned, PinnedAt: r.PinnedAt, PinnedBy: r.PinnedBy,
 		},
 		AuthorDisplayName: r.AuthorDisplayName,

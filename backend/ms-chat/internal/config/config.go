@@ -9,6 +9,7 @@ type Config struct {
 	Env                      string `mapstructure:"env"`
 	LogLevel                 string `mapstructure:"log_level"`
 	Port                     string `mapstructure:"port"`
+	GrpcBind                 string `mapstructure:"grpc_bind"`
 	DatabaseURL              string `mapstructure:"database_url"`
 	MSUserHost               string `mapstructure:"ms_user_host"`
 	KafkaBrokers             string `mapstructure:"kafka_brokers"`
@@ -31,6 +32,8 @@ var Defaults = Config{
 	Env:                      "development",
 	LogLevel:                 "info",
 	Port:                     "3002",
+	GrpcBind:                 "127.0.0.1",
+	InternalGrpcToken:        "dev-internal-grpc-token",
 	DatabaseURL:              "postgres://wichat:wichat@localhost:5432/wichat?sslmode=disable",
 	MSUserHost:               "localhost:3001",
 	KafkaBrokers:             "localhost:9092",
@@ -51,9 +54,9 @@ func Load(envFile string) (Config, error) {
 	return cfg, nil
 }
 
-// ListenAddr returns the address for net.Listen (e.g. ":3002").
+// ListenAddr returns the address for net.Listen (e.g. "127.0.0.1:3002").
 func (c Config) ListenAddr() string {
-	return sharedconfig.ListenAddress(c.Port)
+	return sharedconfig.GrpcListenAddress(c.GrpcBind, c.Port)
 }
 
 // Validate enforces production safety invariants when Env is not development.

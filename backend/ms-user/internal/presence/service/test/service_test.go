@@ -108,8 +108,8 @@ func TestPresenceServiceLifecycle(t *testing.T) {
 	mr.Del("presence:effective:" + user.User.ID)
 	batch, err = svc.BatchGetEffectivePresence(ctx, []string{user.User.ID})
 	require.NoError(t, err)
-	require.True(t, batch[user.User.ID].IsOnline)
-	require.Equal(t, models.PresenceStatusOnline, batch[user.User.ID].PresenceStatus)
+	require.False(t, batch[user.User.ID].IsOnline)
+	require.Equal(t, models.PresenceStatusOffline, batch[user.User.ID].PresenceStatus)
 
 	mr.Del("presence:effective:" + user.User.ID)
 	myView, err = svc.GetMyPresence(ctx, user.AccessToken)

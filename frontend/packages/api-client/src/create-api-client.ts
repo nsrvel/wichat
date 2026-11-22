@@ -57,7 +57,10 @@ export function createApiClient({
 				...init,
 				credentials,
 			});
-		} catch {
+		} catch (err) {
+			if (err instanceof DOMException && err.name === "AbortError") {
+				throw err;
+			}
 			onGatewayUnreachable?.();
 			throw new ApiError("error.network");
 		}
@@ -134,8 +137,12 @@ export function createApiClient({
 	}
 
 	const api = {
-		async get<T>(path: string, schema: Schema<T>): Promise<T> {
-			return send(path, schema, { method: "GET" }, true);
+		async get<T>(
+			path: string,
+			schema: Schema<T>,
+			init?: RequestInit,
+		): Promise<T> {
+			return send(path, schema, { method: "GET", ...init }, true);
 		},
 
 		async post<T>(path: string, schema: Schema<T>, body: unknown): Promise<T> {

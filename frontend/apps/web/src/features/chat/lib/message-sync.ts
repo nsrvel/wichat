@@ -1,0 +1,158 @@
+import type { InfiniteData } from "@tanstack/react-query";
+import type { Message, MessagesList } from "@wichat/contracts/chat/message";
+import {
+	applyBoundedMessageCache,
+	type ChannelMessagesInfiniteData,
+} from "@/features/chat/lib/message-cache-window";
+import {
+	channelSeqValue,
+	compareChannelSeq,
+	highestChannelSeq,
+	isPendingMessageId,
+} from "@/features/chat/lib/message-seq";
+
+export {
+	CHANNEL_MESSAGES_MAX_CACHED,
+	trimInfiniteCache,
+	type CacheTrimHint,
+	type ChannelMessagesCacheMeta,
+	type ChannelMessagesInfiniteData,
+} from "@/features/chat/lib/message-cache-window";
+export const GAP_FILL_BURST_MESSAGES = 10_000;
+export const GAP_FILL_PAGE_SIZE = 500;
+
+export type ChannelMessagesPageParam = {
+	beforeChannelSeq?: number;
+};
+
+function normalizeMine(incoming: Message, currentUserId?: string | null): Message {
+	const isMine = incoming.mine || (Boolean(currentUserId) && incoming.author_id === currentUserId);
+	return { ...incoming, mine: isMine };
+}
+
+export function highestSeqInInfinite(data: InfiniteData<MessagesList> | undefined): number {
+	if (!data?.pages?.length) {
+		return 0;
+	}
+	let max = 0;
+	for (const page of data.pages) {
+		const pageMax = highestChannelSeq(page.messages);
+		if (pageMax > max) {
+			max = pageMax;
+		}
+	}
+	return max;
+}
+
+export function applyMessageToInfinite(
+	prev: InfiniteData<MessagesList> | undefined,
+	incoming: Message,
+	currentUserId?: string | null,
+): InfiniteData<MessagesList> {
+	const normalized = normalizeMine(incoming, currentUserId);
+
+	if (!prev?.pages?.length) {
+		return {
+			pages: [{ messages: [normalized], has_more: false }],
+			pageParams: [undefined],
+		};
+	}
+
+	const pendingClientId = incoming.client_msg_id;
+
+	let found = false;
+	const nextPages = prev.pages.map((page) => {
+		const idx = page.messages.findIndex(
+			(m) =>
+				m.id === normalized.id ||
+				(pendingClientId != null && m.client_msg_id === pendingClientId) ||
+				(pendingClientId != null && m.id === `pending_${pendingClientId}`),
+		);
+		if (idx < 0) {
+			return page;
+		}
+		found = true;
+		const updated = [...page.messages];
+		const existing = page.messages[idx];
+		updated[idx] = {
+			...normalized,
+			client_msg_id: existing.client_msg_id ?? normalized.client_msg_id,
+			mine: existing.mine || normalized.mine,
+		};
+		return { ...page, messages: updated };
+	});
+
+	if (found) {
+		return { ...prev, pages: nextPages };
+	}
+
+	const page0 = nextPages[0] ?? { messages: [] };
+	const page0Messages = [...page0.messages, normalized].sort((a, b) => {
+		const seqA = channelSeqValue(a.channel_seq);
+		const seqB = channelSeqValue(b.channel_seq);
+		const pendingA = isPendingMessageId(a.id);
+		const pendingB = isPendingMessageId(b.id);
+		if (seqA > 0 && seqB > 0) {
+			return seqA - seqB;
+		}
+		if (seqA > 0 && (seqB === 0 || pendingB)) {
+			return -1;
+		}
+		if ((seqA === 0 || pendingA) && seqB > 0) {
+			return 1;
+		}
+		const diff = compareChannelSeq(a.channel_seq, b.channel_seq);
+		if (diff !== 0) {
+			return diff;
+		}
+		return a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id);
+	});
+
+	return {
+		...prev,
+		pages: [{ ...page0, messages: page0Messages }, ...nextPages.slice(1)],
+	};
+}
+
+export function replacePendingMessage(
+	prev: InfiniteData<MessagesList> | undefined,
+	pendingId: string,
+	realMessage: Message,
+	currentUserId?: string | null,
+): InfiniteData<MessagesList> {
+	return applyMessageToInfinite(removeInfiniteMessage(prev, pendingId), realMessage, currentUserId);
+}
+
+function removeInfiniteMessage(
+	prev: InfiniteData<MessagesList> | undefined,
+	messageId: string,
+): InfiniteData<MessagesList> | undefined {
+	if (!prev?.pages) {
+		return prev;
+	}
+	return {
+		...prev,
+		pages: prev.pages.map((page) => ({
+			...page,
+			messages: page.messages.filter((m) => m.id !== messageId),
+		})),
+	};
+}
+
+export function mergeGapFillIntoInfinite(
+	prev: InfiniteData<MessagesList> | undefined,
+	gapPage: MessagesList,
+	currentUserId?: string | null,
+): InfiniteData<MessagesList> {
+	let next = prev;
+	for (const msg of gapPage.messages) {
+		next = applyMessageToInfinite(next, msg, currentUserId);
+	}
+	return applyBoundedMessageCache(next as ChannelMessagesInfiniteData, "near-bottom");
+}
+
+export { oldestPageCursor } from "@/features/chat/lib/message-cache-window";
+
+export function stripPendingForDedup(messages: Message[]): Message[] {
+	return messages.filter((m) => !isPendingMessageId(m.id));
+}

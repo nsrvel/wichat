@@ -17,10 +17,10 @@ func TestBearerTokenFromRequestSubprotocol(t *testing.T) {
 	}
 }
 
-func TestBearerTokenFromRequestQueryFallback(t *testing.T) {
+func TestBearerTokenFromRequestRejectsQueryToken(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/realtime?access_token=legacy", nil)
-	if wsdelivery.BearerTokenFromRequest(req) != "legacy" {
-		t.Fatal("expected query token")
+	if wsdelivery.BearerTokenFromRequest(req) != "" {
+		t.Fatal("query access_token must not be accepted")
 	}
 }
 

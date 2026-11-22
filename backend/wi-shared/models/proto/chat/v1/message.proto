@@ -14,6 +14,7 @@ service MessageService {
   rpc SetChannelMessagePinned(SetChannelMessagePinnedRequest) returns (SetChannelMessagePinnedResponse);
   rpc ListPinnedChannelMessages(ListPinnedChannelMessagesRequest) returns (ListPinnedChannelMessagesResponse);
   rpc UploadChannelAttachment(UploadChannelAttachmentRequest) returns (UploadChannelAttachmentResponse);
+  rpc ResolveMessageChannelSeq(ResolveMessageChannelSeqRequest) returns (ResolveMessageChannelSeqResponse);
 }
 
 message ListChannelMessagesRequest {
@@ -21,9 +22,10 @@ message ListChannelMessagesRequest {
   string group_id = 2;
   string channel_id = 3;
   int32 limit = 4;
-  string before_created_at = 5;
-  string before_id = 6;
+  reserved 5, 6;
+  reserved "before_created_at", "before_id";
   int64 before_channel_seq = 7;
+  int64 after_channel_seq = 8;
 }
 
 message ListChannelMessagesResponse {
@@ -37,6 +39,7 @@ message CreateChannelMessageRequest {
   string channel_id = 3;
   string body = 4;
   string reply_to_id = 5;
+  string client_msg_id = 6;
 }
 
 message CreateChannelMessageResponse {
@@ -126,6 +129,7 @@ message MessageSummary {
   MessageReplyPreview reply_to = 10;
   repeated MessageReactionSummary reactions = 11;
   int64 channel_seq = 12;
+  string client_msg_id = 13;
 }
 
 message UploadChannelAttachmentRequest {
@@ -148,4 +152,18 @@ message MessageAttachment {
 
 message UploadChannelAttachmentResponse {
   MessageAttachment attachment = 1;
+}
+
+message ResolveMessageChannelSeqRequest {
+  string access_token = 1;
+  string group_id = 2;
+  string channel_id = 3;
+  string message_id = 4;
+}
+
+message ResolveMessageChannelSeqResponse {
+  string message_id = 1;
+  string group_id = 2;
+  string channel_id = 3;
+  int64 channel_seq = 4;
 }

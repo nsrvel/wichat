@@ -19,18 +19,19 @@ type MessageReactionSummary struct {
 
 // Message is a stored channel message.
 type Message struct {
-	ID         string
-	PublicID   string
-	ChannelID  string
-	AuthorID   string
-	ReplyToID  *string
-	ChannelSeq int64
-	Body       string
-	CreatedAt  time.Time
-	EditedAt   *time.Time
-	IsPinned   bool
-	PinnedAt   *time.Time
-	PinnedBy   *string
+	ID          string
+	PublicID    string
+	ChannelID   string
+	AuthorID    string
+	ClientMsgID *string
+	ReplyToID   *string
+	ChannelSeq  int64
+	Body        string
+	CreatedAt   time.Time
+	EditedAt    *time.Time
+	IsPinned    bool
+	PinnedAt    *time.Time
+	PinnedBy    *string
 }
 
 // MessageWithAuthor is a message row joined with author and reply metadata.
@@ -46,6 +47,7 @@ type MessageWithAuthor struct {
 type PublicMessage struct {
 	ID                string
 	ChannelSeq        int64
+	ClientMsgID       string
 	AuthorID          string
 	AuthorDisplayName string
 	AuthorAvatarURL   string
@@ -76,9 +78,8 @@ type ListChannelMessagesInput struct {
 	ResolvedChannelID string
 	CallerPermissions []string
 	Limit             int
-	BeforeCreatedAt   *time.Time
-	BeforePublicID    string
 	BeforeChannelSeq  int64
+	AfterChannelSeq   int64
 }
 
 // CreateChannelMessageInput creates a message after access resolution.
@@ -93,6 +94,7 @@ type CreateChannelMessageInput struct {
 	SlowmodeSeconds   int32
 	Body              string
 	ReplyToPublicID   string
+	ClientMsgID       string
 }
 
 // UpdateChannelMessageInput edits an existing message body.
@@ -158,6 +160,25 @@ type MessageAttachment struct {
 	Filename    string
 	ContentType string
 	SizeBytes   int64
+}
+
+// ResolveMessageChannelSeqInput resolves a message public id to its channel_seq after access checks.
+type ResolveMessageChannelSeqInput struct {
+	AccessToken       string
+	GroupPublicID     string
+	ChannelPublicID   string
+	MessagePublicID   string
+	CallerUserID      string
+	ResolvedChannelID string
+	CallerPermissions []string
+}
+
+// MessageChannelSeqResult is the location of a message in channel order.
+type MessageChannelSeqResult struct {
+	MessagePublicID string
+	GroupPublicID   string
+	ChannelPublicID string
+	ChannelSeq      int64
 }
 
 // UploadChannelAttachmentInput uploads a file or image attachment to a channel.
