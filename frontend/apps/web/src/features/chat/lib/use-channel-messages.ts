@@ -199,7 +199,13 @@ export function useChannelMessages(groupId: string, channelId: string): UseChann
 			isHistoryLoadPaused,
 			manualOlderFetching,
 		};
-	}, [hasNextPage, hasOlderFromCache, isFetchingNextPage, isHistoryLoadPaused, manualOlderFetching]);
+	}, [
+		hasNextPage,
+		hasOlderFromCache,
+		isFetchingNextPage,
+		isHistoryLoadPaused,
+		manualOlderFetching,
+	]);
 
 	const fetchOlderMessages = useCallback(() => {
 		const state = paginationStateRef.current;
@@ -273,11 +279,7 @@ export function useChannelMessages(groupId: string, channelId: string): UseChann
 				}
 				queryClient.setQueryData<ChannelMessagesInfiniteData>(queryKey, () =>
 					applyBoundedMessageCache(
-						installContextMessageWindow(
-							window.messages,
-							window.hasOlder,
-							window.hasNewer,
-						),
+						installContextMessageWindow(window.messages, window.hasOlder, window.hasNewer),
 						"middle",
 					),
 				);

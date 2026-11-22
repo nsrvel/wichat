@@ -20,3 +20,25 @@ func BearerTokenFromRequest(r *http.Request) string {
 	}
 	return ""
 }
+
+// AllowsDeferredBearerAuth is true when the client offers the short "bearer" subprotocol (JWT in heartbeat body).
+func AllowsDeferredBearerAuth(r *http.Request) bool {
+	for _, part := range strings.Split(r.Header.Get("Sec-WebSocket-Protocol"), ",") {
+		if strings.EqualFold(strings.TrimSpace(part), "bearer") {
+			return true
+		}
+	}
+	return false
+}
+
+// NegotiatedSubprotocols lists server-supported subprotocols that match the client offer (incl. legacy bearer.<jwt>).
+func NegotiatedSubprotocols(r *http.Request) []string {
+	out := []string{"bearer"}
+	for _, part := range strings.Split(r.Header.Get("Sec-WebSocket-Protocol"), ",") {
+		part = strings.TrimSpace(part)
+		if len(part) > 7 && strings.EqualFold(part[:7], "bearer.") {
+			out = append(out, part)
+		}
+	}
+	return out
+}

@@ -1,4 +1,7 @@
-import { findMessageSeqInCache, type ChannelMessagesInfiniteData } from "@/features/chat/lib/message-cache-window";
+import {
+	findMessageSeqInCache,
+	type ChannelMessagesInfiniteData,
+} from "@/features/chat/lib/message-cache-window";
 import { resolveMessageChannelSeq } from "@/services/message/message.service";
 
 export type ResolveJumpSeqInput = {

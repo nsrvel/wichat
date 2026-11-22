@@ -822,7 +822,9 @@ function ChannelChatViewBody({ groupId, channelId, onOpenSidebar }: ChannelChatV
 								onScroll={handleScroll}
 								className={showLoadingSkeleton ? "hidden" : undefined}
 								innerClassName={showEmpty || isError ? "min-h-full justify-center py-0" : undefined}
-								virtualizer={!isError && !showEmpty && !showLoadingSkeleton ? virtualizer : undefined}
+								virtualizer={
+									!isError && !showEmpty && !showLoadingSkeleton ? virtualizer : undefined
+								}
 								header={
 									!hasOlderMessages && messages.length > 0 && !isError ? (
 										<div className="flex flex-col items-center justify-center gap-1.5 border-b border-border/40 pb-6 pt-8 text-center">
