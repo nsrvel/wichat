@@ -4,10 +4,12 @@ import {
 	compareChannelSeq,
 	highestChannelSeq,
 	isPendingMessageId,
+	parseChannelSeq,
 } from "@/features/chat/lib/message-seq";
 
 export const CHANNEL_MESSAGES_MAX_CACHED = 3_000;
 export const GAP_FILL_BURST_MESSAGES = 10_000;
+export const GAP_FILL_PAGE_SIZE = 500;
 
 export type ChannelMessagesPageParam = {
 	beforeChannelSeq?: string;
@@ -74,11 +76,24 @@ export function applyMessageToInfinite(
 
 	const page0 = nextPages[0] ?? { messages: [] };
 	const page0Messages = [...page0.messages, normalized].sort((a, b) => {
+		const seqA = parseChannelSeq(a.channel_seq);
+		const seqB = parseChannelSeq(b.channel_seq);
+		const pendingA = isPendingMessageId(a.id);
+		const pendingB = isPendingMessageId(b.id);
+		if (seqA > 0 && seqB > 0) {
+			return seqA - seqB;
+		}
+		if (seqA > 0 && (seqB === 0 || pendingB)) {
+			return -1;
+		}
+		if ((seqA === 0 || pendingA) && seqB > 0) {
+			return 1;
+		}
 		const diff = compareChannelSeq(a.channel_seq, b.channel_seq);
 		if (diff !== 0) {
 			return diff;
 		}
-		return a.id.localeCompare(b.id);
+		return a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id);
 	});
 
 	return {

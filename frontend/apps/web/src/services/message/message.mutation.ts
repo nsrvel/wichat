@@ -65,8 +65,10 @@ export function useCreateMessageMutation() {
 			return { previousMessages, queryKey, pendingId, clientMsgId };
 		},
 		onError: (_err, _variables, context) => {
-			if (context?.queryKey && context.previousMessages) {
-				queryClient.setQueryData(context.queryKey, context.previousMessages);
+			if (context?.queryKey && context.pendingId) {
+				queryClient.setQueryData<InfiniteData<MessagesList>>(context.queryKey, (prev) =>
+					removeInfiniteChannelMessage(prev, context.pendingId),
+				);
 			}
 		},
 		onSuccess: (data, variables, context) => {

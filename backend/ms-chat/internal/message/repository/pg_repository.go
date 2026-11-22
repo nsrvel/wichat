@@ -660,7 +660,14 @@ func (r pgRepository) InsertWithOutbox(ctx context.Context, in *models.InsertMes
 		if _, err := tx.NewInsert().Model(&row).Exec(ctx); err != nil {
 			return err
 		}
-		if err := r.outbox.InsertInTx(ctx, tx, in.Outbox); err != nil {
+		if in.BuildOutbox == nil {
+			return errors.New("build outbox required")
+		}
+		outbox, err := in.BuildOutbox(channelSeq)
+		if err != nil {
+			return err
+		}
+		if err := r.outbox.InsertInTx(ctx, tx, outbox); err != nil {
 			return err
 		}
 

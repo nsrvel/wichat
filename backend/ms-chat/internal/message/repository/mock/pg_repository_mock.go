@@ -238,7 +238,13 @@ func (m pgRepositoryMock) InsertWithOutbox(_ context.Context, in *models.InsertM
 		CreatedAt:   in.CreatedAt,
 	}
 	m.st.Messages = append(m.st.Messages, msg)
-	m.st.Outbox = append(m.st.Outbox, in.Outbox)
+	if in.BuildOutbox != nil {
+		outbox, err := in.BuildOutbox(channelSeq)
+		if err != nil {
+			return models.Message{}, err
+		}
+		m.st.Outbox = append(m.st.Outbox, outbox)
+	}
 
 	return msg, nil
 }

@@ -21,7 +21,8 @@ type InsertMessageWithOutboxInput struct {
 	Body        string
 	ReplyToID   *string
 	CreatedAt   time.Time
-	Outbox      EventOutboxInsert
+	// BuildOutbox runs inside the insert transaction after channel_seq is allocated.
+	BuildOutbox func(channelSeq int64) (EventOutboxInsert, error)
 }
 
 // ToggleReactionWithOutboxInput bundles reaction toggle and outbox enqueue.
