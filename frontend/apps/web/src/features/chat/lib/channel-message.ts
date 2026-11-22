@@ -15,6 +15,7 @@ export type ChannelMessageReaction = {
 
 export type ChannelMessage = {
 	id: string;
+	clientMsgId?: string;
 	authorId: string;
 	authorDisplayName: string;
 	authorAvatarUrl: string;

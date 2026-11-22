@@ -263,27 +263,22 @@ let stateAcquireCleanup: (() => void) | undefined;
 let unbindActivity: (() => void) | undefined;
 
 function bindActivity(): () => void {
-	const onActive = () => setGatewaySocketActivity("active");
 	const events = ["mousemove", "mousedown", "keydown", "touchstart", "scroll"] as const;
-	for (const e of events) {
-		window.addEventListener(e, onActive, { passive: true });
-	}
-	window.addEventListener("focus", onActive);
 	let idleTimer = setTimeout(() => setGatewaySocketActivity("idle"), IDLE_MS);
 	const resetIdle = () => {
 		clearTimeout(idleTimer);
 		idleTimer = setTimeout(() => setGatewaySocketActivity("idle"), IDLE_MS);
-		onActive();
+		setGatewaySocketActivity("active");
 	};
 	for (const e of events) {
 		window.addEventListener(e, resetIdle, { passive: true });
 	}
+	window.addEventListener("focus", resetIdle);
 	return () => {
 		for (const e of events) {
-			window.removeEventListener(e, onActive);
 			window.removeEventListener(e, resetIdle);
 		}
-		window.removeEventListener("focus", onActive);
+		window.removeEventListener("focus", resetIdle);
 		clearTimeout(idleTimer);
 	};
 }
@@ -349,6 +344,9 @@ export function acquireGatewaySocketChannel(handlers: ChannelRealtimeHandlers): 
 
 export function setGatewaySocketActivity(activity: "active" | "idle"): void {
 	const state = ensureRuntime();
+	if (state.activity === activity) {
+		return;
+	}
 	state.activity = activity;
 	if (state.ws?.readyState === WebSocket.OPEN) {
 		heartbeat(state.ws);
