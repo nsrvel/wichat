@@ -32,7 +32,7 @@ type ReactionPayload struct {
 // MessagePayload mirrors REST message JSON for fanout.
 type MessagePayload struct {
 	ID                string               `json:"id"`
-	ChannelSeq        string               `json:"channel_seq,omitempty"`
+	ChannelSeq        int64                `json:"channel_seq,omitempty"`
 	ClientMsgID       string               `json:"client_msg_id,omitempty"`
 	AuthorID          string               `json:"author_id"`
 	AuthorDisplayName string               `json:"author_display_name"`

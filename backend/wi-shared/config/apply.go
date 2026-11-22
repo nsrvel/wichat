@@ -21,6 +21,22 @@ func ListenAddress(hostOrPort string) string {
 	return ":" + s
 }
 
+// GrpcListenAddress binds gRPC to an explicit host (default loopback) plus port.
+func GrpcListenAddress(bindHost, port string) string {
+	host := strings.TrimSpace(bindHost)
+	if host == "" {
+		host = "127.0.0.1"
+	}
+	p := strings.TrimSpace(port)
+	if p == "" {
+		return ""
+	}
+	if strings.Contains(p, ":") {
+		return p
+	}
+	return host + ":" + p
+}
+
 func applyExplicitConfig(v *viper.Viper, dstVal, defaultsVal reflect.Value) {
 	if !dstVal.IsValid() || !defaultsVal.IsValid() {
 		return

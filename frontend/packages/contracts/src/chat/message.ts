@@ -20,7 +20,7 @@ export type MessageReactionSummary = z.infer<
 
 export const MessageSchema = z.object({
 	id: publicEntityIdSchema,
-	channel_seq: z.string().optional(),
+	channel_seq: z.number().int().positive().optional(),
 	client_msg_id: z.string().uuid().optional(),
 	author_id: z.string(),
 	author_display_name: z.string(),

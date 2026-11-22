@@ -1,6 +1,7 @@
 import {
 	acquireGatewaySocketPresence,
 	buildRealtimeWsUrl,
+	getGatewaySocketGroupId,
 	setGatewaySocketGroupId,
 } from "@/integrations/realtime/gateway-socket";
 
@@ -14,6 +15,10 @@ export { buildRealtimeWsUrl };
 
 export function acquireLivePresence(listener: LivePresenceListener): () => void {
 	return acquireGatewaySocketPresence(listener);
+}
+
+export function getLivePresenceGroupId(): string | undefined {
+	return getGatewaySocketGroupId();
 }
 
 export function setLivePresenceGroupId(groupId?: string): void {

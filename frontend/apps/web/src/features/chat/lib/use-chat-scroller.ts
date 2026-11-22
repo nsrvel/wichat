@@ -50,6 +50,25 @@ const BOTTOM_THRESHOLD_PX = 56;
 const JUMP_PILL_THRESHOLD_PX = 240;
 const TOP_LOAD_THRESHOLD_PX = 200;
 
+function estimateTimelineItemSize(item: TimelineItem | undefined): number {
+	if (!item) {
+		return 76;
+	}
+	if (item.kind === "date-divider") {
+		return 44;
+	}
+	if (item.message.bodyPlain.includes("```wichat-attachment\n")) {
+		return 220;
+	}
+	if (item.message.bodyPlain.includes("```")) {
+		return 140;
+	}
+	if (item.message.replyTo) {
+		return 108;
+	}
+	return item.compact ? 44 : 76;
+}
+
 export function useChatScroller({
 	channelId,
 	items,
@@ -66,6 +85,7 @@ export function useChatScroller({
 	const prevFirstKeyRef = useRef<string | undefined>(undefined);
 	const prevLastKeyRef = useRef<string | undefined>(undefined);
 	const prevTotalSizeRef = useRef<number>(0);
+	const prevScrollTopRef = useRef<number>(0);
 
 	const [showJumpToLatest, setShowJumpToLatest] = useState(savedScroll?.mode === "free-scroll");
 	const [unreadNewCount, setUnreadNewCount] = useState(0);
@@ -76,9 +96,19 @@ export function useChatScroller({
 	const virtualizer = useVirtualizer<HTMLDivElement, HTMLDivElement>({
 		count: items.length,
 		getScrollElement: () => scrollRef.current,
-		estimateSize: (index) => (items[index]?.kind === "date-divider" ? 44 : 80),
+		estimateSize: (index) => estimateTimelineItemSize(items[index]),
 		getItemKey: (index) => items[index]?.key ?? index,
 		overscan: 8,
+	});
+
+	const itemsRef = useRef(items);
+	const paginationRef = useRef({ hasOlderMessages, isFetchingOlderMessages, fetchOlderMessages });
+	const virtualizerRef = useRef(virtualizer);
+
+	useLayoutEffect(() => {
+		itemsRef.current = items;
+		paginationRef.current = { hasOlderMessages, isFetchingOlderMessages, fetchOlderMessages };
+		virtualizerRef.current = virtualizer;
 	});
 
 	const totalSize = virtualizer.getTotalSize();
@@ -94,6 +124,7 @@ export function useChatScroller({
 		} else {
 			el.scrollTop = targetTop;
 		}
+		prevScrollTopRef.current = el.scrollTop;
 	}, []);
 
 	// Persist scroll state on unmount (channel switch).
@@ -111,24 +142,54 @@ export function useChatScroller({
 		};
 	}, [channelId]);
 
-	// User-intent interruption: cancel smooth scroll / sticky lock on manual wheel, touch, or pointer drag.
+	// User-intent interruption: release sticky-bottom immediately on upward wheel / touch drag so ResizeObserver never fights user scroll.
 	useEffect(() => {
 		const el = scrollRef.current;
 		if (!el) {
 			return;
 		}
-		const onUserInteract = () => {
+		let touchStartY: number | null = null;
+
+		const onWheel = (event: WheelEvent) => {
+			if (event.deltaY < 0) {
+				modeRef.current = "free-scroll";
+			} else if (modeRef.current === "jump-target" && event.deltaY !== 0) {
+				modeRef.current = "free-scroll";
+			}
+		};
+
+		const onTouchStart = (event: TouchEvent) => {
+			touchStartY = event.touches[0]?.clientY ?? null;
 			if (modeRef.current === "jump-target") {
 				modeRef.current = "free-scroll";
 			}
 		};
-		el.addEventListener("wheel", onUserInteract, { passive: true });
-		el.addEventListener("touchstart", onUserInteract, { passive: true });
-		el.addEventListener("pointerdown", onUserInteract, { passive: true });
+
+		const onTouchMove = (event: TouchEvent) => {
+			if (touchStartY === null) {
+				return;
+			}
+			const currentY = event.touches[0]?.clientY;
+			if (currentY !== undefined && currentY - touchStartY > 6) {
+				modeRef.current = "free-scroll";
+			}
+		};
+
+		const onPointerDown = () => {
+			if (modeRef.current === "jump-target") {
+				modeRef.current = "free-scroll";
+			}
+		};
+
+		el.addEventListener("wheel", onWheel, { passive: true });
+		el.addEventListener("touchstart", onTouchStart, { passive: true });
+		el.addEventListener("touchmove", onTouchMove, { passive: true });
+		el.addEventListener("pointerdown", onPointerDown, { passive: true });
 		return () => {
-			el.removeEventListener("wheel", onUserInteract);
-			el.removeEventListener("touchstart", onUserInteract);
-			el.removeEventListener("pointerdown", onUserInteract);
+			el.removeEventListener("wheel", onWheel);
+			el.removeEventListener("touchstart", onTouchStart);
+			el.removeEventListener("touchmove", onTouchMove);
+			el.removeEventListener("pointerdown", onPointerDown);
 		};
 	}, []);
 
@@ -152,6 +213,7 @@ export function useChatScroller({
 			if (saved?.mode === "free-scroll") {
 				modeRef.current = "free-scroll";
 				el.scrollTop = Math.min(saved.scrollTop, Math.max(0, el.scrollHeight - el.clientHeight));
+				prevScrollTopRef.current = el.scrollTop;
 				setShowJumpToLatest(true);
 			} else {
 				modeRef.current = "sticky-bottom";
@@ -175,6 +237,7 @@ export function useChatScroller({
 			const delta = totalSize - prevTotalSize;
 			if (delta > 0) {
 				el.scrollTop += delta;
+				prevScrollTopRef.current = el.scrollTop;
 			}
 			prevFirstKeyRef.current = firstKey;
 			prevLastKeyRef.current = lastKey;
@@ -213,46 +276,59 @@ export function useChatScroller({
 			return;
 		}
 
-		const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-		const atBottom = distanceFromBottom <= BOTTOM_THRESHOLD_PX;
+		const currentTop = el.scrollTop;
+		const scrollingUp = currentTop < prevScrollTopRef.current - 1;
+		prevScrollTopRef.current = currentTop;
 
-		if (atBottom) {
+		const distanceFromBottom = el.scrollHeight - currentTop - el.clientHeight;
+		const atExactBottom = distanceFromBottom <= 8;
+		const nearBottomMovingDown = !scrollingUp && distanceFromBottom <= BOTTOM_THRESHOLD_PX;
+
+		if (atExactBottom || nearBottomMovingDown) {
 			modeRef.current = "sticky-bottom";
-			setShowJumpToLatest(false);
-			setUnreadNewCount(0);
+			setShowJumpToLatest((prev) => (prev ? false : prev));
+			setUnreadNewCount((prev) => (prev === 0 ? prev : 0));
 		} else {
-			if (modeRef.current === "sticky-bottom") {
+			if (scrollingUp && modeRef.current === "sticky-bottom") {
+				modeRef.current = "free-scroll";
+			} else if (distanceFromBottom > BOTTOM_THRESHOLD_PX && modeRef.current === "sticky-bottom") {
 				modeRef.current = "free-scroll";
 			}
 			if (distanceFromBottom > JUMP_PILL_THRESHOLD_PX) {
-				setShowJumpToLatest(true);
+				setShowJumpToLatest((prev) => (prev ? prev : true));
 			}
 		}
 
+		const {
+			hasOlderMessages: canLoadMore,
+			isFetchingOlderMessages: busy,
+			fetchOlderMessages: loadOlder,
+		} = paginationRef.current;
 		if (
-			el.scrollTop <= TOP_LOAD_THRESHOLD_PX &&
-			hasOlderMessages &&
-			!isFetchingOlderMessages &&
-			items.length > 0
+			currentTop <= TOP_LOAD_THRESHOLD_PX &&
+			canLoadMore &&
+			!busy &&
+			itemsRef.current.length > 0
 		) {
-			fetchOlderMessages();
+			loadOlder();
 		}
-	}, [hasOlderMessages, isFetchingOlderMessages, fetchOlderMessages, items.length]);
+	}, []);
 
 	const scrollToBottom = useCallback(
 		(behavior: ScrollBehavior = "smooth") => {
 			modeRef.current = "sticky-bottom";
 			setShowJumpToLatest(false);
 			setUnreadNewCount(0);
-			if (items.length > 0) {
-				virtualizer.scrollToIndex(items.length - 1, {
+			const currentItems = itemsRef.current;
+			if (currentItems.length > 0) {
+				virtualizerRef.current.scrollToIndex(currentItems.length - 1, {
 					align: "end",
 					behavior: behavior === "smooth" ? "smooth" : "auto",
 				});
 			}
 			snapToBottomNow(behavior);
 		},
-		[items.length, snapToBottomNow, virtualizer],
+		[snapToBottomNow],
 	);
 
 	const prepareForSend = useCallback(() => {
@@ -286,30 +362,27 @@ export function useChatScroller({
 		};
 	}, []);
 
-	const scrollToMessage = useCallback(
-		(messageId: string): boolean => {
-			if (!messageId) {
-				return false;
-			}
-			const index = items.findIndex(
-				(item) => item.kind === "message" && item.message.id === messageId,
-			);
-			if (index < 0) {
-				return false;
-			}
-			modeRef.current = "jump-target";
-			virtualizer.scrollToIndex(index, { align: "center", behavior: "smooth" });
-			setHighlightedMessageId(messageId);
-			if (highlightTimerRef.current) {
-				clearTimeout(highlightTimerRef.current);
-			}
-			highlightTimerRef.current = setTimeout(() => {
-				setHighlightedMessageId((current) => (current === messageId ? null : current));
-			}, 1600);
-			return true;
-		},
-		[items, virtualizer],
-	);
+	const scrollToMessage = useCallback((messageId: string): boolean => {
+		if (!messageId) {
+			return false;
+		}
+		const index = itemsRef.current.findIndex(
+			(item) => item.kind === "message" && item.message.id === messageId,
+		);
+		if (index < 0) {
+			return false;
+		}
+		modeRef.current = "jump-target";
+		virtualizerRef.current.scrollToIndex(index, { align: "center", behavior: "smooth" });
+		setHighlightedMessageId(messageId);
+		if (highlightTimerRef.current) {
+			clearTimeout(highlightTimerRef.current);
+		}
+		highlightTimerRef.current = setTimeout(() => {
+			setHighlightedMessageId((current) => (current === messageId ? null : current));
+		}, 1600);
+		return true;
+	}, []);
 
 	return {
 		scrollRef,

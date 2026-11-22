@@ -20,8 +20,6 @@ export function channelMessagesQueryOpts(groupId: string, channelId: string) {
 		queryFn: ({ pageParam, signal }) =>
 			listChannelMessages(groupId, channelId, {
 				limit: CHANNEL_MESSAGES_PAGE_SIZE,
-				beforeCreatedAt: pageParam?.beforeCreatedAt,
-				beforeId: pageParam?.beforeId,
 				beforeChannelSeq: pageParam?.beforeChannelSeq,
 				signal,
 			}),
@@ -40,7 +38,10 @@ export function channelMessagesQueryOpts(groupId: string, channelId: string) {
 		},
 		enabled: isPublicEntityId(groupId) && isPublicEntityId(channelId),
 		staleTime: 30_000,
+		gcTime: 45 * 60_000,
+		networkMode: "offlineFirst",
 		refetchOnWindowFocus: false,
+		refetchOnReconnect: true,
 	});
 }
 
@@ -50,6 +51,8 @@ export function pinnedChannelMessagesQueryOpts(groupId: string, channelId: strin
 		queryFn: () => listPinnedChannelMessages(groupId, channelId),
 		enabled: isPublicEntityId(groupId) && isPublicEntityId(channelId),
 		staleTime: 60_000,
+		gcTime: 45 * 60_000,
+		networkMode: "offlineFirst",
 		refetchOnWindowFocus: false,
 	});
 }

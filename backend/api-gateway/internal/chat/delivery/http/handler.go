@@ -118,8 +118,6 @@ func (h handler) ListChannelMessages(w http.ResponseWriter, r *http.Request) {
 		GroupId:          groupID,
 		ChannelId:        channelID,
 		Limit:            limit,
-		BeforeCreatedAt:  strings.TrimSpace(r.URL.Query().Get("before_created_at")),
-		BeforeId:         strings.TrimSpace(r.URL.Query().Get("before_id")),
 		BeforeChannelSeq: beforeChannelSeq,
 		AfterChannelSeq:  afterChannelSeq,
 	})

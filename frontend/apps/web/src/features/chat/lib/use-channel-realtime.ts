@@ -11,7 +11,7 @@ import {
 	mergeGapFillIntoInfinite,
 } from "@/features/chat/lib/message-sync";
 import { removeInfiniteChannelMessage, updateInfiniteChannelMessageReactions } from "@/features/chat/lib/channel-message";
-import { parseChannelSeq } from "@/features/chat/lib/message-seq";
+import { channelSeqValue } from "@/features/chat/lib/message-seq";
 import { subscribeChatChannel } from "@/integrations/realtime/chat-channel";
 import { sessionQueryOpts } from "@/services/auth/auth.query";
 import { Q_CHANNEL_MESSAGES, Q_PINNED_MESSAGES } from "@/services/message/message.key";
@@ -30,7 +30,7 @@ async function replayGapAfterSeq(
 	while (fetched < GAP_FILL_BURST_MESSAGES) {
 		const page = await listChannelMessages(groupId, channelId, {
 			limit: GAP_FILL_PAGE_SIZE,
-			afterChannelSeq: cursor > 0 ? String(cursor) : undefined,
+			afterChannelSeq: cursor > 0 ? cursor : undefined,
 		});
 		if (!page.messages.length) {
 			break;
@@ -38,7 +38,7 @@ async function replayGapAfterSeq(
 		merged.messages.push(...page.messages);
 		fetched += page.messages.length;
 		const last = page.messages[page.messages.length - 1];
-		const lastSeq = parseChannelSeq(last.channel_seq);
+		const lastSeq = channelSeqValue(last.channel_seq);
 		if (lastSeq <= cursor) {
 			break;
 		}
@@ -118,15 +118,4 @@ export function useChannelRealtime(
 			},
 		});
 	}, [groupId, channelId, queryClient, sessionUser?.id, onMessageReceived]);
-
-	useEffect(() => {
-		if (!isPublicEntityId(groupId) || !isPublicEntityId(channelId)) {
-			return;
-		}
-		const queryKey = [Q_CHANNEL_MESSAGES, groupId, channelId];
-		return () => {
-			queryClient.removeQueries({ queryKey });
-			queryClient.removeQueries({ queryKey: [Q_PINNED_MESSAGES, groupId, channelId] });
-		};
-	}, [groupId, channelId, queryClient]);
 }

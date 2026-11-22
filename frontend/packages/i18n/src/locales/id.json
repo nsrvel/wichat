@@ -896,6 +896,7 @@
     "history_start_title": "Selamat datang di {{name}}",
     "history_start_description": "Ini adalah awal dari riwayat percakapan di channel {{name}}.",
     "load_error": "Gagal memuat pesan channel.",
+    "syncing": "Memperbarui pesan…",
     "retry": "Coba lagi",
     "jump_to_latest": "Lihat pesan terbaru",
     "composer_no_permission": "Anda tidak memiliki izin untuk mengirim pesan di channel ini.",

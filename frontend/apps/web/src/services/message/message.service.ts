@@ -21,10 +21,8 @@ export const CHANNEL_MESSAGES_PAGE_SIZE = 50;
 
 export type ListChannelMessagesParams = {
 	limit?: number;
-	beforeCreatedAt?: string;
-	beforeId?: string;
-	beforeChannelSeq?: string;
-	afterChannelSeq?: string;
+	beforeChannelSeq?: number;
+	afterChannelSeq?: number;
 	signal?: AbortSignal;
 };
 
@@ -35,17 +33,11 @@ export async function listChannelMessages(
 ): Promise<MessagesList> {
 	const search = new URLSearchParams();
 	search.set("limit", String(params?.limit ?? CHANNEL_MESSAGES_PAGE_SIZE));
-	if (params?.beforeCreatedAt) {
-		search.set("before_created_at", params.beforeCreatedAt);
+	if (params?.beforeChannelSeq != null && params.beforeChannelSeq > 0) {
+		search.set("before_channel_seq", String(params.beforeChannelSeq));
 	}
-	if (params?.beforeId) {
-		search.set("before_id", params.beforeId);
-	}
-	if (params?.beforeChannelSeq) {
-		search.set("before_channel_seq", params.beforeChannelSeq);
-	}
-	if (params?.afterChannelSeq) {
-		search.set("after_channel_seq", params.afterChannelSeq);
+	if (params?.afterChannelSeq != null && params.afterChannelSeq > 0) {
+		search.set("after_channel_seq", String(params.afterChannelSeq));
 	}
 	const query = search.toString();
 	const path = `/groups/${encodeURIComponent(groupId)}/channels/${encodeURIComponent(channelId)}/messages${query ? `?${query}` : ""}`;

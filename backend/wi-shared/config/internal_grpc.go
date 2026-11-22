@@ -5,13 +5,11 @@ import (
 	"strings"
 )
 
-// RequireInternalGrpcToken enforces a shared secret for service-to-service gRPC in non-development envs.
+// RequireInternalGrpcToken enforces a shared secret for service-to-service gRPC (all envs).
 func RequireInternalGrpcToken(env, token string) error {
-	if IsDevelopmentEnv(env) {
-		return nil
-	}
+	_ = env
 	if strings.TrimSpace(token) == "" {
-		return fmt.Errorf("INTERNAL_GRPC_TOKEN is required when ENV=%s", strings.TrimSpace(env))
+		return fmt.Errorf("INTERNAL_GRPC_TOKEN is required")
 	}
 	return nil
 }

@@ -21,8 +21,8 @@ message ListChannelMessagesRequest {
   string group_id = 2;
   string channel_id = 3;
   int32 limit = 4;
-  string before_created_at = 5;
-  string before_id = 6;
+  reserved 5, 6;
+  reserved "before_created_at", "before_id";
   int64 before_channel_seq = 7;
   int64 after_channel_seq = 8;
 }

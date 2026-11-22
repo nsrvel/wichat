@@ -1,6 +1,7 @@
 "use client";
 
 import { SmilePlus } from "lucide-react";
+import { memo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ExpressionPickerPopover } from "@/components/expression-picker/expression-picker-popover";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -22,7 +23,7 @@ type MessageReactionsProps = {
 	resolveReactor?: (userId: string) => ReactionUserInfo | undefined;
 };
 
-export function MessageReactions({
+export const MessageReactions = memo(function MessageReactions({
 	reactions,
 	className,
 	showAdd = true,
@@ -30,6 +31,7 @@ export function MessageReactions({
 	resolveReactor,
 }: MessageReactionsProps) {
 	const { t } = useTranslation();
+	const [openEmoji, setOpenEmoji] = useState<string | null>(null);
 
 	if (reactions.length === 0) {
 		return null;
@@ -39,6 +41,7 @@ export function MessageReactions({
 		<div className={cn("mt-1.5 flex flex-wrap items-center gap-1.5", className)}>
 			{reactions.map((reaction) => {
 				const userIds = reaction.userIds ?? [];
+				const isOpen = openEmoji === reaction.emoji;
 				const pillClass = cn(
 					"flex h-6 min-w-[34px] items-center justify-center gap-1 rounded-full border px-2 text-xs transition active:scale-95",
 					reaction.active
@@ -47,7 +50,11 @@ export function MessageReactions({
 				);
 
 				return (
-					<Popover key={reaction.emoji}>
+					<Popover
+						key={reaction.emoji}
+						open={isOpen}
+						onOpenChange={(nextOpen) => setOpenEmoji(nextOpen ? reaction.emoji : null)}
+					>
 						<PopoverTrigger
 							className={pillClass}
 							aria-label={`${reaction.emoji} ${reaction.count ?? ""}`}
@@ -58,51 +65,55 @@ export function MessageReactions({
 							) : null}
 						</PopoverTrigger>
 						<PopoverContent align="start" sideOffset={6} className="w-64 p-0">
-							<div className="flex items-center justify-between border-b border-border px-3 py-2">
-								<div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
-									<span className="text-sm leading-none">{reaction.emoji}</span>
-									<span>{reaction.count ?? userIds.length}</span>
-								</div>
-								{showAdd && onToggleReaction ? (
-									<button
-										type="button"
-										onClick={() => onToggleReaction(reaction.emoji)}
-										className={cn(
-											"rounded-md px-2 py-0.5 text-[11px] font-medium transition",
-											reaction.active
-												? "bg-destructive/10 text-destructive hover:bg-destructive/20"
-												: "bg-primary/15 text-primary hover:bg-primary/25",
-										)}
-									>
-										{reaction.active
-											? t("chat.reaction_remove_yours")
-											: t("chat.reaction_add_yours")}
-									</button>
-								) : null}
-							</div>
-							<div className="thin-scroll max-h-56 overflow-y-auto p-1.5">
-								{userIds.map((uid) => {
-									const info = resolveReactor?.(uid);
-									const name = info?.displayName || t("chat.reaction_unknown_user");
-									return (
-										<div
-											key={uid}
-											className="flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-accent/50"
-										>
-											<div className="flex min-w-0 items-center gap-2">
-												<UserAvatar
-													src={info?.avatarUrl}
-													alt={name}
-													initials={userInitials(name)}
-													size="xs"
-												/>
-												<span className="truncate font-medium text-foreground">{name}</span>
-											</div>
-											<span className="shrink-0 text-sm leading-none">{reaction.emoji}</span>
+							{isOpen ? (
+								<>
+									<div className="flex items-center justify-between border-b border-border px-3 py-2">
+										<div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
+											<span className="text-sm leading-none">{reaction.emoji}</span>
+											<span>{reaction.count ?? userIds.length}</span>
 										</div>
-									);
-								})}
-							</div>
+										{showAdd && onToggleReaction ? (
+											<button
+												type="button"
+												onClick={() => onToggleReaction(reaction.emoji)}
+												className={cn(
+													"rounded-md px-2 py-0.5 text-[11px] font-medium transition",
+													reaction.active
+														? "bg-destructive/10 text-destructive hover:bg-destructive/20"
+														: "bg-primary/15 text-primary hover:bg-primary/25",
+												)}
+											>
+												{reaction.active
+													? t("chat.reaction_remove_yours")
+													: t("chat.reaction_add_yours")}
+											</button>
+										) : null}
+									</div>
+									<div className="thin-scroll max-h-56 overflow-y-auto p-1.5">
+										{userIds.map((uid) => {
+											const info = resolveReactor?.(uid);
+											const name = info?.displayName || t("chat.reaction_unknown_user");
+											return (
+												<div
+													key={uid}
+													className="flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-accent/50"
+												>
+													<div className="flex min-w-0 items-center gap-2">
+														<UserAvatar
+															src={info?.avatarUrl}
+															alt={name}
+															initials={userInitials(name)}
+															size="xs"
+														/>
+														<span className="truncate font-medium text-foreground">{name}</span>
+													</div>
+													<span className="shrink-0 text-sm leading-none">{reaction.emoji}</span>
+												</div>
+											);
+										})}
+									</div>
+								</>
+							) : null}
 						</PopoverContent>
 					</Popover>
 				);
@@ -132,4 +143,4 @@ export function MessageReactions({
 			) : null}
 		</div>
 	);
-}
+});

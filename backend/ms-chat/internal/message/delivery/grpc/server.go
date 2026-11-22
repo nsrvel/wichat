@@ -2,13 +2,11 @@ package grpc
 
 import (
 	"context"
-	"time"
 
 	messageservice "github.com/wichat/wichat/backend/ms-chat/internal/message/service"
 	"github.com/wichat/wichat/backend/ms-chat/internal/models"
 	chatPb "github.com/wichat/wichat/backend/ms-chat/pkg/chat-pb"
 	"github.com/wichat/wichat/backend/ms-chat/pkg/constants"
-	"github.com/wichat/wichat/backend/wi-shared/exception"
 	chatv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/chat/v1"
 	responsegrpc "github.com/wichat/wichat/backend/wi-shared/response/grpc"
 )
@@ -34,26 +32,12 @@ func (s *server) ListChannelMessages(ctx context.Context, req *chatv1.ListChanne
 	if limit <= 0 {
 		limit = constants.DefaultMessageListLimit
 	}
-	var before *time.Time
-	if raw := req.GetBeforeCreatedAt(); raw != "" {
-		parsed, err := time.Parse(time.RFC3339Nano, raw)
-		if err != nil {
-			parsed, err = time.Parse(time.RFC3339, raw)
-			if err != nil {
-				return nil, responsegrpc.ToStatus(exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "before_created_at"}))
-			}
-		}
-		before = &parsed
-	}
-
 	// Service
 	messages, hasMore, err := s.svc.ListChannelMessages(ctx, &models.ListChannelMessagesInput{
 		AccessToken:      req.GetAccessToken(),
 		GroupPublicID:    req.GetGroupId(),
 		ChannelPublicID:  req.GetChannelId(),
 		Limit:            limit,
-		BeforeCreatedAt:  before,
-		BeforePublicID:   req.GetBeforeId(),
 		BeforeChannelSeq: req.GetBeforeChannelSeq(),
 		AfterChannelSeq:  req.GetAfterChannelSeq(),
 	})

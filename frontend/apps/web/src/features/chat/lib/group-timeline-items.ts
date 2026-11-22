@@ -30,7 +30,7 @@ export function groupTimelineItems(messages: ChannelMessage[]): TimelineItem[] {
 	let prevMsg: ChannelMessage | null = null;
 
 	for (const msg of messages) {
-		const dayKey = toLocalDayKey(msg.createdAt);
+		const dayKey = msg.dayKey ?? toLocalDayKey(msg.createdAt);
 		if (dayKey !== prevDayKey) {
 			items.push({
 				kind: "date-divider",
@@ -44,8 +44,8 @@ export function groupTimelineItems(messages: ChannelMessage[]): TimelineItem[] {
 
 		let compact = false;
 		if (prevMsg && !msg.replyTo && prevMsg.authorId === msg.authorId) {
-			const prevTime = new Date(prevMsg.createdAt).getTime();
-			const currTime = new Date(msg.createdAt).getTime();
+			const prevTime = prevMsg.createdAtMs ?? new Date(prevMsg.createdAt).getTime();
+			const currTime = msg.createdAtMs ?? new Date(msg.createdAt).getTime();
 			if (
 				!Number.isNaN(prevTime) &&
 				!Number.isNaN(currTime) &&

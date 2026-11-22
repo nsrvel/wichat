@@ -19,6 +19,7 @@ Goose runs from **ms-user** (`internal/migrations/`), but several migrations are
 |-----------|--------|
 | `00021_messages.sql` | `messages`, reactions, attachments |
 | `00049_message_channel_seq_outbox.sql` | `messages.channel_seq`, `channels.message_seq`, `event_outbox` |
+| `00054_drop_messages_channel_seq_redundant_idx.sql` | drop duplicate `channel_seq` btree indexes (keep unique key) |
 
 Apply with:
 

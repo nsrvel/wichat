@@ -21,10 +21,10 @@ import {
 	verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { type Channel, creatableChannelKindSchema } from "@wichat/contracts/chat/channel";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AtSign, Compass, FileText, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { ChannelListIcon } from "@/components/layout/channel-list-icon";
@@ -67,6 +67,7 @@ import {
 } from "@/services/channel-category/channel-category.mutation";
 import * as channelQuery from "@/services/channel/channel.query";
 import { myGroupsQueryOpts } from "@/services/group/group.query";
+import { prefetchChannelMessages } from "@/services/message/prefetch-channel-messages";
 
 type ProductionChannelSidebarProps = {
 	groupId: string;
@@ -83,6 +84,7 @@ export function ProductionChannelSidebar({
 	width: controlledWidth,
 	panelResizeHandle = false,
 }: ProductionChannelSidebarProps) {
+	const queryClient = useQueryClient();
 	const { t } = useTranslation();
 	const router = useRouter();
 	const { openCreateChannel } = useCreateChannelDialog();
@@ -126,6 +128,13 @@ export function ProductionChannelSidebar({
 	const [dragChannels, setDragChannels] = useState<Channel[] | null>(null);
 	const displayedChannels = dragChannels ?? channelList;
 	const uncategorizedChannels = displayedChannels.filter((c) => !c.category_id);
+
+	const prefetchChannel = useCallback(
+		(channelId: string) => {
+			prefetchChannelMessages(queryClient, groupId, channelId);
+		},
+		[groupId, queryClient],
+	);
 
 	const reorderCategories = useReorderGroupCategoriesMutation(groupId);
 	const reorderChannels = useReorderGroupChannelsMutation(groupId);
@@ -205,6 +214,7 @@ export function ProductionChannelSidebar({
 			activeMenuId={activeMenuId}
 			onActiveMenuIdChange={setActiveMenuId}
 			onSelect={() => router.push(channelPath(groupId, ch.id))}
+			onPrefetch={() => prefetchChannel(ch.id)}
 			onInvite={() =>
 				openInvite({
 					scope: "channel",

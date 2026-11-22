@@ -14,10 +14,18 @@ function realtimeHttpUrl(): string {
 	return base.endsWith("/api/v1") ? `${base}/realtime` : `${base}/api/v1/realtime`;
 }
 
-export function buildRealtimeWsUrl(token: string): string {
-	const url = new URL(realtimeHttpUrl());
-	url.searchParams.set("access_token", token);
-	return url.toString().replace(/^http/, "ws");
+const WS_BEARER_SUBPROTOCOL_PREFIX = "bearer.";
+
+export function realtimeWsSubprotocols(token: string): string[] {
+	const trimmed = token.trim();
+	if (!trimmed) {
+		return [];
+	}
+	return [WS_BEARER_SUBPROTOCOL_PREFIX + trimmed];
+}
+
+export function buildRealtimeWsUrl(): string {
+	return realtimeHttpUrl().replace(/^http/, "ws");
 }
 
 const HEARTBEAT_MS = 25_000;
@@ -163,7 +171,7 @@ async function connect(): Promise<void> {
 
 	let ws: WebSocket;
 	try {
-		ws = new WebSocket(buildRealtimeWsUrl(token));
+		ws = new WebSocket(buildRealtimeWsUrl(), realtimeWsSubprotocols(token));
 	} catch {
 		scheduleReconnect();
 		return;
@@ -245,7 +253,10 @@ function acquire(): void {
 			if (state.closed || state.refCount === 0) {
 				return;
 			}
-			if (state.ws?.readyState === WebSocket.OPEN || state.ws?.readyState === WebSocket.CONNECTING) {
+			if (
+				state.ws?.readyState === WebSocket.OPEN ||
+				state.ws?.readyState === WebSocket.CONNECTING
+			) {
 				return;
 			}
 			if (state.reconnectTimer) {
@@ -264,11 +275,18 @@ let unbindActivity: (() => void) | undefined;
 
 function bindActivity(): () => void {
 	const events = ["mousemove", "mousedown", "keydown", "touchstart", "scroll"] as const;
+	let lastResetAt = Date.now();
 	let idleTimer = setTimeout(() => setGatewaySocketActivity("idle"), IDLE_MS);
 	const resetIdle = () => {
+		const now = Date.now();
+		if (rt?.activity !== "active") {
+			setGatewaySocketActivity("active");
+		} else if (now - lastResetAt < 5_000) {
+			return;
+		}
+		lastResetAt = now;
 		clearTimeout(idleTimer);
 		idleTimer = setTimeout(() => setGatewaySocketActivity("idle"), IDLE_MS);
-		setGatewaySocketActivity("active");
 	};
 	for (const e of events) {
 		window.addEventListener(e, resetIdle, { passive: true });
@@ -313,6 +331,10 @@ export function acquireGatewaySocketPresence(listener: LivePresenceListener): ()
 		state.presenceListeners.delete(listener);
 		release();
 	};
+}
+
+export function getGatewaySocketGroupId(): string | undefined {
+	return rt?.groupId;
 }
 
 export function setGatewaySocketGroupId(groupId?: string): void {
