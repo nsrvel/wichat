@@ -329,16 +329,5 @@ func (s service) BatchGetEffectivePresence(ctx context.Context, userIDs []string
 		}
 		return offlinePresenceSnapshots(userIDs), nil
 	}
-	for _, id := range userIDs {
-		snap := out[id]
-		if snap.IsOnline {
-			continue
-		}
-		resolved, resErr := s.resolveUserEffectivePresence(ctx, id)
-		if resErr != nil {
-			continue
-		}
-		out[id] = resolved
-	}
 	return out, nil
 }

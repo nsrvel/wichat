@@ -17,12 +17,13 @@ export function channelMessagesQueryOpts(groupId: string, channelId: string) {
 	return infiniteQueryOptions({
 		queryKey: [Q_CHANNEL_MESSAGES, groupId, channelId],
 		initialPageParam: undefined as ChannelMessagesPageParam | undefined,
-		queryFn: ({ pageParam }) =>
+		queryFn: ({ pageParam, signal }) =>
 			listChannelMessages(groupId, channelId, {
 				limit: CHANNEL_MESSAGES_PAGE_SIZE,
 				beforeCreatedAt: pageParam?.beforeCreatedAt,
 				beforeId: pageParam?.beforeId,
 				beforeChannelSeq: pageParam?.beforeChannelSeq,
+				signal,
 			}),
 		getNextPageParam: (lastPage) => {
 			if (!lastPage?.messages || lastPage.messages.length === 0) {

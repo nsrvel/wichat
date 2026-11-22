@@ -25,6 +25,7 @@ export type ListChannelMessagesParams = {
 	beforeId?: string;
 	beforeChannelSeq?: string;
 	afterChannelSeq?: string;
+	signal?: AbortSignal;
 };
 
 export async function listChannelMessages(
@@ -48,7 +49,7 @@ export async function listChannelMessages(
 	}
 	const query = search.toString();
 	const path = `/groups/${encodeURIComponent(groupId)}/channels/${encodeURIComponent(channelId)}/messages${query ? `?${query}` : ""}`;
-	return api.get(path, MessagesListSchema);
+	return api.get(path, MessagesListSchema, { signal: params?.signal });
 }
 
 export async function createChannelMessage(
