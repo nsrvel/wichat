@@ -7,12 +7,9 @@ import type {
 	MessageReplyPreview,
 	MessagesList,
 } from "@wichat/contracts/chat/message";
-import {
-	appendOrUpdateInfiniteChannelMessage,
-	removeInfiniteChannelMessage,
-	replaceOptimisticChannelMessage,
-	updateInfiniteChannelMessageReactions,
-} from "@/features/chat/lib/channel-message";
+import { removeInfiniteChannelMessage, updateInfiniteChannelMessageReactions } from "@/features/chat/lib/channel-message";
+import { applyMessageToInfinite, replacePendingMessage } from "@/features/chat/lib/message-sync";
+import { newClientMessageId } from "@/features/chat/lib/message-seq";
 import { Q_CHANNEL_MESSAGES, Q_PINNED_MESSAGES } from "@/services/message/message.key";
 import {
 	createChannelMessage,
@@ -35,17 +32,20 @@ type CreateMessageInput = CreateMessageBody & {
 export function useCreateMessageMutation() {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: ({ groupId, channelId, body, reply_to_id }: CreateMessageInput) =>
-			createChannelMessage(groupId, channelId, { body, reply_to_id }),
+		mutationFn: ({ groupId, channelId, body, reply_to_id, client_msg_id }: CreateMessageInput) =>
+			createChannelMessage(groupId, channelId, { body, reply_to_id, client_msg_id }),
 		onMutate: async (variables) => {
 			const queryKey = [Q_CHANNEL_MESSAGES, variables.groupId, variables.channelId];
 			await queryClient.cancelQueries({ queryKey });
 
 			const previousMessages = queryClient.getQueryData<InfiniteData<MessagesList>>(queryKey);
 
-			const tempId = `opt_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+			const clientMsgId = variables.client_msg_id ?? newClientMessageId();
+			variables.client_msg_id = clientMsgId;
+			const pendingId = `pending_${clientMsgId}`;
 			const optimisticMessage: Message = {
-				id: tempId,
+				id: pendingId,
+				client_msg_id: clientMsgId,
 				author_id: variables.authorId ?? "me",
 				author_display_name: variables.authorDisplayName ?? "You",
 				author_avatar_url: variables.authorAvatarUrl ?? "",
@@ -59,10 +59,10 @@ export function useCreateMessageMutation() {
 			};
 
 			queryClient.setQueryData<InfiniteData<MessagesList>>(queryKey, (prev) =>
-				appendOrUpdateInfiniteChannelMessage(prev, optimisticMessage, variables.authorId),
+				applyMessageToInfinite(prev, optimisticMessage, variables.authorId),
 			);
 
-			return { previousMessages, queryKey, tempId };
+			return { previousMessages, queryKey, pendingId, clientMsgId };
 		},
 		onError: (_err, _variables, context) => {
 			if (context?.queryKey && context.previousMessages) {
@@ -71,17 +71,16 @@ export function useCreateMessageMutation() {
 		},
 		onSuccess: (data, variables, context) => {
 			if (data?.message) {
+				const enriched = {
+					...data.message,
+					client_msg_id: context?.clientMsgId ?? data.message.client_msg_id,
+				};
 				queryClient.setQueryData<InfiniteData<MessagesList>>(
 					[Q_CHANNEL_MESSAGES, variables.groupId, variables.channelId],
 					(prev) =>
-						context?.tempId
-							? replaceOptimisticChannelMessage(
-									prev,
-									context.tempId,
-									data.message,
-									variables.authorId,
-								)
-							: appendOrUpdateInfiniteChannelMessage(prev, data.message, variables.authorId),
+						context?.pendingId
+							? replacePendingMessage(prev, context.pendingId, enriched, variables.authorId)
+							: applyMessageToInfinite(prev, enriched, variables.authorId),
 				);
 			}
 		},
@@ -106,8 +105,7 @@ export function useUpdateMessageMutation() {
 			if (data?.message) {
 				queryClient.setQueryData<InfiniteData<MessagesList>>(
 					[Q_CHANNEL_MESSAGES, variables.groupId, variables.channelId],
-					(prev) =>
-						appendOrUpdateInfiniteChannelMessage(prev, data.message, data.message.author_id),
+					(prev) => applyMessageToInfinite(prev, data.message, data.message.author_id),
 				);
 			}
 		},
@@ -192,7 +190,7 @@ export function usePinMessageMutation() {
 			if (data?.message) {
 				queryClient.setQueryData<InfiniteData<MessagesList>>(
 					[Q_CHANNEL_MESSAGES, variables.groupId, variables.channelId],
-					(prev) => appendOrUpdateInfiniteChannelMessage(prev, data.message),
+					(prev) => applyMessageToInfinite(prev, data.message),
 				);
 			}
 			void queryClient.invalidateQueries({
