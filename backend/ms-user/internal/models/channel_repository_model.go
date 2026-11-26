@@ -106,6 +106,14 @@ func (r ChannelRow) ToModel() Channel {
 	}
 }
 
+// DmParticipantRow maps dm_participants (pair membership for type=dm channels).
+type DmParticipantRow struct {
+	bun.BaseModel `bun:"table:dm_participants"`
+
+	ChannelID string `bun:"channel_id,pk,type:uuid"`
+	UserID    string `bun:"user_id,pk,type:uuid"`
+}
+
 // ChannelPermissionOverrideRow maps channel_permission_overrides.
 type ChannelPermissionOverrideRow struct {
 	bun.BaseModel `bun:"table:channel_permission_overrides"`

@@ -50,8 +50,19 @@ func TestConfigValidateProduction(t *testing.T) {
 				c.WebOrigin = "https://chat.example.com"
 				c.AuthJWTSecret = jwtSecret
 				c.MFAEncryptionKey = ""
+				c.MFAEnabled = true
 			},
 			wantErr: true,
+		},
+		{
+			name: "prod with mfa disabled skips mfa key",
+			mutate: func(c *config.Config) {
+				c.Env = "production"
+				c.WebOrigin = "https://chat.example.com"
+				c.AuthJWTSecret = jwtSecret
+				c.MFAEnabled = false
+				c.InternalGrpcToken = "prod-grpc-secret"
+			},
 		},
 		{
 			name: "mfa key equal to jwt secret rejected in prod",

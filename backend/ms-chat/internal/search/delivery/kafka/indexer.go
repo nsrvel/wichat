@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	searchservice "github.com/wichat/wichat/backend/ms-chat/internal/search/service"
+	searchindexservice "github.com/wichat/wichat/backend/ms-chat/internal/search-index/service"
 	wikafka "github.com/wichat/wichat/backend/wi-shared/infra/kafka"
 	"github.com/wichat/wichat/backend/wi-shared/infra/logger"
 )
@@ -18,12 +18,12 @@ type SearchIndexer interface {
 
 type searchIndexer struct {
 	consumer wikafka.Consumer
-	svc      searchservice.Service
+	svc      searchindexservice.Service
 	log      logger.Logger
 }
 
 // NewSearchIndexer wires Kafka delivery for search indexing.
-func NewSearchIndexer(consumer wikafka.Consumer, svc searchservice.Service, log logger.Logger) SearchIndexer {
+func NewSearchIndexer(consumer wikafka.Consumer, svc searchindexservice.Service, log logger.Logger) SearchIndexer {
 	return searchIndexer{consumer: consumer, svc: svc, log: log}
 }
 
@@ -47,7 +47,7 @@ func (s searchIndexer) Run(ctx context.Context) error {
 			if errors.Is(err, context.Canceled) || ctx.Err() != nil {
 				return nil
 			}
-			if searchservice.InvalidEventPayload(err) {
+			if searchindexservice.InvalidEventPayload(err) {
 				s.log.Error("search indexer poison payload", "err", err)
 			} else {
 				s.log.Error("search indexer handle failed after retries; skipping commit", "err", err)
@@ -62,11 +62,11 @@ func (s searchIndexer) Run(ctx context.Context) error {
 }
 
 func (s searchIndexer) handleWithRetry(ctx context.Context, in wikafka.Incoming) error {
-	backoffs := searchservice.RetryDelays()
+	backoffs := searchindexservice.RetryDelays()
 	var err error
 	for attempt := 0; attempt <= len(backoffs); attempt++ {
 		err = s.svc.IndexKafkaValue(ctx, in.Value)
-		if err == nil || searchservice.InvalidEventPayload(err) {
+		if err == nil || searchindexservice.InvalidEventPayload(err) {
 			return err
 		}
 		if attempt == len(backoffs) {

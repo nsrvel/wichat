@@ -11,6 +11,7 @@ const (
 	TypeMessageUpdated          = "message.updated"
 	TypeMessageDeleted          = "message.deleted"
 	TypeMessageReactionsUpdated = "message.reactions.updated"
+	TypeAttachmentCreated       = "attachment.created"
 )
 
 // ReplyPreview is a compact quoted parent message snippet.
@@ -42,6 +43,7 @@ type Message struct {
 	IsPinned          bool              `json:"is_pinned,omitempty"`
 	ReplyTo           *ReplyPreview     `json:"reply_to,omitempty"`
 	Reactions         []ReactionSummary `json:"reactions,omitempty"`
+	MentionedUserIDs  []string          `json:"mentioned_user_ids,omitempty"`
 }
 
 // MessageCreated is emitted to Kafka topic chat-events after Postgres commit.
@@ -66,6 +68,18 @@ type MessageDeleted struct {
 	GroupID   string `json:"group_id"`
 	ChannelID string `json:"channel_id"`
 	MessageID string `json:"message_id"`
+}
+
+// AttachmentCreated is emitted when a channel attachment upload completes.
+type AttachmentCreated struct {
+	Type         string `json:"type"`
+	GroupID      string `json:"group_id"`
+	ChannelID    string `json:"channel_id"`
+	MessageID    string `json:"message_id,omitempty"`
+	AttachmentID string `json:"attachment_id"`
+	Filename     string `json:"filename"`
+	ContentType  string `json:"content_type"`
+	CreatedAt    string `json:"created_at"`
 }
 
 // MessageReactionsUpdated is emitted when message reactions change.

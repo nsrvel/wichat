@@ -7,6 +7,12 @@ export const OkSchema = z.object({
 /** Client-facing entity id (24 lowercase hex), used in REST and web URLs. */
 export const publicEntityIdSchema = z.string().regex(/^[0-9a-f]{24}$/);
 
+/** Mention target user id: entity public id or users.id UUID (API member user_id today). */
+export const mentionUserIdSchema = z.union([
+	publicEntityIdSchema,
+	z.string().uuid(),
+]);
+
 export function isPublicEntityId(value: string): boolean {
 	return publicEntityIdSchema.safeParse(value).success;
 }

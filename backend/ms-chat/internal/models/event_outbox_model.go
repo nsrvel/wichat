@@ -13,14 +13,15 @@ type EventOutboxInsert struct {
 
 // InsertMessageWithOutboxInput bundles message persistence and outbox enqueue.
 type InsertMessageWithOutboxInput struct {
-	ID          string
-	PublicID    string
-	ChannelID   string
-	AuthorID    string
-	ClientMsgID *string
-	Body        string
-	ReplyToID   *string
-	CreatedAt   time.Time
+	ID               string
+	PublicID         string
+	ChannelID        string
+	AuthorID         string
+	ClientMsgID      *string
+	Body             string
+	ReplyToID        *string
+	CreatedAt        time.Time
+	MentionedUserIDs []string
 	// BuildOutbox runs inside the insert transaction after channel_seq is allocated.
 	BuildOutbox func(channelSeq int64) (EventOutboxInsert, error)
 }

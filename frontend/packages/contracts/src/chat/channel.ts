@@ -2,7 +2,11 @@ import { z } from "zod";
 import { publicEntityIdSchema } from "../common";
 import { ChannelCategorySchema } from "./channel-category";
 
-export const channelSidebarSectionSchema = z.enum(["favorites", "channels"]);
+export const channelSidebarSectionSchema = z.enum([
+	"favorites",
+	"channels",
+	"chats",
+]);
 
 export const channelKindSchema = z.enum([
 	"broadcast",
@@ -57,7 +61,8 @@ export const ChannelSchema = z.object({
 	video_quality: voiceVideoQualitySchema.default("auto"),
 	user_limit: z.number().int().default(0),
 	rtc_region: z.string().default("automatic"),
-	caller_permissions: z.array(z.string()).default([]),
+	caller_permissions: z.array(z.string()).nullish().default([]),
+	dm_peer_user_id: z.string().optional().default(""),
 });
 export type Channel = z.infer<typeof ChannelSchema>;
 
@@ -126,4 +131,25 @@ export const CreateGroupChannelResponseSchema = z.object({
 });
 export type CreateGroupChannelResponse = z.infer<
 	typeof CreateGroupChannelResponseSchema
+>;
+
+export const EnsureGroupDmRequestSchema = z.object({
+	user_id: z.string().min(1),
+});
+export type EnsureGroupDmRequest = z.infer<typeof EnsureGroupDmRequestSchema>;
+
+export const EnsureGroupDmResponseSchema = z.object({
+	channel: ChannelSchema,
+	created: z.boolean(),
+});
+export type EnsureGroupDmResponse = z.infer<typeof EnsureGroupDmResponseSchema>;
+
+export const RealtimeChannelsUpdatedSchema = z.object({
+	type: z.literal("channels.updated"),
+	group_id: z.string(),
+	reason: z.string().optional(),
+	channel_id: z.string().optional(),
+});
+export type RealtimeChannelsUpdated = z.infer<
+	typeof RealtimeChannelsUpdatedSchema
 >;

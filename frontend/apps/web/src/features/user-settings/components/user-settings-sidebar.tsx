@@ -16,6 +16,7 @@ import { UserProfileButton } from "@/components/layout/user-profile-button";
 import { Input } from "@/components/ui/input";
 import {
 	USER_SETTINGS_NAV_GROUPS,
+	filterAccountSearchFields,
 	type UserSettingsSectionId,
 } from "@/features/user-settings/lib/user-settings-nav";
 import type { UserPresenceStatus } from "@/lib/user-status";
@@ -34,6 +35,7 @@ type UserSettingsSidebarProps = {
 	onSelectSection: (section: UserSettingsSectionId, anchorId?: string) => void;
 	onSignOut: () => void;
 	signingOut?: boolean;
+	mfaFeatureEnabled?: boolean;
 };
 
 export function UserSettingsSidebar({
@@ -49,14 +51,23 @@ export function UserSettingsSidebar({
 	onSelectSection,
 	onSignOut,
 	signingOut,
+	mfaFeatureEnabled = true,
 }: UserSettingsSidebarProps) {
 	const { t } = useTranslation();
 
 	const trimmedQuery = searchQuery.trim().toLowerCase();
 
 	const filteredGroups = useMemo(() => {
+		const navGroups = USER_SETTINGS_NAV_GROUPS.map((group) => ({
+			...group,
+			items: group.items.map((item) =>
+				item.id === "account"
+					? { ...item, fields: filterAccountSearchFields(item.fields, mfaFeatureEnabled) }
+					: item,
+			),
+		}));
 		if (!trimmedQuery) {
-			return USER_SETTINGS_NAV_GROUPS.map((group) => ({
+			return navGroups.map((group) => ({
 				...group,
 				items: group.items.map((item) => ({
 					...item,
@@ -64,7 +75,7 @@ export function UserSettingsSidebar({
 				})),
 			}));
 		}
-		return USER_SETTINGS_NAV_GROUPS.map((group) => ({
+		return navGroups.map((group) => ({
 			...group,
 			items: group.items
 				.map((item) => {
@@ -85,7 +96,7 @@ export function UserSettingsSidebar({
 				})
 				.filter((item) => item.matchesItem),
 		})).filter((group) => group.items.length > 0);
-	}, [trimmedQuery, t]);
+	}, [trimmedQuery, t, mfaFeatureEnabled]);
 
 	return (
 		<aside className="flex h-full w-[15rem] shrink-0 flex-col border-r border-sidebar-border/60 bg-sidebar text-sidebar-foreground">

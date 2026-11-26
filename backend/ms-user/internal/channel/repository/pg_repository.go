@@ -27,6 +27,10 @@ type PgRepository interface {
 	SetChannelPositions(ctx context.Context, groupID string, sidebarSection, categoryID *string, orderedChannelIDs []string) error
 	FindByPublicIDInGroup(ctx context.Context, groupID, channelPublicID string) (models.Channel, error)
 	FindByID(ctx context.Context, channelID string) (models.Channel, error)
+	FindGroupDmChannelBetweenUsers(ctx context.Context, groupID, userID, peerUserID string) (models.Channel, error)
+	CreateGroupDmChannel(ctx context.Context, groupID, name, userID, peerUserID, createdBy string, now time.Time) (models.Channel, error)
+	DmChannelIDSetForUser(ctx context.Context, groupID, userID string) (map[string]struct{}, error)
+	DmPeerUserIDsForCaller(ctx context.Context, groupID, callerUserID string, channelIDs []string) (map[string]string, error)
 	SeedDefaultChannels(ctx context.Context, groupID, createdBy string, createdAt time.Time) error
 	SeedDefaultChannelsWithTemplate(ctx context.Context, groupID, createdBy, template string, createdAt time.Time) error
 }
@@ -567,6 +571,152 @@ func (r pgRepository) FindByID(ctx context.Context, channelID string) (models.Ch
 	}
 
 	return row.ToModel(), nil
+}
+
+func (r pgRepository) FindGroupDmChannelBetweenUsers(ctx context.Context, groupID, userID, peerUserID string) (models.Channel, error) {
+	var row models.ChannelRow
+	err := r.db.NewSelect().Model(&row).
+		Join("JOIN dm_participants AS p1 ON p1.channel_id = channel_row.id AND p1.user_id = ?", userID).
+		Join("JOIN dm_participants AS p2 ON p2.channel_id = channel_row.id AND p2.user_id = ?", peerUserID).
+		Where("channel_row.group_id = ? AND channel_row.type = ?", groupID, constants.ChannelKindDM).
+		Limit(1).
+		Scan(ctx)
+	if err != nil {
+		mapped := pgErr.MapNotFound(err)
+		if !errors.Is(mapped, constants.ErrNotFound) {
+			r.logIfInfraErr("FindGroupDmChannelBetweenUsers", err)
+		}
+
+		return models.Channel{}, mapped
+	}
+
+	return row.ToModel(), nil
+}
+
+func (r pgRepository) CreateGroupDmChannel(
+	ctx context.Context,
+	groupID, name, userID, peerUserID, createdBy string,
+	now time.Time,
+) (models.Channel, error) {
+	var maxPos int32
+	err := r.db.NewSelect().
+		TableExpr("channels").
+		ColumnExpr("COALESCE(MAX(position), -1)").
+		Where("group_id = ? AND sidebar_section = ?", groupID, constants.SidebarSectionChats).
+		Scan(ctx, &maxPos)
+	if err != nil {
+		r.logIfInfraErr("CreateGroupDmChannel", err)
+
+		return models.Channel{}, err
+	}
+
+	var out models.Channel
+	err = r.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
+		for range 5 {
+			channelID, idErr := token.NewID()
+			if idErr != nil {
+				return idErr
+			}
+			publicID, idErr := token.NewPublicID()
+			if idErr != nil {
+				return idErr
+			}
+			ch := models.Channel{
+				ID:             channelID,
+				PublicID:       publicID,
+				GroupID:        groupID,
+				Type:           constants.ChannelKindDM,
+				IsPrivate:      false,
+				Name:           name,
+				SidebarSection: constants.SidebarSectionChats,
+				Position:       maxPos + 1,
+				CreatedBy:      createdBy,
+				CreatedAt:      now,
+				UpdatedAt:      now,
+			}
+			row := models.ChannelRowFrom(ch)
+			if _, err := tx.NewInsert().Model(&row).Exec(ctx); err != nil {
+				if errors.Is(pgErr.MapUnique(err), constants.ErrConflict) {
+					continue
+				}
+				return err
+			}
+			for _, uid := range []string{userID, peerUserID} {
+				part := models.DmParticipantRow{ChannelID: channelID, UserID: uid}
+				if _, err := tx.NewInsert().Model(&part).Exec(ctx); err != nil {
+					return err
+				}
+			}
+			out = ch
+			return nil
+		}
+		return constants.ErrConflict
+	})
+	if err != nil {
+		r.logIfInfraErr("CreateGroupDmChannel", err)
+
+		return models.Channel{}, err
+	}
+
+	return out, nil
+}
+
+func (r pgRepository) DmPeerUserIDsForCaller(
+	ctx context.Context,
+	groupID, callerUserID string,
+	channelIDs []string,
+) (map[string]string, error) {
+	out := make(map[string]string)
+	if len(channelIDs) == 0 {
+		return out, nil
+	}
+
+	type peerRow struct {
+		ChannelID string `bun:"channel_id"`
+		UserID    string `bun:"user_id"`
+	}
+	var rows []peerRow
+	err := r.db.NewSelect().
+		TableExpr("dm_participants AS p").
+		ColumnExpr("p.channel_id, p.user_id").
+		Join("JOIN channels AS c ON c.id = p.channel_id").
+		Where("c.group_id = ?", groupID).
+		Where("c.type = ?", constants.ChannelKindDM).
+		Where("p.channel_id IN (?)", bun.List(channelIDs)).
+		Where("p.user_id <> ?", callerUserID).
+		Scan(ctx, &rows)
+	if err != nil {
+		r.logIfInfraErr("DmPeerUserIDsForCaller", err)
+
+		return nil, err
+	}
+	for _, row := range rows {
+		out[row.ChannelID] = row.UserID
+	}
+
+	return out, nil
+}
+
+func (r pgRepository) DmChannelIDSetForUser(ctx context.Context, groupID, userID string) (map[string]struct{}, error) {
+	var ids []string
+	err := r.db.NewSelect().
+		TableExpr("dm_participants AS p").
+		ColumnExpr("p.channel_id").
+		Join("JOIN channels AS c ON c.id = p.channel_id").
+		Where("c.group_id = ? AND c.type = ?", groupID, constants.ChannelKindDM).
+		Where("p.user_id = ?", userID).
+		Scan(ctx, &ids)
+	if err != nil {
+		r.logIfInfraErr("DmChannelIDSetForUser", err)
+
+		return nil, err
+	}
+	out := make(map[string]struct{}, len(ids))
+	for _, id := range ids {
+		out[id] = struct{}{}
+	}
+
+	return out, nil
 }
 
 func (r pgRepository) SeedDefaultChannels(ctx context.Context, groupID, createdBy string, createdAt time.Time) error {

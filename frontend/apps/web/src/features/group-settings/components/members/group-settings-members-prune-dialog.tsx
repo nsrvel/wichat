@@ -1,4 +1,5 @@
 "use client";
+import { WiChatMenuPositioner } from "@/components/ui/menu-positioner";
 
 import { Menu } from "@base-ui/react/menu";
 import { Check, ChevronDown, ChevronUp } from "lucide-react";
@@ -147,7 +148,7 @@ export function GroupSettingsMembersPruneDialog({
 								)}
 							</Menu.Trigger>
 							<Menu.Portal>
-								<Menu.Positioner
+								<WiChatMenuPositioner
 									className={menuPositionerClass}
 									side="bottom"
 									align="start"
@@ -189,7 +190,7 @@ export function GroupSettingsMembersPruneDialog({
 											{t("group_settings.members.prune_dialog.roles_clear")}
 										</Menu.Item>
 									</Menu.Popup>
-								</Menu.Positioner>
+								</WiChatMenuPositioner>
 							</Menu.Portal>
 						</Menu.Root>
 					</div>

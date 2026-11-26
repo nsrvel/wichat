@@ -29,6 +29,7 @@ export type ChannelMessage = {
 	mine?: boolean;
 	reactions?: ChannelMessageReaction[];
 	timeLabel?: string;
+	mentionedUserIds?: string[];
 };
 
 export function appendOrUpdateInfiniteChannelMessage(

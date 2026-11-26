@@ -1,4 +1,6 @@
 import type { JSONContent } from "@tiptap/react";
+import { MENTION_USER_ID_SOURCE } from "@/features/chat/lib/mention-chip-styles";
+import { MENTION_LINK_PREFIX } from "@/features/chat/lib/mention-markdown";
 
 function applyMarks(text: string, marks: JSONContent["marks"]): string {
 	if (!marks || marks.length === 0) {
@@ -69,6 +71,14 @@ function serializeInline(nodes: JSONContent[] | undefined): string {
 			}
 			if (node.type === "hardBreak") {
 				return "\n";
+			}
+			if (node.type === "userMention") {
+				const id = typeof node.attrs?.id === "string" ? node.attrs.id : "";
+				const label = typeof node.attrs?.label === "string" ? node.attrs.label : "";
+				if (!id) {
+					return `@${label}`;
+				}
+				return `[@${label}](${MENTION_LINK_PREFIX}${id})`;
 			}
 			return serializeInline(node.content);
 		})
@@ -276,6 +286,33 @@ type TipTapMark = NonNullable<JSONContent["marks"]>[number];
 const INLINE_TOKEN_RE =
 	/(<u>|<\/u>|<mark data-hl="[a-z]+">|<\/mark>|<span data-color="[a-z]+">|<span data-size="(?:large|small)">|<\/span>)/g;
 
+const INLINE_MENTION_MD_RE = new RegExp(
+	`\\[@([^\\]]+)\\]\\(wichat-mention:(${MENTION_USER_ID_SOURCE})\\)`,
+	"gi",
+);
+
+function parseInlineLineWithMentions(line: string): JSONContent[] {
+	const nodes: JSONContent[] = [];
+	let lastIndex = 0;
+	INLINE_MENTION_MD_RE.lastIndex = 0;
+	for (const match of line.matchAll(INLINE_MENTION_MD_RE)) {
+		const index = match.index ?? 0;
+		if (index > lastIndex) {
+			nodes.push(...parseStyledLineToNodes(line.slice(lastIndex, index)));
+		}
+		const rawLabel = match[1] ?? "";
+		nodes.push({
+			type: "userMention",
+			attrs: { id: match[2] ?? "", label: rawLabel.replace(/^@/, "") },
+		});
+		lastIndex = index + match[0].length;
+	}
+	if (lastIndex < line.length) {
+		nodes.push(...parseStyledLineToNodes(line.slice(lastIndex)));
+	}
+	return nodes.length > 0 ? nodes : parseStyledLineToNodes(line);
+}
+
 function parseStyledLineToNodes(line: string): JSONContent[] {
 	const nodes: JSONContent[] = [];
 	const markStack: Array<{ tag: "u" | "mark" | "span"; mark: TipTapMark }> = [];
@@ -335,7 +372,7 @@ function paragraphFromText(text: string): JSONContent {
 			content.push({ type: "hardBreak" });
 		}
 		if (line.length > 0) {
-			content.push(...parseStyledLineToNodes(line));
+			content.push(...parseInlineLineWithMentions(line));
 		}
 	});
 	return content.length > 0 ? { type: "paragraph", content } : { type: "paragraph" };

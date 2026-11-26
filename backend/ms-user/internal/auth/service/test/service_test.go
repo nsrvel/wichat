@@ -1555,6 +1555,28 @@ func TestGoogleFinishExchangeDenied(t *testing.T) {
 	}
 }
 
+func TestLoginSkipsMFAWhenInstanceDisabled(t *testing.T) {
+	now := time.Now().UTC()
+	st := usermock.NewState()
+	svc, notify, _, userSvc, _, _ := testSupport.NewAuthService(t, st, func() time.Time { return now }, false, false)
+	ctx := context.Background()
+
+	in := registerInput("mfa-off@example.com")
+	sess := testSupport.RegisterSession(t, svc, notify, in)
+
+	if _, err := userSvc.BeginTOTPSetup(ctx, sess.AccessToken, in.Password); codeOf(t, err) != string(exception.MsgUnavailable) {
+		t.Fatalf("BeginTOTPSetup with MFA off should be unavailable")
+	}
+
+	step, err := svc.Login(ctx, models.LoginInput{Login: in.Email, Password: in.Password})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if step.Challenge != nil && step.Challenge.MFARequired {
+		t.Fatalf("expected no MFA challenge when instance MFA disabled, got %+v", step.Challenge)
+	}
+}
+
 func TestLoginMFATOTPRecoveryAndReplayProtection(t *testing.T) {
 	now := time.Now().UTC()
 	st := usermock.NewState()

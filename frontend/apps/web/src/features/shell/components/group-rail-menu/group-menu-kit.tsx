@@ -3,6 +3,10 @@
 import { ContextMenu } from "@base-ui/react/context-menu";
 import { Menu } from "@base-ui/react/menu";
 import { createContext, useContext, type ReactNode } from "react";
+import {
+	WiChatContextMenuPositioner,
+	WiChatMenuPositioner,
+} from "@/components/ui/menu-positioner";
 
 export type GroupMenuKit = {
 	Item: typeof ContextMenu.Item;
@@ -21,8 +25,15 @@ export type GroupMenuKit = {
 	RadioItemIndicator: typeof ContextMenu.RadioItemIndicator;
 };
 
-export const contextMenuKit: GroupMenuKit = ContextMenu;
-export const dropdownMenuKit = Menu as unknown as GroupMenuKit;
+export const contextMenuKit: GroupMenuKit = {
+	...ContextMenu,
+	Positioner: WiChatContextMenuPositioner as unknown as GroupMenuKit["Positioner"],
+};
+
+export const dropdownMenuKit: GroupMenuKit = {
+	...(Menu as unknown as GroupMenuKit),
+	Positioner: WiChatMenuPositioner as unknown as GroupMenuKit["Positioner"],
+};
 
 const GroupMenuKitContext = createContext<GroupMenuKit>(contextMenuKit);
 

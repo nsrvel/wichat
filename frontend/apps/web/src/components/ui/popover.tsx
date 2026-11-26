@@ -2,32 +2,39 @@
 
 import { Popover as PopoverPrimitive } from "@base-ui/react/popover";
 import type { ComponentProps, ReactElement, ReactNode } from "react";
+import { floatingPositionerDefaults } from "@/lib/floating-position";
 import { cn } from "@/lib/utils";
 
 type PopoverProps = {
 	open?: boolean;
 	defaultOpen?: boolean;
-	onOpenChange?: (open: boolean) => void;
+	onOpenChange?: ComponentProps<typeof PopoverPrimitive.Root>["onOpenChange"];
+	modal?: ComponentProps<typeof PopoverPrimitive.Root>["modal"];
 	children: ReactNode;
 };
 
-export function Popover({ open, defaultOpen, onOpenChange, children }: PopoverProps) {
+export function Popover({ open, defaultOpen, onOpenChange, modal, children }: PopoverProps) {
 	return (
-		<PopoverPrimitive.Root open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange}>
+		<PopoverPrimitive.Root
+			open={open}
+			defaultOpen={defaultOpen}
+			onOpenChange={onOpenChange}
+			modal={modal}
+		>
 			{children}
 		</PopoverPrimitive.Root>
 	);
 }
 
-type PopoverTriggerProps = {
+type PopoverTriggerProps = ComponentProps<typeof PopoverPrimitive.Trigger> & {
 	render?: ReactElement;
 	className?: string;
 	children?: ReactNode;
 };
 
-export function PopoverTrigger({ render, className, children }: PopoverTriggerProps) {
+export function PopoverTrigger({ render, className, children, ...rest }: PopoverTriggerProps) {
 	return (
-		<PopoverPrimitive.Trigger render={render} className={className}>
+		<PopoverPrimitive.Trigger render={render} className={className} {...rest}>
 			{children}
 		</PopoverPrimitive.Trigger>
 	);
@@ -38,6 +45,7 @@ type PopoverContentProps = {
 	side?: ComponentProps<typeof PopoverPrimitive.Positioner>["side"];
 	align?: ComponentProps<typeof PopoverPrimitive.Positioner>["align"];
 	sideOffset?: number;
+	anchor?: ComponentProps<typeof PopoverPrimitive.Positioner>["anchor"];
 	className?: string;
 };
 
@@ -46,11 +54,15 @@ export function PopoverContent({
 	side = "top",
 	align = "end",
 	sideOffset = 10,
+	anchor,
 	className,
 }: PopoverContentProps) {
+	const floating = floatingPositionerDefaults();
 	return (
 		<PopoverPrimitive.Portal>
 			<PopoverPrimitive.Positioner
+				{...floating}
+				anchor={anchor}
 				side={side}
 				align={align}
 				sideOffset={sideOffset}

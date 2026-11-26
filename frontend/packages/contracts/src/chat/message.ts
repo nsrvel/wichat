@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { publicEntityIdSchema } from "../common";
+import { mentionUserIdSchema, publicEntityIdSchema } from "../common";
 
 export const MessageReplyPreviewSchema = z.object({
 	id: publicEntityIdSchema,
@@ -32,6 +32,7 @@ export const MessageSchema = z.object({
 	reply_to: MessageReplyPreviewSchema.nullable().optional(),
 	reactions: z.array(MessageReactionSummarySchema).default([]),
 	mine: z.boolean().default(false),
+	mentioned_user_ids: z.array(mentionUserIdSchema).optional().default([]),
 });
 export type Message = z.infer<typeof MessageSchema>;
 
@@ -53,6 +54,7 @@ export const CreateMessageBodySchema = z.object({
 	body: z.string().trim().min(1).max(4096),
 	reply_to_id: publicEntityIdSchema.optional(),
 	client_msg_id: z.string().uuid().optional(),
+	mentioned_user_ids: z.array(mentionUserIdSchema).optional().default([]),
 });
 export type CreateMessageBody = z.infer<typeof CreateMessageBodySchema>;
 

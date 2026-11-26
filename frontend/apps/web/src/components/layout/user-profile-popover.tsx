@@ -5,10 +5,22 @@ import { Check, ChevronRight, Pencil, Users, Volume2 } from "lucide-react";
 import { useState, type ReactElement } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { Menu } from "@base-ui/react/menu";
+import { WiChatMenuPositioner } from "@/components/ui/menu-positioner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { UserAvatar, UserProfileIndicator } from "@/components/ui/user-avatar";
 import { UserStatusNotePill } from "@/components/user/user-status-note-pill";
+import { UserProfileCardShell } from "@/components/user/user-profile-card-shell";
 import { cn } from "@/lib/utils";
+import {
+	USER_PROFILE_AVATAR_OVERLAP_PX,
+	USER_PROFILE_AVATAR_RING_CLASS,
+	USER_PROFILE_AVATAR_SIZE,
+	USER_PROFILE_BIO_CLASS,
+	USER_PROFILE_CARD_WIDTH_PX,
+	USER_PROFILE_DISPLAY_NAME_CLASS,
+	USER_PROFILE_META_CLASS,
+} from "@/lib/user-profile-card-layout";
 import {
 	formatStatusNoteLabel,
 	USER_STATUS_BY_ID,
@@ -57,7 +69,7 @@ export function UserProfilePopover({
 	onOpenEditProfile,
 	onClearStatusNote,
 	voiceSession,
-	widthPx = 320,
+	widthPx = USER_PROFILE_CARD_WIDTH_PX,
 	trigger,
 }: UserProfilePopoverProps) {
 	const { t } = useTranslation();
@@ -99,22 +111,17 @@ export function UserProfilePopover({
 				sideOffset={14}
 				className="-ml-2 w-auto overflow-visible rounded-2xl border-border bg-card p-0 text-card-foreground shadow-elevated"
 			>
-				<div style={{ width: widthPx }}>
-					{/* WiChat profile banner: ~half above avatar, ~half behind top half of avatar */}
-					<div
-						className="h-[92px] overflow-hidden rounded-t-2xl bg-popover"
-						style={bannerColor ? { backgroundColor: bannerColor } : undefined}
-					/>
-
-					<div className="px-5 pb-5">
-						{/* Large avatar (center aligns with banner bottom) + status note */}
-						<div className="-mt-[44px] flex items-center gap-2.5">
+				<UserProfileCardShell widthPx={widthPx} bannerColor={bannerColor || undefined}>
+						<div
+							className="flex items-center gap-2.5"
+							style={{ marginTop: -USER_PROFILE_AVATAR_OVERLAP_PX }}
+						>
 							<UserAvatar
 								src={avatarUrl}
 								initials={initials}
-								size="2xl"
+								size={USER_PROFILE_AVATAR_SIZE}
 								status={avatarStatus}
-								ringClassName="ring-[6px] ring-card"
+								ringClassName={USER_PROFILE_AVATAR_RING_CLASS}
 							/>
 
 							<UserStatusNotePill
@@ -126,21 +133,15 @@ export function UserProfilePopover({
 
 						{/* Identity */}
 						<div className="mt-3.5 min-w-0">
-							<p className="truncate text-[17px] font-bold leading-tight tracking-tight text-foreground">
-								{displayName}
-							</p>
+							<p className={USER_PROFILE_DISPLAY_NAME_CLASS}>{displayName}</p>
 							{username || pronouns ? (
-								<p className="mt-0.5 truncate text-[13px] font-medium text-muted-foreground">
+								<p className={USER_PROFILE_META_CLASS}>
 									{username ? `@${username}` : ""}
 									{username && pronouns ? " • " : ""}
 									{pronouns}
 								</p>
 							) : null}
-							{bio ? (
-								<p className="mt-2.5 whitespace-pre-wrap break-words text-xs leading-relaxed text-muted-foreground">
-									{bio}
-								</p>
-							) : null}
+							{bio ? <p className={USER_PROFILE_BIO_CLASS}>{bio}</p> : null}
 						</div>
 
 						{/* Conditional Voice Card */}
@@ -195,11 +196,9 @@ export function UserProfilePopover({
 
 							<div className="mx-2 my-1 h-px bg-border/60" />
 
-							<div className="relative">
-								<button
+							<Menu.Root open={statusMenuOpen} onOpenChange={setStatusMenuOpen}>
+								<Menu.Trigger
 									type="button"
-									aria-expanded={statusMenuOpen}
-									onClick={() => setStatusMenuOpen((prev) => !prev)}
 									className={cn(
 										actionRowClass,
 										"justify-between",
@@ -214,58 +213,51 @@ export function UserProfilePopover({
 										className="size-3.5 shrink-0 text-muted-foreground/80"
 										aria-hidden
 									/>
-								</button>
-
-								{statusMenuOpen ? (
-									<div
-										role="menu"
-										className="absolute bottom-0 left-full z-10 ml-2 w-[248px] rounded-xl border border-border bg-card p-1.5 text-card-foreground shadow-elevated"
-									>
-										<div className="space-y-0.5">
-											{USER_STATUS_OPTIONS.map((option) => {
-												const selected = option.id === status;
-												return (
-													<button
-														key={option.id}
-														type="button"
-														role="menuitemradio"
-														aria-checked={selected}
-														onClick={() => {
-															onStatusChange(option.id);
-															setStatusMenuOpen(false);
-														}}
-														className={cn(
-															"flex w-full cursor-default select-none items-start gap-2.5 rounded-md px-2.5 py-2 text-left hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-															selected && "bg-sidebar-accent/70",
-														)}
-													>
-														<UserProfileIndicator
-															status={option.id}
-															className="mt-1 size-3 shrink-0"
-														/>
-														<span className="min-w-0 flex-1">
-															<span className="block text-[13px] font-medium leading-snug text-card-foreground">
-																{t(option.labelKey)}
-															</span>
-															{option.descriptionKey ? (
-																<span className="mt-0.5 block text-[11px] font-normal leading-snug text-muted-foreground">
-																	{t(option.descriptionKey)}
-																</span>
-															) : null}
-														</span>
-														{selected ? (
-															<Check
-																className="mt-0.5 size-3.5 shrink-0 text-primary"
-																aria-hidden
+								</Menu.Trigger>
+								<Menu.Portal>
+									<WiChatMenuPositioner side="right" align="end" sideOffset={8}>
+										<Menu.Popup className="w-[248px] rounded-xl border border-border bg-card p-1.5 text-card-foreground shadow-elevated outline-none">
+											<div className="space-y-0.5">
+												{USER_STATUS_OPTIONS.map((option) => {
+													const selected = option.id === status;
+													return (
+														<Menu.Item
+															key={option.id}
+															className={cn(
+																"flex w-full cursor-default select-none items-start gap-2.5 rounded-md px-2.5 py-2 text-left outline-none",
+																"data-highlighted:bg-sidebar-accent data-highlighted:text-sidebar-accent-foreground",
+																selected && "bg-sidebar-accent/70",
+															)}
+															onClick={() => onStatusChange(option.id)}
+														>
+															<UserProfileIndicator
+																status={option.id}
+																className="mt-1 size-3 shrink-0"
 															/>
-														) : null}
-													</button>
-												);
-											})}
-										</div>
-									</div>
-								) : null}
-							</div>
+															<span className="min-w-0 flex-1">
+																<span className="block text-[13px] font-medium leading-snug text-card-foreground">
+																	{t(option.labelKey)}
+																</span>
+																{option.descriptionKey ? (
+																	<span className="mt-0.5 block text-[11px] font-normal leading-snug text-muted-foreground">
+																		{t(option.descriptionKey)}
+																	</span>
+																) : null}
+															</span>
+															{selected ? (
+																<Check
+																	className="mt-0.5 size-3.5 shrink-0 text-primary"
+																	aria-hidden
+																/>
+															) : null}
+														</Menu.Item>
+													);
+												})}
+											</div>
+										</Menu.Popup>
+									</WiChatMenuPositioner>
+								</Menu.Portal>
+							</Menu.Root>
 						</div>
 
 						{/* Account Actions Card */}
@@ -282,8 +274,7 @@ export function UserProfilePopover({
 								<ChevronRight className="size-3.5 shrink-0 text-muted-foreground/80" aria-hidden />
 							</button>
 						</div>
-					</div>
-				</div>
+				</UserProfileCardShell>
 			</PopoverContent>
 		</Popover>
 	);
