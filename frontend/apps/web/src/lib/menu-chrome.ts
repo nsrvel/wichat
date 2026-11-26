@@ -3,6 +3,8 @@ import { cn } from "@/lib/utils";
 /** Above sidebar resize handle (z-10); matches dialog tokens at slightly smaller scale. */
 export const menuPositionerClass = "z-[100] outline-none";
 
+/** Menus: use `WiChatMenuPositioner` / `WiChatContextMenuPositioner` (`components/ui/menu-positioner.tsx`) for viewport flip/shift. */
+
 export const menuPopupClass = cn(
 	"thin-scroll z-[100] w-max min-w-[13rem] max-w-[14.5rem] rounded-lg border border-border bg-card px-2 py-2.5 text-[13px] font-medium leading-snug",
 	"text-card-foreground shadow-elevated outline-none",

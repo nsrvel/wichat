@@ -19,6 +19,8 @@ import {
 	settingsSectionDividerLineClass,
 	settingsSectionDividerWrapClass,
 } from "@/lib/settings-chrome";
+import { isMfaFeatureEnabled } from "@/features/auth/lib/mfa-policy";
+import { instancePolicyQueryOpts } from "@/services/auth/auth.query";
 import { myMfaStatusQueryOptions } from "@/services/user/user.query";
 
 type UserSettingsAccountSectionProps = {
@@ -52,8 +54,10 @@ export function UserSettingsAccountSection({
 	const [mfaOpen, setMfaOpen] = useState(false);
 	const [accountStatusMode, setAccountStatusMode] = useState<AccountStatusDialogMode | null>(null);
 
-	const { data: mfaStatus } = useQuery(myMfaStatusQueryOptions());
-	const mfaEnabled = Boolean(
+	const { data: policy } = useQuery(instancePolicyQueryOpts());
+	const mfaFeatureEnabled = isMfaFeatureEnabled(policy);
+	const { data: mfaStatus } = useQuery(myMfaStatusQueryOptions(mfaFeatureEnabled));
+	const userMfaActive = Boolean(
 		mfaStatus?.totp_enabled || (mfaStatus?.security_keys?.length ?? 0) > 0,
 	);
 
@@ -165,28 +169,30 @@ export function UserSettingsAccountSection({
 						</div>
 					</div>
 
-					<button
-						type="button"
-						onClick={() => setMfaOpen(true)}
-						className="flex w-full items-center justify-between gap-4 py-2.5 text-left transition-colors hover:text-foreground"
-					>
-						<span className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground">
-							<span>{t("user_settings.account.mfa")}</span>
-							{mfaEnabled ? (
-								<span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[11px] font-medium text-emerald-500">
-									{t("user_settings.account.mfa_enabled")}
-								</span>
-							) : null}
-						</span>
-						<span className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground">
-							<span>
-								{mfaEnabled
-									? t("user_settings.account.mfa_manage")
-									: t("user_settings.account.mfa_setup")}
+					{mfaFeatureEnabled ? (
+						<button
+							type="button"
+							onClick={() => setMfaOpen(true)}
+							className="flex w-full items-center justify-between gap-4 py-2.5 text-left transition-colors hover:text-foreground"
+						>
+							<span className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground">
+								<span>{t("user_settings.account.mfa")}</span>
+								{userMfaActive ? (
+									<span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[11px] font-medium text-emerald-500">
+										{t("user_settings.account.mfa_enabled")}
+									</span>
+								) : null}
 							</span>
-							<ChevronRight className="size-4 text-muted-foreground" aria-hidden />
-						</span>
-					</button>
+							<span className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground">
+								<span>
+									{userMfaActive
+										? t("user_settings.account.mfa_manage")
+										: t("user_settings.account.mfa_setup")}
+								</span>
+								<ChevronRight className="size-4 text-muted-foreground" aria-hidden />
+							</span>
+						</button>
+					) : null}
 
 					<button
 						type="button"
@@ -271,7 +277,9 @@ export function UserSettingsAccountSection({
 				onOpenChange={setChangePasswordOpen}
 				hasPassword={hasPassword}
 			/>
-			<MfaSettingsDialog open={mfaOpen} onOpenChange={setMfaOpen} />
+			{mfaFeatureEnabled ? (
+				<MfaSettingsDialog open={mfaOpen} onOpenChange={setMfaOpen} />
+			) : null}
 			<AccountStatusDialog
 				open={accountStatusMode !== null}
 				onOpenChange={(nextOpen) => {

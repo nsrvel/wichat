@@ -1,4 +1,5 @@
 "use client";
+import { WiChatMenuPositioner } from "@/components/ui/menu-positioner";
 
 import { Menu } from "@base-ui/react/menu";
 import { ArrowDownUp, ChevronDown, ChevronUp, Search } from "lucide-react";
@@ -104,7 +105,7 @@ export function GroupSettingsMembersToolbar({
 							)}
 						</Menu.Trigger>
 						<Menu.Portal>
-							<Menu.Positioner
+							<WiChatMenuPositioner
 								className={menuPositionerClass}
 								side="bottom"
 								align="end"
@@ -134,7 +135,7 @@ export function GroupSettingsMembersToolbar({
 										))}
 									</Menu.RadioGroup>
 								</Menu.Popup>
-							</Menu.Positioner>
+							</WiChatMenuPositioner>
 						</Menu.Portal>
 					</Menu.Root>
 

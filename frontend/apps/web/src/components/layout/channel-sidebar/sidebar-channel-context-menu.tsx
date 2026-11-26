@@ -1,4 +1,5 @@
 "use client";
+import { WiChatContextMenuPositioner } from "@/components/ui/menu-positioner";
 
 import { ContextMenu } from "@base-ui/react/context-menu";
 import type { Channel } from "@wichat/contracts/chat/channel";
@@ -77,7 +78,7 @@ export function SidebarChannelContextMenu({
 		<ContextMenu.Root>
 			<ContextMenu.Trigger className="block">{children}</ContextMenu.Trigger>
 			<ContextMenu.Portal>
-				<ContextMenu.Positioner className={menuPositionerClass}>
+				<WiChatContextMenuPositioner className={menuPositionerClass}>
 					<ContextMenu.Popup className={menuPopupClass}>
 						<GroupMenuKitProvider kit={contextMenuKit}>
 							<ContextMenu.Item
@@ -129,7 +130,7 @@ export function SidebarChannelContextMenu({
 											<ChevronRight className={menuChevronClass} aria-hidden />
 										</ContextMenu.SubmenuTrigger>
 										<ContextMenu.Portal>
-											<ContextMenu.Positioner
+											<WiChatContextMenuPositioner
 												className={menuPositionerClass}
 												alignOffset={-4}
 												sideOffset={-4}
@@ -145,7 +146,7 @@ export function SidebarChannelContextMenu({
 																	<ChevronRight className={menuChevronClass} aria-hidden />
 																</ContextMenu.SubmenuTrigger>
 																<ContextMenu.Portal>
-																	<ContextMenu.Positioner
+																	<WiChatContextMenuPositioner
 																		className={menuPositionerClass}
 																		alignOffset={-4}
 																		sideOffset={-4}
@@ -169,7 +170,7 @@ export function SidebarChannelContextMenu({
 																				);
 																			})}
 																		</ContextMenu.Popup>
-																	</ContextMenu.Positioner>
+																	</WiChatContextMenuPositioner>
 																</ContextMenu.Portal>
 															</ContextMenu.SubmenuRoot>
 															<ContextMenu.Separator className={menuSeparatorClass} />
@@ -197,7 +198,7 @@ export function SidebarChannelContextMenu({
 														{t("channel.channel_context_menu.last_in_category")}
 													</ContextMenu.Item>
 												</ContextMenu.Popup>
-											</ContextMenu.Positioner>
+											</WiChatContextMenuPositioner>
 										</ContextMenu.Portal>
 									</ContextMenu.SubmenuRoot>
 								</>
@@ -258,7 +259,7 @@ export function SidebarChannelContextMenu({
 							) : null}
 						</GroupMenuKitProvider>
 					</ContextMenu.Popup>
-				</ContextMenu.Positioner>
+				</WiChatContextMenuPositioner>
 			</ContextMenu.Portal>
 		</ContextMenu.Root>
 	);

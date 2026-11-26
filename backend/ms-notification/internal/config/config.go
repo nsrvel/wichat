@@ -22,14 +22,14 @@ type Config struct {
 
 // Defaults are applied when env / .env do not set a value.
 var Defaults = Config{
-	Env:      "development",
-	LogLevel: "info",
-	Port:                 "3005",
-	GrpcBind:             "127.0.0.1",
-	InternalGrpcToken:    "dev-internal-grpc-token",
-	SMTPHost: "localhost",
-	SMTPPort: 587,
-	SMTPFrom: "WiChat <noreply@localhost>",
+	Env:               "development",
+	LogLevel:          "info",
+	Port:              "3005",
+	GrpcBind:          "127.0.0.1",
+	InternalGrpcToken: "dev-internal-grpc-token",
+	SMTPHost:          "localhost",
+	SMTPPort:          587,
+	SMTPFrom:          "WiChat <noreply@localhost>",
 }
 
 // Load reads configuration from defaults, optional envFile, and environment.

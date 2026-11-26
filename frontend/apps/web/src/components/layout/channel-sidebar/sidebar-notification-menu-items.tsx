@@ -1,4 +1,5 @@
 "use client";
+import { WiChatContextMenuPositioner } from "@/components/ui/menu-positioner";
 
 import { ContextMenu } from "@base-ui/react/context-menu";
 import { ChevronRight } from "lucide-react";
@@ -73,7 +74,7 @@ export function SidebarNotificationMenuItems({
 					<ChevronRight className={menuChevronClass} aria-hidden />
 				</ContextMenu.SubmenuTrigger>
 				<ContextMenu.Portal>
-					<ContextMenu.Positioner className={menuPositionerClass} alignOffset={-4} sideOffset={-4}>
+					<WiChatContextMenuPositioner className={menuPositionerClass} alignOffset={-4} sideOffset={-4}>
 						<ContextMenu.Popup className={menuPopupClass}>
 							{muted ? (
 								<ContextMenu.Item className={menuItemClass} onClick={() => onMutedChange(false)}>
@@ -91,7 +92,7 @@ export function SidebarNotificationMenuItems({
 								))
 							)}
 						</ContextMenu.Popup>
-					</ContextMenu.Positioner>
+					</WiChatContextMenuPositioner>
 				</ContextMenu.Portal>
 			</ContextMenu.SubmenuRoot>
 
@@ -104,7 +105,7 @@ export function SidebarNotificationMenuItems({
 					<ChevronRight className={menuChevronClass} aria-hidden />
 				</ContextMenu.SubmenuTrigger>
 				<ContextMenu.Portal>
-					<ContextMenu.Positioner className={menuPositionerClass} alignOffset={-4} sideOffset={-4}>
+					<WiChatContextMenuPositioner className={menuPositionerClass} alignOffset={-4} sideOffset={-4}>
 						<ContextMenu.Popup className={menuPopupClass}>
 							<ContextMenu.RadioGroup
 								value={notifLevel}
@@ -129,7 +130,7 @@ export function SidebarNotificationMenuItems({
 								))}
 							</ContextMenu.RadioGroup>
 						</ContextMenu.Popup>
-					</ContextMenu.Positioner>
+					</WiChatContextMenuPositioner>
 				</ContextMenu.Portal>
 			</ContextMenu.SubmenuRoot>
 		</>

@@ -1,6 +1,7 @@
 "use client";
 
 import type { User } from "@wichat/contracts/user";
+import { useQuery } from "@tanstack/react-query";
 import { X } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -19,7 +20,9 @@ import {
 import { useLivePresence } from "@/hooks/use-live-presence";
 import type { UserPresenceStatus } from "@/lib/user-status";
 import { cn } from "@/lib/utils";
+import { isMfaFeatureEnabled } from "@/features/auth/lib/mfa-policy";
 import { useLogoutMutation } from "@/services/auth/auth.mutation";
+import { instancePolicyQueryOpts } from "@/services/auth/auth.query";
 
 type UserSettingsDialogProps = {
 	open: boolean;
@@ -50,6 +53,11 @@ export function UserSettingsDialog({
 	const titleId = useId();
 	const contentScrollRef = useRef<HTMLDivElement>(null);
 	const logout = useLogoutMutation();
+	const { data: instancePolicy } = useQuery({
+		...instancePolicyQueryOpts(),
+		enabled: open,
+	});
+	const mfaFeatureEnabled = isMfaFeatureEnabled(instancePolicy);
 	const { avatarDot: sidebarPresenceDot, manualStatus } = useLivePresence(open && Boolean(user));
 	const sidebarDot = sidebarPresenceDot ?? status;
 	const [activeSection, setActiveSection] = useState<UserSettingsSectionId>(initialSection);
@@ -149,6 +157,7 @@ export function UserSettingsDialog({
 						onSearchChange={setSearchQuery}
 						onSelectSection={handleSelectSection}
 						onSignOut={handleSignOut}
+						mfaFeatureEnabled={mfaFeatureEnabled}
 						signingOut={logout.isPending}
 					/>
 				</div>

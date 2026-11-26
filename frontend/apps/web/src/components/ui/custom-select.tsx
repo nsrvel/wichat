@@ -1,5 +1,6 @@
 "use client";
 
+import { positionWithinViewport } from "@/lib/position-within-viewport";
 import { cn } from "@/lib/utils";
 import { ChevronDown } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -59,13 +60,25 @@ function findTypeaheadMatch(
 	return matches[nextIdx];
 }
 
-function measureMenuPosition(trigger: HTMLButtonElement, align: "start" | "end"): MenuPosition {
+const PORTAL_LIST_MAX_HEIGHT_PX = 240;
+
+function measureMenuPosition(
+	trigger: HTMLButtonElement,
+	align: "start" | "end",
+	listHeight: number,
+): MenuPosition {
 	const rect = trigger.getBoundingClientRect();
-	return {
-		top: rect.bottom + 4,
-		left: align === "end" ? rect.right : rect.left,
-		width: Math.max(rect.width, 168),
-	};
+	const width = Math.max(rect.width, 168);
+	const height = listHeight > 0 ? listHeight : PORTAL_LIST_MAX_HEIGHT_PX;
+	const { top, left } = positionWithinViewport({
+		anchor: rect,
+		width,
+		height,
+		align,
+		side: "bottom",
+		gap: 4,
+	});
+	return { top, left, width };
 }
 
 export function CustomSelect({
@@ -101,7 +114,8 @@ export function CustomSelect({
 		if (!trigger) {
 			return;
 		}
-		setMenuPosition(measureMenuPosition(trigger, menuAlign));
+		const listHeight = listRef.current?.offsetHeight ?? 0;
+		setMenuPosition(measureMenuPosition(trigger, menuAlign, listHeight));
 	}, [menuAlign]);
 
 	const scrollToHighlighted = useCallback(() => {
@@ -136,7 +150,7 @@ export function CustomSelect({
 			window.removeEventListener("resize", updateMenuPosition);
 			window.removeEventListener("scroll", updateMenuPosition, true);
 		};
-	}, [isOpen, portaled, updateMenuPosition]);
+	}, [isOpen, portaled, updateMenuPosition, options.length, highlightedValue]);
 
 	useEffect(() => {
 		function handleClickOutside(event: MouseEvent) {
@@ -264,7 +278,6 @@ export function CustomSelect({
 							top: menuPosition.top,
 							left: menuPosition.left,
 							width: menuPosition.width,
-							transform: menuAlign === "end" ? "translateX(-100%)" : undefined,
 						}
 					: undefined
 			}
