@@ -1,4 +1,5 @@
 "use client";
+import { WiChatContextMenuPositioner, WiChatMenuPositioner } from "@/components/ui/menu-positioner";
 
 import { ContextMenu } from "@base-ui/react/context-menu";
 import { Menu } from "@base-ui/react/menu";
@@ -89,7 +90,7 @@ export function WorkspaceGroupHeaderMenu({
 					}}
 				>
 					<Menu.Portal>
-						<Menu.Positioner className={menuPositionerClass} sideOffset={4} align="start">
+						<WiChatMenuPositioner className={menuPositionerClass} sideOffset={4} align="start">
 							<Menu.Popup className={menuPopupClass}>
 								<GroupMenuKitProvider kit={dropdownMenuKit}>
 									<GroupHeaderDropdownContent
@@ -99,7 +100,7 @@ export function WorkspaceGroupHeaderMenu({
 									/>
 								</GroupMenuKitProvider>
 							</Menu.Popup>
-						</Menu.Positioner>
+						</WiChatMenuPositioner>
 					</Menu.Portal>
 				</Menu.Root>
 
@@ -155,7 +156,7 @@ export function WorkspaceGroupHeaderMenu({
 						</ContextMenu.Trigger>
 					</div>
 					<ContextMenu.Portal>
-						<ContextMenu.Positioner className={menuPositionerClass}>
+						<WiChatContextMenuPositioner className={menuPositionerClass}>
 							<ContextMenu.Popup className={menuPopupClass}>
 								<GroupMenuKitProvider kit={contextMenuKit}>
 									<GroupMenuContent
@@ -166,7 +167,7 @@ export function WorkspaceGroupHeaderMenu({
 									/>
 								</GroupMenuKitProvider>
 							</ContextMenu.Popup>
-						</ContextMenu.Positioner>
+						</WiChatContextMenuPositioner>
 					</ContextMenu.Portal>
 				</ContextMenu.Root>
 

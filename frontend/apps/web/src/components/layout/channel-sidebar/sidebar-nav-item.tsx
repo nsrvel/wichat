@@ -13,6 +13,7 @@ export type SidebarNavItemProps = {
 	icon: ReactNode;
 	label: string;
 	badge?: boolean;
+	badgeCount?: number;
 	unread?: boolean;
 	selected?: boolean;
 	onSelect?: () => void;
@@ -25,6 +26,7 @@ export function SidebarNavItem({
 	icon,
 	label,
 	badge,
+	badgeCount,
 	unread,
 	selected,
 	onSelect,
@@ -37,7 +39,7 @@ export function SidebarNavItem({
 			menuId={menuId}
 			activeMenuId={activeMenuId}
 			onActiveMenuIdChange={onActiveMenuIdChange}
-			unread={unread}
+			unread={unread || (badgeCount ?? 0) > 0}
 			selected={selected}
 		>
 			<button
@@ -52,7 +54,11 @@ export function SidebarNavItem({
 				<span className={cn(sidebarRowTextClass, "min-w-0 flex-1 truncate text-left font-medium")}>
 					{label}
 				</span>
-				{badge ? (
+				{badgeCount != null && badgeCount > 0 ? (
+					<span className="min-w-5 rounded-full bg-primary px-1.5 py-px text-center text-[10px] font-semibold tabular-nums text-primary-foreground">
+						{badgeCount > 99 ? "99+" : badgeCount}
+					</span>
+				) : badge ? (
 					<span className="rounded bg-[#F2D9F6] px-1 py-px text-[9px] font-semibold tracking-wide text-[#A855C8]">
 						NEW
 					</span>

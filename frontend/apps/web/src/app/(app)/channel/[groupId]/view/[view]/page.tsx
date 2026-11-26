@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { QuickViewRoutePage } from "@/features/channel/quick-view-route-page";
+import { QuickViewRoutePageClient } from "@/features/channel/quick-view-route-page-client";
 import { isQuickViewId } from "@/lib/app-routes";
 
 type PageProps = {
@@ -11,5 +11,5 @@ export default async function QuickViewPage({ params }: PageProps) {
 	if (!isQuickViewId(view)) {
 		notFound();
 	}
-	return <QuickViewRoutePage groupId={groupId} quickView={view} />;
+	return <QuickViewRoutePageClient groupId={groupId} quickView={view} />;
 }

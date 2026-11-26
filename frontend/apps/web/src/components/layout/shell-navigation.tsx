@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
+import type { AvatarPresenceDot } from "@/features/presence/presence-dot";
 
 export type ShellNavKind = "dm" | "channel" | "quickView";
 
@@ -11,6 +12,10 @@ export type ShellNavTarget = {
 	channelType?: string;
 	channelName?: string;
 	imageUrl?: string;
+	/** Group DM header / nav — peer avatar when API + members are available. */
+	dmAvatarSrc?: string | null;
+	dmAvatarInitials?: string;
+	dmPresence?: AvatarPresenceDot;
 };
 
 const DEFAULT_TARGET: ShellNavTarget = {

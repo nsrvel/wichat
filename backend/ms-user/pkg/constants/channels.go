@@ -17,4 +17,5 @@ const (
 	// SidebarSection* drives client sidebar grouping (see channels.sidebar_section).
 	SidebarSectionChannels  = "channels"
 	SidebarSectionFavorites = "favorites"
+	SidebarSectionChats     = "chats"
 )

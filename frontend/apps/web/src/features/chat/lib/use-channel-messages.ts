@@ -91,6 +91,7 @@ function toChannelMessage(
 		isPinned: msg.is_pinned ?? false,
 		replyTo: msg.reply_to ?? null,
 		bodyPlain: msg.body,
+		mentionedUserIds: msg.mentioned_user_ids,
 		mine: msg.mine || (Boolean(currentUserId) && msg.author_id === currentUserId),
 		reactions:
 			rawReactions.length === 0

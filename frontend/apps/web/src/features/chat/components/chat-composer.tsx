@@ -2,7 +2,7 @@
 
 import type { MessageAttachment, MessageReplyPreview } from "@wichat/contracts/chat/message";
 import Placeholder from "@tiptap/extension-placeholder";
-import { EditorContent, useEditor } from "@tiptap/react";
+import { EditorContent, useEditor, type Extensions } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import {
 	Bold,
@@ -23,11 +23,14 @@ import {
 	Upload,
 	X,
 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ExpressionPickerPopover } from "@/components/expression-picker/expression-picker-popover";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { AttachmentBlockNode } from "@/features/chat/components/composer-attachment-node";
+import { UserMentionNode } from "@/features/chat/components/composer-mention-node";
+import { composerMentionSuggestionExtension } from "@/features/chat/lib/composer-mention-suggestion";
 import { ReplyQuoteNode } from "@/features/chat/components/composer-reply-node";
 import { clearComposerFiles, registerComposerFile } from "@/features/chat/lib/attachment-preview";
 import {
@@ -74,6 +77,7 @@ function FormatComposeIcon({ className }: { className?: string }) {
 }
 
 type ChatComposerProps = {
+	groupId?: string;
 	mode?: "send" | "edit";
 	initialValue?: string;
 	onCancel?: () => void;
@@ -94,6 +98,7 @@ type ChatComposerProps = {
 };
 
 export function ChatComposer({
+	groupId,
 	mode = "send",
 	initialValue,
 	onCancel,
@@ -120,6 +125,7 @@ export function ChatComposer({
 	);
 	const editorContainerRef = useRef<HTMLDivElement>(null);
 	const wrapCharThresholdRef = useRef<number>(0);
+	const queryClient = useQueryClient();
 	const [showFormatting, setShowFormatting] = useState(false);
 	const [isMultiline, setIsMultiline] = useState(() => Boolean(initialValue?.includes("\n")));
 	const [hasContent, setHasContent] = useState(() =>
@@ -218,12 +224,8 @@ export function ChatComposer({
 		[],
 	);
 
-	const editor = useEditor({
-		immediatelyRender: false,
-		editable: !disabled,
-		content: initialDoc,
-		autofocus: isEditMode ? "end" : false,
-		extensions: [
+	const extensions = useMemo((): Extensions => {
+		const base: Extensions = [
 			StarterKit.configure({
 				heading: false,
 				link: {
@@ -236,10 +238,23 @@ export function ChatComposer({
 			}),
 			ReplyQuoteNode,
 			AttachmentBlockNode,
+			UserMentionNode,
 			HighlightMark,
 			TextColorMark,
 			FontSizeMark,
-		],
+		];
+		if (groupId) {
+			base.push(composerMentionSuggestionExtension(groupId, queryClient));
+		}
+		return base;
+	}, [groupId, queryClient, resolvedPlaceholder]);
+
+	const editor = useEditor({
+		immediatelyRender: false,
+		editable: !disabled,
+		content: initialDoc,
+		autofocus: isEditMode ? "end" : false,
+		extensions,
 		editorProps: {
 			attributes: {
 				class:

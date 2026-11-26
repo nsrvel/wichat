@@ -2,109 +2,170 @@ package service
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
-	"fmt"
 	"strings"
-	"time"
+	"unicode/utf8"
 
+	"github.com/wichat/wichat/backend/ms-chat/internal/models"
 	searchrepo "github.com/wichat/wichat/backend/ms-chat/internal/search/repository"
-	chatEvents "github.com/wichat/wichat/backend/wi-shared/chat-events"
-	"github.com/wichat/wichat/backend/wi-shared/infra/elasticsearch"
+	channelacl "github.com/wichat/wichat/backend/ms-chat/pkg/channel-acl"
+	"github.com/wichat/wichat/backend/wi-shared/exception"
 	"github.com/wichat/wichat/backend/wi-shared/infra/logger"
 )
 
-// Service owns search indexing use cases.
-type Service interface {
-	EnsureIndex(ctx context.Context) error
-	IndexKafkaValue(ctx context.Context, value []byte) error
+// QueryService runs Elasticsearch search queries (messages and files).
+type QueryService interface {
+	SearchMessages(ctx context.Context, accessToken, groupID, query string, limit int) ([]models.MessageSearchHit, error)
+	SearchFiles(ctx context.Context, accessToken, groupID, query string, limit int, imagesOnly bool) ([]models.FileSearchHit, error)
 }
 
-type service struct {
-	repo searchrepo.EsRepository
-	log  logger.Logger
+type queryService struct {
+	repo    searchrepo.EsRepository
+	channel channelacl.ChannelLister
+	log     logger.Logger
 }
 
-// NewService builds search indexing use cases.
-func NewService(repo searchrepo.EsRepository, log logger.Logger) Service {
-	return service{repo: repo, log: log}
+// NewQueryService builds ES search query use cases.
+func NewQueryService(
+	repo searchrepo.EsRepository,
+	channel channelacl.ChannelLister,
+	log logger.Logger,
+) QueryService {
+	return queryService{repo: repo, channel: channel, log: log}
 }
 
-var errInvalidEventPayload = errors.New("invalid event payload")
-
-func (s service) EnsureIndex(ctx context.Context) error {
+func (s queryService) SearchMessages(
+	ctx context.Context,
+	accessToken, groupID, query string,
+	limit int,
+) ([]models.MessageSearchHit, error) {
+	// Validation
+	accessToken = strings.TrimSpace(accessToken)
+	groupID = strings.TrimSpace(groupID)
+	query = strings.TrimSpace(query)
+	if accessToken == "" {
+		return nil, exception.Unauthenticated(exception.MsgUnauthorized, nil)
+	}
+	if groupID == "" || query == "" {
+		return nil, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "query"})
+	}
+	if utf8.RuneCountInString(query) < 2 {
+		return nil, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "query"})
+	}
+	if limit <= 0 {
+		limit = 8
+	}
+	if limit > 25 {
+		limit = 25
+	}
 	if s.repo == nil {
-		return nil
+		return []models.MessageSearchHit{}, nil
 	}
 
-	return s.repo.EnsureIndex(ctx)
+	// Repository
+	docs, err := s.repo.SearchMessages(ctx, groupID, query, limit*3)
+	if err != nil {
+		return nil, err
+	}
+	if len(docs) == 0 {
+		return []models.MessageSearchHit{}, nil
+	}
+
+	allowed, err := channelacl.AllowedIDs(ctx, s.channel, accessToken, groupID)
+	if err != nil {
+		return nil, err
+	}
+
+	hits := make([]models.MessageSearchHit, 0, limit)
+	for _, doc := range docs {
+		if _, ok := allowed[doc.ChannelID]; !ok {
+			continue
+		}
+		hits = append(hits, models.MessageSearchHit{
+			MessageID:         doc.MessageID,
+			GroupID:           doc.GroupID,
+			ChannelID:         doc.ChannelID,
+			BodyPreview:       previewBody(doc.Body, 140),
+			AuthorDisplayName: doc.AuthorDisplayName,
+			CreatedAt:         doc.CreatedAt,
+		})
+		if len(hits) >= limit {
+			break
+		}
+	}
+	return hits, nil
 }
 
-func (s service) IndexKafkaValue(ctx context.Context, value []byte) error {
+func (s queryService) SearchFiles(
+	ctx context.Context,
+	accessToken, groupID, query string,
+	limit int,
+	imagesOnly bool,
+) ([]models.FileSearchHit, error) {
+	// Validation
+	accessToken = strings.TrimSpace(accessToken)
+	groupID = strings.TrimSpace(groupID)
+	query = strings.TrimSpace(query)
+	if accessToken == "" {
+		return nil, exception.Unauthenticated(exception.MsgUnauthorized, nil)
+	}
+	if groupID == "" || query == "" {
+		return nil, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "query"})
+	}
+	if utf8.RuneCountInString(query) < 2 {
+		return nil, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "query"})
+	}
+	if limit <= 0 {
+		limit = 8
+	}
+	if limit > 25 {
+		limit = 25
+	}
 	if s.repo == nil {
-		return nil
+		return []models.FileSearchHit{}, nil
 	}
 
-	var head struct {
-		Type string `json:"type"`
+	docs, err := s.repo.SearchFiles(ctx, groupID, query, limit*3, imagesOnly)
+	if err != nil {
+		return nil, err
 	}
-	if err := json.Unmarshal(value, &head); err != nil {
-		return fmt.Errorf("%w: %w", errInvalidEventPayload, err)
+	if len(docs) == 0 {
+		return []models.FileSearchHit{}, nil
 	}
 
-	switch strings.TrimSpace(head.Type) {
-	case chatEvents.TypeMessageCreated:
-		var ev chatEvents.MessageCreated
-		if err := json.Unmarshal(value, &ev); err != nil {
-			return fmt.Errorf("%w: %w", errInvalidEventPayload, err)
-		}
-
-		return s.indexMessageDoc(ctx, ev.GroupID, ev.ChannelID, ev.Message)
-	case chatEvents.TypeMessageUpdated:
-		var ev chatEvents.MessageUpdated
-		if err := json.Unmarshal(value, &ev); err != nil {
-			return fmt.Errorf("%w: %w", errInvalidEventPayload, err)
-		}
-
-		return s.indexMessageDoc(ctx, ev.GroupID, ev.ChannelID, ev.Message)
-	case chatEvents.TypeMessageDeleted:
-		var ev chatEvents.MessageDeleted
-		if err := json.Unmarshal(value, &ev); err != nil {
-			return fmt.Errorf("%w: %w", errInvalidEventPayload, err)
-		}
-		if ev.MessageID == "" {
-			return fmt.Errorf("missing message id in event")
-		}
-
-		return s.repo.DeleteMessage(ctx, ev.MessageID)
-	default:
-		return nil
+	allowed, err := channelacl.AllowedIDs(ctx, s.channel, accessToken, groupID)
+	if err != nil {
+		return nil, err
 	}
+
+	hits := make([]models.FileSearchHit, 0, limit)
+	for _, doc := range docs {
+		if _, ok := allowed[doc.ChannelID]; !ok {
+			continue
+		}
+		hits = append(hits, models.FileSearchHit{
+			AttachmentID: doc.AttachmentID,
+			MessageID:    doc.MessageID,
+			GroupID:      doc.GroupID,
+			ChannelID:    doc.ChannelID,
+			Filename:     doc.Filename,
+			ContentType:  doc.ContentType,
+			CreatedAt:    doc.CreatedAt,
+		})
+		if len(hits) >= limit {
+			break
+		}
+	}
+	return hits, nil
 }
 
-func (s service) indexMessageDoc(ctx context.Context, groupID, channelID string, msg chatEvents.Message) error {
-	doc := elasticsearch.MessageDoc{
-		MessageID:         msg.ID,
-		GroupID:           groupID,
-		ChannelID:         channelID,
-		AuthorID:          msg.AuthorID,
-		AuthorDisplayName: msg.AuthorDisplayName,
-		Body:              msg.Body,
-		CreatedAt:         msg.CreatedAt,
+func previewBody(body string, max int) string {
+	body = strings.Join(strings.Fields(strings.TrimSpace(body)), " ")
+	if max <= 0 || utf8.RuneCountInString(body) <= max {
+		return body
 	}
-	if doc.MessageID == "" {
-		return fmt.Errorf("missing message id in event")
+	runes := []rune(body)
+	if len(runes) <= max {
+		return body
 	}
-
-	return s.repo.IndexMessageCreated(ctx, doc)
-}
-
-// InvalidEventPayload reports poison Kafka JSON for delivery to skip commit.
-func InvalidEventPayload(err error) bool {
-	return errors.Is(err, errInvalidEventPayload)
-}
-
-// RetryDelays are backoff steps for transient indexing failures.
-func RetryDelays() []time.Duration {
-	return []time.Duration{100 * time.Millisecond, 500 * time.Millisecond, 1500 * time.Millisecond}
+	return string(runes[:max-1]) + "…"
 }

@@ -59,8 +59,10 @@ type ChannelSummary struct {
 	RtcRegion string `protobuf:"bytes,19,opt,name=rtc_region,json=rtcRegion,proto3" json:"rtc_region,omitempty"`
 	// Effective permissions for the authenticated caller on this channel.
 	CallerPermissions []string `protobuf:"bytes,20,rep,name=caller_permissions,json=callerPermissions,proto3" json:"caller_permissions,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	// Other participant when type is dm (internal user id); empty otherwise.
+	DmPeerUserId  string `protobuf:"bytes,21,opt,name=dm_peer_user_id,json=dmPeerUserId,proto3" json:"dm_peer_user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ChannelSummary) Reset() {
@@ -224,6 +226,13 @@ func (x *ChannelSummary) GetCallerPermissions() []string {
 		return x.CallerPermissions
 	}
 	return nil
+}
+
+func (x *ChannelSummary) GetDmPeerUserId() string {
+	if x != nil {
+		return x.DmPeerUserId
+	}
+	return ""
 }
 
 type ListGroupChannelsRequest struct {
@@ -1490,11 +1499,123 @@ func (x *AssertGroupChannelAccessResponse) GetContentVisibility() string {
 	return ""
 }
 
+type EnsureGroupDmChannelRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AccessToken   string                 `protobuf:"bytes,1,opt,name=access_token,json=accessToken,proto3" json:"access_token,omitempty"`
+	GroupId       string                 `protobuf:"bytes,2,opt,name=group_id,json=groupId,proto3" json:"group_id,omitempty"`
+	PeerUserId    string                 `protobuf:"bytes,3,opt,name=peer_user_id,json=peerUserId,proto3" json:"peer_user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *EnsureGroupDmChannelRequest) Reset() {
+	*x = EnsureGroupDmChannelRequest{}
+	mi := &file_user_v1_channel_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EnsureGroupDmChannelRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EnsureGroupDmChannelRequest) ProtoMessage() {}
+
+func (x *EnsureGroupDmChannelRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_channel_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EnsureGroupDmChannelRequest.ProtoReflect.Descriptor instead.
+func (*EnsureGroupDmChannelRequest) Descriptor() ([]byte, []int) {
+	return file_user_v1_channel_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *EnsureGroupDmChannelRequest) GetAccessToken() string {
+	if x != nil {
+		return x.AccessToken
+	}
+	return ""
+}
+
+func (x *EnsureGroupDmChannelRequest) GetGroupId() string {
+	if x != nil {
+		return x.GroupId
+	}
+	return ""
+}
+
+func (x *EnsureGroupDmChannelRequest) GetPeerUserId() string {
+	if x != nil {
+		return x.PeerUserId
+	}
+	return ""
+}
+
+type EnsureGroupDmChannelResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Channel       *ChannelSummary        `protobuf:"bytes,1,opt,name=channel,proto3" json:"channel,omitempty"`
+	Created       bool                   `protobuf:"varint,2,opt,name=created,proto3" json:"created,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *EnsureGroupDmChannelResponse) Reset() {
+	*x = EnsureGroupDmChannelResponse{}
+	mi := &file_user_v1_channel_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EnsureGroupDmChannelResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EnsureGroupDmChannelResponse) ProtoMessage() {}
+
+func (x *EnsureGroupDmChannelResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_v1_channel_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EnsureGroupDmChannelResponse.ProtoReflect.Descriptor instead.
+func (*EnsureGroupDmChannelResponse) Descriptor() ([]byte, []int) {
+	return file_user_v1_channel_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *EnsureGroupDmChannelResponse) GetChannel() *ChannelSummary {
+	if x != nil {
+		return x.Channel
+	}
+	return nil
+}
+
+func (x *EnsureGroupDmChannelResponse) GetCreated() bool {
+	if x != nil {
+		return x.Created
+	}
+	return false
+}
+
 var File_user_v1_channel_proto protoreflect.FileDescriptor
 
 const file_user_v1_channel_proto_rawDesc = "" +
 	"\n" +
-	"\x15user/v1/channel.proto\x12\auser.v1\x1a\x1euser/v1/channel_category.proto\"\xbb\x05\n" +
+	"\x15user/v1/channel.proto\x12\auser.v1\x1a\x1euser/v1/channel_category.proto\"\xe2\x05\n" +
 	"\x0eChannelSummary\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
@@ -1519,7 +1640,8 @@ const file_user_v1_channel_proto_rawDesc = "" +
 	"user_limit\x18\x12 \x01(\x05R\tuserLimit\x12\x1d\n" +
 	"\n" +
 	"rtc_region\x18\x13 \x01(\tR\trtcRegion\x12-\n" +
-	"\x12caller_permissions\x18\x14 \x03(\tR\x11callerPermissions\"X\n" +
+	"\x12caller_permissions\x18\x14 \x03(\tR\x11callerPermissions\x12%\n" +
+	"\x0fdm_peer_user_id\x18\x15 \x01(\tR\fdmPeerUserId\"X\n" +
 	"\x18ListGroupChannelsRequest\x12!\n" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
 	"\bgroup_id\x18\x02 \x01(\tR\agroupId\"\x8a\x01\n" +
@@ -1639,7 +1761,15 @@ const file_user_v1_channel_proto_rawDesc = "" +
 	"\vpermissions\x18\x03 \x03(\tR\vpermissions\x12!\n" +
 	"\fchannel_type\x18\x04 \x01(\tR\vchannelType\x12)\n" +
 	"\x10slowmode_seconds\x18\x05 \x01(\x05R\x0fslowmodeSeconds\x12-\n" +
-	"\x12content_visibility\x18\x06 \x01(\tR\x11contentVisibility2\x91\b\n" +
+	"\x12content_visibility\x18\x06 \x01(\tR\x11contentVisibility\"}\n" +
+	"\x1bEnsureGroupDmChannelRequest\x12!\n" +
+	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x19\n" +
+	"\bgroup_id\x18\x02 \x01(\tR\agroupId\x12 \n" +
+	"\fpeer_user_id\x18\x03 \x01(\tR\n" +
+	"peerUserId\"k\n" +
+	"\x1cEnsureGroupDmChannelResponse\x121\n" +
+	"\achannel\x18\x01 \x01(\v2\x17.user.v1.ChannelSummaryR\achannel\x12\x18\n" +
+	"\acreated\x18\x02 \x01(\bR\acreated2\xf6\b\n" +
 	"\x0eChannelService\x12Z\n" +
 	"\x11ListGroupChannels\x12!.user.v1.ListGroupChannelsRequest\x1a\".user.v1.ListGroupChannelsResponse\x12]\n" +
 	"\x12CreateGroupChannel\x12\".user.v1.CreateGroupChannelRequest\x1a#.user.v1.CreateGroupChannelResponse\x12]\n" +
@@ -1650,7 +1780,8 @@ const file_user_v1_channel_proto_rawDesc = "" +
 	"\x17DeleteChannelPermission\x12'.user.v1.DeleteChannelPermissionRequest\x1a(.user.v1.DeleteChannelPermissionResponse\x12i\n" +
 	"\x16SyncChannelPermissions\x12&.user.v1.SyncChannelPermissionsRequest\x1a'.user.v1.SyncChannelPermissionsResponse\x12c\n" +
 	"\x14ReorderGroupChannels\x12$.user.v1.ReorderGroupChannelsRequest\x1a%.user.v1.ReorderGroupChannelsResponse\x12o\n" +
-	"\x18AssertGroupChannelAccess\x12(.user.v1.AssertGroupChannelAccessRequest\x1a).user.v1.AssertGroupChannelAccessResponseB\x9e\x01\n" +
+	"\x18AssertGroupChannelAccess\x12(.user.v1.AssertGroupChannelAccessRequest\x1a).user.v1.AssertGroupChannelAccessResponse\x12c\n" +
+	"\x14EnsureGroupDmChannel\x12$.user.v1.EnsureGroupDmChannelRequest\x1a%.user.v1.EnsureGroupDmChannelResponseB\x9e\x01\n" +
 	"\vcom.user.v1B\fChannelProtoP\x01ZDgithub.com/wichat/wichat/backend/wi-shared/models/gen/user/v1;userv1\xa2\x02\x03UXX\xaa\x02\aUser.V1\xca\x02\aUser\\V1\xe2\x02\x13User\\V1\\GPBMetadata\xea\x02\bUser::V1b\x06proto3"
 
 var (
@@ -1665,7 +1796,7 @@ func file_user_v1_channel_proto_rawDescGZIP() []byte {
 	return file_user_v1_channel_proto_rawDescData
 }
 
-var file_user_v1_channel_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
+var file_user_v1_channel_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
 var file_user_v1_channel_proto_goTypes = []any{
 	(*ChannelSummary)(nil),                    // 0: user.v1.ChannelSummary
 	(*ListGroupChannelsRequest)(nil),          // 1: user.v1.ListGroupChannelsRequest
@@ -1688,42 +1819,47 @@ var file_user_v1_channel_proto_goTypes = []any{
 	(*ReorderGroupChannelsResponse)(nil),      // 18: user.v1.ReorderGroupChannelsResponse
 	(*AssertGroupChannelAccessRequest)(nil),   // 19: user.v1.AssertGroupChannelAccessRequest
 	(*AssertGroupChannelAccessResponse)(nil),  // 20: user.v1.AssertGroupChannelAccessResponse
-	(*ChannelCategory)(nil),                   // 21: user.v1.ChannelCategory
-	(*ChannelCategoryPermissionOverride)(nil), // 22: user.v1.ChannelCategoryPermissionOverride
+	(*EnsureGroupDmChannelRequest)(nil),       // 21: user.v1.EnsureGroupDmChannelRequest
+	(*EnsureGroupDmChannelResponse)(nil),      // 22: user.v1.EnsureGroupDmChannelResponse
+	(*ChannelCategory)(nil),                   // 23: user.v1.ChannelCategory
+	(*ChannelCategoryPermissionOverride)(nil), // 24: user.v1.ChannelCategoryPermissionOverride
 }
 var file_user_v1_channel_proto_depIdxs = []int32{
 	0,  // 0: user.v1.ListGroupChannelsResponse.channels:type_name -> user.v1.ChannelSummary
-	21, // 1: user.v1.ListGroupChannelsResponse.categories:type_name -> user.v1.ChannelCategory
+	23, // 1: user.v1.ListGroupChannelsResponse.categories:type_name -> user.v1.ChannelCategory
 	0,  // 2: user.v1.CreateGroupChannelResponse.channel:type_name -> user.v1.ChannelSummary
 	0,  // 3: user.v1.UpdateGroupChannelResponse.channel:type_name -> user.v1.ChannelSummary
-	22, // 4: user.v1.ListChannelPermissionsResponse.overrides:type_name -> user.v1.ChannelCategoryPermissionOverride
-	22, // 5: user.v1.UpsertChannelPermissionResponse.override:type_name -> user.v1.ChannelCategoryPermissionOverride
+	24, // 4: user.v1.ListChannelPermissionsResponse.overrides:type_name -> user.v1.ChannelCategoryPermissionOverride
+	24, // 5: user.v1.UpsertChannelPermissionResponse.override:type_name -> user.v1.ChannelCategoryPermissionOverride
 	0,  // 6: user.v1.SyncChannelPermissionsResponse.channel:type_name -> user.v1.ChannelSummary
-	1,  // 7: user.v1.ChannelService.ListGroupChannels:input_type -> user.v1.ListGroupChannelsRequest
-	3,  // 8: user.v1.ChannelService.CreateGroupChannel:input_type -> user.v1.CreateGroupChannelRequest
-	5,  // 9: user.v1.ChannelService.UpdateGroupChannel:input_type -> user.v1.UpdateGroupChannelRequest
-	7,  // 10: user.v1.ChannelService.DeleteGroupChannel:input_type -> user.v1.DeleteGroupChannelRequest
-	9,  // 11: user.v1.ChannelService.ListChannelPermissions:input_type -> user.v1.ListChannelPermissionsRequest
-	11, // 12: user.v1.ChannelService.UpsertChannelPermission:input_type -> user.v1.UpsertChannelPermissionRequest
-	13, // 13: user.v1.ChannelService.DeleteChannelPermission:input_type -> user.v1.DeleteChannelPermissionRequest
-	15, // 14: user.v1.ChannelService.SyncChannelPermissions:input_type -> user.v1.SyncChannelPermissionsRequest
-	17, // 15: user.v1.ChannelService.ReorderGroupChannels:input_type -> user.v1.ReorderGroupChannelsRequest
-	19, // 16: user.v1.ChannelService.AssertGroupChannelAccess:input_type -> user.v1.AssertGroupChannelAccessRequest
-	2,  // 17: user.v1.ChannelService.ListGroupChannels:output_type -> user.v1.ListGroupChannelsResponse
-	4,  // 18: user.v1.ChannelService.CreateGroupChannel:output_type -> user.v1.CreateGroupChannelResponse
-	6,  // 19: user.v1.ChannelService.UpdateGroupChannel:output_type -> user.v1.UpdateGroupChannelResponse
-	8,  // 20: user.v1.ChannelService.DeleteGroupChannel:output_type -> user.v1.DeleteGroupChannelResponse
-	10, // 21: user.v1.ChannelService.ListChannelPermissions:output_type -> user.v1.ListChannelPermissionsResponse
-	12, // 22: user.v1.ChannelService.UpsertChannelPermission:output_type -> user.v1.UpsertChannelPermissionResponse
-	14, // 23: user.v1.ChannelService.DeleteChannelPermission:output_type -> user.v1.DeleteChannelPermissionResponse
-	16, // 24: user.v1.ChannelService.SyncChannelPermissions:output_type -> user.v1.SyncChannelPermissionsResponse
-	18, // 25: user.v1.ChannelService.ReorderGroupChannels:output_type -> user.v1.ReorderGroupChannelsResponse
-	20, // 26: user.v1.ChannelService.AssertGroupChannelAccess:output_type -> user.v1.AssertGroupChannelAccessResponse
-	17, // [17:27] is the sub-list for method output_type
-	7,  // [7:17] is the sub-list for method input_type
-	7,  // [7:7] is the sub-list for extension type_name
-	7,  // [7:7] is the sub-list for extension extendee
-	0,  // [0:7] is the sub-list for field type_name
+	0,  // 7: user.v1.EnsureGroupDmChannelResponse.channel:type_name -> user.v1.ChannelSummary
+	1,  // 8: user.v1.ChannelService.ListGroupChannels:input_type -> user.v1.ListGroupChannelsRequest
+	3,  // 9: user.v1.ChannelService.CreateGroupChannel:input_type -> user.v1.CreateGroupChannelRequest
+	5,  // 10: user.v1.ChannelService.UpdateGroupChannel:input_type -> user.v1.UpdateGroupChannelRequest
+	7,  // 11: user.v1.ChannelService.DeleteGroupChannel:input_type -> user.v1.DeleteGroupChannelRequest
+	9,  // 12: user.v1.ChannelService.ListChannelPermissions:input_type -> user.v1.ListChannelPermissionsRequest
+	11, // 13: user.v1.ChannelService.UpsertChannelPermission:input_type -> user.v1.UpsertChannelPermissionRequest
+	13, // 14: user.v1.ChannelService.DeleteChannelPermission:input_type -> user.v1.DeleteChannelPermissionRequest
+	15, // 15: user.v1.ChannelService.SyncChannelPermissions:input_type -> user.v1.SyncChannelPermissionsRequest
+	17, // 16: user.v1.ChannelService.ReorderGroupChannels:input_type -> user.v1.ReorderGroupChannelsRequest
+	19, // 17: user.v1.ChannelService.AssertGroupChannelAccess:input_type -> user.v1.AssertGroupChannelAccessRequest
+	21, // 18: user.v1.ChannelService.EnsureGroupDmChannel:input_type -> user.v1.EnsureGroupDmChannelRequest
+	2,  // 19: user.v1.ChannelService.ListGroupChannels:output_type -> user.v1.ListGroupChannelsResponse
+	4,  // 20: user.v1.ChannelService.CreateGroupChannel:output_type -> user.v1.CreateGroupChannelResponse
+	6,  // 21: user.v1.ChannelService.UpdateGroupChannel:output_type -> user.v1.UpdateGroupChannelResponse
+	8,  // 22: user.v1.ChannelService.DeleteGroupChannel:output_type -> user.v1.DeleteGroupChannelResponse
+	10, // 23: user.v1.ChannelService.ListChannelPermissions:output_type -> user.v1.ListChannelPermissionsResponse
+	12, // 24: user.v1.ChannelService.UpsertChannelPermission:output_type -> user.v1.UpsertChannelPermissionResponse
+	14, // 25: user.v1.ChannelService.DeleteChannelPermission:output_type -> user.v1.DeleteChannelPermissionResponse
+	16, // 26: user.v1.ChannelService.SyncChannelPermissions:output_type -> user.v1.SyncChannelPermissionsResponse
+	18, // 27: user.v1.ChannelService.ReorderGroupChannels:output_type -> user.v1.ReorderGroupChannelsResponse
+	20, // 28: user.v1.ChannelService.AssertGroupChannelAccess:output_type -> user.v1.AssertGroupChannelAccessResponse
+	22, // 29: user.v1.ChannelService.EnsureGroupDmChannel:output_type -> user.v1.EnsureGroupDmChannelResponse
+	19, // [19:30] is the sub-list for method output_type
+	8,  // [8:19] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	8,  // [8:8] is the sub-list for extension extendee
+	0,  // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_user_v1_channel_proto_init() }
@@ -1739,7 +1875,7 @@ func file_user_v1_channel_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_user_v1_channel_proto_rawDesc), len(file_user_v1_channel_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   21,
+			NumMessages:   23,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

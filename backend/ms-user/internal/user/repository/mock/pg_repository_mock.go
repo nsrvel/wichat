@@ -34,6 +34,7 @@ type State struct {
 	Members                     []models.GroupMember
 	Invites                     []models.GroupInviteRow
 	Channels                    []models.Channel
+	DmParticipants              map[string][]string
 	ChannelCategories           []models.ChannelCategory
 	CategoryPermissionOverrides []models.ChannelCategoryPermissionOverride
 	ChannelPermissionOverrides  []models.ChannelPermissionOverride

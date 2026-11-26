@@ -28,6 +28,8 @@ service ChannelService {
   rpc ReorderGroupChannels(ReorderGroupChannelsRequest) returns (ReorderGroupChannelsResponse);
   // AssertGroupChannelAccess validates membership and resolves internal channel and user ids.
   rpc AssertGroupChannelAccess(AssertGroupChannelAccessRequest) returns (AssertGroupChannelAccessResponse);
+  // EnsureGroupDmChannel returns an existing or new DM channel between the caller and peer in a group.
+  rpc EnsureGroupDmChannel(EnsureGroupDmChannelRequest) returns (EnsureGroupDmChannelResponse);
 }
 
 // ChannelSummary is channel metadata for the sidebar.
@@ -67,6 +69,8 @@ message ChannelSummary {
   string rtc_region = 19;
   // Effective permissions for the authenticated caller on this channel.
   repeated string caller_permissions = 20;
+  // Other participant when type is dm (internal user id); empty otherwise.
+  string dm_peer_user_id = 21;
 }
 
 message ListGroupChannelsRequest {
@@ -195,5 +199,16 @@ message AssertGroupChannelAccessResponse {
   string channel_type = 4;
   int32 slowmode_seconds = 5;
   string content_visibility = 6;
+}
+
+message EnsureGroupDmChannelRequest {
+  string access_token = 1;
+  string group_id = 2;
+  string peer_user_id = 3;
+}
+
+message EnsureGroupDmChannelResponse {
+  ChannelSummary channel = 1;
+  bool created = 2;
 }
 

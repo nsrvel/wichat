@@ -55,12 +55,13 @@ func (s *server) ListChannelMessages(ctx context.Context, req *chatv1.ListChanne
 func (s *server) CreateChannelMessage(ctx context.Context, req *chatv1.CreateChannelMessageRequest) (*chatv1.CreateChannelMessageResponse, error) {
 	// Service
 	msg, err := s.svc.CreateChannelMessage(ctx, &models.CreateChannelMessageInput{
-		AccessToken:     req.GetAccessToken(),
-		GroupPublicID:   req.GetGroupId(),
-		ChannelPublicID: req.GetChannelId(),
-		Body:            req.GetBody(),
-		ReplyToPublicID: req.GetReplyToId(),
-		ClientMsgID:     req.GetClientMsgId(),
+		AccessToken:      req.GetAccessToken(),
+		GroupPublicID:    req.GetGroupId(),
+		ChannelPublicID:  req.GetChannelId(),
+		Body:             req.GetBody(),
+		ReplyToPublicID:  req.GetReplyToId(),
+		ClientMsgID:      req.GetClientMsgId(),
+		MentionedUserIDs: req.GetMentionedUserIds(),
 	})
 	if err != nil {
 		return nil, responsegrpc.ToStatus(err)

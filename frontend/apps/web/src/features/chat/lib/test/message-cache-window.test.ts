@@ -21,6 +21,7 @@ function msg(id: string, seq: number): Message {
 		is_pinned: false,
 		mine: false,
 		reactions: [],
+		mentioned_user_ids: [],
 	};
 }
 

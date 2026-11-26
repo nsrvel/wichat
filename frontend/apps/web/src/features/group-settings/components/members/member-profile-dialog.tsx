@@ -1,4 +1,5 @@
 "use client";
+import { WiChatMenuPositioner } from "@/components/ui/menu-positioner";
 
 import type { Group } from "@wichat/contracts/group";
 import type { GroupMember } from "@wichat/contracts/group/member";
@@ -33,6 +34,14 @@ import { memberPresenceDot } from "@/features/presence/presence-dot";
 import { userInitials } from "@/lib/user-initials";
 import { formatStatusNoteLabel, statusNoteFromUser } from "@/lib/user-status";
 import { cn } from "@/lib/utils";
+import {
+	USER_PROFILE_AVATAR_OVERLAP_PX,
+	USER_PROFILE_AVATAR_RING_CLASS,
+	USER_PROFILE_AVATAR_SIZE,
+	USER_PROFILE_DISPLAY_NAME_CLASS,
+	USER_PROFILE_META_CLASS,
+	userProfileBannerHeightPx,
+} from "@/lib/user-profile-card-layout";
 import { myGroupsQueryOpts } from "@/services/group/group.query";
 import { Q_INVITE_MEMBERS } from "@/services/invite/invite.query";
 import { TurnstileWidget } from "@/features/auth/components/turnstile-widget";
@@ -55,6 +64,8 @@ type MemberProfileDialogProps = {
 	onClearTimeout: (member: GroupMember) => void;
 	onRequestKick: (member: GroupMember) => void;
 	onRequestBan: (member: GroupMember) => void;
+	/** `popover` renders the same panel inline (e.g. mention hover card). */
+	presentation?: "dialog" | "popover";
 };
 
 /**
@@ -76,6 +87,7 @@ export function MemberProfileDialog({
 	onClearTimeout,
 	onRequestKick,
 	onRequestBan,
+	presentation = "dialog",
 }: MemberProfileDialogProps) {
 	const { t, i18n } = useTranslation();
 	const queryClient = useQueryClient();
@@ -156,34 +168,27 @@ export function MemberProfileDialog({
 		}
 	};
 
-	return (
-		<WiChatDialog
-			open={member !== null}
-			onOpenChange={(open) => {
-				if (!open) {
-					onClose();
-				}
-			}}
-			titleId={titleId}
-			elevated
-			className="min-h-[min(440px,90dvh)] max-w-[400px] rounded-2xl border-border bg-card p-0 py-0 text-card-foreground shadow-elevated sm:py-0 md:py-0 max-h-[880px]:py-0 max-h-[880px]:sm:py-0 max-h-[880px]:md:py-0"
-		>
-			{member ? (
-				<WiChatDialogBody insetX={false} className="pt-0 pb-7">
-					{/* WiChat profile banner: ~half above avatar, ~half behind top half of avatar */}
+	const panel =
+		member ? (
+			<WiChatDialogBody insetX={false} className="pt-0 pb-7">
 					<div
-						className="h-[136px] w-full shrink-0 overflow-hidden bg-popover"
-						style={isHexBanner ? { backgroundColor: bannerColor } : undefined}
+						className="w-full shrink-0 overflow-hidden bg-popover"
+						style={{
+							height: userProfileBannerHeightPx(400),
+							...(isHexBanner ? { backgroundColor: bannerColor } : undefined),
+						}}
 					/>
 					<div className="px-6">
-						{/* Large avatar (center aligns with banner bottom) + status note */}
-						<div className="-mt-[44px] flex items-center gap-2.5">
+						<div
+							className="flex items-center gap-2.5"
+							style={{ marginTop: -USER_PROFILE_AVATAR_OVERLAP_PX }}
+						>
 							<UserAvatar
 								src={member.avatar_url}
 								initials={userInitials(memberName)}
-								size="2xl"
+								size={USER_PROFILE_AVATAR_SIZE}
 								status={presenceStatus}
-								ringClassName="ring-[6px] ring-card"
+								ringClassName={USER_PROFILE_AVATAR_RING_CLASS}
 							/>
 							{statusNoteLabel ? <UserStatusNotePill label={statusNoteLabel} /> : null}
 						</div>
@@ -191,17 +196,14 @@ export function MemberProfileDialog({
 						{/* Identity */}
 						<div className="mt-3.5 min-w-0">
 							<div className="flex items-center gap-1.5">
-								<h2
-									id={titleId}
-									className="truncate text-[17px] font-bold leading-tight tracking-tight text-foreground"
-								>
+								<h2 id={titleId} className={USER_PROFILE_DISPLAY_NAME_CLASS}>
 									{memberName}
 								</h2>
 								{member.role === "owner" ? <OwnerCrownIcon label={t("invite.role_owner")} /> : null}
 							</div>
 
 							{member.username || member.pronouns ? (
-								<p className="mt-0.5 truncate text-[13px] font-medium text-muted-foreground">
+								<p className={USER_PROFILE_META_CLASS}>
 									{member.username ? `@${member.username}` : ""}
 									{member.username && member.pronouns ? " • " : ""}
 									{member.pronouns ?? ""}
@@ -231,7 +233,7 @@ export function MemberProfileDialog({
 										<MoreHorizontal className="size-4" strokeWidth={2} aria-hidden />
 									</Menu.Trigger>
 									<Menu.Portal>
-										<Menu.Positioner
+										<WiChatMenuPositioner
 											className={menuPositionerClass}
 											side="bottom"
 											align="start"
@@ -248,7 +250,7 @@ export function MemberProfileDialog({
 																<ChevronRight className={menuChevronClass} aria-hidden />
 															</Menu.SubmenuTrigger>
 															<Menu.Portal>
-																<Menu.Positioner
+																<WiChatMenuPositioner
 																	className={menuPositionerClass}
 																	side="right"
 																	align="start"
@@ -278,7 +280,7 @@ export function MemberProfileDialog({
 																			</Menu.Item>
 																		))}
 																	</Menu.Popup>
-																</Menu.Positioner>
+																</WiChatMenuPositioner>
 															</Menu.Portal>
 														</Menu.SubmenuRoot>
 														<Menu.Separator className={menuSeparatorClass} />
@@ -388,7 +390,7 @@ export function MemberProfileDialog({
 													</>
 												) : null}
 											</Menu.Popup>
-										</Menu.Positioner>
+										</WiChatMenuPositioner>
 									</Menu.Portal>
 								</Menu.Root>
 							</div>
@@ -456,7 +458,32 @@ export function MemberProfileDialog({
 						</div>
 					</div>
 				</WiChatDialogBody>
-			) : null}
+		) : null;
+
+	if (presentation === "popover") {
+		if (!panel) {
+			return null;
+		}
+		return (
+			<div className="thin-scroll max-h-[min(440px,70dvh)] w-[400px] overflow-x-hidden overflow-y-auto rounded-2xl border border-border bg-card text-card-foreground shadow-elevated">
+				{panel}
+			</div>
+		);
+	}
+
+	return (
+		<WiChatDialog
+			open={member !== null}
+			onOpenChange={(open) => {
+				if (!open) {
+					onClose();
+				}
+			}}
+			titleId={titleId}
+			elevated
+			className="min-h-[min(440px,90dvh)] max-w-[400px] rounded-2xl border-border bg-card p-0 py-0 text-card-foreground shadow-elevated sm:py-0 md:py-0 max-h-[880px]:py-0 max-h-[880px]:sm:py-0 max-h-[880px]:md:py-0"
+		>
+			{panel}
 		</WiChatDialog>
 	);
 }

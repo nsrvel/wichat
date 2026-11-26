@@ -40,6 +40,7 @@ func (s *Server) SetupStatus(ctx context.Context, _ *userv1.SetupStatusRequest) 
 
 	return &userv1.SetupStatusResponse{
 		RegistrationMode: out.RegistrationMode,
+		MfaEnabled:       out.MfaEnabled,
 	}, nil
 }
 

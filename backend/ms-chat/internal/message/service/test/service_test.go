@@ -74,6 +74,7 @@ func newTestService(st *mock.State, ch fakeChannel) service.Service {
 		mock.NewPgRepositoryMock(st),
 		nil,
 		nil,
+		nil,
 		ch,
 		outboxmock.NewPgRepositoryMock(outboxmock.NewState()),
 		nil,
@@ -368,7 +369,7 @@ func TestUploadChannelAttachment(t *testing.T) {
 
 	t.Run("uploads valid PNG and sanitizes filename", func(t *testing.T) {
 		repo := &fakeMinioRepo{}
-		svc := service.NewService(mock.NewPgRepositoryMock(st), repo, nil, fakeChannel{}, outboxmock.NewPgRepositoryMock(outboxmock.NewState()), nil)
+		svc := service.NewService(mock.NewPgRepositoryMock(st), nil, repo, nil, fakeChannel{}, outboxmock.NewPgRepositoryMock(outboxmock.NewState()), nil)
 		att, err := svc.UploadChannelAttachment(ctx, &models.UploadChannelAttachmentInput{
 			GroupPublicID:     testGroupPublicID,
 			ChannelPublicID:   "ch-1",
@@ -398,7 +399,7 @@ func TestUploadChannelAttachment(t *testing.T) {
 
 	t.Run("uploads PDF and markdown", func(t *testing.T) {
 		repo := &fakeMinioRepo{}
-		svc := service.NewService(mock.NewPgRepositoryMock(st), repo, nil, fakeChannel{}, outboxmock.NewPgRepositoryMock(outboxmock.NewState()), nil)
+		svc := service.NewService(mock.NewPgRepositoryMock(st), nil, repo, nil, fakeChannel{}, outboxmock.NewPgRepositoryMock(outboxmock.NewState()), nil)
 
 		pdfAtt, err := svc.UploadChannelAttachment(ctx, &models.UploadChannelAttachmentInput{
 			GroupPublicID:     testGroupPublicID,
@@ -431,7 +432,7 @@ func TestUploadChannelAttachment(t *testing.T) {
 
 	t.Run("rejects HTML/SVG/executable and oversized files", func(t *testing.T) {
 		repo := &fakeMinioRepo{}
-		svc := service.NewService(mock.NewPgRepositoryMock(st), repo, nil, fakeChannel{}, outboxmock.NewPgRepositoryMock(outboxmock.NewState()), nil)
+		svc := service.NewService(mock.NewPgRepositoryMock(st), nil, repo, nil, fakeChannel{}, outboxmock.NewPgRepositoryMock(outboxmock.NewState()), nil)
 
 		_, err := svc.UploadChannelAttachment(ctx, &models.UploadChannelAttachmentInput{
 			GroupPublicID:   testGroupPublicID,
@@ -489,7 +490,7 @@ func TestUploadChannelAttachment(t *testing.T) {
 
 	t.Run("enforces attach_files and broadcast permissions", func(t *testing.T) {
 		repo := &fakeMinioRepo{}
-		svcNoAttach := service.NewService(mock.NewPgRepositoryMock(st), repo, nil, fakeChannel{perms: []string{"send_messages"}}, outboxmock.NewPgRepositoryMock(outboxmock.NewState()), nil)
+		svcNoAttach := service.NewService(mock.NewPgRepositoryMock(st), nil, repo, nil, fakeChannel{perms: []string{"send_messages"}}, outboxmock.NewPgRepositoryMock(outboxmock.NewState()), nil)
 
 		_, err := svcNoAttach.UploadChannelAttachment(ctx, &models.UploadChannelAttachmentInput{
 			GroupPublicID:   testGroupPublicID,
@@ -503,7 +504,7 @@ func TestUploadChannelAttachment(t *testing.T) {
 			t.Fatalf("expected PermissionDenied without attach_files, got %v", err)
 		}
 
-		svcBroadcastAttach := service.NewService(mock.NewPgRepositoryMock(st), repo, nil, fakeChannel{
+		svcBroadcastAttach := service.NewService(mock.NewPgRepositoryMock(st), nil, repo, nil, fakeChannel{
 			channelType: "broadcast",
 			perms:       []string{"send_messages", "attach_files"},
 		}, outboxmock.NewPgRepositoryMock(outboxmock.NewState()), nil)

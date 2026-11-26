@@ -13,8 +13,14 @@ import (
 	"github.com/wichat/wichat/backend/wi-shared/infra/logger"
 )
 
+const (
+	DocKindMessage    = "message"
+	DocKindAttachment = "attachment"
+)
+
 // MessageDoc is a message document for full-text search (v0 indexer).
 type MessageDoc struct {
+	DocKind           string `json:"doc_kind,omitempty"`
 	MessageID         string `json:"message_id"`
 	GroupID           string `json:"group_id"`
 	ChannelID         string `json:"channel_id"`
@@ -24,11 +30,26 @@ type MessageDoc struct {
 	CreatedAt         string `json:"created_at"`
 }
 
-// Client indexes chat messages.
+// AttachmentDoc indexes attachment filename metadata for group search.
+type AttachmentDoc struct {
+	DocKind      string `json:"doc_kind"`
+	AttachmentID string `json:"attachment_id"`
+	MessageID    string `json:"message_id,omitempty"`
+	GroupID      string `json:"group_id"`
+	ChannelID    string `json:"channel_id"`
+	Filename     string `json:"filename"`
+	ContentType  string `json:"content_type"`
+	CreatedAt    string `json:"created_at"`
+}
+
+// Client indexes and queries chat messages.
 type Client interface {
 	EnsureIndex(ctx context.Context) error
 	IndexMessage(ctx context.Context, doc MessageDoc) error
+	IndexAttachment(ctx context.Context, doc AttachmentDoc) error
 	DeleteMessage(ctx context.Context, messageID string) error
+	SearchMessages(ctx context.Context, groupID, query string, limit int) ([]MessageDoc, error)
+	SearchAttachments(ctx context.Context, groupID, query string, limit int, imagesOnly bool) ([]AttachmentDoc, error)
 }
 
 type esClient struct {
@@ -70,9 +91,13 @@ func (c esClient) EnsureIndex(ctx context.Context) error {
 	mapping := map[string]any{
 		"mappings": map[string]any{
 			"properties": map[string]any{
+				"doc_kind":            map[string]string{"type": "keyword"},
 				"message_id":          map[string]string{"type": "keyword"},
+				"attachment_id":       map[string]string{"type": "keyword"},
 				"group_id":            map[string]string{"type": "keyword"},
 				"channel_id":          map[string]string{"type": "keyword"},
+				"filename":            map[string]string{"type": "text"},
+				"content_type":        map[string]string{"type": "keyword"},
 				"author_id":           map[string]string{"type": "keyword"},
 				"author_display_name": map[string]string{"type": "keyword"},
 				"body":                map[string]string{"type": "text"},
@@ -103,6 +128,9 @@ func (c esClient) EnsureIndex(ctx context.Context) error {
 }
 
 func (c esClient) IndexMessage(ctx context.Context, doc MessageDoc) error {
+	if strings.TrimSpace(doc.DocKind) == "" {
+		doc.DocKind = DocKindMessage
+	}
 	payload, err := json.Marshal(doc)
 	if err != nil {
 		return err
@@ -124,6 +152,34 @@ func (c esClient) IndexMessage(ctx context.Context, doc MessageDoc) error {
 		return readAPIError("index message", res)
 	}
 
+	return nil
+}
+
+func (c esClient) IndexAttachment(ctx context.Context, doc AttachmentDoc) error {
+	doc.DocKind = DocKindAttachment
+	payload, err := json.Marshal(doc)
+	if err != nil {
+		return err
+	}
+	docID := strings.TrimSpace(doc.AttachmentID)
+	if docID == "" {
+		return fmt.Errorf("elasticsearch: empty attachment id")
+	}
+
+	res, err := c.es.Index(
+		c.index,
+		bytes.NewReader(payload),
+		c.es.Index.WithContext(ctx),
+		c.es.Index.WithDocumentID("att:"+docID),
+		c.es.Index.WithRefresh("false"),
+	)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = res.Body.Close() }()
+	if res.IsError() {
+		return readAPIError("index attachment", res)
+	}
 	return nil
 }
 
@@ -152,6 +208,167 @@ func (c esClient) DeleteMessage(ctx context.Context, messageID string) error {
 	}
 
 	return nil
+}
+
+func (c esClient) SearchMessages(ctx context.Context, groupID, query string, limit int) ([]MessageDoc, error) {
+	groupID = strings.TrimSpace(groupID)
+	query = strings.TrimSpace(query)
+	if groupID == "" || query == "" {
+		return nil, nil
+	}
+	if limit <= 0 {
+		limit = 8
+	}
+	if limit > 50 {
+		limit = 50
+	}
+
+	payload := map[string]any{
+		"size": limit,
+		"sort": []any{map[string]any{"created_at": map[string]string{"order": "desc"}}},
+		"query": map[string]any{
+			"bool": map[string]any{
+				"filter": []any{
+					map[string]any{"term": map[string]any{"group_id": groupID}},
+					map[string]any{
+						"bool": map[string]any{
+							"should": []any{
+								map[string]any{"term": map[string]any{"doc_kind": DocKindMessage}},
+								map[string]any{"bool": map[string]any{"must_not": map[string]any{"exists": map[string]string{"field": "doc_kind"}}}},
+							},
+							"minimum_should_match": 1,
+						},
+					},
+				},
+				"must": []any{
+					map[string]any{
+						"match": map[string]any{
+							"body": map[string]any{
+								"query":    query,
+								"operator": "and",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := c.es.Search(
+		c.es.Search.WithContext(ctx),
+		c.es.Search.WithIndex(c.index),
+		c.es.Search.WithBody(bytes.NewReader(body)),
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = res.Body.Close() }()
+	if res.IsError() {
+		return nil, readAPIError("search messages", res)
+	}
+
+	var parsed struct {
+		Hits struct {
+			Hits []struct {
+				Source MessageDoc `json:"_source"`
+			} `json:"hits"`
+		} `json:"hits"`
+	}
+	if err := json.NewDecoder(res.Body).Decode(&parsed); err != nil {
+		return nil, err
+	}
+
+	out := make([]MessageDoc, 0, len(parsed.Hits.Hits))
+	for _, hit := range parsed.Hits.Hits {
+		if hit.Source.MessageID == "" {
+			continue
+		}
+		out = append(out, hit.Source)
+	}
+	return out, nil
+}
+
+func (c esClient) SearchAttachments(ctx context.Context, groupID, query string, limit int, imagesOnly bool) ([]AttachmentDoc, error) {
+	groupID = strings.TrimSpace(groupID)
+	query = strings.TrimSpace(query)
+	if groupID == "" || query == "" {
+		return nil, nil
+	}
+	if limit <= 0 {
+		limit = 8
+	}
+	if limit > 50 {
+		limit = 50
+	}
+
+	filters := []any{
+		map[string]any{"term": map[string]any{"group_id": groupID}},
+		map[string]any{"term": map[string]any{"doc_kind": DocKindAttachment}},
+	}
+	if imagesOnly {
+		filters = append(filters, map[string]any{"prefix": map[string]any{"content_type": "image/"}})
+	}
+
+	payload := map[string]any{
+		"size": limit,
+		"sort": []any{map[string]any{"created_at": map[string]string{"order": "desc"}}},
+		"query": map[string]any{
+			"bool": map[string]any{
+				"filter": filters,
+				"must": []any{
+					map[string]any{
+						"match": map[string]any{
+							"filename": map[string]any{
+								"query":    query,
+								"operator": "and",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := c.es.Search(
+		c.es.Search.WithContext(ctx),
+		c.es.Search.WithIndex(c.index),
+		c.es.Search.WithBody(bytes.NewReader(body)),
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = res.Body.Close() }()
+	if res.IsError() {
+		return nil, readAPIError("search attachments", res)
+	}
+
+	var parsed struct {
+		Hits struct {
+			Hits []struct {
+				Source AttachmentDoc `json:"_source"`
+			} `json:"hits"`
+		} `json:"hits"`
+	}
+	if err := json.NewDecoder(res.Body).Decode(&parsed); err != nil {
+		return nil, err
+	}
+
+	out := make([]AttachmentDoc, 0, len(parsed.Hits.Hits))
+	for _, hit := range parsed.Hits.Hits {
+		if hit.Source.AttachmentID == "" {
+			continue
+		}
+		out = append(out, hit.Source)
+	}
+	return out, nil
 }
 
 func readAPIError(label string, res *esapi.Response) error {
