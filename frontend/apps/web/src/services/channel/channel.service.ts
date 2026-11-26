@@ -2,11 +2,14 @@ import {
 	ChannelsListSchema,
 	CreateGroupChannelRequestSchema,
 	CreateGroupChannelResponseSchema,
+	EnsureGroupDmRequestSchema,
+	EnsureGroupDmResponseSchema,
 	ReorderGroupChannelsRequestSchema,
 	UpdateGroupChannelRequestSchema,
 	UpdateGroupChannelResponseSchema,
 	type ChannelsList,
 	type CreateGroupChannelRequest,
+	type EnsureGroupDmResponse,
 	type UpdateGroupChannelRequest,
 } from "@wichat/contracts/chat/channel";
 import {
@@ -22,6 +25,11 @@ import { api } from "@/integrations/api-client";
 
 export async function listGroupChannels(groupId: string): Promise<ChannelsList> {
 	return api.get(`/groups/${encodeURIComponent(groupId)}/channels`, ChannelsListSchema);
+}
+
+export async function ensureGroupDmChannel(groupId: string, userId: string): Promise<EnsureGroupDmResponse> {
+	const body = EnsureGroupDmRequestSchema.parse({ user_id: userId });
+	return api.post(`/groups/${encodeURIComponent(groupId)}/dm`, EnsureGroupDmResponseSchema, body);
 }
 
 export async function createGroupChannel(groupId: string, payload: CreateGroupChannelRequest) {

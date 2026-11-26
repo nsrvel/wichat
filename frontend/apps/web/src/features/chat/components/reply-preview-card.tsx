@@ -55,7 +55,7 @@ export function ReplyPreviewCard({
 			/>
 			<div className="min-w-0 flex-1">
 				<div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-					<span className="truncate font-semibold uppercase tracking-wide">{authorName}</span>
+					<span className="truncate font-semibold">{authorName}</span>
 					{timeLabel ? <span className="shrink-0">{timeLabel}</span> : null}
 				</div>
 				<p className="mt-0.5 line-clamp-2 break-words text-[13px] leading-snug text-foreground/95">
