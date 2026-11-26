@@ -35,6 +35,7 @@ type User struct {
 // SetupStatus is the public instance policy snapshot for the auth UI.
 type SetupStatus struct {
 	RegistrationMode string
+	MfaEnabled       bool
 }
 
 // CompleteInstanceSetupInput is the owner setup wizard payload (first group + instance policy).

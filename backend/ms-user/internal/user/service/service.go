@@ -70,6 +70,7 @@ type Service interface {
 	SetRelationship(ctx context.Context, accessToken, targetUserID, kind string) (string, error)
 	WithActivityLog(r activitysvc.Recorder) Service
 	WithInviteOnly(inviteOnly bool) Service
+	WithMFAEnabled(mfaEnabled bool) Service
 }
 
 type service struct {
@@ -90,6 +91,7 @@ type service struct {
 	log         logger.Logger
 	now         func() time.Time
 	inviteOnly  bool
+	mfaEnabled  bool
 }
 
 // NewService builds user/workspace use cases.
@@ -144,6 +146,7 @@ func NewServiceWithMFA(
 		secret:      copied,
 		log:         log,
 		now:         func() time.Time { return time.Now().UTC() },
+		mfaEnabled:  true,
 	}
 }
 
@@ -156,6 +159,19 @@ func (s service) WithActivityLog(r activitysvc.Recorder) Service {
 func (s service) WithInviteOnly(inviteOnly bool) Service {
 	s.inviteOnly = inviteOnly
 	return s
+}
+
+// WithMFAEnabled mirrors MFA_ENABLED for setup-status and enrollment gates.
+func (s service) WithMFAEnabled(mfaEnabled bool) Service {
+	s.mfaEnabled = mfaEnabled
+	return s
+}
+
+func (s service) errMFAFeatureDisabled() error {
+	if s.mfaEnabled {
+		return nil
+	}
+	return exception.Unavailable(exception.MsgUnavailable, nil)
 }
 
 func (s service) recordActivity(ctx context.Context, entry models.UserActivityLogEntry) {
@@ -176,6 +192,7 @@ func (s service) SetupStatus(ctx context.Context) (*models.SetupStatus, error) {
 
 	return &models.SetupStatus{
 		RegistrationMode: mode,
+		MfaEnabled:       s.mfaEnabled,
 	}, nil
 }
 
@@ -918,6 +935,9 @@ func (s service) cleanupRecoveryCodesIfNoMFA(ctx context.Context, userID string,
 }
 
 func (s service) GetMFAStatus(ctx context.Context, accessToken string) (*models.MFAStatus, error) {
+	if err := s.errMFAFeatureDisabled(); err != nil {
+		return nil, err
+	}
 	now := s.now()
 	userID, err := access.UserIDFromAccessToken(ctx, accessToken, s.secret, s.sessions, now)
 	if err != nil {
@@ -949,6 +969,9 @@ func (s service) GetMFAStatus(ctx context.Context, accessToken string) (*models.
 }
 
 func (s service) BeginTOTPSetup(ctx context.Context, accessToken, currentPassword string) (*models.TOTPSetupStart, error) {
+	if err := s.errMFAFeatureDisabled(); err != nil {
+		return nil, err
+	}
 	if s.mfaStore == nil {
 		return nil, exception.Unavailable(exception.MsgUnavailable, nil)
 	}
@@ -985,6 +1008,9 @@ func (s service) BeginTOTPSetup(ctx context.Context, accessToken, currentPasswor
 }
 
 func (s service) ConfirmTOTPSetup(ctx context.Context, accessToken, setupToken, code string) ([]string, error) {
+	if err := s.errMFAFeatureDisabled(); err != nil {
+		return nil, err
+	}
 	if s.mfaStore == nil {
 		return nil, exception.Unavailable(exception.MsgUnavailable, nil)
 	}
@@ -1048,6 +1074,9 @@ func (s service) ConfirmTOTPSetup(ctx context.Context, accessToken, setupToken, 
 }
 
 func (s service) DisableTOTP(ctx context.Context, accessToken, currentPassword string) error {
+	if err := s.errMFAFeatureDisabled(); err != nil {
+		return err
+	}
 	user, now, err := s.verifyCallerPassword(ctx, accessToken, currentPassword)
 	if err != nil {
 		return err
@@ -1075,6 +1104,9 @@ func (s service) DisableTOTP(ctx context.Context, accessToken, currentPassword s
 }
 
 func (s service) BeginWebAuthnRegister(ctx context.Context, accessToken, currentPassword, name string) (*models.WebAuthnRegisterBegin, error) {
+	if err := s.errMFAFeatureDisabled(); err != nil {
+		return nil, err
+	}
 	if s.mfaStore == nil || s.webauthn == nil {
 		return nil, exception.Unavailable(exception.MsgUnavailable, nil)
 	}
@@ -1139,6 +1171,9 @@ func (s service) BeginWebAuthnRegister(ctx context.Context, accessToken, current
 }
 
 func (s service) FinishWebAuthnRegister(ctx context.Context, accessToken, challengeID, credentialJSON string) (*models.WebAuthnCredential, []string, error) {
+	if err := s.errMFAFeatureDisabled(); err != nil {
+		return nil, nil, err
+	}
 	if s.mfaStore == nil || s.webauthn == nil {
 		return nil, nil, exception.Unavailable(exception.MsgUnavailable, nil)
 	}
@@ -1244,6 +1279,9 @@ func (s service) FinishWebAuthnRegister(ctx context.Context, accessToken, challe
 }
 
 func (s service) RenameWebAuthnCredential(ctx context.Context, accessToken, credentialID, name string) (*models.WebAuthnCredential, error) {
+	if err := s.errMFAFeatureDisabled(); err != nil {
+		return nil, err
+	}
 	now := s.now()
 	userID, err := access.UserIDFromAccessToken(ctx, accessToken, s.secret, s.sessions, now)
 	if err != nil {
@@ -1275,6 +1313,9 @@ func (s service) RenameWebAuthnCredential(ctx context.Context, accessToken, cred
 }
 
 func (s service) DeleteWebAuthnCredential(ctx context.Context, accessToken, credentialID, currentPassword string) error {
+	if err := s.errMFAFeatureDisabled(); err != nil {
+		return err
+	}
 	user, now, err := s.verifyCallerPassword(ctx, accessToken, currentPassword)
 	if err != nil {
 		return err
@@ -1305,6 +1346,9 @@ func (s service) DeleteWebAuthnCredential(ctx context.Context, accessToken, cred
 }
 
 func (s service) RegenerateRecoveryCodes(ctx context.Context, accessToken, currentPassword string) ([]string, error) {
+	if err := s.errMFAFeatureDisabled(); err != nil {
+		return nil, err
+	}
 	user, now, err := s.verifyCallerPassword(ctx, accessToken, currentPassword)
 	if err != nil {
 		return nil, err

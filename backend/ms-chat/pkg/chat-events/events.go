@@ -54,6 +54,28 @@ func EncodeMessageDeleted(groupPublicID, channelPublicID, messagePublicID string
 	return encodeOutbox(channelPublicID, payload, events.TypeMessageDeleted, at)
 }
 
+// EncodeAttachmentCreated builds Kafka JSON for attachment.created outbox rows.
+func EncodeAttachmentCreated(
+	groupPublicID, channelPublicID, attachmentID, filename, contentType string,
+	createdAt time.Time,
+) (OutboxInsert, error) {
+	ev := events.AttachmentCreated{
+		Type:         events.TypeAttachmentCreated,
+		GroupID:      groupPublicID,
+		ChannelID:    channelPublicID,
+		AttachmentID: attachmentID,
+		Filename:     filename,
+		ContentType:  contentType,
+		CreatedAt:    createdAt.UTC().Format(time.RFC3339Nano),
+	}
+	payload, err := events.Marshal(ev)
+	if err != nil {
+		return OutboxInsert{}, err
+	}
+
+	return encodeOutbox(channelPublicID, payload, events.TypeAttachmentCreated, createdAt)
+}
+
 // EncodeMessageReactionsUpdated builds Kafka JSON for message.reactions.updated outbox rows.
 func EncodeMessageReactionsUpdated(
 	groupPublicID, channelPublicID, messagePublicID string,

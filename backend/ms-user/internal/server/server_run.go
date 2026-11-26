@@ -173,7 +173,7 @@ func (s *server) Run(ctx context.Context) error {
 	activitySvc := activityservice.NewService(activityRepo, authSessions, secret, s.log)
 	groupActivityRepo := groupactivityrepo.NewPgRepository(db)
 	groupActivitySvc := groupactivityservice.NewService(groupActivityRepo, groupPg, groupMemberPg, groupRolePg, authSessions, secret, s.log)
-	userSvc := userservice.NewServiceWithMFA(userPg, groupPg, groupMemberPg, userMinio, authSessions, authRefresh, emailAuthStore, emailChangeStore, userMFAStore, wa, mfaKey, notifyClient, secret, s.log).WithActivityLog(activitySvc).WithInviteOnly(s.cfg.InviteOnly)
+	userSvc := userservice.NewServiceWithMFA(userPg, groupPg, groupMemberPg, userMinio, authSessions, authRefresh, emailAuthStore, emailChangeStore, userMFAStore, wa, mfaKey, notifyClient, secret, s.log).WithActivityLog(activitySvc).WithInviteOnly(s.cfg.InviteOnly).WithMFAEnabled(s.cfg.MFAEnabled)
 	channelSvc := channelservice.NewService(channelPg, categoryPg, groupPg, groupMemberPg, groupRolePg, authSessions, secret, s.log).WithGroupActivityLog(groupActivitySvc)
 	categorySvc := categoryservice.NewService(categoryPg, groupPg, groupMemberPg, groupRolePg, authSessions, secret, s.log).WithGroupActivityLog(groupActivitySvc)
 	groupSvc := groupservice.NewService(groupPg, groupMemberPg, groupRolePg, channelSvc, userPg, groupMinio, authSessions, secret, s.log).WithActivityLog(activitySvc).WithGroupActivityLog(groupActivitySvc)
@@ -183,6 +183,7 @@ func (s *server) Run(ctx context.Context) error {
 		groupPg, groupMemberPg, groupRolePg, channelPg, invitePg, userPg, authSessions, notifyClient, secret,
 		s.cfg.WebOrigin, s.cfg.MinioPublicBaseURL, s.log,
 	).WithActivityLog(activitySvc).WithGroupActivityLog(groupActivitySvc).WithPresence(presenceSvc)
+	mfaEnabled := s.cfg.MFAEnabled
 	authSvc, err := authservice.NewService(userPg, authSessions, authRefresh, secret, s.log, googleoauth.Config{
 		ClientID:     s.cfg.GoogleClientID,
 		ClientSecret: s.cfg.GoogleClientSecret,
@@ -194,6 +195,7 @@ func (s *server) Run(ctx context.Context) error {
 		DevE2EOTP:  s.cfg.Env == "development",
 		DevOTP:     authrepo.NewRedisDevOTPStore(rdb),
 		InviteOnly: s.cfg.InviteOnly,
+		MFAEnabled: &mfaEnabled,
 		Invites:    invitePg,
 	})
 	if err != nil {

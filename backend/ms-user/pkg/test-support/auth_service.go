@@ -67,6 +67,7 @@ func RedisClient(t *testing.T) *redis.Client {
 // NewAuthService wires auth + user services with miniredis OTP stores.
 // NewAuthService wires auth, user, and group services with a shared miniredis OTP backend.
 // The returned Miniredis handle supports FastForward in rate-limit tests.
+// NewAuthService optional bools: inviteOnly, then mfaEnabled (both default true when omitted).
 func NewAuthService(t *testing.T, st *usermock.State, now func() time.Time, inviteOnly ...bool) (service.Service, *FakeNotifier, userrepo.PgRepository, userservice.Service, groupservice.Service, *miniredis.Miniredis) {
 	t.Helper()
 
@@ -90,10 +91,17 @@ func NewAuthService(t *testing.T, st *usermock.State, now func() time.Time, invi
 		t.Fatal(err)
 	}
 	refresh := authrepo.NewRedisRefreshStore(rdb)
-	userSvc := userservice.NewServiceWithMFA(users, groups, members, nil, sessions, refresh, emailAuth, userrepo.NewRedisEmailChangeStore(rdb), userrepo.NewMFAEnrollmentStore(rdb), wa, mfaKey, notify, []byte(TestJWTSecret), log)
-	if len(inviteOnly) > 0 && inviteOnly[0] {
-		userSvc = userSvc.WithInviteOnly(true)
+	inviteOnlyFlag := false
+	if len(inviteOnly) > 0 {
+		inviteOnlyFlag = inviteOnly[0]
 	}
+	mfaEnabledFlag := true
+	if len(inviteOnly) > 1 {
+		mfaEnabledFlag = inviteOnly[1]
+	}
+	userSvc := userservice.NewServiceWithMFA(users, groups, members, nil, sessions, refresh, emailAuth, userrepo.NewRedisEmailChangeStore(rdb), userrepo.NewMFAEnrollmentStore(rdb), wa, mfaKey, notify, []byte(TestJWTSecret), log).
+		WithInviteOnly(inviteOnlyFlag).
+		WithMFAEnabled(mfaEnabledFlag)
 	channelSvc := channelservice.NewService(channelmock.NewPgRepositoryMock(st), categorymock.NewPgRepositoryMock(st), groups, members, roles, sessions, []byte(TestJWTSecret), log)
 	groupSvc := groupservice.NewService(groups, members, roles, channelSvc, users, disabledGroupMinio(log), sessions, []byte(TestJWTSecret), log)
 	opts := &service.Options{
@@ -103,9 +111,9 @@ func NewAuthService(t *testing.T, st *usermock.State, now func() time.Time, invi
 		MFAKey:   mfaKey,
 		Invites:  invitemock.NewPgRepositoryMock(st),
 	}
-	if len(inviteOnly) > 0 && inviteOnly[0] {
-		opts.InviteOnly = true
-	}
+	opts.InviteOnly = inviteOnlyFlag
+	mfaEn := mfaEnabledFlag
+	opts.MFAEnabled = &mfaEn
 	svc, err := service.NewService(users, sessions, refresh, []byte(TestJWTSecret), log, googleoauth.Config{}, authrepo.NewRedisPasswordResetStore(rdb), emailAuth, notify, userSvc, opts)
 	if err != nil {
 		t.Fatal(err)

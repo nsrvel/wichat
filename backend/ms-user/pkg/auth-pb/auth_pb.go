@@ -206,6 +206,7 @@ func ChannelSummary(c models.PublicChannel) *userv1.ChannelSummary {
 		UserLimit:             c.UserLimit,
 		RtcRegion:             c.RTCRegion,
 		CallerPermissions:     c.CallerPermissions,
+		DmPeerUserId:          c.DmPeerUserID,
 	}
 }
 

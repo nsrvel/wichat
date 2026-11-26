@@ -11,15 +11,15 @@ import (
 // EventOutboxTable maps the event_outbox table.
 type EventOutboxTable struct {
 	bun.BaseModel   `bun:"table:event_outbox,alias:ob"`
-	ID              string     `bun:"id,pk,type:uuid"`
-	EventID         string     `bun:"event_id,type:uuid,notnull"`
-	EventType       string     `bun:"event_type,notnull"`
-	PartitionKey    string     `bun:"partition_key,notnull"`
-	Payload         []byte     `bun:"payload,type:jsonb,notnull"`
-	CreatedAt       time.Time  `bun:"created_at,notnull"`
-	PublishedAt     *time.Time `bun:"published_at"`
-	PublishAttempts int        `bun:"publish_attempts,notnull"`
-	LastError       *string    `bun:"last_error"`
+	ID              string          `bun:"id,pk,type:uuid"`
+	EventID         string          `bun:"event_id,type:uuid,notnull"`
+	EventType       string          `bun:"event_type,notnull"`
+	PartitionKey    string          `bun:"partition_key,notnull"`
+	Payload         json.RawMessage `bun:"payload,type:jsonb,notnull"`
+	CreatedAt       time.Time       `bun:"created_at,notnull"`
+	PublishedAt     *time.Time      `bun:"published_at"`
+	PublishAttempts int             `bun:"publish_attempts,notnull"`
+	LastError       *string         `bun:"last_error"`
 }
 
 // EventOutboxRowFromInsert builds a bun row from a domain insert DTO.
@@ -33,7 +33,7 @@ func EventOutboxRowFromInsert(id string, in EventOutboxInsert) (EventOutboxTable
 		EventID:      in.EventID,
 		EventType:    in.EventType,
 		PartitionKey: in.PartitionKey,
-		Payload:      in.Payload,
+		Payload:      json.RawMessage(in.Payload),
 		CreatedAt:    in.CreatedAt,
 	}, nil
 }
@@ -45,7 +45,7 @@ func (r EventOutboxTable) ToDomain() EventOutboxRow {
 		EventID:         r.EventID,
 		EventType:       r.EventType,
 		PartitionKey:    r.PartitionKey,
-		Payload:         r.Payload,
+		Payload:         []byte(r.Payload),
 		CreatedAt:       r.CreatedAt,
 		PublishAttempts: r.PublishAttempts,
 	}
