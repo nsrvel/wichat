@@ -97,6 +97,7 @@ message SetupStatusResponse {
   reserved 1, 2, 4, 5, 6;
   reserved "needs_account", "needs_instance_setup", "group_name", "username_enabled", "guest_enabled";
   string registration_mode = 3;
+  bool mfa_enabled = 7;
 }
 
 // CompleteInstanceSetupRequest is the owner setup wizard payload.
