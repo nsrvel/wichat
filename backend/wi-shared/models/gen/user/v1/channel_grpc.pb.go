@@ -29,6 +29,7 @@ const (
 	ChannelService_SyncChannelPermissions_FullMethodName   = "/user.v1.ChannelService/SyncChannelPermissions"
 	ChannelService_ReorderGroupChannels_FullMethodName     = "/user.v1.ChannelService/ReorderGroupChannels"
 	ChannelService_AssertGroupChannelAccess_FullMethodName = "/user.v1.ChannelService/AssertGroupChannelAccess"
+	ChannelService_EnsureGroupDmChannel_FullMethodName     = "/user.v1.ChannelService/EnsureGroupDmChannel"
 )
 
 // ChannelServiceClient is the client API for ChannelService service.
@@ -57,6 +58,8 @@ type ChannelServiceClient interface {
 	ReorderGroupChannels(ctx context.Context, in *ReorderGroupChannelsRequest, opts ...grpc.CallOption) (*ReorderGroupChannelsResponse, error)
 	// AssertGroupChannelAccess validates membership and resolves internal channel and user ids.
 	AssertGroupChannelAccess(ctx context.Context, in *AssertGroupChannelAccessRequest, opts ...grpc.CallOption) (*AssertGroupChannelAccessResponse, error)
+	// EnsureGroupDmChannel returns an existing or new DM channel between the caller and peer in a group.
+	EnsureGroupDmChannel(ctx context.Context, in *EnsureGroupDmChannelRequest, opts ...grpc.CallOption) (*EnsureGroupDmChannelResponse, error)
 }
 
 type channelServiceClient struct {
@@ -167,6 +170,16 @@ func (c *channelServiceClient) AssertGroupChannelAccess(ctx context.Context, in 
 	return out, nil
 }
 
+func (c *channelServiceClient) EnsureGroupDmChannel(ctx context.Context, in *EnsureGroupDmChannelRequest, opts ...grpc.CallOption) (*EnsureGroupDmChannelResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EnsureGroupDmChannelResponse)
+	err := c.cc.Invoke(ctx, ChannelService_EnsureGroupDmChannel_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ChannelServiceServer is the server API for ChannelService service.
 // All implementations must embed UnimplementedChannelServiceServer
 // for forward compatibility.
@@ -193,6 +206,8 @@ type ChannelServiceServer interface {
 	ReorderGroupChannels(context.Context, *ReorderGroupChannelsRequest) (*ReorderGroupChannelsResponse, error)
 	// AssertGroupChannelAccess validates membership and resolves internal channel and user ids.
 	AssertGroupChannelAccess(context.Context, *AssertGroupChannelAccessRequest) (*AssertGroupChannelAccessResponse, error)
+	// EnsureGroupDmChannel returns an existing or new DM channel between the caller and peer in a group.
+	EnsureGroupDmChannel(context.Context, *EnsureGroupDmChannelRequest) (*EnsureGroupDmChannelResponse, error)
 	mustEmbedUnimplementedChannelServiceServer()
 }
 
@@ -232,6 +247,9 @@ func (UnimplementedChannelServiceServer) ReorderGroupChannels(context.Context, *
 }
 func (UnimplementedChannelServiceServer) AssertGroupChannelAccess(context.Context, *AssertGroupChannelAccessRequest) (*AssertGroupChannelAccessResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method AssertGroupChannelAccess not implemented")
+}
+func (UnimplementedChannelServiceServer) EnsureGroupDmChannel(context.Context, *EnsureGroupDmChannelRequest) (*EnsureGroupDmChannelResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method EnsureGroupDmChannel not implemented")
 }
 func (UnimplementedChannelServiceServer) mustEmbedUnimplementedChannelServiceServer() {}
 func (UnimplementedChannelServiceServer) testEmbeddedByValue()                        {}
@@ -434,6 +452,24 @@ func _ChannelService_AssertGroupChannelAccess_Handler(srv interface{}, ctx conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ChannelService_EnsureGroupDmChannel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EnsureGroupDmChannelRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ChannelServiceServer).EnsureGroupDmChannel(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ChannelService_EnsureGroupDmChannel_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChannelServiceServer).EnsureGroupDmChannel(ctx, req.(*EnsureGroupDmChannelRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ChannelService_ServiceDesc is the grpc.ServiceDesc for ChannelService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -480,6 +516,10 @@ var ChannelService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AssertGroupChannelAccess",
 			Handler:    _ChannelService_AssertGroupChannelAccess_Handler,
+		},
+		{
+			MethodName: "EnsureGroupDmChannel",
+			Handler:    _ChannelService_EnsureGroupDmChannel_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
