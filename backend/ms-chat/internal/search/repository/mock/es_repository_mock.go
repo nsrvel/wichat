@@ -2,6 +2,7 @@ package mock
 
 import (
 	"context"
+	"strings"
 	"sync"
 
 	"github.com/wichat/wichat/backend/ms-chat/internal/search/repository"
@@ -10,10 +11,11 @@ import (
 
 // State records ES index calls in tests.
 type State struct {
-	mu         sync.Mutex
-	Ensured    int
-	Docs       []elasticsearch.MessageDoc
-	DeletedIDs []string
+	mu             sync.Mutex
+	Ensured        int
+	Docs           []elasticsearch.MessageDoc
+	AttachmentDocs []elasticsearch.AttachmentDoc
+	DeletedIDs     []string
 }
 
 // NewState returns empty ES mock state.
@@ -52,4 +54,72 @@ func (m esRepositoryMock) DeleteMessage(_ context.Context, messageID string) err
 	m.st.DeletedIDs = append(m.st.DeletedIDs, messageID)
 
 	return nil
+}
+
+func (m esRepositoryMock) SearchMessages(_ context.Context, groupID, query string, limit int) ([]elasticsearch.MessageDoc, error) {
+	groupID = strings.TrimSpace(groupID)
+	query = strings.TrimSpace(strings.ToLower(query))
+	if groupID == "" || query == "" {
+		return nil, nil
+	}
+	if limit <= 0 {
+		limit = 8
+	}
+
+	m.st.mu.Lock()
+	defer m.st.mu.Unlock()
+
+	out := make([]elasticsearch.MessageDoc, 0, limit)
+	for _, doc := range m.st.Docs {
+		if doc.GroupID != groupID {
+			continue
+		}
+		if !strings.Contains(strings.ToLower(doc.Body), query) {
+			continue
+		}
+		out = append(out, doc)
+		if len(out) >= limit {
+			break
+		}
+	}
+	return out, nil
+}
+
+func (m esRepositoryMock) IndexAttachmentCreated(_ context.Context, doc elasticsearch.AttachmentDoc) error {
+	m.st.mu.Lock()
+	defer m.st.mu.Unlock()
+	m.st.AttachmentDocs = append(m.st.AttachmentDocs, doc)
+	return nil
+}
+
+func (m esRepositoryMock) SearchFiles(_ context.Context, groupID, query string, limit int, imagesOnly bool) ([]elasticsearch.AttachmentDoc, error) {
+	groupID = strings.TrimSpace(groupID)
+	query = strings.TrimSpace(strings.ToLower(query))
+	if groupID == "" || query == "" {
+		return nil, nil
+	}
+	if limit <= 0 {
+		limit = 8
+	}
+
+	m.st.mu.Lock()
+	defer m.st.mu.Unlock()
+
+	out := make([]elasticsearch.AttachmentDoc, 0, limit)
+	for _, doc := range m.st.AttachmentDocs {
+		if doc.GroupID != groupID {
+			continue
+		}
+		if imagesOnly && !strings.HasPrefix(strings.ToLower(doc.ContentType), "image/") {
+			continue
+		}
+		if !strings.Contains(strings.ToLower(doc.Filename), query) {
+			continue
+		}
+		out = append(out, doc)
+		if len(out) >= limit {
+			break
+		}
+	}
+	return out, nil
 }

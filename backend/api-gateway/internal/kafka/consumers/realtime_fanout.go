@@ -91,17 +91,22 @@ func (r realtimeFanout) handleWithRetry(ctx context.Context, in wikafka.Incoming
 }
 
 func (r realtimeFanout) handle(in wikafka.Incoming) error {
+	value, err := chatEvents.NormalizePayload(in.Value)
+	if err != nil {
+		return fmt.Errorf("%w: %w", errInvalidFanoutPayload, err)
+	}
+
 	var head struct {
 		Type string `json:"type"`
 	}
-	if err := json.Unmarshal(in.Value, &head); err != nil {
+	if err := json.Unmarshal(value, &head); err != nil {
 		return fmt.Errorf("%w: %w", errInvalidFanoutPayload, err)
 	}
 
 	switch strings.TrimSpace(head.Type) {
 	case chatEvents.TypeMessageCreated:
 		var ev chatEvents.MessageCreated
-		if err := json.Unmarshal(in.Value, &ev); err != nil {
+		if err := json.Unmarshal(value, &ev); err != nil {
 			return fmt.Errorf("%w: %w", errInvalidFanoutPayload, err)
 		}
 		return r.deliver(ev.GroupID, ev.ChannelID, func() ([]byte, error) {
@@ -109,7 +114,7 @@ func (r realtimeFanout) handle(in wikafka.Incoming) error {
 		})
 	case chatEvents.TypeMessageUpdated:
 		var ev chatEvents.MessageUpdated
-		if err := json.Unmarshal(in.Value, &ev); err != nil {
+		if err := json.Unmarshal(value, &ev); err != nil {
 			return fmt.Errorf("%w: %w", errInvalidFanoutPayload, err)
 		}
 		return r.deliver(ev.GroupID, ev.ChannelID, func() ([]byte, error) {
@@ -117,7 +122,7 @@ func (r realtimeFanout) handle(in wikafka.Incoming) error {
 		})
 	case chatEvents.TypeMessageDeleted:
 		var ev chatEvents.MessageDeleted
-		if err := json.Unmarshal(in.Value, &ev); err != nil {
+		if err := json.Unmarshal(value, &ev); err != nil {
 			return fmt.Errorf("%w: %w", errInvalidFanoutPayload, err)
 		}
 		return r.deliver(ev.GroupID, ev.ChannelID, func() ([]byte, error) {
@@ -125,7 +130,7 @@ func (r realtimeFanout) handle(in wikafka.Incoming) error {
 		})
 	case chatEvents.TypeMessageReactionsUpdated:
 		var ev chatEvents.MessageReactionsUpdated
-		if err := json.Unmarshal(in.Value, &ev); err != nil {
+		if err := json.Unmarshal(value, &ev); err != nil {
 			return fmt.Errorf("%w: %w", errInvalidFanoutPayload, err)
 		}
 		return r.deliver(ev.GroupID, ev.ChannelID, func() ([]byte, error) {
