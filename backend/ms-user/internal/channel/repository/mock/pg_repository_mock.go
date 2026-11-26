@@ -189,6 +189,133 @@ func (m pgRepositoryMock) FindByID(_ context.Context, id string) (models.Channel
 	return models.Channel{}, constants.ErrNotFound
 }
 
+func (m pgRepositoryMock) FindGroupDmChannelBetweenUsers(_ context.Context, groupID, userID, peerUserID string) (models.Channel, error) {
+	m.st.Lock()
+	defer m.st.Unlock()
+
+	for _, ch := range m.st.Channels {
+		if ch.GroupID != groupID || ch.Type != constants.ChannelKindDM {
+			continue
+		}
+		participants := m.st.DmParticipants[ch.ID]
+		if dmPairHasUsers(participants, userID, peerUserID) {
+			return ch, nil
+		}
+	}
+
+	return models.Channel{}, constants.ErrNotFound
+}
+
+func (m pgRepositoryMock) CreateGroupDmChannel(
+	_ context.Context,
+	groupID, name, userID, peerUserID, createdBy string,
+	now time.Time,
+) (models.Channel, error) {
+	m.st.Lock()
+	defer m.st.Unlock()
+
+	if m.st.DmParticipants == nil {
+		m.st.DmParticipants = make(map[string][]string)
+	}
+
+	var maxPos int32 = -1
+	for _, ch := range m.st.Channels {
+		if ch.GroupID == groupID && ch.SidebarSection == constants.SidebarSectionChats && ch.Position > maxPos {
+			maxPos = ch.Position
+		}
+	}
+
+	channelID, err := token.NewID()
+	if err != nil {
+		return models.Channel{}, err
+	}
+	publicID, err := token.NewPublicID()
+	if err != nil {
+		return models.Channel{}, err
+	}
+	ch := models.Channel{
+		ID:             channelID,
+		PublicID:       publicID,
+		GroupID:        groupID,
+		Type:           constants.ChannelKindDM,
+		Name:           name,
+		SidebarSection: constants.SidebarSectionChats,
+		Position:       maxPos + 1,
+		CreatedBy:      createdBy,
+		CreatedAt:      now,
+		UpdatedAt:      now,
+	}
+	m.st.Channels = append(m.st.Channels, ch)
+	m.st.DmParticipants[channelID] = []string{userID, peerUserID}
+
+	return ch, nil
+}
+
+func (m pgRepositoryMock) DmPeerUserIDsForCaller(
+	_ context.Context,
+	groupID, callerUserID string,
+	channelIDs []string,
+) (map[string]string, error) {
+	m.st.Lock()
+	defer m.st.Unlock()
+
+	want := make(map[string]struct{}, len(channelIDs))
+	for _, id := range channelIDs {
+		want[id] = struct{}{}
+	}
+
+	out := make(map[string]string)
+	for _, ch := range m.st.Channels {
+		if ch.GroupID != groupID || ch.Type != constants.ChannelKindDM {
+			continue
+		}
+		if _, ok := want[ch.ID]; !ok {
+			continue
+		}
+		for _, uid := range m.st.DmParticipants[ch.ID] {
+			if uid != callerUserID {
+				out[ch.ID] = uid
+				break
+			}
+		}
+	}
+
+	return out, nil
+}
+
+func (m pgRepositoryMock) DmChannelIDSetForUser(_ context.Context, groupID, userID string) (map[string]struct{}, error) {
+	m.st.Lock()
+	defer m.st.Unlock()
+
+	out := make(map[string]struct{})
+	for _, ch := range m.st.Channels {
+		if ch.GroupID != groupID || ch.Type != constants.ChannelKindDM {
+			continue
+		}
+		for _, uid := range m.st.DmParticipants[ch.ID] {
+			if uid == userID {
+				out[ch.ID] = struct{}{}
+				break
+			}
+		}
+	}
+
+	return out, nil
+}
+
+func dmPairHasUsers(participants []string, a, b string) bool {
+	hasA, hasB := false, false
+	for _, uid := range participants {
+		if uid == a {
+			hasA = true
+		}
+		if uid == b {
+			hasB = true
+		}
+	}
+	return hasA && hasB
+}
+
 func (m pgRepositoryMock) SeedDefaultChannels(ctx context.Context, groupID, createdBy string, createdAt time.Time) error {
 	return m.SeedDefaultChannelsWithTemplate(ctx, groupID, createdBy, "", createdAt)
 }

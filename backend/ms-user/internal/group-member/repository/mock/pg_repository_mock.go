@@ -36,6 +36,25 @@ func (m pgRepositoryMock) FindGroupMember(_ context.Context, groupID, userID str
 	return models.GroupMember{}, constants.ErrNotFound
 }
 
+func (m pgRepositoryMock) FindGroupMemberAccount(_ context.Context, groupID, userID string) (string, string, error) {
+	m.st.Lock()
+	defer m.st.Unlock()
+
+	for _, mem := range m.st.Members {
+		if mem.GroupID != groupID || mem.UserID != userID {
+			continue
+		}
+		for _, u := range m.st.Users {
+			if u.ID == userID {
+				return u.DisplayName, u.Username, nil
+			}
+		}
+		return "", "", constants.ErrNotFound
+	}
+
+	return "", "", constants.ErrNotFound
+}
+
 func (m pgRepositoryMock) InsertGroupMember(_ context.Context, member models.GroupMember) error {
 	m.st.Lock()
 	defer m.st.Unlock()

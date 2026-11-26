@@ -42,3 +42,25 @@ func TestChannelMockSeedAndLookup(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestChannelMockGroupDm(t *testing.T) {
+	st := usermock.NewState()
+	repo := channelmock.NewPgRepositoryMock(st)
+	ctx := context.Background()
+	now := time.Now().UTC()
+
+	ch, err := repo.CreateGroupDmChannel(ctx, "g1", "Peer", "u1", "u2", "u1", now)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	found, err := repo.FindGroupDmChannelBetweenUsers(ctx, "g1", "u1", "u2")
+	if err != nil || found.ID != ch.ID {
+		t.Fatalf("FindGroupDmChannelBetweenUsers: %+v err=%v", found, err)
+	}
+
+	visible, err := repo.DmChannelIDSetForUser(ctx, "g1", "u1")
+	if err != nil || len(visible) != 1 {
+		t.Fatalf("DmChannelIDSetForUser: %+v err=%v", visible, err)
+	}
+}

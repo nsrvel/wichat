@@ -77,6 +77,7 @@ type PublicChannel struct {
 	UserLimit             int32
 	RTCRegion             string
 	CallerPermissions     []string
+	DmPeerUserID          string
 }
 
 // Public returns client-safe channel fields.

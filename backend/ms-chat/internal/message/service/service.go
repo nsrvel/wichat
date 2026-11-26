@@ -14,11 +14,13 @@ import (
 	"unicode/utf8"
 
 	"github.com/google/uuid"
+	mentionrepo "github.com/wichat/wichat/backend/ms-chat/internal/mention/repository"
 	messagerepo "github.com/wichat/wichat/backend/ms-chat/internal/message/repository"
 	"github.com/wichat/wichat/backend/ms-chat/internal/models"
 	outboxrepo "github.com/wichat/wichat/backend/ms-chat/internal/outbox/repository"
 	pkgChatEvents "github.com/wichat/wichat/backend/ms-chat/pkg/chat-events"
 	"github.com/wichat/wichat/backend/ms-chat/pkg/constants"
+	"github.com/wichat/wichat/backend/ms-chat/pkg/mention"
 	"github.com/wichat/wichat/backend/ms-chat/pkg/token"
 	"github.com/wichat/wichat/backend/wi-shared/exception"
 	"github.com/wichat/wichat/backend/wi-shared/infra/logger"
@@ -42,6 +44,7 @@ type Service interface {
 
 type service struct {
 	messages    messagerepo.PgRepository
+	mentions    mentionrepo.PgRepository
 	attachments messagerepo.MinioRepository
 	userAuth    userauth.Client
 	userChannel userchannel.Client
@@ -53,6 +56,7 @@ type service struct {
 // NewService builds message use cases.
 func NewService(
 	messages messagerepo.PgRepository,
+	mentions mentionrepo.PgRepository,
 	attachments messagerepo.MinioRepository,
 	userAuth userauth.Client,
 	userChannel userchannel.Client,
@@ -61,6 +65,7 @@ func NewService(
 ) Service {
 	return service{
 		messages:    messages,
+		mentions:    mentions,
 		attachments: attachments,
 		userAuth:    userAuth,
 		userChannel: userChannel,
@@ -126,6 +131,9 @@ func (s service) ListChannelMessages(ctx context.Context, in *models.ListChannel
 	}
 	rows, hasMore, err := s.messages.ListByChannel(ctx, in.ResolvedChannelID, limit, beforeSeq, in.AfterChannelSeq)
 	if err != nil {
+		return nil, false, err
+	}
+	if err := s.attachMentionPublicIDs(ctx, rows); err != nil {
 		return nil, false, err
 	}
 
@@ -240,9 +248,20 @@ func (s service) CreateChannelMessage(ctx context.Context, in *models.CreateChan
 	}
 
 	createdAt := s.now()
+
+	mentionPublicIDs := mention.MergePublicUserIDs(in.MentionedUserIDs, body)
+	var mentionInternalIDs []string
+	if s.mentions != nil && len(mentionPublicIDs) > 0 {
+		mentionInternalIDs, err = s.mentions.ResolveUserPublicIDsForChannel(ctx, in.ResolvedChannelID, mentionPublicIDs)
+		if err != nil {
+			return models.PublicMessage{}, err
+		}
+	}
+
 	preview := models.PublicMessage{
 		AuthorID: in.CallerUserID, AuthorDisplayName: displayName, AuthorAvatarURL: avatarURL,
 		ClientMsgID: clientMsgID, Body: body, CreatedAt: createdAt, ReplyTo: replyPreview, Mine: true,
+		MentionedUserIDs: mentionPublicIDs,
 	}
 
 	var msg models.Message
@@ -260,12 +279,13 @@ func (s service) CreateChannelMessage(ctx context.Context, in *models.CreateChan
 
 		msg, err = s.messages.InsertWithOutbox(ctx, &models.InsertMessageWithOutboxInput{
 			ID: id, PublicID: publicID,
-			ChannelID:   in.ResolvedChannelID,
-			AuthorID:    in.CallerUserID,
-			ClientMsgID: clientMsgIDPtr,
-			Body:        body,
-			ReplyToID:   replyToID,
-			CreatedAt:   createdAt,
+			ChannelID:        in.ResolvedChannelID,
+			AuthorID:         in.CallerUserID,
+			ClientMsgID:      clientMsgIDPtr,
+			Body:             body,
+			ReplyToID:        replyToID,
+			CreatedAt:        createdAt,
+			MentionedUserIDs: mentionInternalIDs,
 			BuildOutbox: func(channelSeq int64) (models.EventOutboxInsert, error) {
 				wire.ChannelSeq = channelSeq
 				outboxRow, err := pkgChatEvents.EncodeMessageCreated(
@@ -306,6 +326,7 @@ func (s service) CreateChannelMessage(ctx context.Context, in *models.CreateChan
 		ID: msg.PublicID, ChannelSeq: msg.ChannelSeq, AuthorID: msg.AuthorID,
 		AuthorDisplayName: displayName, AuthorAvatarURL: avatarURL,
 		Body: msg.Body, CreatedAt: msg.CreatedAt, ReplyTo: replyPreview, Mine: true,
+		MentionedUserIDs: mentionPublicIDs,
 	}
 	if msg.ClientMsgID != nil {
 		out.ClientMsgID = *msg.ClientMsgID
@@ -548,6 +569,9 @@ func (s service) ListPinnedChannelMessages(ctx context.Context, in *models.ListP
 	if err != nil {
 		return nil, err
 	}
+	if err := s.attachMentionPublicIDs(ctx, rows); err != nil {
+		return nil, err
+	}
 
 	out := make([]models.PublicMessage, len(rows))
 	for i, row := range rows {
@@ -693,7 +717,33 @@ func toPublicMessage(row models.MessageWithAuthor, callerUserID string) models.P
 		ReplyTo:           row.ReplyTo,
 		Reactions:         row.Reactions,
 		Mine:              row.AuthorID == callerUserID,
+		MentionedUserIDs:  publicMentionIDsFromRow(row),
 	}
+}
+
+func (s service) attachMentionPublicIDs(ctx context.Context, rows []models.MessageWithAuthor) error {
+	if s.mentions == nil || len(rows) == 0 {
+		return nil
+	}
+	ids := make([]string, len(rows))
+	for i, row := range rows {
+		ids[i] = row.ID
+	}
+	m, err := s.mentions.MentionedPublicUserIDsByMessageIDs(ctx, ids)
+	if err != nil {
+		return err
+	}
+	for i := range rows {
+		rows[i].MentionedUserIDs = m[rows[i].ID]
+	}
+	return nil
+}
+
+func publicMentionIDsFromRow(row models.MessageWithAuthor) []string {
+	if len(row.MentionedUserIDs) > 0 {
+		return row.MentionedUserIDs
+	}
+	return mention.PublicUserIDsFromBody(row.Body)
 }
 
 var allowedAttachmentMIMEs = map[string]bool{
@@ -787,13 +837,32 @@ func (s service) UploadChannelAttachment(ctx context.Context, in *models.UploadC
 		return models.MessageAttachment{}, err
 	}
 
-	return models.MessageAttachment{
+	att := models.MessageAttachment{
 		ID:          attachmentID,
 		URL:         publicURL,
 		Filename:    safeFilename,
 		ContentType: contentType,
 		SizeBytes:   size,
-	}, nil
+	}
+
+	if s.outbox != nil {
+		at := s.now()
+		outboxRow, err := pkgChatEvents.EncodeAttachmentCreated(
+			in.GroupPublicID,
+			in.ChannelPublicID,
+			attachmentID,
+			safeFilename,
+			contentType,
+			at,
+		)
+		if err == nil {
+			if err := s.outbox.Insert(ctx, toEventOutboxInsert(outboxRow)); err != nil {
+				s.log.Error("attachment created outbox", "err", err)
+			}
+		}
+	}
+
+	return att, nil
 }
 
 func normalizeMIME(raw string) string {
@@ -898,6 +967,7 @@ func toPublicMessageWire(msg models.PublicMessage) pkgChatEvents.PublicMessageWi
 		AuthorDisplayName: msg.AuthorDisplayName, AuthorAvatarURL: msg.AuthorAvatarURL,
 		Body: msg.Body, CreatedAt: msg.CreatedAt, EditedAt: msg.EditedAt, IsPinned: msg.IsPinned,
 		ReplyTo: reply, Reactions: reactions,
+		MentionedUserPublicIDs: msg.MentionedUserIDs,
 	}
 }
 

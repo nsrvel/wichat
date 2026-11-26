@@ -78,6 +78,7 @@ type service struct {
 	dummy      string
 	google     google.Config
 	inviteOnly bool
+	mfaEnabled bool
 	invites    inviterepo.PgRepository
 }
 
@@ -90,6 +91,7 @@ type Options struct {
 	DevE2EOTP  bool
 	DevOTP     authrepo.DevOTPStore
 	InviteOnly bool
+	MFAEnabled *bool
 	Invites    inviterepo.PgRepository
 }
 
@@ -135,12 +137,16 @@ func NewService(
 	devE2EOTP := false
 	var devOTP authrepo.DevOTPStore
 	inviteOnly := false
+	mfaEnabled := true
 	var invites inviterepo.PgRepository
 	if opts != nil {
 		devE2EOTP = opts.DevE2EOTP
 		devOTP = opts.DevOTP
 		inviteOnly = opts.InviteOnly
 		invites = opts.Invites
+		if opts.MFAEnabled != nil {
+			mfaEnabled = *opts.MFAEnabled
+		}
 	}
 
 	return service{
@@ -162,6 +168,7 @@ func NewService(
 		dummy:      dummy,
 		google:     google.Prepare(googleCfg),
 		inviteOnly: inviteOnly,
+		mfaEnabled: mfaEnabled,
 		invites:    invites,
 	}, nil
 }
@@ -1340,7 +1347,7 @@ func resetRateLimited(retry time.Duration) error {
 }
 
 func (s service) maybeBeginLoginMFA(ctx context.Context, user models.User, userAgent, clientIP string) (*models.PasswordAuthResult, bool, error) {
-	if s.mfa == nil {
+	if !s.mfaEnabled || s.mfa == nil {
 		return nil, false, nil
 	}
 
@@ -1417,7 +1424,7 @@ func (s service) maybeBeginLoginMFA(ctx context.Context, user models.User, userA
 }
 
 func (s service) BeginLoginWebAuthn(ctx context.Context, challengeID string) (string, error) {
-	if s.mfa == nil || s.webauthn == nil {
+	if !s.mfaEnabled || s.mfa == nil || s.webauthn == nil {
 		return "", exception.Unavailable(exception.MsgUnavailable, nil)
 	}
 	challengeID = strings.TrimSpace(challengeID)
@@ -1473,7 +1480,7 @@ func (s service) BeginLoginWebAuthn(ctx context.Context, challengeID string) (st
 }
 
 func (s service) VerifyLoginMFA(ctx context.Context, challengeID, method, code, assertionJSON string) (*models.SessionResult, error) {
-	if s.mfa == nil {
+	if !s.mfaEnabled || s.mfa == nil {
 		return nil, exception.Unavailable(exception.MsgUnavailable, nil)
 	}
 	challengeID = strings.TrimSpace(challengeID)
