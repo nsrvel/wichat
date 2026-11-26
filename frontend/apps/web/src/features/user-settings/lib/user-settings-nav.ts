@@ -245,3 +245,14 @@ export const USER_SETTINGS_PLACEHOLDER_ICONS: Partial<Record<UserSettingsSection
 	accessibility: Accessibility,
 	developer: Code2,
 };
+
+/** Drops the MFA search field when instance MFA is disabled. */
+export function filterAccountSearchFields(
+	fields: UserSettingsSearchField[] | undefined,
+	includeMfa: boolean,
+): UserSettingsSearchField[] | undefined {
+	if (!fields || includeMfa) {
+		return fields;
+	}
+	return fields.filter((field) => field.id !== "mfa");
+}

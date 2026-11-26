@@ -660,6 +660,35 @@ func (r pgRepository) InsertWithOutbox(ctx context.Context, in *models.InsertMes
 			return err
 		}
 
+		if len(in.MentionedUserIDs) > 0 {
+			var groupID string
+			if err := tx.NewSelect().TableExpr("channels").
+				ColumnExpr("group_id").
+				Where("id = ?", in.ChannelID).
+				Scan(ctx, &groupID); err != nil {
+				return err
+			}
+			rows := make([]models.MessageMentionRow, 0, len(in.MentionedUserIDs))
+			for _, uid := range in.MentionedUserIDs {
+				if uid == "" || uid == in.AuthorID {
+					continue
+				}
+				rows = append(rows, models.MessageMentionRow{
+					MessageID:       in.ID,
+					GroupID:         groupID,
+					ChannelID:       in.ChannelID,
+					MentionedUserID: uid,
+					AuthorID:        in.AuthorID,
+					CreatedAt:       in.CreatedAt,
+				})
+			}
+			if len(rows) > 0 {
+				if _, err := tx.NewInsert().Model(&rows).Exec(ctx); err != nil {
+					return err
+				}
+			}
+		}
+
 		inserted = row.ToModel()
 
 		return nil

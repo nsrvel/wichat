@@ -1,5 +1,10 @@
 import { expect, test, type APIRequestContext } from "@playwright/test";
-import { createGroupWithInvite, createTestUser, E2E_API_BASE, type TestUser } from "../fixtures/api-helpers";
+import {
+	createGroupWithInvite,
+	createTestUser,
+	E2E_API_BASE,
+	type TestUser,
+} from "../fixtures/api-helpers";
 
 type MessageRow = {
 	id: string;

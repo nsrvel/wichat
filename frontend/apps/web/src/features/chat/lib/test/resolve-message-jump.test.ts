@@ -17,6 +17,7 @@ describe("findMessageSeqInCache", () => {
 			is_pinned: false,
 			mine: false,
 			reactions: [],
+			mentioned_user_ids: [],
 		};
 		const seq = findMessageSeqInCache(
 			{ pages: [{ messages: [msg], has_more: false }], pageParams: [undefined] },

@@ -1,7 +1,4 @@
-import type {
-	Message,
-	MessageReactionSummary,
-} from "@wichat/contracts/chat/message";
+import type { Message, MessageReactionSummary } from "@wichat/contracts/chat/message";
 import {
 	acquireGatewaySocketChannel,
 	type ChannelRealtimeHandlers,

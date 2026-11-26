@@ -11,6 +11,9 @@ type EsRepository interface {
 	EnsureIndex(ctx context.Context) error
 	IndexMessageCreated(ctx context.Context, doc elasticsearch.MessageDoc) error
 	DeleteMessage(ctx context.Context, messageID string) error
+	SearchMessages(ctx context.Context, groupID, query string, limit int) ([]elasticsearch.MessageDoc, error)
+	IndexAttachmentCreated(ctx context.Context, doc elasticsearch.AttachmentDoc) error
+	SearchFiles(ctx context.Context, groupID, query string, limit int, imagesOnly bool) ([]elasticsearch.AttachmentDoc, error)
 }
 
 type esRepository struct {
@@ -35,4 +38,22 @@ func (r esRepository) IndexMessageCreated(ctx context.Context, doc elasticsearch
 
 func (r esRepository) DeleteMessage(ctx context.Context, messageID string) error {
 	return r.es.DeleteMessage(ctx, messageID)
+}
+
+func (r esRepository) SearchMessages(ctx context.Context, groupID, query string, limit int) ([]elasticsearch.MessageDoc, error) {
+	if r.es == nil {
+		return nil, nil
+	}
+	return r.es.SearchMessages(ctx, groupID, query, limit)
+}
+
+func (r esRepository) IndexAttachmentCreated(ctx context.Context, doc elasticsearch.AttachmentDoc) error {
+	return r.es.IndexAttachment(ctx, doc)
+}
+
+func (r esRepository) SearchFiles(ctx context.Context, groupID, query string, limit int, imagesOnly bool) ([]elasticsearch.AttachmentDoc, error) {
+	if r.es == nil {
+		return nil, nil
+	}
+	return r.es.SearchAttachments(ctx, groupID, query, limit, imagesOnly)
 }

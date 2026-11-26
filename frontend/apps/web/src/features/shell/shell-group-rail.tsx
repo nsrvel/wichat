@@ -2,7 +2,7 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { Download, Plus, Store } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useChannelNavigation } from "@/features/channel/channel-navigation-provider";
 import { useTranslation } from "react-i18next";
 import { ICON_RAIL_WIDTH_PX } from "@/components/layout/shell-chrome-context";
 import {
@@ -16,7 +16,7 @@ import { useGroupOnboarding } from "@/features/group/group-onboarding-provider";
 import { GroupRailAddGroupContextMenu } from "@/features/shell/components/group-rail-add-group-context-menu";
 import { ShellGroupRailList } from "@/features/shell/components/shell-group-rail-list";
 import { useMyGroupsQuery } from "@/hooks/use-my-groups-query";
-import { APP_DOWNLOADS_PATH, channelPath } from "@/lib/app-routes";
+import { APP_DOWNLOADS_PATH } from "@/lib/app-routes";
 import { readLastChannel } from "@/lib/last-channel-storage";
 import { cn } from "@/lib/utils";
 import * as channelQuery from "@/services/channel/channel.query";
@@ -38,8 +38,8 @@ export function ShellGroupRail({
 	className,
 }: ShellGroupRailProps) {
 	const { t } = useTranslation();
-	const router = useRouter();
 	const queryClient = useQueryClient();
+	const { navigateToChannel } = useChannelNavigation();
 	const { openOnboarding } = useGroupOnboarding();
 	const myGroups = useMyGroupsQuery();
 	const groups = myGroups.data ?? [];
@@ -65,7 +65,7 @@ export function ShellGroupRail({
 		}
 		const channelId = resolveChannelId(group.id, group.default_channel_id);
 		void queryClient.prefetchQuery(channelQuery.groupChannelsQueryOpts(group.id));
-		router.push(channelPath(group.id, channelId));
+		navigateToChannel(group.id, channelId);
 	};
 
 	return (

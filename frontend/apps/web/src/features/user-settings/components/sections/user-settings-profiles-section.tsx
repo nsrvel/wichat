@@ -18,7 +18,17 @@ import {
 import { UserAvatarUpload } from "@/components/user/user-avatar-upload";
 import { UserStatusNotePill } from "@/components/user/user-status-note-pill";
 import { translateError } from "@/integrations/i18n/translate-error";
+import { UserProfileCardShell } from "@/components/user/user-profile-card-shell";
 import { cn } from "@/lib/utils";
+import {
+	USER_PROFILE_AVATAR_OVERLAP_PX,
+	USER_PROFILE_AVATAR_RING_CLASS,
+	USER_PROFILE_AVATAR_SIZE,
+	USER_PROFILE_BIO_CLASS,
+	USER_PROFILE_CARD_WIDTH_PX,
+	USER_PROFILE_DISPLAY_NAME_CLASS,
+	USER_PROFILE_META_CLASS,
+} from "@/lib/user-profile-card-layout";
 import type { UserPresenceStatus } from "@/lib/user-status";
 import { useSaveMyProfileMutation } from "@/services/user/user.mutation";
 
@@ -127,7 +137,7 @@ export function UserSettingsProfilesSection({
 
 	return (
 		<div className="flex flex-col">
-			<div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_272px] lg:items-start">
+			<div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
 				{/* Left form column — styled identically to Group Settings -> Profile */}
 				<div className="flex flex-col">
 					<div id="user-settings-avatar">
@@ -230,40 +240,41 @@ export function UserSettingsProfilesSection({
 
 				{/* Right column — sticky live preview card matching UserProfilePopover */}
 				<div className="lg:sticky lg:top-0">
-					<div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-						<div
-							className="h-[76px] transition-colors duration-150"
-							style={{ backgroundColor: bannerColor }}
-						/>
-						<div className="px-5 pb-5">
-							<div className="-mt-[40px] flex items-center gap-2.5">
+					<div className="mx-auto w-full max-w-[320px] overflow-hidden rounded-2xl border border-border bg-card shadow-sm lg:mx-0">
+						<UserProfileCardShell
+							widthPx={USER_PROFILE_CARD_WIDTH_PX}
+							bannerColor={bannerColor}
+							className="w-full"
+						>
+							<div
+								className="flex items-center gap-2.5"
+								style={{ marginTop: -USER_PROFILE_AVATAR_OVERLAP_PX }}
+							>
 								<UserAvatar
 									src={effectiveAvatarSrc}
 									initials={initials}
-									size="xl"
+									size={USER_PROFILE_AVATAR_SIZE}
 									status={status}
-									ringClassName="ring-[5px] ring-card"
+									ringClassName={USER_PROFILE_AVATAR_RING_CLASS}
 								/>
 								<UserStatusNotePill label={statusNoteLabel} />
 							</div>
-							<div className="mt-3 min-w-0">
-								<p className="truncate text-base font-bold leading-tight text-foreground">
+							<div className="mt-3.5 min-w-0">
+								<p className={USER_PROFILE_DISPLAY_NAME_CLASS}>
 									{nameDraft.trim() || displayName}
 								</p>
 								{username || trimmedPronouns ? (
-									<p className="mt-0.5 truncate text-xs font-medium text-muted-foreground">
+									<p className={USER_PROFILE_META_CLASS}>
 										{username ? `@${username}` : ""}
 										{username && trimmedPronouns ? " • " : ""}
 										{trimmedPronouns}
 									</p>
 								) : null}
 								{bioDraft.trim() ? (
-									<p className="mt-2.5 whitespace-pre-wrap break-words text-xs leading-relaxed text-muted-foreground">
-										{bioDraft.trim()}
-									</p>
+									<p className={USER_PROFILE_BIO_CLASS}>{bioDraft.trim()}</p>
 								) : null}
 							</div>
-						</div>
+						</UserProfileCardShell>
 					</div>
 				</div>
 			</div>

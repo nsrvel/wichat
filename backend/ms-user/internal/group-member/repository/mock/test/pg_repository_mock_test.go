@@ -22,8 +22,8 @@ func TestPgRepositoryMock(t *testing.T) {
 	now := time.Now().UTC()
 
 	st.Users = append(st.Users,
-		models.User{ID: ownerID, DisplayName: "Owner", Email: "o@e.com"},
-		models.User{ID: memID, DisplayName: "Member", Email: "m@e.com"},
+		models.User{ID: ownerID, DisplayName: "Owner", Username: "owner", Email: "o@e.com"},
+		models.User{ID: memID, DisplayName: "Member", Username: "member", Email: "m@e.com"},
 	)
 
 	_ = m.InsertGroupMember(ctx, models.GroupMember{GroupID: groupID, UserID: ownerID, Role: constants.GroupRoleOwner, CreatedAt: now})
@@ -64,5 +64,10 @@ func TestPgRepositoryMock(t *testing.T) {
 	}
 	if err := m.UnbanMember(ctx, groupID, memID); err == nil {
 		t.Fatalf("expected ErrNotFound on duplicate unban")
+	}
+
+	displayName, username, err := m.FindGroupMemberAccount(ctx, groupID, ownerID)
+	if err != nil || displayName != "Owner" || username != "owner" {
+		t.Fatalf("FindGroupMemberAccount: %q %q err=%v", displayName, username, err)
 	}
 }

@@ -58,12 +58,7 @@ export function ConversationHeader({
 				<span aria-hidden>
 					<ConversationNavIcon active={active} variant="header" />
 				</span>
-				<span
-					className={cn(
-						"truncate text-[15px] font-semibold leading-tight tracking-tight text-sidebar-foreground lg:text-base",
-						active.kind === "dm" && "uppercase tracking-wide",
-					)}
-				>
+				<span className="truncate text-[15px] font-semibold leading-tight tracking-tight text-sidebar-foreground lg:text-base">
 					{active.label}
 				</span>
 			</div>

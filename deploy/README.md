@@ -73,3 +73,7 @@ See `docs/architecture/wichat-system-design.md` §7 and §11.
 ### Go services (local, not Docker)
 
 From `backend/`: `make dev-ms-user` then `make dev-api-gateway` (Air live reload), or `make run-*` without reload. Kuma Shell: working directory `backend/ms-user` or `backend/api-gateway`, command `make dev`.
+
+### Instance policy flags
+
+`INVITE_ONLY` (api-gateway + ms-user) and `MFA_ENABLED` (ms-user) are exposed to the web client on `GET /api/v1/auth/setup-status` as `invite_only` and `mfa_enabled`. When MFA is disabled, logins skip the MFA step and enrollment APIs return unavailable; existing enrollments stay in the database. The web app reads `mfa_enabled` from setup-status (optional `NEXT_PUBLIC_MFA_ENABLED=false` only hides MFA UI in dev).

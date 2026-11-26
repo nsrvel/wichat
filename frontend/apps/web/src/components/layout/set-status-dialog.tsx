@@ -12,6 +12,15 @@ import { Button } from "@/components/ui/button";
 import { CustomSelect, type SelectOption } from "@/components/ui/custom-select";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
 import { UserAvatar } from "@/components/ui/user-avatar";
+import { UserProfileCardShell } from "@/components/user/user-profile-card-shell";
+import {
+	USER_PROFILE_AVATAR_OVERLAP_PX,
+	USER_PROFILE_AVATAR_RING_CLASS,
+	USER_PROFILE_AVATAR_SIZE,
+	USER_PROFILE_CARD_WIDTH_PX,
+	USER_PROFILE_DISPLAY_NAME_CLASS,
+	USER_PROFILE_META_CLASS,
+} from "@/lib/user-profile-card-layout";
 import {
 	WiChatDialog,
 	WiChatDialogBody,
@@ -126,19 +135,21 @@ function SetStatusDialogBody({
 				<Form {...form}>
 					<form id={formId} onSubmit={handleSubmit} className="flex flex-col gap-5">
 						{/* Live profile preview card */}
-						<div className="mx-auto w-full max-w-[300px] overflow-visible rounded-2xl border border-border/70 bg-card text-card-foreground shadow-sm">
-							<div
-								className="h-[72px] overflow-hidden rounded-t-2xl bg-popover"
-								style={bannerColor ? { backgroundColor: bannerColor } : undefined}
-							/>
-							<div className="px-5 pb-5">
-								<div className="-mt-[36px] flex items-center gap-2.5">
+						<div className="mx-auto w-full max-w-[320px] overflow-visible rounded-2xl border border-border/70 bg-card text-card-foreground shadow-sm">
+							<UserProfileCardShell
+								widthPx={USER_PROFILE_CARD_WIDTH_PX}
+								bannerColor={bannerColor || undefined}
+							>
+								<div
+									className="flex items-center gap-2.5"
+									style={{ marginTop: -USER_PROFILE_AVATAR_OVERLAP_PX }}
+								>
 									<UserAvatar
 										src={avatarUrl}
 										initials={initials}
-										size="xl"
+										size={USER_PROFILE_AVATAR_SIZE}
 										status={indicatorStatus ?? status}
-										ringClassName="ring-[5px] ring-card"
+										ringClassName={USER_PROFILE_AVATAR_RING_CLASS}
 									/>
 
 									<div className="min-w-0 flex-1">
@@ -155,16 +166,12 @@ function SetStatusDialogBody({
 								</div>
 
 								<div className="mt-3.5 min-w-0">
-									<p className="truncate text-base font-bold leading-tight tracking-tight text-foreground">
-										{displayName}
-									</p>
+									<p className={USER_PROFILE_DISPLAY_NAME_CLASS}>{displayName}</p>
 									{username ? (
-										<p className="mt-0.5 truncate text-xs font-medium text-muted-foreground">
-											@{username}
-										</p>
+										<p className={USER_PROFILE_META_CLASS}>@{username}</p>
 									) : null}
 								</div>
-							</div>
+							</UserProfileCardShell>
 						</div>
 
 						{/* Status input */}

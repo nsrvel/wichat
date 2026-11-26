@@ -21,7 +21,7 @@ export function ShellTopBar({ railOpen, onRailOpenChange, className }: ShellTopB
 	return (
 		<header
 			className={cn(
-				"grid shrink-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 bg-transparent px-3 py-1.5 text-sidebar-foreground md:grid-cols-[1fr_minmax(0,30rem)_1fr] md:gap-3 md:px-4",
+				"grid shrink-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 bg-transparent px-3 py-1.5 text-sidebar-foreground md:grid-cols-[1fr_minmax(0,40rem)_1fr] md:gap-3 md:px-4",
 				className,
 			)}
 		>
@@ -36,7 +36,7 @@ export function ShellTopBar({ railOpen, onRailOpenChange, className }: ShellTopB
 				</WorkspaceHeaderIconButton>
 			</div>
 
-			<ShellSearchInput className="hidden min-w-0 justify-self-stretch sm:block md:justify-self-center" />
+			<ShellSearchInput className="hidden min-w-0 w-full max-w-full justify-self-stretch sm:block" />
 
 			<div className="flex items-center justify-end gap-0.5">
 				<WorkspaceHeaderIconButton

@@ -65,6 +65,20 @@ func TestSetupStatusDefaultsBeforeWizard(t *testing.T) {
 	}
 }
 
+func TestSetupStatusMfaDisabled(t *testing.T) {
+	st := usermock.NewState()
+	_, _, _, userSvc, _, _ := testSupport.NewAuthService(t, st, nil, false, false)
+	ctx := context.Background()
+
+	status, err := userSvc.SetupStatus(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if status.MfaEnabled {
+		t.Fatalf("expected mfa disabled, got %+v", status)
+	}
+}
+
 func TestSetupStatusInviteOnlyFromEnv(t *testing.T) {
 	st := usermock.NewState()
 	_, _, _, userSvc, _, _ := testSupport.NewAuthService(t, st, nil, true)

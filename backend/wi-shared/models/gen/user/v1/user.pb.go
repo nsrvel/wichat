@@ -219,6 +219,7 @@ func (*SetupStatusRequest) Descriptor() ([]byte, []int) {
 type SetupStatusResponse struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	RegistrationMode string                 `protobuf:"bytes,3,opt,name=registration_mode,json=registrationMode,proto3" json:"registration_mode,omitempty"`
+	MfaEnabled       bool                   `protobuf:"varint,7,opt,name=mfa_enabled,json=mfaEnabled,proto3" json:"mfa_enabled,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -258,6 +259,13 @@ func (x *SetupStatusResponse) GetRegistrationMode() string {
 		return x.RegistrationMode
 	}
 	return ""
+}
+
+func (x *SetupStatusResponse) GetMfaEnabled() bool {
+	if x != nil {
+		return x.MfaEnabled
+	}
+	return false
 }
 
 // CompleteInstanceSetupRequest is the owner setup wizard payload.
@@ -3763,9 +3771,11 @@ const file_user_v1_user_proto_rawDesc = "" +
 	"\x06locale\x18\x0f \x01(\tR\x06locale\x12\x1f\n" +
 	"\vtime_format\x18\x10 \x01(\tR\n" +
 	"timeFormatJ\x04\b\x05\x10\x06R\bis_guest\"\x14\n" +
-	"\x12SetupStatusRequest\"\xb2\x01\n" +
+	"\x12SetupStatusRequest\"\xd3\x01\n" +
 	"\x13SetupStatusResponse\x12+\n" +
-	"\x11registration_mode\x18\x03 \x01(\tR\x10registrationModeJ\x04\b\x01\x10\x02J\x04\b\x02\x10\x03J\x04\b\x04\x10\x05J\x04\b\x05\x10\x06J\x04\b\x06\x10\aR\rneeds_accountR\x14needs_instance_setupR\n" +
+	"\x11registration_mode\x18\x03 \x01(\tR\x10registrationMode\x12\x1f\n" +
+	"\vmfa_enabled\x18\a \x01(\bR\n" +
+	"mfaEnabledJ\x04\b\x01\x10\x02J\x04\b\x02\x10\x03J\x04\b\x04\x10\x05J\x04\b\x05\x10\x06J\x04\b\x06\x10\aR\rneeds_accountR\x14needs_instance_setupR\n" +
 	"group_nameR\x10username_enabledR\rguest_enabled\"\xca\x01\n" +
 	"\x1cCompleteInstanceSetupRequest\x12!\n" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12\x12\n" +

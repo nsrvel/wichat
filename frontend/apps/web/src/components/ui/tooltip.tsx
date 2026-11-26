@@ -2,6 +2,7 @@
 
 import { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip";
 import type { ComponentProps, ReactNode } from "react";
+import { floatingPositionerDefaults } from "@/lib/floating-position";
 import { cn } from "@/lib/utils";
 
 export function TooltipProvider({
@@ -43,9 +44,10 @@ export function TooltipContent({
 	sideOffset = 8,
 	className,
 }: TooltipContentProps) {
+	const floating = floatingPositionerDefaults();
 	return (
 		<TooltipPrimitive.Portal>
-			<TooltipPrimitive.Positioner side={side} sideOffset={sideOffset}>
+			<TooltipPrimitive.Positioner {...floating} side={side} sideOffset={sideOffset}>
 				<TooltipPrimitive.Popup
 					className={cn(
 						"z-[100] max-w-xs rounded-md border border-border bg-popover px-2.5 py-1.5 text-xs font-medium text-popover-foreground shadow-md",

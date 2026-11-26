@@ -13,7 +13,9 @@ function SkeletonRow({ compact }: { compact?: boolean }) {
 					<div className="h-2.5 w-10 animate-pulse rounded bg-muted/60" />
 				</div>
 				<div className="h-3 w-[88%] max-w-md animate-pulse rounded bg-muted/70" />
-				{!compact ? <div className="h-3 w-[62%] max-w-sm animate-pulse rounded bg-muted/60" /> : null}
+				{!compact ? (
+					<div className="h-3 w-[62%] max-w-sm animate-pulse rounded bg-muted/60" />
+				) : null}
 			</div>
 		</div>
 	);

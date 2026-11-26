@@ -8,10 +8,11 @@ import { env } from "@/lib/env";
 
 const storage = createSessionTokenStorage();
 
-export const { api, ensureAccessToken, getAccessToken, setAccessToken } = createApiClient({
-	getBaseUrl: () => `${env.NEXT_PUBLIC_API_URL}/api/v1`,
-	credentials: "include",
-	storage,
-	onGatewayUnreachable: notifyGatewayUnreachable,
-	onGatewayReachable: notifyGatewayReachable,
-});
+export const { api, ensureAccessToken, forceRefreshAccessToken, getAccessToken, setAccessToken } =
+	createApiClient({
+		getBaseUrl: () => `${env.NEXT_PUBLIC_API_URL}/api/v1`,
+		credentials: "include",
+		storage,
+		onGatewayUnreachable: notifyGatewayUnreachable,
+		onGatewayReachable: notifyGatewayReachable,
+	});

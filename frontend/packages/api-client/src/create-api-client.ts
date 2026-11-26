@@ -1,5 +1,6 @@
 import { SessionSchema } from "@wichat/contracts/auth";
 import { ApiError } from "./api-error.ts";
+import { isAccessTokenStale } from "./jwt-access.ts";
 import { refreshAccessToken, type TokenStorage } from "./token-storage.ts";
 
 type Schema<T> = { parse: (input: unknown) => T };
@@ -102,9 +103,22 @@ export function createApiClient({
 	}
 
 	async function ensureAccessToken(): Promise<string | null> {
-		if (getAccessToken()) {
-			return getAccessToken();
+		const current = getAccessToken();
+		if (current && !isAccessTokenStale(current)) {
+			return current;
 		}
+		try {
+			const refreshed = await refreshAccess();
+			if (refreshed) {
+				return refreshed;
+			}
+			return current && !isAccessTokenStale(current) ? current : null;
+		} catch {
+			return current && !isAccessTokenStale(current) ? current : null;
+		}
+	}
+
+	async function forceRefreshAccessToken(): Promise<string | null> {
 		try {
 			return await refreshAccess();
 		} catch {
@@ -212,5 +226,11 @@ export function createApiClient({
 		},
 	};
 
-	return { api, ensureAccessToken, getAccessToken, setAccessToken };
+	return {
+		api,
+		ensureAccessToken,
+		forceRefreshAccessToken,
+		getAccessToken,
+		setAccessToken,
+	};
 }

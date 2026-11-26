@@ -70,7 +70,7 @@ func (s *server) mapHandlers(mux *http.ServeMux, ms *microservices.Clients, rtHu
 	groupdelivery.Register(mux, groupdelivery.NewHandler(ms, s.log))
 	groupmemberdelivery.Register(mux, groupmemberdelivery.NewHandler(ms, s.log))
 	grouproledelivery.Register(mux, grouproledelivery.NewHandler(ms, s.log))
-	channeldelivery.Register(mux, channeldelivery.NewHandler(ms, s.log))
+	channeldelivery.Register(mux, channeldelivery.NewHandler(ms, s.log).WithGroupBroadcaster(rtHub))
 	channelcategorydelivery.Register(mux, channelcategorydelivery.NewHandler(ms, s.log))
 	invitedelivery.Register(mux, invitedelivery.NewHandler(ms, s.log, s.cfg.WebOrigin, s.cfg.TurnstileVerifySecret()))
 	chatdelivery.Register(mux, chatdelivery.NewHandler(ms, s.log))

@@ -43,6 +43,7 @@ func wireMessage(msg PublicMessageWire) events.Message {
 		IsPinned:          msg.IsPinned,
 		ReplyTo:           reply,
 		Reactions:         reactions,
+		MentionedUserIDs:  msg.MentionedUserPublicIDs,
 	}
 }
 

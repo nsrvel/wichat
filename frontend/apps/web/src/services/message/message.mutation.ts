@@ -7,7 +7,10 @@ import type {
 	MessageReplyPreview,
 	MessagesList,
 } from "@wichat/contracts/chat/message";
-import { removeInfiniteChannelMessage, updateInfiniteChannelMessageReactions } from "@/features/chat/lib/channel-message";
+import {
+	removeInfiniteChannelMessage,
+	updateInfiniteChannelMessageReactions,
+} from "@/features/chat/lib/channel-message";
 import { applyMessageToInfinite, replacePendingMessage } from "@/features/chat/lib/message-sync";
 import { newClientMessageId } from "@/features/chat/lib/message-seq";
 import { Q_CHANNEL_MESSAGES, Q_PINNED_MESSAGES } from "@/services/message/message.key";
@@ -32,8 +35,20 @@ type CreateMessageInput = CreateMessageBody & {
 export function useCreateMessageMutation() {
 	const queryClient = useQueryClient();
 	return useMutation({
-		mutationFn: ({ groupId, channelId, body, reply_to_id, client_msg_id }: CreateMessageInput) =>
-			createChannelMessage(groupId, channelId, { body, reply_to_id, client_msg_id }),
+		mutationFn: ({
+			groupId,
+			channelId,
+			body,
+			reply_to_id,
+			client_msg_id,
+			mentioned_user_ids,
+		}: CreateMessageInput) =>
+			createChannelMessage(groupId, channelId, {
+				body,
+				reply_to_id,
+				client_msg_id,
+				mentioned_user_ids,
+			}),
 		onMutate: async (variables) => {
 			const queryKey = [Q_CHANNEL_MESSAGES, variables.groupId, variables.channelId];
 			await queryClient.cancelQueries({ queryKey });
@@ -55,6 +70,7 @@ export function useCreateMessageMutation() {
 				is_pinned: false,
 				reply_to: variables.replyPreview ?? null,
 				reactions: [],
+				mentioned_user_ids: variables.mentioned_user_ids ?? [],
 				mine: true,
 			};
 

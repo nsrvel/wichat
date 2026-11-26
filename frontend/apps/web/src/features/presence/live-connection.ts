@@ -1,8 +1,10 @@
 import {
+	acquireGatewaySocketChannels,
 	acquireGatewaySocketPresence,
 	buildRealtimeWsUrl,
 	getGatewaySocketGroupId,
 	setGatewaySocketGroupId,
+	type LiveChannelsListener,
 } from "@/integrations/realtime/gateway-socket";
 
 export type LivePresenceListener = (frame: {
@@ -15,6 +17,10 @@ export { buildRealtimeWsUrl };
 
 export function acquireLivePresence(listener: LivePresenceListener): () => void {
 	return acquireGatewaySocketPresence(listener);
+}
+
+export function acquireLiveChannels(listener: LiveChannelsListener): () => void {
+	return acquireGatewaySocketChannels(listener);
 }
 
 export function getLivePresenceGroupId(): string | undefined {

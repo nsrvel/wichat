@@ -53,6 +53,7 @@ export const InstancePolicySchema = z.object({
 	invite_only: z.boolean().optional().default(false),
 	turnstile_site_key: z.string().optional().default(""),
 	turnstile_required: z.boolean().optional().default(false),
+	mfa_enabled: z.boolean().optional().default(true),
 });
 export type InstancePolicy = z.infer<typeof InstancePolicySchema>;
 

@@ -21,6 +21,7 @@ type Client interface {
 	SyncChannelPermissions(ctx context.Context, in *userv1.SyncChannelPermissionsRequest) (*userv1.SyncChannelPermissionsResponse, error)
 	ReorderGroupChannels(ctx context.Context, in *userv1.ReorderGroupChannelsRequest) (*userv1.ReorderGroupChannelsResponse, error)
 	AssertGroupChannelAccess(ctx context.Context, in *userv1.AssertGroupChannelAccessRequest) (*userv1.AssertGroupChannelAccessResponse, error)
+	EnsureGroupDmChannel(ctx context.Context, in *userv1.EnsureGroupDmChannelRequest) (*userv1.EnsureGroupDmChannelResponse, error)
 }
 
 type client struct {
@@ -103,5 +104,11 @@ func (c *client) ReorderGroupChannels(ctx context.Context, in *userv1.ReorderGro
 func (c *client) AssertGroupChannelAccess(ctx context.Context, in *userv1.AssertGroupChannelAccessRequest) (*userv1.AssertGroupChannelAccessResponse, error) {
 	return utils.CallUnaryResult(ctx, c.read, c.log, "channel.ChannelService/AssertGroupChannelAccess", func(callCtx context.Context) (*userv1.AssertGroupChannelAccessResponse, error) {
 		return c.stub.AssertGroupChannelAccess(callCtx, in)
+	})
+}
+
+func (c *client) EnsureGroupDmChannel(ctx context.Context, in *userv1.EnsureGroupDmChannelRequest) (*userv1.EnsureGroupDmChannelResponse, error) {
+	return utils.CallUnaryResult(ctx, c.write, c.log, "channel.ChannelService/EnsureGroupDmChannel", func(callCtx context.Context) (*userv1.EnsureGroupDmChannelResponse, error) {
+		return c.stub.EnsureGroupDmChannel(callCtx, in)
 	})
 }

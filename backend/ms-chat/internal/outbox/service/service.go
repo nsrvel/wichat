@@ -6,6 +6,7 @@ import (
 
 	outboxrepo "github.com/wichat/wichat/backend/ms-chat/internal/outbox/repository"
 	"github.com/wichat/wichat/backend/ms-chat/pkg/constants"
+	chatEvents "github.com/wichat/wichat/backend/wi-shared/chat-events"
 	wikafka "github.com/wichat/wichat/backend/wi-shared/infra/kafka"
 	"github.com/wichat/wichat/backend/wi-shared/infra/logger"
 )
@@ -65,8 +66,17 @@ func (s service) flushBatch(ctx context.Context) {
 	}
 
 	for _, row := range rows {
+		payload, normErr := chatEvents.NormalizePayload(row.Payload)
+		if normErr != nil {
+			s.log.Error("outbox payload normalize", "outbox_id", row.ID, "event_type", row.EventType, "err", normErr)
+			if recordErr := s.outbox.RecordPublishFailure(ctx, row.ID, normErr.Error()); recordErr != nil && ctx.Err() == nil {
+				s.log.Error("outbox record failure", "outbox_id", row.ID, "err", recordErr)
+			}
+			continue
+		}
+
 		pubCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-		err := s.producer.Publish(pubCtx, s.topic, []byte(row.PartitionKey), row.Payload)
+		err := s.producer.Publish(pubCtx, s.topic, []byte(row.PartitionKey), payload)
 		cancel()
 		if err != nil {
 			if ctx.Err() != nil {

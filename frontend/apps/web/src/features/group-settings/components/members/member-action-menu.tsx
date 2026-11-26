@@ -1,4 +1,5 @@
 "use client";
+import { WiChatMenuPositioner } from "@/components/ui/menu-positioner";
 
 import { ApiError } from "@wichat/api-client/api-error";
 import type { GroupMember } from "@wichat/contracts/group/member";
@@ -173,7 +174,7 @@ export function MemberActionMenu({
 			}}
 		>
 			<Menu.Portal>
-				<Menu.Positioner
+				<WiChatMenuPositioner
 					anchor={menuState?.anchor ?? null}
 					className={menuPositionerClass}
 					side="bottom"
@@ -417,7 +418,7 @@ export function MemberActionMenu({
 							</>
 						) : null}
 					</Menu.Popup>
-				</Menu.Positioner>
+				</WiChatMenuPositioner>
 			</Menu.Portal>
 		</Menu.Root>
 	);

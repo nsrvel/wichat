@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { ConversationHeader } from "@/features/chat/components/conversation-header";
 import { toQuickViewShellNavTarget } from "@/features/channel/lib/quick-view-shell-nav-target";
 import { GroupMembersWorkspacePage } from "@/features/group-settings/components/members/group-members-workspace-page";
+import { MentionsWorkspacePage } from "@/features/mentions/components/mentions-workspace-page";
 import { WorkspaceComingSoonState } from "@/features/shell/components/workspace-coming-soon-state";
 import type { QuickViewId } from "@/lib/app-routes";
 
@@ -40,6 +41,10 @@ export function QuickViewRoutePage({ groupId, quickView, onOpenSidebar }: QuickV
 
 	if (quickView === "members") {
 		return <GroupMembersWorkspacePage groupId={groupId} />;
+	}
+
+	if (quickView === "mentions") {
+		return <MentionsWorkspacePage groupId={groupId} onOpenSidebar={onOpenSidebar} />;
 	}
 
 	const meta = QUICK_VIEW_META[quickView];

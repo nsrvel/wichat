@@ -3,7 +3,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useParams, usePathname } from "next/navigation";
 import { useEffect } from "react";
-import { acquireLivePresence, setLivePresenceGroupId } from "@/features/presence/live-connection";
+import { acquireLiveChannels, acquireLivePresence, setLivePresenceGroupId } from "@/features/presence/live-connection";
 import {
 	patchLiveMemberPresence,
 	patchSelfMemberPresenceFromMyPresence,
@@ -13,6 +13,7 @@ import { normalizePublicGroupId } from "@/features/presence/public-group-id";
 import { sessionQueryOpts } from "@/services/auth/auth.query";
 import { useQuery } from "@tanstack/react-query";
 import { ensureAccessToken } from "@/integrations/api-client";
+import { Q_GROUP_CHANNELS } from "@/services/channel/channel.key";
 import { Q_MY_PRESENCE } from "@/services/user/user.key";
 import { myPresenceQueryOptions } from "@/services/user/user.query";
 
@@ -39,7 +40,7 @@ export function PresenceGate() {
 		if (!active) {
 			return;
 		}
-		void queryClient.fetchQuery(myPresenceQueryOptions());
+		void queryClient.fetchQuery(myPresenceQueryOptions(queryClient));
 	}, [active, queryClient]);
 
 	useEffect(() => {
@@ -58,6 +59,15 @@ export function PresenceGate() {
 			upsertLiveMyPresence(queryClient, frame, user.id);
 		});
 	}, [active, onInviteRoute, user?.id, queryClient]);
+
+	useEffect(() => {
+		if (!active) {
+			return;
+		}
+		return acquireLiveChannels((frame) => {
+			void queryClient.invalidateQueries({ queryKey: [Q_GROUP_CHANNELS, frame.group_id] });
+		});
+	}, [active, queryClient]);
 
 	useEffect(() => {
 		if (!active || !user?.id) {
