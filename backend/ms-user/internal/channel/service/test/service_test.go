@@ -938,6 +938,46 @@ func TestEnsureGroupDmChannelIdempotent(t *testing.T) {
 	}
 }
 
+func TestEnsureGroupDmChannelValidation(t *testing.T) {
+	t.Parallel()
+	st := usermock.NewState()
+	authSvc, notify, _, _, groupSvc, _ := testSupport.NewAuthService(t, st, nil)
+	ctx := context.Background()
+
+	owner := testSupport.RegisterSession(t, authSvc, notify, models.RegisterInput{
+		Email: "dm-val@example.com", Password: "correct-horse-battery", DisplayName: "Owner", BirthDate: "2000-01-15",
+	})
+	created, err := groupSvc.CreateGroup(ctx, owner.AccessToken, "DM Val")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, groups, sessions := testSupport.TestRepos(st)
+	svc := channelservice.NewService(
+		testSupport.ChannelRepo(st),
+		categorymock.NewPgRepositoryMock(st),
+		groups,
+		groupmembermock.NewPgRepositoryMock(st),
+		grouprolemock.NewPgRepositoryMock(st),
+		sessions,
+		[]byte(testSupport.TestJWTSecret),
+		logger.New(logger.Options{Service: "channel-test", Env: "test", Level: "error"}),
+	)
+
+	_, _, err = svc.EnsureGroupDmChannel(ctx, owner.AccessToken, created.ID, "")
+	if err == nil {
+		t.Fatal("expected invalid user_id")
+	}
+	_, _, err = svc.EnsureGroupDmChannel(ctx, owner.AccessToken, created.ID, owner.User.ID)
+	if err == nil {
+		t.Fatal("expected cannot DM self")
+	}
+	_, _, err = svc.EnsureGroupDmChannel(ctx, owner.AccessToken, created.ID, "cccccccccccccccccccccccc")
+	if err == nil {
+		t.Fatal("expected peer not in group")
+	}
+}
+
 type recordingActivityLog struct {
 	entries []models.GroupActivityLogEntry
 }
