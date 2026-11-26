@@ -86,6 +86,7 @@ type SetupStatusBody struct {
 	InviteOnly        bool   `json:"invite_only"`
 	TurnstileSiteKey  string `json:"turnstile_site_key,omitempty"`
 	TurnstileRequired bool   `json:"turnstile_required,omitempty"`
+	MfaEnabled        bool   `json:"mfa_enabled"`
 }
 
 // InstanceSetupBody is POST /api/v1/auth/instance-setup.
@@ -324,6 +325,7 @@ type ChannelBody struct {
 	UserLimit             int      `json:"user_limit"`
 	RTCRegion             string   `json:"rtc_region"`
 	CallerPermissions     []string `json:"caller_permissions"`
+	DmPeerUserID          string   `json:"dm_peer_user_id,omitempty"`
 }
 
 // UpdateGroupChannelBody is PATCH /api/v1/groups/{id}/channels/{channelId}.
@@ -428,6 +430,17 @@ type CreateGroupChannelBody struct {
 // ChannelResponse wraps a single created channel.
 type ChannelResponse struct {
 	Channel ChannelBody `json:"channel"`
+}
+
+// EnsureGroupDmBody is POST /api/v1/groups/{id}/dm.
+type EnsureGroupDmBody struct {
+	UserID string `json:"user_id"`
+}
+
+// EnsureGroupDmResponse is the ensure DM result.
+type EnsureGroupDmResponse struct {
+	Channel ChannelBody `json:"channel"`
+	Created bool        `json:"created"`
 }
 
 // ReorderChannelCategoriesBody is PUT /api/v1/groups/{id}/categories/order.
@@ -784,6 +797,11 @@ func ChannelFromPB(c *userv1.ChannelSummary) ChannelBody {
 		return ChannelBody{}
 	}
 
+	callerPerms := c.GetCallerPermissions()
+	if callerPerms == nil {
+		callerPerms = []string{}
+	}
+
 	return ChannelBody{
 		ID:                    c.GetId(),
 		Name:                  c.GetName(),
@@ -803,7 +821,8 @@ func ChannelFromPB(c *userv1.ChannelSummary) ChannelBody {
 		VideoQuality:          c.GetVideoQuality(),
 		UserLimit:             int(c.GetUserLimit()),
 		RTCRegion:             c.GetRtcRegion(),
-		CallerPermissions:     c.GetCallerPermissions(),
+		CallerPermissions:     callerPerms,
+		DmPeerUserID:          c.GetDmPeerUserId(),
 	}
 }
 

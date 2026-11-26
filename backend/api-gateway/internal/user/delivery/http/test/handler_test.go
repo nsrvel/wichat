@@ -271,6 +271,7 @@ func TestSetupStatusReturnsInstancePolicy(t *testing.T) {
 			setupStatus: func(context.Context, *userv1.SetupStatusRequest) (*userv1.SetupStatusResponse, error) {
 				return &userv1.SetupStatusResponse{
 					RegistrationMode: "invite_only",
+					MfaEnabled:       true,
 				}, nil
 			},
 		},
@@ -290,6 +291,7 @@ func TestSetupStatusReturnsInstancePolicy(t *testing.T) {
 		Data struct {
 			RegistrationMode string `json:"registration_mode"`
 			InviteOnly       bool   `json:"invite_only"`
+			MfaEnabled       bool   `json:"mfa_enabled"`
 			NeedsAccount     *bool  `json:"needs_account"`
 		} `json:"data"`
 	}
@@ -301,6 +303,9 @@ func TestSetupStatusReturnsInstancePolicy(t *testing.T) {
 	}
 	if !body.Data.InviteOnly {
 		t.Fatalf("expected invite_only from env wiring, got %+v", body.Data)
+	}
+	if !body.Data.MfaEnabled {
+		t.Fatalf("expected mfa_enabled from ms-user, got %+v", body.Data)
 	}
 	if body.Data.NeedsAccount != nil {
 		t.Fatalf("deprecated field leaked: %+v", body.Data)

@@ -13,4 +13,5 @@ func Register(mux *http.ServeMux, h Handler) {
 	mux.HandleFunc("DELETE /api/v1/groups/{id}/channels/{channelId}/permissions/{targetType}/{targetId}", h.DeleteChannelPermission)
 	mux.HandleFunc("POST /api/v1/groups/{id}/channels/{channelId}/permissions/sync", h.SyncChannelPermissions)
 	mux.HandleFunc("PUT /api/v1/groups/{id}/channels/order", h.ReorderGroupChannels)
+	mux.HandleFunc("POST /api/v1/groups/{id}/dm", h.EnsureGroupDmChannel)
 }

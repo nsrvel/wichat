@@ -21,6 +21,11 @@ func (chatRouteStub) PinChannelMessage(http.ResponseWriter, *http.Request)      
 func (chatRouteStub) UnpinChannelMessage(http.ResponseWriter, *http.Request)            {}
 func (chatRouteStub) ResolveMessageChannelSeq(http.ResponseWriter, *http.Request)       {}
 func (chatRouteStub) ResolveMessageChannelSeqGlobal(http.ResponseWriter, *http.Request) {}
+func (chatRouteStub) SearchGroupMessages(http.ResponseWriter, *http.Request)            {}
+func (chatRouteStub) SearchGroupFiles(http.ResponseWriter, *http.Request)               {}
+func (chatRouteStub) ListGroupMentions(http.ResponseWriter, *http.Request)              {}
+func (chatRouteStub) MarkGroupMentionsRead(http.ResponseWriter, *http.Request)          {}
+func (chatRouteStub) CountGroupMentionsUnread(http.ResponseWriter, *http.Request)       {}
 
 func TestRegisterMountsResolveMessageSeqRoutes(t *testing.T) {
 	mux := http.NewServeMux()
