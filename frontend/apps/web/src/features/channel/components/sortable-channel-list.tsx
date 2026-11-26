@@ -38,6 +38,7 @@ export type SortableChannelRowProps = {
 	onActiveMenuIdChange: (id: string | null) => void;
 	onSelect: () => void;
 	onPrefetch?: () => void;
+	onPrefetchIntent?: () => void;
 	onInvite?: () => void;
 	onMoveToCategory?: (targetCategoryId: string | null) => void;
 	onMoveToFirstInCategory?: () => void;
@@ -61,6 +62,7 @@ export function SortableChannelRow({
 	onActiveMenuIdChange,
 	onSelect,
 	onPrefetch,
+	onPrefetchIntent,
 	onInvite,
 	onMoveToCategory,
 	onMoveToFirstInCategory,
@@ -120,6 +122,7 @@ export function SortableChannelRow({
 					selected={selected}
 					onSelect={onSelect}
 					onPrefetch={onPrefetch}
+					onPrefetchIntent={onPrefetchIntent}
 				/>
 			</SidebarChannelContextMenu>
 		</div>

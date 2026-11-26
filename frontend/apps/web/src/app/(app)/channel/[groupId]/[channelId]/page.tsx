@@ -1,4 +1,4 @@
-import { ChannelRoutePage } from "@/features/channel/channel-route-page";
+import { ChannelRoutePageClient } from "@/features/channel/channel-route-page-client";
 
 type PageProps = {
 	params: Promise<{ groupId: string; channelId: string }>;
@@ -6,5 +6,5 @@ type PageProps = {
 
 export default async function ChannelPage({ params }: PageProps) {
 	const { groupId, channelId } = await params;
-	return <ChannelRoutePage groupId={groupId} channelId={channelId} />;
+	return <ChannelRoutePageClient groupId={groupId} channelId={channelId} />;
 }

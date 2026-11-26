@@ -3,7 +3,7 @@
 import { memo, type ReactNode } from "react";
 import type { MessageReplyPreview } from "@wichat/contracts/chat/message";
 import type { AvatarPresenceDot } from "@/features/presence/presence-dot";
-import { Pin } from "lucide-react";
+import { AtSign, Pin } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { OwnerCrownIcon } from "@/components/ui/owner-crown-icon";
 import { UserAvatar } from "@/components/ui/user-avatar";
@@ -38,6 +38,7 @@ type MessageRowProps = {
 	renderBubbleWrapper?: (bubble: ReactNode) => ReactNode;
 	children: ReactNode;
 	reactions?: ReactNode;
+	showMentionIndicator?: boolean;
 };
 
 export const MessageRow = memo(function MessageRow({
@@ -66,6 +67,7 @@ export const MessageRow = memo(function MessageRow({
 	renderBubbleWrapper,
 	children,
 	reactions,
+	showMentionIndicator = false,
 }: MessageRowProps) {
 	const { t } = useTranslation();
 
@@ -114,6 +116,15 @@ export const MessageRow = memo(function MessageRow({
 		bubbleElement
 	);
 
+	const mentionBadge = showMentionIndicator ? (
+		<span
+			className="absolute right-0 top-1/2 z-[1] flex size-6 -translate-y-1/2 translate-x-[calc(100%+6px)] items-center justify-center"
+			aria-hidden
+		>
+			<AtSign className="size-4 text-chat-mention-self" strokeWidth={2.25} />
+		</span>
+	) : null;
+
 	if (mine) {
 		return (
 			<article
@@ -134,6 +145,7 @@ export const MessageRow = memo(function MessageRow({
 						</div>
 					) : null}
 					<div className="relative ml-auto w-fit max-w-full">
+						{mentionBadge}
 						{actionBar && !isEditing ? (
 							<div className="pointer-events-none absolute -top-10 right-0 z-10 pb-1.5 opacity-0 transition-opacity group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100">
 								{actionBar}
@@ -213,6 +225,7 @@ export const MessageRow = memo(function MessageRow({
 					</div>
 				) : null}
 				<div className="relative w-fit max-w-full">
+					{mentionBadge}
 					{actionBar && !isEditing ? (
 						<div className="pointer-events-none absolute -top-10 left-0 z-10 pb-1.5 opacity-0 transition-opacity group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100">
 							{actionBar}

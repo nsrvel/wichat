@@ -1,3 +1,4 @@
+import { RealtimeChannelsUpdatedSchema } from "@wichat/contracts/chat/channel";
 import {
 	RealtimeChatEventSchema,
 	type Message,
@@ -31,6 +32,8 @@ export type LivePresenceListener = (frame: {
 	is_online: boolean;
 }) => void;
 
+export type LiveChannelsListener = (frame: { group_id: string; channel_id?: string; reason?: string }) => void;
+
 export type ChannelRealtimeHandlers = {
 	groupId: string;
 	channelId: string;
@@ -51,6 +54,7 @@ type Runtime = {
 	reconnectAttempts: number;
 	groupId?: string;
 	presenceListeners: Set<LivePresenceListener>;
+	channelsListeners: Set<LiveChannelsListener>;
 	channel?: ChannelRealtimeHandlers;
 	activity: "active" | "idle";
 	refCount: number;
@@ -80,6 +84,7 @@ function ensureRuntime(): Runtime {
 			hasConnectedOnce: false,
 			reconnectAttempts: 0,
 			presenceListeners: new Set(),
+			channelsListeners: new Set(),
 			activity: "active",
 			refCount: 0,
 		};
@@ -252,6 +257,22 @@ async function connect(): Promise<void> {
 			}
 			return;
 		}
+		if (head.type === "channels.updated") {
+			try {
+				const parsed = RealtimeChannelsUpdatedSchema.parse(raw);
+				const frame = {
+					group_id: parsed.group_id,
+					channel_id: parsed.channel_id,
+					reason: parsed.reason,
+				};
+				for (const listener of ensureRuntime().channelsListeners) {
+					listener(frame);
+				}
+			} catch {
+				// ignore malformed frame
+			}
+			return;
+		}
 		try {
 			const parsed = RealtimePresenceUpdatedSchema.parse(raw);
 			presenceAuthRequiredStreak = 0;
@@ -372,6 +393,16 @@ export function acquireGatewaySocketPresence(listener: LivePresenceListener): ()
 	state.presenceListeners.add(listener);
 	return () => {
 		state.presenceListeners.delete(listener);
+		release();
+	};
+}
+
+export function acquireGatewaySocketChannels(listener: LiveChannelsListener): () => void {
+	acquire();
+	const state = ensureRuntime();
+	state.channelsListeners.add(listener);
+	return () => {
+		state.channelsListeners.delete(listener);
 		release();
 	};
 }

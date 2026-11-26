@@ -1,4 +1,5 @@
 "use client";
+import { WiChatContextMenuPositioner, WiChatMenuPositioner } from "@/components/ui/menu-positioner";
 
 import { ContextMenu } from "@base-ui/react/context-menu";
 import { Menu } from "@base-ui/react/menu";
@@ -111,11 +112,11 @@ export function MessageBubbleContextMenu({
 		<ContextMenu.Root>
 			<ContextMenu.Trigger className="block">{children}</ContextMenu.Trigger>
 			<ContextMenu.Portal>
-				<ContextMenu.Positioner className={menuPositionerClass}>
+				<WiChatContextMenuPositioner className={menuPositionerClass}>
 					<ContextMenu.Popup className={menuPopupClass}>
 						<MessageMenuItems primitive={CONTEXT_PRIMITIVE} actions={actions} />
 					</ContextMenu.Popup>
-				</ContextMenu.Positioner>
+				</WiChatContextMenuPositioner>
 			</ContextMenu.Portal>
 		</ContextMenu.Root>
 	);
@@ -134,11 +135,11 @@ export function MessageMoreMenuButton(actions: MessageMenuActionProps) {
 				<MoreHorizontal className="size-4" />
 			</Menu.Trigger>
 			<Menu.Portal>
-				<Menu.Positioner side="bottom" align="end" sideOffset={6} className={menuPositionerClass}>
+				<WiChatMenuPositioner side="bottom" align="end" sideOffset={6} className={menuPositionerClass}>
 					<Menu.Popup className={menuPopupClass}>
 						<MessageMenuItems primitive={DROPDOWN_PRIMITIVE} actions={actions} />
 					</Menu.Popup>
-				</Menu.Positioner>
+				</WiChatMenuPositioner>
 			</Menu.Portal>
 		</Menu.Root>
 	);
