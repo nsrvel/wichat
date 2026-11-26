@@ -1,4 +1,5 @@
 "use client";
+import { WiChatMenuPositioner } from "@/components/ui/menu-positioner";
 
 import { Menu } from "@base-ui/react/menu";
 import { useId, useState } from "react";
@@ -104,7 +105,7 @@ export function RoleActionMenu({
 				}}
 			>
 				<Menu.Portal>
-					<Menu.Positioner
+					<WiChatMenuPositioner
 						anchor={menuState?.anchor ?? null}
 						className={menuPositionerClass}
 						side="bottom"
@@ -144,7 +145,7 @@ export function RoleActionMenu({
 								</>
 							) : null}
 						</Menu.Popup>
-					</Menu.Positioner>
+					</WiChatMenuPositioner>
 				</Menu.Portal>
 			</Menu.Root>
 

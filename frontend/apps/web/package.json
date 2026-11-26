@@ -43,6 +43,7 @@
 		"@tiptap/pm": "^3.34.0",
 		"@tiptap/react": "^3.34.0",
 		"@tiptap/starter-kit": "^3.34.0",
+		"@tiptap/suggestion": "3.34.0",
 		"@wichat/api-client": "workspace:*",
 		"@wichat/contracts": "workspace:*",
 		"@wichat/i18n": "workspace:*",

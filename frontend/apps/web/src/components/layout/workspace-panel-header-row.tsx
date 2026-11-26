@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { ConversationHeader } from "@/features/chat/components/conversation-header";
+import { dmSidebarPeerMember } from "@/features/channel/lib/dm-sidebar-peer";
 import { toChannelShellNavTarget } from "@/features/channel/lib/channel-shell-nav-target";
 import { toQuickViewShellNavTarget } from "@/features/channel/lib/quick-view-shell-nav-target";
 import type { QuickViewId } from "@/lib/app-routes";
@@ -11,7 +12,11 @@ import { useShellNavigation } from "@/components/layout/shell-navigation";
 import { WorkspaceSidebarHeader } from "@/components/layout/workspace-sidebar-header";
 import { WorkspaceGroupHeaderMenu } from "@/features/shell/components/workspace-group-header-menu";
 import { useMyGroupsQuery } from "@/hooks/use-my-groups-query";
+import { sessionQueryOpts } from "@/services/auth/auth.query";
 import * as channelQuery from "@/services/channel/channel.query";
+import { groupMembersQueryOpts } from "@/services/invite/invite.query";
+import { useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 
 const QUICK_VIEW_LABEL_KEYS: Record<QuickViewId, string> = {
 	mentions: "shell.sidebar.mentions",
@@ -37,15 +42,43 @@ export function WorkspacePanelHeaderRow({
 	const { t } = useTranslation();
 	const { sidebarWidth } = useShellChrome();
 	const { active: mockActive } = useShellNavigation();
+	const searchParams = useSearchParams();
+	const mentionsPreviewChannelId =
+		quickView === "mentions" ? searchParams.get("channelId")?.trim() : undefined;
+	const effectiveChannelId = channelId ?? mentionsPreviewChannelId;
 	const channels = useQuery({
 		...channelQuery.groupChannelsQueryOpts(groupId ?? ""),
-		enabled: Boolean(groupId && channelId),
+		enabled: Boolean(groupId && effectiveChannelId),
 	});
-	const active = quickView
-		? toQuickViewShellNavTarget(quickView, t(QUICK_VIEW_LABEL_KEYS[quickView]))
-		: groupId && channelId
-			? toChannelShellNavTarget(channelId, channels.data?.channels)
-			: mockActive;
+	const { data: sessionUser } = useQuery(sessionQueryOpts());
+	const membersQuery = useQuery({
+		...groupMembersQueryOpts(groupId ?? "", ""),
+		enabled: Boolean(groupId && effectiveChannelId),
+	});
+	const active = useMemo(() => {
+		if (quickView && !mentionsPreviewChannelId) {
+			return toQuickViewShellNavTarget(quickView, t(QUICK_VIEW_LABEL_KEYS[quickView]));
+		}
+		if (!groupId || !effectiveChannelId) {
+			return mockActive;
+		}
+		const channel = channels.data?.channels.find((c) => c.id === effectiveChannelId);
+		const peer =
+			channel?.type === "dm"
+				? dmSidebarPeerMember(channel, membersQuery.data?.members, sessionUser?.id)
+				: undefined;
+		return toChannelShellNavTarget(effectiveChannelId, channels.data?.channels, peer);
+	}, [
+		quickView,
+		mentionsPreviewChannelId,
+		t,
+		groupId,
+		effectiveChannelId,
+		mockActive,
+		channels.data?.channels,
+		membersQuery.data?.members,
+		sessionUser?.id,
+	]);
 	const myGroups = useMyGroupsQuery();
 	const activeGroup = groupId ? myGroups.data?.find((g) => g.id === groupId) : undefined;
 	const orderedGroupIds = (myGroups.data ?? []).map((g) => g.id);

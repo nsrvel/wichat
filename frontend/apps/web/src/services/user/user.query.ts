@@ -14,10 +14,11 @@ import {
 	listUserRelationships,
 } from "@/services/user/user.service";
 
-export function myMfaStatusQueryOptions() {
+export function myMfaStatusQueryOptions(enabled = true) {
 	return queryOptions({
 		queryKey: [Q_MY_MFA],
 		queryFn: getMyMfaStatus,
+		enabled,
 	});
 }
 
