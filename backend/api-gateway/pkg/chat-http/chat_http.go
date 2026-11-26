@@ -35,6 +35,7 @@ type MessageBody struct {
 	ReplyTo           *ReplyPreviewBody     `json:"reply_to,omitempty"`
 	Reactions         []ReactionSummaryBody `json:"reactions,omitempty"`
 	Mine              bool                  `json:"mine"`
+	MentionedUserIDs  []string              `json:"mentioned_user_ids,omitempty"`
 }
 
 // MessagesListBody wraps a channel message list.
@@ -53,9 +54,10 @@ type MessageChannelSeqBody struct {
 
 // CreateMessageBody is the JSON body for POST channel messages.
 type CreateMessageBody struct {
-	Body        string `json:"body"`
-	ReplyToID   string `json:"reply_to_id,omitempty"`
-	ClientMsgID string `json:"client_msg_id,omitempty"`
+	Body             string   `json:"body"`
+	ReplyToID        string   `json:"reply_to_id,omitempty"`
+	ClientMsgID      string   `json:"client_msg_id,omitempty"`
+	MentionedUserIDs []string `json:"mentioned_user_ids,omitempty"`
 }
 
 // UpdateMessageBody is the JSON body for PATCH channel messages.
@@ -149,7 +151,94 @@ func MessageFromPB(msg *chatv1.MessageSummary) MessageBody {
 		ReplyTo:           reply,
 		Reactions:         ReactionsFromPB(msg.GetReactions()),
 		Mine:              msg.GetMine(),
+		MentionedUserIDs:  msg.GetMentionedUserIds(),
 	}
+}
+
+// GroupMentionHitBody is one @mention inbox row in JSON.
+type GroupMentionHitBody struct {
+	MessageID         string `json:"message_id"`
+	ChannelID         string `json:"channel_id"`
+	ChannelName       string `json:"channel_name"`
+	ChannelType       string `json:"channel_type"`
+	AuthorDisplayName string `json:"author_display_name"`
+	BodyPreview       string `json:"body_preview"`
+	CreatedAt         string `json:"created_at"`
+	IsUnread          bool   `json:"is_unread"`
+}
+
+// MarkMentionsReadBody is POST body to mark mention inbox rows read.
+type MarkMentionsReadBody struct {
+	MessageIDs []string `json:"message_ids"`
+}
+
+// MentionsUnreadCountBody is unread mention count for a group.
+type MentionsUnreadCountBody struct {
+	Count int32 `json:"count"`
+}
+
+// GroupMentionsListBody wraps mention inbox results.
+type GroupMentionsListBody struct {
+	Hits       []GroupMentionHitBody `json:"hits"`
+	NextCursor string                `json:"next_cursor,omitempty"`
+}
+
+// GroupMentionsFromPB maps proto mention hits to JSON.
+func GroupMentionsFromPB(hits []*chatv1.GroupMentionHit) []GroupMentionHitBody {
+	if len(hits) == 0 {
+		return []GroupMentionHitBody{}
+	}
+	out := make([]GroupMentionHitBody, len(hits))
+	for i, h := range hits {
+		out[i] = GroupMentionHitBody{
+			MessageID:         h.GetMessageId(),
+			ChannelID:         h.GetChannelId(),
+			ChannelName:       h.GetChannelName(),
+			ChannelType:       h.GetChannelType(),
+			AuthorDisplayName: h.GetAuthorDisplayName(),
+			BodyPreview:       h.GetBodyPreview(),
+			CreatedAt:         h.GetCreatedAt(),
+			IsUnread:          h.GetIsUnread(),
+		}
+	}
+	return out
+}
+
+// MessageSearchHitBody is one message search hit in JSON.
+type MessageSearchHitBody struct {
+	MessageID         string `json:"message_id"`
+	GroupID           string `json:"group_id"`
+	ChannelID         string `json:"channel_id"`
+	BodyPreview       string `json:"body_preview"`
+	AuthorDisplayName string `json:"author_display_name"`
+	CreatedAt         string `json:"created_at"`
+}
+
+// MessageSearchHitsBody wraps message search results.
+type MessageSearchHitsBody struct {
+	Hits []MessageSearchHitBody `json:"hits"`
+}
+
+// MessageSearchHitsFromPB maps proto search hits to JSON.
+func MessageSearchHitsFromPB(hits []*chatv1.MessageSearchHit) []MessageSearchHitBody {
+	if len(hits) == 0 {
+		return []MessageSearchHitBody{}
+	}
+	out := make([]MessageSearchHitBody, 0, len(hits))
+	for _, hit := range hits {
+		if hit == nil {
+			continue
+		}
+		out = append(out, MessageSearchHitBody{
+			MessageID:         hit.GetMessageId(),
+			GroupID:           hit.GetGroupId(),
+			ChannelID:         hit.GetChannelId(),
+			BodyPreview:       hit.GetBodyPreview(),
+			AuthorDisplayName: hit.GetAuthorDisplayName(),
+			CreatedAt:         hit.GetCreatedAt(),
+		})
+	}
+	return out
 }
 
 // AttachmentFromPB maps an attachment proto to JSON.

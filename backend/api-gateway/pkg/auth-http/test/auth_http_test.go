@@ -161,6 +161,10 @@ func TestGroupAndChannelMappers(t *testing.T) {
 	if ch.ID != "c1" {
 		t.Fatalf("%+v", ch)
 	}
+	chNilPerms := authHttp.ChannelFromPB(&userv1.ChannelSummary{Id: "c2", Name: "dm", Type: "dm"})
+	if chNilPerms.CallerPermissions == nil || len(chNilPerms.CallerPermissions) != 0 {
+		t.Fatalf("nil proto permissions want empty slice, got %+v", chNilPerms.CallerPermissions)
+	}
 	if authHttp.ChannelFromPB(nil).ID != "" {
 		t.Fatal("nil channel")
 	}
