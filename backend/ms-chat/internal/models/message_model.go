@@ -41,6 +41,7 @@ type MessageWithAuthor struct {
 	AuthorAvatarURL   string
 	ReplyTo           *MessageReplyPreview
 	Reactions         []MessageReactionSummary
+	MentionedUserIDs  []string
 }
 
 // PublicMessage is returned through gRPC and REST.
@@ -58,6 +59,7 @@ type PublicMessage struct {
 	ReplyTo           *MessageReplyPreview
 	Reactions         []MessageReactionSummary
 	Mine              bool
+	MentionedUserIDs  []string
 }
 
 // ChannelAccessInfo holds resolved channel ids and effective caller permissions/settings.
@@ -95,6 +97,7 @@ type CreateChannelMessageInput struct {
 	Body              string
 	ReplyToPublicID   string
 	ClientMsgID       string
+	MentionedUserIDs  []string
 }
 
 // UpdateChannelMessageInput edits an existing message body.

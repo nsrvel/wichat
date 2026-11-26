@@ -16,6 +16,7 @@ import (
 // PgRepository is the Postgres store for group memberships and bans.
 type PgRepository interface {
 	FindGroupMember(ctx context.Context, groupID, userID string) (models.GroupMember, error)
+	FindGroupMemberAccount(ctx context.Context, groupID, userID string) (displayName, username string, err error)
 	InsertGroupMember(ctx context.Context, member models.GroupMember) error
 	DeleteGroupMember(ctx context.Context, groupID, userID string) error
 	CountGroupMembers(ctx context.Context, groupID string) (int, error)
@@ -53,6 +54,23 @@ func (r pgRepository) FindGroupMember(ctx context.Context, groupID, userID strin
 	return models.GroupMember{
 		GroupID: row.GroupID, UserID: row.UserID, Role: row.Role, TimeoutUntil: row.TimeoutUntil, CreatedAt: row.CreatedAt,
 	}, nil
+}
+
+func (r pgRepository) FindGroupMemberAccount(ctx context.Context, groupID, userID string) (string, string, error) {
+	var displayName, username string
+	err := r.db.NewSelect().
+		TableExpr("group_members AS m").
+		ColumnExpr("u.display_name, u.username").
+		Join("JOIN users AS u ON u.id = m.user_id").
+		Where("m.group_id = ? AND m.user_id = ?", groupID, userID).
+		Scan(ctx, &displayName, &username)
+	if err != nil {
+		err = pgErr.MapNotFound(err)
+		r.logIfInfraErr("FindGroupMemberAccount", err)
+		return "", "", err
+	}
+
+	return displayName, username, nil
 }
 
 // InsertGroupMember adds a user to a group and auto-assigns the default Member role.

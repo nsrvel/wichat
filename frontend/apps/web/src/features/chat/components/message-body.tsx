@@ -16,7 +16,7 @@ import {
 	type ComponentPropsWithoutRef,
 } from "react";
 import { useTranslation } from "react-i18next";
-import ReactMarkdown, { type Components } from "react-markdown";
+import ReactMarkdown, { defaultUrlTransform, type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { AttachmentPreviewModal } from "@/features/chat/components/attachment-preview-modal";
 import { isImageContentType } from "@/features/chat/components/composer-attachment-node";
@@ -27,7 +27,12 @@ import {
 	parseInlineReplyPayload,
 	type InlineAttachmentPayload,
 } from "@/features/chat/lib/composer-markdown";
+import {
+	MentionMemberChip,
+	mentionLabelFromChildren,
+} from "@/features/chat/components/mention-member-chip";
 import { remarkUnderline } from "@/features/chat/lib/remark-underline";
+import { isMentionLinkHref, mentionUserIdFromHref } from "@/features/chat/lib/mention-markdown";
 import { resolvePublicObjectUrl } from "@/lib/public-object-url";
 import { cn } from "@/lib/utils";
 
@@ -35,6 +40,9 @@ type MessageBodyProps = {
 	text: string;
 	className?: string;
 	onReplyClick?: (messageId: string) => void;
+	selfUserId?: string;
+	groupId?: string;
+	onMentionMemberClick?: (userId: string) => void;
 };
 
 type FittedImageDimensions = {
@@ -82,6 +90,9 @@ type MessageBodyContextValue = {
 	hasReplyClick: boolean;
 	onReplyClick: (messageId: string) => void;
 	onOpenLightbox: (att: InlineAttachmentPayload) => void;
+	selfUserId?: string;
+	groupId?: string;
+	onMentionMemberClick?: (userId: string) => void;
 };
 
 const MessageBodyContext = createContext<MessageBodyContextValue | null>(null);
@@ -292,7 +303,22 @@ const AttachmentPreview = memo(function AttachmentPreview({
 	);
 });
 
-function MarkdownLink({ href, children, ...props }: ComponentPropsWithoutRef<"a">) {
+function MarkdownLink({ href, children, className, ...props }: ComponentPropsWithoutRef<"a">) {
+	const ctx = useContext(MessageBodyContext);
+	if (isMentionLinkHref(href)) {
+		const userId = mentionUserIdFromHref(href ?? "");
+		const label = mentionLabelFromChildren(children).trim() || userId;
+		return (
+			<MentionMemberChip
+				userId={userId}
+				label={label}
+				selfUserId={ctx?.selfUserId}
+				groupId={ctx?.groupId}
+				onOpenProfile={ctx?.onMentionMemberClick}
+				className={className}
+			/>
+		);
+	}
 	const safeHref = href && /^(https?:\/\/|mailto:|\/)/i.test(href) ? href : undefined;
 	return (
 		<a
@@ -300,7 +326,10 @@ function MarkdownLink({ href, children, ...props }: ComponentPropsWithoutRef<"a"
 			href={safeHref}
 			target="_blank"
 			rel="noopener noreferrer"
-			className="font-medium text-primary underline decoration-primary/40 underline-offset-2 hover:decoration-primary"
+			className={cn(
+				"font-medium text-primary underline decoration-primary/40 underline-offset-2 hover:decoration-primary",
+				className,
+			)}
 		>
 			{children}
 		</a>
@@ -426,6 +455,13 @@ function MarkdownCode({
 
 const REMARK_PLUGINS = [remarkGfm, remarkUnderline];
 
+function messageMarkdownUrlTransform(url: string): string {
+	if (isMentionLinkHref(url)) {
+		return url;
+	}
+	return defaultUrlTransform(url);
+}
+
 const MARKDOWN_COMPONENTS: Components = {
 	a: MarkdownLink,
 	pre: MarkdownPre,
@@ -437,6 +473,9 @@ export const MessageBody = memo(function MessageBody({
 	text,
 	className,
 	onReplyClick,
+	selfUserId,
+	groupId,
+	onMentionMemberClick,
 }: MessageBodyProps) {
 	const [lightboxAttachment, setLightboxAttachment] = useState<InlineAttachmentPayload | null>(
 		null,
@@ -452,8 +491,11 @@ export const MessageBody = memo(function MessageBody({
 			hasReplyClick,
 			onReplyClick: (messageId: string) => onReplyClickRef.current?.(messageId),
 			onOpenLightbox: (item: InlineAttachmentPayload) => setLightboxAttachment(item),
+			selfUserId,
+			groupId,
+			onMentionMemberClick,
 		}),
-		[hasReplyClick],
+		[groupId, hasReplyClick, onMentionMemberClick, selfUserId],
 	);
 
 	if (!text.trim()) {
@@ -469,7 +511,11 @@ export const MessageBody = memo(function MessageBody({
 			data-wichat-selectable="true"
 		>
 			<MessageBodyContext.Provider value={contextValue}>
-				<ReactMarkdown remarkPlugins={REMARK_PLUGINS} components={MARKDOWN_COMPONENTS}>
+				<ReactMarkdown
+					remarkPlugins={REMARK_PLUGINS}
+					components={MARKDOWN_COMPONENTS}
+					urlTransform={messageMarkdownUrlTransform}
+				>
 					{text}
 				</ReactMarkdown>
 			</MessageBodyContext.Provider>

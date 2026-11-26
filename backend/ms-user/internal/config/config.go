@@ -11,7 +11,7 @@ import (
 type Config struct {
 	Env                   string `mapstructure:"env"`
 	LogLevel              string `mapstructure:"log_level"`
-	Port                  string `mapstructure:"port"`     // gRPC listen port
+	Port                  string `mapstructure:"port"`      // gRPC listen port
 	GrpcBind              string `mapstructure:"grpc_bind"` // loopback by default in dev
 	DatabaseURL           string `mapstructure:"database_url"`
 	AuthJWTSecret         string `mapstructure:"auth_jwt_secret"`
@@ -34,6 +34,7 @@ type Config struct {
 	WebAuthnRPDisplayName string `mapstructure:"webauthn_rp_display_name"`
 	InternalGrpcToken     string `mapstructure:"internal_grpc_token"`
 	InviteOnly            bool   `mapstructure:"invite_only"`
+	MFAEnabled            bool   `mapstructure:"mfa_enabled"`
 }
 
 // Defaults are applied when env / .env do not set a value.
@@ -47,6 +48,7 @@ var Defaults = Config{
 	NotificationHost:      "localhost:3005",
 	WebOrigin:             "http://localhost:8080",
 	WebAuthnRPDisplayName: "WiChat",
+	MFAEnabled:            true,
 }
 
 // Load reads configuration from defaults, optional envFile, and environment.
@@ -77,12 +79,14 @@ func (c Config) Validate() error {
 	if !strings.HasPrefix(origin, "https://") {
 		return fmt.Errorf("WEB_ORIGIN must use https:// when ENV=%s", c.Env)
 	}
-	mfaKey := strings.TrimSpace(c.MFAEncryptionKey)
-	if len(mfaKey) < 32 {
-		return fmt.Errorf("MFA_ENCRYPTION_KEY must be at least 32 characters when ENV=%s", c.Env)
-	}
-	if mfaKey == c.AuthJWTSecret {
-		return fmt.Errorf("MFA_ENCRYPTION_KEY must be distinct from AUTH_JWT_SECRET when ENV=%s", c.Env)
+	if c.MFAEnabled {
+		mfaKey := strings.TrimSpace(c.MFAEncryptionKey)
+		if len(mfaKey) < 32 {
+			return fmt.Errorf("MFA_ENCRYPTION_KEY must be at least 32 characters when ENV=%s and MFA_ENABLED=true", c.Env)
+		}
+		if mfaKey == c.AuthJWTSecret {
+			return fmt.Errorf("MFA_ENCRYPTION_KEY must be distinct from AUTH_JWT_SECRET when ENV=%s and MFA_ENABLED=true", c.Env)
+		}
 	}
 	return nil
 }

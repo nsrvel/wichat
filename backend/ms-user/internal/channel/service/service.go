@@ -35,6 +35,7 @@ type Service interface {
 	SyncChannelPermissions(ctx context.Context, accessToken, groupPublicID, channelPublicID string) (models.PublicChannel, error)
 	ReorderGroupChannels(ctx context.Context, accessToken, groupPublicID, sidebarSection, categoryPublicID string, channelPublicIDs []string) error
 	AssertGroupChannelAccess(ctx context.Context, accessToken, groupPublicID, channelPublicID string) (models.ChannelAccess, error)
+	EnsureGroupDmChannel(ctx context.Context, accessToken, groupPublicID, peerUserID string) (models.PublicChannel, bool, error)
 	SeedDefaultChannels(ctx context.Context, groupID, ownerUserID string, createdAt time.Time) error
 	SeedDefaultChannelsWithTemplate(ctx context.Context, groupID, ownerUserID, template string, createdAt time.Time) error
 	WithGroupActivityLog(r groupactivitysvc.Recorder) Service
@@ -235,6 +236,11 @@ func (s service) ListGroupChannels(ctx context.Context, accessToken, groupPublic
 		return nil, nil, err
 	}
 
+	dmVisible, err := s.channels.DmChannelIDSetForUser(ctx, group.ID, userID)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	categories, err := s.categories.ListCategoriesByGroupID(ctx, group.ID)
 	if err != nil {
 		return nil, nil, err
@@ -297,8 +303,35 @@ func (s service) ListGroupChannels(ctx context.Context, accessToken, groupPublic
 		}
 	}
 
+	dmChannelIDs := make([]string, 0, len(dmVisible))
+	for _, ch := range channels {
+		if ch.Type == constants.ChannelKindDM {
+			if _, ok := dmVisible[ch.ID]; ok {
+				dmChannelIDs = append(dmChannelIDs, ch.ID)
+			}
+		}
+	}
+	dmPeers, err := s.channels.DmPeerUserIDsForCaller(ctx, group.ID, userID, dmChannelIDs)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	outChannels := make([]models.PublicChannel, 0, len(channels))
 	for _, ch := range channels {
+		if ch.Type == constants.ChannelKindDM {
+			if _, ok := dmVisible[ch.ID]; !ok {
+				continue
+			}
+			pub := ch.Public()
+			pub.DmPeerUserID = dmPeers[ch.ID]
+			if bypass || s.roles == nil {
+				pub.CallerPermissions = append([]string(nil), constants.AllKnownPermissions...)
+			} else {
+				pub.CallerPermissions = append([]string(nil), basePerms...)
+			}
+			outChannels = append(outChannels, pub)
+			continue
+		}
 		if ch.CategoryID != "" && !visibleCats[ch.CategoryID] {
 			continue
 		}
@@ -969,6 +1002,87 @@ func (s service) AssertGroupChannelAccess(ctx context.Context, accessToken, grou
 		SlowmodeSeconds:   pub.SlowmodeSeconds,
 		ContentVisibility: pub.ContentVisibility,
 	}, nil
+}
+
+func (s service) EnsureGroupDmChannel(
+	ctx context.Context,
+	accessToken, groupPublicID, peerUserID string,
+) (models.PublicChannel, bool, error) {
+	peerUserID = strings.TrimSpace(peerUserID)
+	if peerUserID == "" {
+		return models.PublicChannel{}, false, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "user_id"})
+	}
+
+	userID, err := access.UserIDFromAccessToken(ctx, accessToken, s.secret, s.sessions, s.now())
+	if err != nil {
+		return models.PublicChannel{}, false, err
+	}
+
+	publicID, err := validator.GroupPublicID(groupPublicID)
+	if err != nil {
+		return models.PublicChannel{}, false, err
+	}
+
+	group, err := s.groups.FindGroupByPublicID(ctx, publicID)
+	if err != nil {
+		if errors.Is(err, constants.ErrNotFound) {
+			return models.PublicChannel{}, false, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "group_id"})
+		}
+
+		return models.PublicChannel{}, false, err
+	}
+
+	if _, err := s.members.FindGroupMember(ctx, group.ID, userID); err != nil {
+		if errors.Is(err, constants.ErrNotFound) {
+			return models.PublicChannel{}, false, exception.PermissionDenied(exception.MsgForbidden, nil)
+		}
+
+		return models.PublicChannel{}, false, err
+	}
+
+	if peerUserID == userID {
+		return models.PublicChannel{}, false, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "user_id"})
+	}
+
+	if _, err := s.members.FindGroupMember(ctx, group.ID, peerUserID); err != nil {
+		if errors.Is(err, constants.ErrNotFound) {
+			return models.PublicChannel{}, false, exception.InvalidInput(exception.MsgInvalidInput, map[string]any{"field": "user_id"})
+		}
+
+		return models.PublicChannel{}, false, err
+	}
+
+	existing, err := s.channels.FindGroupDmChannelBetweenUsers(ctx, group.ID, userID, peerUserID)
+	if err == nil {
+		pub := existing.Public()
+		pub.DmPeerUserID = peerUserID
+		return pub, false, nil
+	}
+	if !errors.Is(err, constants.ErrNotFound) {
+		return models.PublicChannel{}, false, err
+	}
+
+	displayName, username, err := s.members.FindGroupMemberAccount(ctx, group.ID, peerUserID)
+	if err != nil {
+		return models.PublicChannel{}, false, err
+	}
+	name := strings.TrimSpace(displayName)
+	if name == "" {
+		name = strings.TrimSpace(username)
+	}
+	if name == "" {
+		name = "DM"
+	}
+
+	now := s.now()
+	created, err := s.channels.CreateGroupDmChannel(ctx, group.ID, name, userID, peerUserID, userID, now)
+	if err != nil {
+		return models.PublicChannel{}, false, err
+	}
+
+	pub := created.Public()
+	pub.DmPeerUserID = peerUserID
+	return pub, true, nil
 }
 
 func (s service) SeedDefaultChannels(ctx context.Context, groupID, ownerUserID string, createdAt time.Time) error {

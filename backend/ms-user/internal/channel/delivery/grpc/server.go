@@ -191,3 +191,17 @@ func (s *Server) AssertGroupChannelAccess(ctx context.Context, req *userv1.Asser
 		ContentVisibility: access.ContentVisibility,
 	}, nil
 }
+
+func (s *Server) EnsureGroupDmChannel(ctx context.Context, req *userv1.EnsureGroupDmChannelRequest) (*userv1.EnsureGroupDmChannelResponse, error) {
+	// Service
+	ch, created, err := s.svc.EnsureGroupDmChannel(ctx, req.GetAccessToken(), req.GetGroupId(), req.GetPeerUserId())
+	if err != nil {
+		return nil, responsegrpc.ToStatus(err)
+	}
+
+	// Response
+	return &userv1.EnsureGroupDmChannelResponse{
+		Channel: authPb.ChannelSummary(ch),
+		Created: created,
+	}, nil
+}

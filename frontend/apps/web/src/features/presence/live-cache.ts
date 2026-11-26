@@ -1,5 +1,9 @@
 import type { GroupMember, GroupMembersPage } from "@wichat/contracts/group/member";
-import type { MyPresenceResponse, PresenceStatus } from "@wichat/contracts/user/presence";
+import type {
+	ManualPresenceStatus,
+	MyPresenceResponse,
+	PresenceStatus,
+} from "@wichat/contracts/user/presence";
 import type { QueryClient } from "@tanstack/react-query";
 import { Q_GROUP_ROLE_MEMBERS } from "@/services/group-role/group-role.key";
 import { Q_INVITE_MEMBERS, Q_INVITE_PREVIEW } from "@/services/invite/invite.query";
@@ -10,6 +14,98 @@ export type LivePresenceFrame = {
 	presence_status: PresenceStatus;
 	is_online: boolean;
 };
+
+/** WS heartbeat interval (25s) × margin — HTTP must not clobber fresher WS self state. */
+const WS_PRESENCE_HTTP_GUARD_MS = 90_000;
+
+type WsSelfPresenceStamp = {
+	at: number;
+	frame: LivePresenceFrame;
+};
+
+let lastWsSelfPresence: WsSelfPresenceStamp | null = null;
+let pendingManualStatus: ManualPresenceStatus | undefined;
+
+/** Optimistic status picker — survives until PUT settles or errors. */
+export function setPendingManualPresence(status: ManualPresenceStatus): void {
+	pendingManualStatus = status;
+}
+
+export function clearPendingManualPresence(): void {
+	pendingManualStatus = undefined;
+}
+
+/** Test-only reset of module coordination state. */
+export function resetPresenceMergeStateForTests(): void {
+	lastWsSelfPresence = null;
+	pendingManualStatus = undefined;
+}
+
+export function touchWsSelfPresence(frame: LivePresenceFrame): void {
+	lastWsSelfPresence = { at: Date.now(), frame };
+}
+
+function wsStampFresh(now = Date.now()): WsSelfPresenceStamp | null {
+	if (!lastWsSelfPresence) {
+		return null;
+	}
+	if (now - lastWsSelfPresence.at > WS_PRESENCE_HTTP_GUARD_MS) {
+		return null;
+	}
+	return lastWsSelfPresence;
+}
+
+function resolveManualStatus(
+	http: MyPresenceResponse,
+	prev?: MyPresenceResponse,
+): ManualPresenceStatus {
+	if (pendingManualStatus) {
+		return pendingManualStatus;
+	}
+	if (prev && prev.manual_status !== http.manual_status) {
+		return prev.manual_status;
+	}
+	return http.manual_status;
+}
+
+/**
+ * Apply GET /me/presence without overwriting fresher WS live fields or in-flight optimistic manual.
+ */
+export function mergeHttpMyPresence(
+	http: MyPresenceResponse,
+	prev?: MyPresenceResponse,
+	now = Date.now(),
+): MyPresenceResponse {
+	const manual_status = resolveManualStatus(http, prev);
+	const ws = wsStampFresh(now);
+
+	if (!ws) {
+		return { ...http, manual_status };
+	}
+
+	const wsLive = ws.frame.is_online && ws.frame.presence_status !== "offline";
+	const httpOffline = !http.is_online || http.effective_status === "offline";
+
+	if (httpOffline && wsLive) {
+		return {
+			...http,
+			manual_status,
+			effective_status: ws.frame.presence_status,
+			is_online: ws.frame.is_online,
+		};
+	}
+
+	if (ws.frame.is_online && !http.is_online) {
+		return {
+			...http,
+			manual_status,
+			effective_status: ws.frame.presence_status,
+			is_online: ws.frame.is_online,
+		};
+	}
+
+	return { ...http, manual_status };
+}
 
 function patchMemberRow(member: GroupMember, frame: LivePresenceFrame): GroupMember | null {
 	if (member.user_id !== frame.user_id) {
@@ -145,26 +241,14 @@ export function upsertLiveMyPresence(
 	if (frame.user_id !== selfUserId) {
 		return;
 	}
-	const hadMyPresence = queryClient.getQueryData<MyPresenceResponse>([Q_MY_PRESENCE]) !== undefined;
-	queryClient.setQueryData<MyPresenceResponse>([Q_MY_PRESENCE], (prev) => {
-		if (!prev) {
-			return prev;
-		}
-		return {
-			...prev,
-			effective_status: frame.presence_status,
-			is_online: frame.is_online,
-		};
-	});
-	if (hadMyPresence) {
-		patchSelfMemberPresenceFromMyPresence(queryClient, selfUserId);
-	} else {
-		patchLiveMemberPresence(queryClient, {
-			user_id: selfUserId,
-			presence_status: frame.presence_status,
-			is_online: frame.is_online,
-		});
-	}
+	touchWsSelfPresence(frame);
+	queryClient.setQueryData<MyPresenceResponse>([Q_MY_PRESENCE], (prev) => ({
+		manual_status: prev?.manual_status ?? pendingManualStatus ?? "online",
+		effective_status: frame.presence_status,
+		is_online: frame.is_online,
+		expires_at: prev?.expires_at ?? "",
+	}));
+	patchLiveMemberPresence(queryClient, frame);
 }
 
 /** Re-apply self row in cached member lists from `Q_MY_PRESENCE` (HTTP refetch / race after WS). */

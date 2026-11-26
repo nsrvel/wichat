@@ -1,4 +1,5 @@
 "use client";
+import { WiChatContextMenuPositioner } from "@/components/ui/menu-positioner";
 
 import { ContextMenu } from "@base-ui/react/context-menu";
 import { ChevronRight } from "lucide-react";
@@ -66,7 +67,7 @@ export function SidebarCategoryContextMenu({
 		<ContextMenu.Root>
 			<ContextMenu.Trigger className="block">{children}</ContextMenu.Trigger>
 			<ContextMenu.Portal>
-				<ContextMenu.Positioner className={menuPositionerClass}>
+				<WiChatContextMenuPositioner className={menuPositionerClass}>
 					<ContextMenu.Popup className={menuPopupClass}>
 						<GroupMenuKitProvider kit={contextMenuKit}>
 							<ContextMenu.Item
@@ -126,7 +127,7 @@ export function SidebarCategoryContextMenu({
 											<ChevronRight className={menuChevronClass} aria-hidden />
 										</ContextMenu.SubmenuTrigger>
 										<ContextMenu.Portal>
-											<ContextMenu.Positioner
+											<WiChatContextMenuPositioner
 												className={menuPositionerClass}
 												alignOffset={-4}
 												sideOffset={-4}
@@ -147,7 +148,7 @@ export function SidebarCategoryContextMenu({
 														{t("shell.group_rail_menu.move_last")}
 													</ContextMenu.Item>
 												</ContextMenu.Popup>
-											</ContextMenu.Positioner>
+											</WiChatContextMenuPositioner>
 										</ContextMenu.Portal>
 									</ContextMenu.SubmenuRoot>
 								</>
@@ -184,7 +185,7 @@ export function SidebarCategoryContextMenu({
 							) : null}
 						</GroupMenuKitProvider>
 					</ContextMenu.Popup>
-				</ContextMenu.Positioner>
+				</WiChatContextMenuPositioner>
 			</ContextMenu.Portal>
 		</ContextMenu.Root>
 	);

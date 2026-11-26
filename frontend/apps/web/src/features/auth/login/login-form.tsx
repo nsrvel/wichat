@@ -34,6 +34,7 @@ import {
 } from "@/services/auth/auth.mutation";
 import { instancePolicyQueryOpts } from "@/services/auth/auth.query";
 import { authSubmitBlocked } from "@/features/auth/lib/captcha-policy";
+import { isMfaFeatureEnabled } from "@/features/auth/lib/mfa-policy";
 
 const LoginFormSchema = z.object({
 	login: z.string().trim().min(1, "validation.login").max(254),
@@ -57,6 +58,7 @@ export function LoginForm({ authReturnTo = "/" }: { authReturnTo?: string }) {
 	const [otpTurnstileToken, setOtpTurnstileToken] = useState("");
 	const [otpTurnstileResetKey, setOtpTurnstileResetKey] = useState(0);
 	const credentialBlocked = authSubmitBlocked(policy, policyReady, turnstileToken);
+	const mfaFeatureEnabled = isMfaFeatureEnabled(policy);
 	const form = useForm<LoginFormValues>({
 		resolver: zodResolver(LoginFormSchema),
 		defaultValues: { login: "", password: "" },
@@ -165,7 +167,13 @@ export function LoginForm({ authReturnTo = "/" }: { authReturnTo?: string }) {
 						login.mutate(payload, {
 							onSuccess: (step) => {
 								if (step.kind === "mfa_challenge") {
-									setMfaChallenge(step.challenge);
+									if (mfaFeatureEnabled) {
+										setMfaChallenge(step.challenge);
+									} else if (process.env.NODE_ENV === "development") {
+										console.warn(
+											"login returned mfa_challenge while instance mfa_enabled is false",
+										);
+									}
 								} else if (step.kind === "challenge") {
 									setChallenge(step.challenge);
 									setResendCooldown(step.challenge.resend_after_seconds);

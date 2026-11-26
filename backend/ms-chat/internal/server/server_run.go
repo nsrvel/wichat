@@ -13,11 +13,15 @@ import (
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/pgdialect"
 	generalgrpc "github.com/wichat/wichat/backend/ms-chat/internal/general/delivery/grpc"
+	mentionrepo "github.com/wichat/wichat/backend/ms-chat/internal/mention/repository"
+	mentionservice "github.com/wichat/wichat/backend/ms-chat/internal/mention/service"
 	messagegrpc "github.com/wichat/wichat/backend/ms-chat/internal/message/delivery/grpc"
 	messagerepo "github.com/wichat/wichat/backend/ms-chat/internal/message/repository"
 	messageservice "github.com/wichat/wichat/backend/ms-chat/internal/message/service"
 	outboxrepo "github.com/wichat/wichat/backend/ms-chat/internal/outbox/repository"
 	outboxservice "github.com/wichat/wichat/backend/ms-chat/internal/outbox/service"
+	searchindexservice "github.com/wichat/wichat/backend/ms-chat/internal/search-index/service"
+	searchgrpc "github.com/wichat/wichat/backend/ms-chat/internal/search/delivery/grpc"
 	searchkafka "github.com/wichat/wichat/backend/ms-chat/internal/search/delivery/kafka"
 	searchrepo "github.com/wichat/wichat/backend/ms-chat/internal/search/repository"
 	searchservice "github.com/wichat/wichat/backend/ms-chat/internal/search/service"
@@ -144,9 +148,13 @@ func (s *server) Run(ctx context.Context) error {
 	messagePg := messagerepo.NewPgRepository(db, outboxPg, s.log)
 	messageMinio := messagerepo.NewMinioRepository(minioClient)
 	outboxSvc := outboxservice.NewService(outboxPg, kafkaProducer, topic, s.log)
-	searchSvc := searchservice.NewService(searchrepo.NewEsRepository(esClient), s.log)
-	searchIndexer := searchkafka.NewSearchIndexer(kafkaConsumer, searchSvc, s.log)
-	messageSvc := messageservice.NewService(messagePg, messageMinio, userGRPC.Auth, userGRPC.Channel, outboxPg, s.log)
+	esRepo := searchrepo.NewEsRepository(esClient)
+	searchIndexSvc := searchindexservice.NewService(esRepo, s.log)
+	mentionPg := mentionrepo.NewPgRepository(db, s.log)
+	mentionSvc := mentionservice.NewService(mentionPg, userGRPC.Channel, userGRPC.Auth, s.log)
+	searchQuerySvc := searchservice.NewQueryService(esRepo, userGRPC.Channel, s.log)
+	searchIndexer := searchkafka.NewSearchIndexer(kafkaConsumer, searchIndexSvc, s.log)
+	messageSvc := messageservice.NewService(messagePg, mentionPg, messageMinio, userGRPC.Auth, userGRPC.Channel, outboxPg, s.log)
 
 	// gRPC
 	addr := s.cfg.ListenAddr()
@@ -157,6 +165,7 @@ func (s *server) Run(ctx context.Context) error {
 
 	grpcSrv := newGRPCServer(s.log, s.cfg.InternalGrpcToken)
 	chatv1.RegisterMessageServiceServer(grpcSrv, messagegrpc.NewServer(messageSvc))
+	chatv1.RegisterSearchServiceServer(grpcSrv, searchgrpc.NewServer(searchQuerySvc, mentionSvc))
 	chatv1.RegisterGeneralServiceServer(grpcSrv, generalgrpc.NewServer("ms-chat"))
 
 	// Listen

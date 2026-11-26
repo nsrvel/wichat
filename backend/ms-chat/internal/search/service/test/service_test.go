@@ -2,39 +2,55 @@ package service_test
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 
 	searchmock "github.com/wichat/wichat/backend/ms-chat/internal/search/repository/mock"
-	searchservice "github.com/wichat/wichat/backend/ms-chat/internal/search/service"
-	chatEvents "github.com/wichat/wichat/backend/wi-shared/chat-events"
+	"github.com/wichat/wichat/backend/ms-chat/internal/search/service"
+	"github.com/wichat/wichat/backend/wi-shared/infra/elasticsearch"
+	"github.com/wichat/wichat/backend/wi-shared/infra/logger"
+	userv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/user/v1"
 )
 
-func TestIndexKafkaValue_deleted(t *testing.T) {
-	st := searchmock.NewState()
-	svc := searchservice.NewService(searchmock.NewEsRepositoryMock(st), nil)
+type fakeChannel struct{}
 
-	payload, err := json.Marshal(chatEvents.MessageDeleted{
-		Type:      chatEvents.TypeMessageDeleted,
-		GroupID:   "g1",
-		ChannelID: "c1",
-		MessageID: "m-public",
-	})
+func (fakeChannel) ListGroupChannels(_ context.Context, _ *userv1.ListGroupChannelsRequest) (*userv1.ListGroupChannelsResponse, error) {
+	return &userv1.ListGroupChannelsResponse{
+		Channels: []*userv1.ChannelSummary{
+			{Id: "ch-1"},
+		},
+	}, nil
+}
+
+func TestSearchMessagesFiltersInaccessibleChannel(t *testing.T) {
+	st := searchmock.NewState()
+	st.Docs = []elasticsearch.MessageDoc{
+		{MessageID: "m1", GroupID: "g1", ChannelID: "ch-1", Body: "hello world"},
+		{MessageID: "m2", GroupID: "g1", ChannelID: "ch-secret", Body: "hello secret"},
+	}
+	svc := service.NewQueryService(searchmock.NewEsRepositoryMock(st), fakeChannel{}, logger.New(logger.Options{}))
+
+	hits, err := svc.SearchMessages(context.Background(), "token", "g1", "hello", 8)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("SearchMessages: %v", err)
 	}
-	if err := svc.IndexKafkaValue(context.Background(), payload); err != nil {
-		t.Fatal(err)
-	}
-	if len(st.DeletedIDs) != 1 || st.DeletedIDs[0] != "m-public" {
-		t.Fatalf("deleted ids: %v", st.DeletedIDs)
+	if len(hits) != 1 || hits[0].MessageID != "m1" {
+		t.Fatalf("expected one accessible hit, got %+v", hits)
 	}
 }
 
-func TestIndexKafkaValue_poisonPayload(t *testing.T) {
-	svc := searchservice.NewService(searchmock.NewEsRepositoryMock(searchmock.NewState()), nil)
-	err := svc.IndexKafkaValue(context.Background(), []byte(`{`))
-	if err == nil || !searchservice.InvalidEventPayload(err) {
-		t.Fatalf("expected invalid payload, got %v", err)
+func TestSearchFilesFiltersInaccessibleChannel(t *testing.T) {
+	st := searchmock.NewState()
+	st.AttachmentDocs = []elasticsearch.AttachmentDoc{
+		{AttachmentID: "a1", GroupID: "g1", ChannelID: "ch-1", Filename: "report.pdf"},
+		{AttachmentID: "a2", GroupID: "g1", ChannelID: "ch-secret", Filename: "report-secret.pdf"},
+	}
+	svc := service.NewQueryService(searchmock.NewEsRepositoryMock(st), fakeChannel{}, logger.New(logger.Options{}))
+
+	hits, err := svc.SearchFiles(context.Background(), "token", "g1", "report", 8, false)
+	if err != nil {
+		t.Fatalf("SearchFiles: %v", err)
+	}
+	if len(hits) != 1 || hits[0].AttachmentID != "a1" {
+		t.Fatalf("expected one accessible file hit, got %+v", hits)
 	}
 }

@@ -19,6 +19,8 @@ export type SidebarChannelRowProps = {
 	onActiveMenuIdChange: (id: string | null) => void;
 	onSelect: () => void;
 	onPrefetch?: () => void;
+	/** Runs on pointerdown before click (navigation intent prefetch). */
+	onPrefetchIntent?: () => void;
 };
 
 export function SidebarChannelRow({
@@ -31,6 +33,7 @@ export function SidebarChannelRow({
 	onActiveMenuIdChange,
 	onSelect,
 	onPrefetch,
+	onPrefetchIntent,
 }: SidebarChannelRowProps) {
 	return (
 		<SidebarRowShell
@@ -49,6 +52,7 @@ export function SidebarChannelRow({
 				)}
 				onClick={onSelect}
 				onPointerEnter={onPrefetch}
+				onPointerDown={onPrefetchIntent}
 			>
 				{icon}
 				<span className="min-w-0 flex-1 truncate text-left">{label}</span>

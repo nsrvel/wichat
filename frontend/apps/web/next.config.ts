@@ -19,6 +19,19 @@ const apiUrl = process.env.NEXT_PUBLIC_API_URL?.trim() || "http://127.0.0.1:3000
 const apiOrigin = new URL(apiUrl).origin;
 const wsOrigin = apiOrigin.replace(/^http/, "ws");
 
+const devLoopbackConnectSrc = isDev
+	? [
+			"http://127.0.0.1:3000",
+			"http://localhost:3000",
+			"ws://127.0.0.1:3000",
+			"ws://localhost:3000",
+			"http://127.0.0.1:8080",
+			"http://localhost:8080",
+			"ws://127.0.0.1:8080",
+			"ws://localhost:8080",
+		].join(" ")
+	: "";
+
 const contentSecurityPolicy = [
 	"default-src 'self'",
 	"base-uri 'self'",
@@ -26,7 +39,7 @@ const contentSecurityPolicy = [
 	"frame-ancestors 'self'",
 	`script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://challenges.cloudflare.com`,
 	"style-src 'self' 'unsafe-inline'",
-	`connect-src 'self' ${apiOrigin} ${wsOrigin} https://challenges.cloudflare.com`,
+	`connect-src 'self' ${apiOrigin} ${wsOrigin} ${devLoopbackConnectSrc} https://challenges.cloudflare.com`,
 	"img-src 'self' data: blob: http://127.0.0.1:9000 http://localhost:9000 https://*.googleusercontent.com",
 	"font-src 'self'",
 	"frame-src https://challenges.cloudflare.com",

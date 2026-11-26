@@ -10,6 +10,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { GroupMemberProfileHost } from "@/components/group/group-member-profile-host";
 import { toChannelShellNavTarget } from "@/features/channel/lib/channel-shell-nav-target";
+import { dmSidebarPeerMember } from "@/features/channel/lib/dm-sidebar-peer";
 import { ChannelEmptyState } from "@/features/chat/components/channel-empty-state";
 import { ChannelMessageSkeleton } from "@/features/chat/components/channel-message-skeleton";
 import { ChatComposer } from "@/features/chat/components/chat-composer";
@@ -35,7 +36,10 @@ import { resolveJumpSeq } from "@/features/chat/lib/resolve-message-jump";
 import { useChannelMessages } from "@/features/chat/lib/use-channel-messages";
 import { Q_CHANNEL_MESSAGES } from "@/services/message/message.key";
 import { hasInlineReplyBlock, stripInlineReplyBlocks } from "@/features/chat/lib/composer-markdown";
+import { extractMentionPublicUserIds } from "@/features/chat/lib/mention-markdown";
+import { messageMentionsSelf } from "@/features/chat/lib/mention-text";
 import { isPendingMessageId } from "@/features/chat/lib/message-seq";
+import { subscribeJumpToMessage } from "@/features/search/lib/jump-to-message-event";
 import { useChannelRealtime } from "@/features/chat/lib/use-channel-realtime";
 import { useChatScroller } from "@/features/chat/lib/use-chat-scroller";
 import { translateError } from "@/integrations/i18n/translate-error";
@@ -58,6 +62,8 @@ type ChannelChatViewProps = {
 	groupId: string;
 	channelId: string;
 	onOpenSidebar?: () => void;
+	embedInWorkspace?: boolean;
+	jumpToMessageId?: string;
 };
 
 function formatDateDividerLabel(isoDate: string, todayLabel: string, yesterdayLabel: string) {
@@ -107,6 +113,8 @@ type TimelineMessageItemProps = {
 	onDeleteMessage: (messageId: string) => void;
 	onToggleReaction: (messageId: string, emoji: string) => void;
 	resolveReactor: (userId: string) => ReactionUserInfo | undefined;
+	selfUserId?: string;
+	groupId?: string;
 };
 
 const TimelineMessageItem = memo(function TimelineMessageItem({
@@ -133,7 +141,13 @@ const TimelineMessageItem = memo(function TimelineMessageItem({
 	onDeleteMessage,
 	onToggleReaction,
 	resolveReactor,
+	selfUserId,
+	groupId,
 }: TimelineMessageItemProps) {
+	const mentionsSelf = useMemo(
+		() => messageMentionsSelf(message.mentionedUserIds, message.bodyPlain, selfUserId),
+		[message.bodyPlain, message.mentionedUserIds, selfUserId],
+	);
 	const isOpt = isPendingMessageId(message.id);
 	const isMine = Boolean(message.mine);
 	const canDelete = isMine || canManageMessages;
@@ -212,6 +226,7 @@ const TimelineMessageItem = memo(function TimelineMessageItem({
 	return (
 		<MessageRow
 			messageId={message.id}
+			showMentionIndicator={mentionsSelf}
 			authorAvatarUrl={message.authorAvatarUrl || authorAvatarFallbackUrl || ""}
 			authorDisplayName={message.authorDisplayName}
 			authorNameColor={authorNameColor}
@@ -236,7 +251,13 @@ const TimelineMessageItem = memo(function TimelineMessageItem({
 			actionBar={actionBar}
 			reactions={reactionsNode}
 		>
-			<MessageBody text={message.bodyPlain} onReplyClick={onJumpToMessage} />
+			<MessageBody
+				text={message.bodyPlain}
+				onReplyClick={onJumpToMessage}
+				selfUserId={selfUserId}
+				groupId={groupId}
+				onMentionMemberClick={groupId ? onSelectAuthor : undefined}
+			/>
 		</MessageRow>
 	);
 });
@@ -302,6 +323,7 @@ const ChannelSlowmodeComposer = memo(function ChannelSlowmodeComposer({
 
 	return (
 		<ChatComposer
+			groupId={groupId}
 			onSubmit={onSubmit}
 			onUploadFile={handleUploadFile}
 			disabled={composerDisabled}
@@ -330,7 +352,13 @@ export function ChannelChatView(props: ChannelChatViewProps) {
 	);
 }
 
-function ChannelChatViewBody({ groupId, channelId, onOpenSidebar }: ChannelChatViewProps) {
+function ChannelChatViewBody({
+	groupId,
+	channelId,
+	onOpenSidebar,
+	embedInWorkspace,
+	jumpToMessageId,
+}: ChannelChatViewProps) {
 	const { t } = useTranslation();
 	const queryClient = useQueryClient();
 	const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
@@ -353,7 +381,6 @@ function ChannelChatViewBody({ groupId, channelId, onOpenSidebar }: ChannelChatV
 		() => channels.data?.channels.find((ch) => ch.id === channelId),
 		[channels.data?.channels, channelId],
 	);
-	const active = toChannelShellNavTarget(channelId, channels.data?.channels);
 	const { data: sessionUser } = useQuery(sessionQueryOpts());
 	const { data: myGroups = [] } = useQuery(myGroupsQueryOpts());
 	const hideRoles = myGroups.find((g) => g.id === groupId)?.hide_roles ?? false;
@@ -361,6 +388,18 @@ function ChannelChatViewBody({ groupId, channelId, onOpenSidebar }: ChannelChatV
 		...groupMembersQueryOpts(groupId, ""),
 		enabled: Boolean(groupId),
 	});
+
+	const dmPeer = useMemo(
+		() =>
+			activeChannel?.type === "dm"
+				? dmSidebarPeerMember(activeChannel, membersQuery.data?.members, sessionUser?.id)
+				: undefined,
+		[activeChannel, membersQuery.data?.members, sessionUser?.id],
+	);
+	const active = useMemo(
+		() => toChannelShellNavTarget(channelId, channels.data?.channels, dmPeer),
+		[channelId, channels.data?.channels, dmPeer],
+	);
 
 	const memberById = useMemo(() => {
 		const map = new Map<string, GroupMember>();
@@ -419,8 +458,8 @@ function ChannelChatViewBody({ groupId, channelId, onOpenSidebar }: ChannelChatV
 	} = useChannelMessages(groupId, channelId);
 
 	const timelineItems = useMemo(() => groupTimelineItems(messages), [messages]);
-	const showLoadingSkeleton = isPending && messages.length === 0 && !isError;
-	const showEmpty = !isPending && !isError && messages.length === 0;
+	const showLoadingSkeleton = messages.length === 0 && !isError && (isPending || isFetching);
+	const showEmpty = !isPending && !isFetching && !isError && messages.length === 0;
 	const showBackgroundRefresh = isFetching && !isPending && messages.length > 0;
 
 	const {
@@ -531,6 +570,21 @@ function ChannelChatViewBody({ groupId, channelId, onOpenSidebar }: ChannelChatV
 			pendingJumpRef.current = null;
 		}
 	}, [messages, scrollToMessage]);
+
+	useEffect(() => {
+		if (!jumpToMessageId?.trim()) {
+			return;
+		}
+		handleJumpToMessage(jumpToMessageId.trim());
+	}, [jumpToMessageId, channelId, handleJumpToMessage]);
+
+	useEffect(() => {
+		return subscribeJumpToMessage((messageId) => {
+			if (!scrollToMessage(messageId)) {
+				pendingJumpRef.current = { targetId: messageId, attempts: 0 };
+			}
+		});
+	}, [scrollToMessage]);
 
 	const handleRealtimeMessage = useCallback(
 		(authorId: string) => {
@@ -685,6 +739,7 @@ function ChannelChatViewBody({ groupId, channelId, onOpenSidebar }: ChannelChatV
 					groupId,
 					channelId,
 					body,
+					mentioned_user_ids: extractMentionPublicUserIds(body),
 					reply_to_id: activeReply?.id,
 					replyPreview: activeReply ?? undefined,
 					authorDisplayName: sessionUser?.display_name,
@@ -736,9 +791,11 @@ function ChannelChatViewBody({ groupId, channelId, onOpenSidebar }: ChannelChatV
 
 	return (
 		<div className="relative flex h-full min-w-0 flex-1 flex-col bg-chat-surface text-foreground">
-			<div className="lg:hidden">
-				<ConversationHeader active={active} onOpenSidebar={onOpenSidebar} />
-			</div>
+			{!embedInWorkspace ? (
+				<div className="lg:hidden">
+					<ConversationHeader active={active} onOpenSidebar={onOpenSidebar} />
+				</div>
+			) : null}
 
 			{groupId && channelId ? (
 				<div className="pointer-events-none absolute right-4 top-2.5 z-20 hidden lg:block">
@@ -822,7 +879,9 @@ function ChannelChatViewBody({ groupId, channelId, onOpenSidebar }: ChannelChatV
 								onScroll={handleScroll}
 								className={showLoadingSkeleton ? "hidden" : undefined}
 								innerClassName={showEmpty || isError ? "min-h-full justify-center py-0" : undefined}
-								virtualizer={!isError && !showEmpty && !showLoadingSkeleton ? virtualizer : undefined}
+								virtualizer={
+									!isError && !showEmpty && !showLoadingSkeleton ? virtualizer : undefined
+								}
 								header={
 									!hasOlderMessages && messages.length > 0 && !isError ? (
 										<div className="flex flex-col items-center justify-center gap-1.5 border-b border-border/40 pb-6 pt-8 text-center">
@@ -892,6 +951,8 @@ function ChannelChatViewBody({ groupId, channelId, onOpenSidebar }: ChannelChatV
 											onDeleteMessage={handleDeleteMessage}
 											onToggleReaction={handleToggleReaction}
 											resolveReactor={resolveReactor}
+											selfUserId={sessionUser?.id}
+											groupId={groupId}
 										/>
 									);
 								}}

@@ -59,9 +59,31 @@ func (f fakeMessageGRPC) ResolveMessageChannelSeq(ctx context.Context, in *chatv
 	return nil, status.Error(codes.Unimplemented, "error.internal")
 }
 
+type fakeSearchGRPC struct{}
+
+func (fakeSearchGRPC) SearchMessages(context.Context, *chatv1.SearchMessagesRequest) (*chatv1.SearchMessagesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "error.internal")
+}
+
+func (fakeSearchGRPC) SearchFiles(context.Context, *chatv1.SearchFilesRequest) (*chatv1.SearchFilesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "error.internal")
+}
+
+func (fakeSearchGRPC) ListGroupMentions(context.Context, *chatv1.ListGroupMentionsRequest) (*chatv1.ListGroupMentionsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "error.internal")
+}
+
+func (fakeSearchGRPC) MarkGroupMentionsRead(context.Context, *chatv1.MarkGroupMentionsReadRequest) (*chatv1.MarkGroupMentionsReadResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "error.internal")
+}
+
+func (fakeSearchGRPC) CountGroupMentionsUnread(context.Context, *chatv1.CountGroupMentionsUnreadRequest) (*chatv1.CountGroupMentionsUnreadResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "error.internal")
+}
+
 func testChatHandler(msg fakeMessageGRPC) chatdelivery.Handler {
 	return chatdelivery.NewHandler(&microservices.Clients{
-		Chat: msChat.Service{GRPC: msChat.GRPC{Message: msg}},
+		Chat: msChat.Service{GRPC: msChat.GRPC{Message: msg, Search: fakeSearchGRPC{}}},
 	}, logger.New(logger.Options{Service: "gateway-test", Env: "test", Level: "error"}))
 }
 

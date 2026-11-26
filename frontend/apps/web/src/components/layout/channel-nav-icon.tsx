@@ -24,6 +24,7 @@ import {
 } from "@/components/layout/sidebar-list-icon";
 import { cn } from "@/lib/utils";
 import { ChannelListIcon } from "@/components/layout/channel-list-icon";
+import { UserAvatar } from "@/components/ui/user-avatar";
 
 export const channelSidebarGlyphClass = channelListGlyphIconClass;
 const channelHeaderGlyphClass = "size-4";
@@ -121,9 +122,21 @@ export function ConversationNavIcon({ active, variant = "list" }: ConversationNa
 	}
 
 	if (active.kind === "dm") {
-		const src = DM_AVATAR_BY_ID[active.id];
-		if (src) {
-			return <SidebarListAvatar src={src} alt={active.label} variant={variant} />;
+		const mockSrc = DM_AVATAR_BY_ID[active.id];
+		if (mockSrc) {
+			return <SidebarListAvatar src={mockSrc} alt={active.label} variant={variant} />;
+		}
+		if (active.dmAvatarInitials !== undefined) {
+			return (
+				<UserAvatar
+					size={variant === "header" ? "sm" : "xs"}
+					src={active.dmAvatarSrc}
+					initials={active.dmAvatarInitials}
+					status={active.dmPresence}
+					statusRingClassName="ring-chat-surface"
+					alt=""
+				/>
+			);
 		}
 		return <SidebarListInitialsAvatar initials={active.label} variant={variant} />;
 	}

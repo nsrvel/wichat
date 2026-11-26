@@ -24,7 +24,9 @@ import { type Channel, creatableChannelKindSchema } from "@wichat/contracts/chat
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AtSign, Compass, FileText, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
+import { useChannelNavigation } from "@/features/channel/channel-navigation-provider";
+import { groupMentionsUnreadCountQueryOpts } from "@/services/mentions/mentions.query";
+import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { ChannelListIcon } from "@/components/layout/channel-list-icon";
@@ -40,7 +42,9 @@ import {
 import { sidebarNavGlyphIconClass } from "@/components/layout/sidebar-list-icon";
 import { SortableCategoryItem } from "@/features/channel-category/components/sortable-category-item";
 import { SortableChannelRow } from "@/features/channel/components/sortable-channel-list";
+import { DmSidebarChannelIcon } from "@/features/channel/components/dm-sidebar-channel-icon";
 import { formatChannelDisplayName } from "@/features/channel/lib/channel-display";
+import { dmPeerDisplayLabel, dmSidebarPeerMember } from "@/features/channel/lib/dm-sidebar-peer";
 import { useCategorySettings } from "@/features/channel-category/category-settings/category-settings-provider";
 import { useChannelSettings } from "@/features/channel/channel-settings/channel-settings-provider";
 import { DeleteChannelConfirmDialog } from "@/features/channel/channel-settings/delete-channel-confirm-dialog";
@@ -54,7 +58,7 @@ import {
 	CHANNEL_SIDEBAR_MIN_WIDTH,
 	useResizableSidebarWidth,
 } from "@/hooks/use-resizable-sidebar-width";
-import { channelPath, quickViewPath, type QuickViewId } from "@/lib/app-routes";
+import { channelPath, type QuickViewId } from "@/lib/app-routes";
 import { cn } from "@/lib/utils";
 import {
 	useCreateGroupChannelMutation,
@@ -66,7 +70,11 @@ import {
 	useReorderGroupCategoriesMutation,
 } from "@/services/channel-category/channel-category.mutation";
 import * as channelQuery from "@/services/channel/channel.query";
+import { sessionQueryOpts } from "@/services/auth/auth.query";
 import { myGroupsQueryOpts } from "@/services/group/group.query";
+import { Q_INVITE_MEMBERS } from "@/services/invite/invite.query";
+import { listGroupMembers } from "@/services/invite/invite.service";
+import type { GroupMember } from "@wichat/contracts/group/member";
 import { prefetchChannelMessages } from "@/services/message/prefetch-channel-messages";
 
 type ProductionChannelSidebarProps = {
@@ -87,6 +95,7 @@ export function ProductionChannelSidebar({
 	const queryClient = useQueryClient();
 	const { t } = useTranslation();
 	const router = useRouter();
+	const { navigateToChannel, navigateToQuickView } = useChannelNavigation();
 	const { openCreateChannel } = useCreateChannelDialog();
 	const { openCategorySettings } = useCategorySettings();
 	const { openChannelSettings } = useChannelSettings();
@@ -103,6 +112,14 @@ export function ProductionChannelSidebar({
 		name: string;
 	} | null>(null);
 	const channels = useQuery(channelQuery.groupChannelsQueryOpts(groupId));
+	const mentionsUnread = useQuery(groupMentionsUnreadCountQueryOpts(groupId));
+	const { data: sessionUser } = useQuery(sessionQueryOpts());
+	const dmMembersQuery = useQuery({
+		queryKey: [Q_INVITE_MEMBERS, groupId, "sidebar-dm"],
+		queryFn: () => listGroupMembers(groupId, { limit: 200 }),
+		staleTime: 30_000,
+		enabled: Boolean(groupId),
+	});
 	const { data: myGroups = [] } = useQuery(myGroupsQueryOpts());
 	const currentGroup = myGroups.find((g) => g.id === groupId);
 	const isGroupOwner = currentGroup?.role === "owner";
@@ -127,11 +144,30 @@ export function ProductionChannelSidebar({
 	const [activeDrag, setActiveDrag] = useState<ActiveDragItem | null>(null);
 	const [dragChannels, setDragChannels] = useState<Channel[] | null>(null);
 	const displayedChannels = dragChannels ?? channelList;
-	const uncategorizedChannels = displayedChannels.filter((c) => !c.category_id);
+	const isChatsSidebarChannel = (c: Channel) => c.type === "dm" || c.sidebar_section === "chats";
+	const uncategorizedChannels = displayedChannels.filter(
+		(c) => !c.category_id && !isChatsSidebarChannel(c),
+	);
+	const dmChannels = displayedChannels.filter(isChatsSidebarChannel);
+
+	const dmMembersById = useMemo(() => {
+		const map = new Map<string, GroupMember>();
+		for (const member of dmMembersQuery.data?.members ?? []) {
+			map.set(member.user_id, member);
+		}
+		return map;
+	}, [dmMembersQuery.data?.members]);
 
 	const prefetchChannel = useCallback(
 		(channelId: string) => {
 			prefetchChannelMessages(queryClient, groupId, channelId);
+		},
+		[groupId, queryClient],
+	);
+
+	const prefetchChannelIntent = useCallback(
+		(channelId: string) => {
+			prefetchChannelMessages(queryClient, groupId, channelId, { priority: true });
 		},
 		[groupId, queryClient],
 	);
@@ -213,8 +249,9 @@ export function ProductionChannelSidebar({
 			isLastInCategory={index >= siblingCount - 1}
 			activeMenuId={activeMenuId}
 			onActiveMenuIdChange={setActiveMenuId}
-			onSelect={() => router.push(channelPath(groupId, ch.id))}
+			onSelect={() => navigateToChannel(groupId, ch.id)}
 			onPrefetch={() => prefetchChannel(ch.id)}
+			onPrefetchIntent={() => prefetchChannelIntent(ch.id)}
 			onInvite={() =>
 				openInvite({
 					scope: "channel",
@@ -484,16 +521,17 @@ export function ProductionChannelSidebar({
 										activeMenuId={activeMenuId}
 										onActiveMenuIdChange={setActiveMenuId}
 										selected={activeQuickView === "mentions"}
-										onSelect={() => router.push(quickViewPath(groupId, "mentions"))}
+										onSelect={() => navigateToQuickView(groupId, "mentions")}
 										icon={<AtSign className={sidebarNavGlyphIconClass} strokeWidth={2} />}
 										label={t("shell.sidebar.mentions")}
+										badgeCount={mentionsUnread.data?.count}
 									/>
 									<SidebarNavItem
 										menuId="qv-discover"
 										activeMenuId={activeMenuId}
 										onActiveMenuIdChange={setActiveMenuId}
 										selected={activeQuickView === "discover"}
-										onSelect={() => router.push(quickViewPath(groupId, "discover"))}
+										onSelect={() => navigateToQuickView(groupId, "discover")}
 										icon={<Compass className={sidebarNavGlyphIconClass} strokeWidth={2} />}
 										label={t("shell.sidebar.discover")}
 									/>
@@ -502,7 +540,7 @@ export function ProductionChannelSidebar({
 										activeMenuId={activeMenuId}
 										onActiveMenuIdChange={setActiveMenuId}
 										selected={activeQuickView === "drafts"}
-										onSelect={() => router.push(quickViewPath(groupId, "drafts"))}
+										onSelect={() => navigateToQuickView(groupId, "drafts")}
 										icon={<FileText className={sidebarNavGlyphIconClass} strokeWidth={2} />}
 										label={t("shell.sidebar.drafts")}
 									/>
@@ -512,7 +550,7 @@ export function ProductionChannelSidebar({
 											activeMenuId={activeMenuId}
 											onActiveMenuIdChange={setActiveMenuId}
 											selected={activeQuickView === "members"}
-											onSelect={() => router.push(quickViewPath(groupId, "members"))}
+											onSelect={() => navigateToQuickView(groupId, "members")}
 											icon={<Users className={sidebarNavGlyphIconClass} strokeWidth={2} />}
 											label={t("shell.sidebar.members")}
 										/>
@@ -543,7 +581,9 @@ export function ProductionChannelSidebar({
 							<SortableContext items={orderedCategoryIds} strategy={verticalListSortingStrategy}>
 								{categories.map((cat, index) => {
 									const isOpen = !collapsedCategories[cat.id];
-									const catChannels = displayedChannels.filter((ch) => ch.category_id === cat.id);
+									const catChannels = displayedChannels.filter(
+										(ch) => ch.category_id === cat.id && !isChatsSidebarChannel(ch),
+									);
 									const toggleCategory = () =>
 										setCollapsedCategories((prev) => ({
 											...prev,
@@ -658,9 +698,37 @@ export function ProductionChannelSidebar({
 								/>
 							</SidebarCategoryContextMenu>
 							{chatsOpen ? (
-								<SidebarCategoryEmptyHint>
-									{t("shell.sidebar.empty_chats")}
-								</SidebarCategoryEmptyHint>
+								dmChannels.length === 0 ? (
+									<SidebarCategoryEmptyHint>
+										{t("shell.sidebar.empty_chats")}
+									</SidebarCategoryEmptyHint>
+								) : (
+									<ul className={cn(sidebarNestedListClass, SIDEBAR_INSET_X)}>
+										{dmChannels.map((ch) => {
+											const peer =
+												dmMembersById.get(ch.dm_peer_user_id ?? "") ??
+												dmSidebarPeerMember(
+													ch,
+													dmMembersQuery.data?.members,
+													sessionUser?.id,
+												);
+											return (
+											<SidebarChannelRow
+												key={ch.id}
+												menuId={`dm-${ch.id}`}
+												activeMenuId={activeMenuId}
+												onActiveMenuIdChange={setActiveMenuId}
+												icon={<DmSidebarChannelIcon channel={ch} peer={peer} />}
+												label={dmPeerDisplayLabel(ch.name, peer)}
+												selected={!activeQuickView && ch.id === activeChannelId}
+												onSelect={() => navigateToChannel(groupId, ch.id)}
+												onPrefetch={() => prefetchChannel(ch.id)}
+												onPrefetchIntent={() => prefetchChannelIntent(ch.id)}
+											/>
+											);
+										})}
+									</ul>
+								)
 							) : null}
 						</div>
 					</div>

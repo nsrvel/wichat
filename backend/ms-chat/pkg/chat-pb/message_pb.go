@@ -38,6 +38,7 @@ func MessageSummary(msg models.PublicMessage) *chatv1.MessageSummary {
 		ReplyTo:           reply,
 		Reactions:         ReactionSummaries(msg.Reactions),
 		Mine:              msg.Mine,
+		MentionedUserIds:  msg.MentionedUserIDs,
 	}
 }
 

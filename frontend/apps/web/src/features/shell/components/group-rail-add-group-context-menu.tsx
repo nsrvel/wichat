@@ -1,4 +1,5 @@
 "use client";
+import { WiChatContextMenuPositioner } from "@/components/ui/menu-positioner";
 
 import { ContextMenu } from "@base-ui/react/context-menu";
 import { useRef, type ReactNode } from "react";
@@ -33,7 +34,7 @@ export function GroupRailAddGroupContextMenu({
 				{children}
 			</ContextMenu.Trigger>
 			<ContextMenu.Portal>
-				<ContextMenu.Positioner className={menuPositionerClass}>
+				<WiChatContextMenuPositioner className={menuPositionerClass}>
 					<ContextMenu.Popup className={menuPopupClass}>
 						<ContextMenu.Item
 							className={menuItemClass}
@@ -54,7 +55,7 @@ export function GroupRailAddGroupContextMenu({
 							{t("shell.add_group_menu_create")}
 						</ContextMenu.Item>
 					</ContextMenu.Popup>
-				</ContextMenu.Positioner>
+				</WiChatContextMenuPositioner>
 			</ContextMenu.Portal>
 		</ContextMenu.Root>
 	);

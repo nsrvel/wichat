@@ -31,24 +31,24 @@ export const USER_STATUS_OPTIONS: readonly UserStatusMeta[] = [
 	{
 		id: "online",
 		labelKey: "shell.user_dock.status_online",
-		dotClass: "bg-emerald-500",
+		dotClass: "bg-presence-online",
 	},
 	{
 		id: "idle",
 		labelKey: "shell.user_dock.status_idle",
-		dotClass: "bg-amber-400",
+		dotClass: "bg-presence-idle",
 	},
 	{
 		id: "dnd",
 		labelKey: "shell.user_dock.status_dnd",
 		descriptionKey: "shell.user_dock.status_dnd_desc",
-		dotClass: "bg-rose-500",
+		dotClass: "bg-presence-dnd",
 	},
 	{
 		id: "invisible",
 		labelKey: "shell.user_dock.status_invisible",
 		descriptionKey: "shell.user_dock.status_invisible_desc",
-		dotClass: "bg-muted-foreground/70",
+		dotClass: "bg-presence-offline",
 	},
 ] as const;
 
