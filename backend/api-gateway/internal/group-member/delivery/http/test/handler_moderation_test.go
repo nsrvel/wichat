@@ -1,4 +1,4 @@
-package group_member_http_test
+package http_test
 
 import "testing"
 
