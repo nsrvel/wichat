@@ -46,9 +46,5 @@ export async function markGroupMentionsRead(
 	body: MarkMentionsReadBody,
 ): Promise<void> {
 	MarkMentionsReadBodySchema.parse(body);
-	await api.post(
-		`/groups/${encodeURIComponent(groupId)}/mentions/read`,
-		OkSchema,
-		body,
-	);
+	await api.post(`/groups/${encodeURIComponent(groupId)}/mentions/read`, OkSchema, body);
 }

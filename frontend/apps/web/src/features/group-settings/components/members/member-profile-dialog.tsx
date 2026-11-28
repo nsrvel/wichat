@@ -168,304 +168,300 @@ export function MemberProfileDialog({
 		}
 	};
 
-	const panel =
-		member ? (
-			<WiChatDialogBody insetX={false} className="pt-0 pb-7">
-					<div
-						className="w-full shrink-0 overflow-hidden bg-popover"
-						style={{
-							height: userProfileBannerHeightPx(400),
-							...(isHexBanner ? { backgroundColor: bannerColor } : undefined),
-						}}
+	const panel = member ? (
+		<WiChatDialogBody insetX={false} className="pt-0 pb-7">
+			<div
+				className="w-full shrink-0 overflow-hidden bg-popover"
+				style={{
+					height: userProfileBannerHeightPx(400),
+					...(isHexBanner ? { backgroundColor: bannerColor } : undefined),
+				}}
+			/>
+			<div className="px-6">
+				<div
+					className="flex items-center gap-2.5"
+					style={{ marginTop: -USER_PROFILE_AVATAR_OVERLAP_PX }}
+				>
+					<UserAvatar
+						src={member.avatar_url}
+						initials={userInitials(memberName)}
+						size={USER_PROFILE_AVATAR_SIZE}
+						status={presenceStatus}
+						ringClassName={USER_PROFILE_AVATAR_RING_CLASS}
 					/>
-					<div className="px-6">
-						<div
-							className="flex items-center gap-2.5"
-							style={{ marginTop: -USER_PROFILE_AVATAR_OVERLAP_PX }}
+					{statusNoteLabel ? <UserStatusNotePill label={statusNoteLabel} /> : null}
+				</div>
+
+				{/* Identity */}
+				<div className="mt-3.5 min-w-0">
+					<div className="flex items-center gap-1.5">
+						<h2 id={titleId} className={USER_PROFILE_DISPLAY_NAME_CLASS}>
+							{memberName}
+						</h2>
+						{member.role === "owner" ? <OwnerCrownIcon label={t("invite.role_owner")} /> : null}
+					</div>
+
+					{member.username || member.pronouns ? (
+						<p className={USER_PROFILE_META_CLASS}>
+							{member.username ? `@${member.username}` : ""}
+							{member.username && member.pronouns ? " • " : ""}
+							{member.pronouns ?? ""}
+						</p>
+					) : null}
+				</div>
+
+				{!policy?.isSelf ? (
+					<div className="mt-3.5 flex items-center gap-2">
+						<Button
+							type="button"
+							size="sm"
+							className="h-8 gap-1.5 rounded-lg px-3.5 text-xs font-semibold"
+							onClick={() =>
+								toast.info(t("group_settings.members.context_menu.message_coming_soon"))
+							}
 						>
-							<UserAvatar
-								src={member.avatar_url}
-								initials={userInitials(memberName)}
-								size={USER_PROFILE_AVATAR_SIZE}
-								status={presenceStatus}
-								ringClassName={USER_PROFILE_AVATAR_RING_CLASS}
-							/>
-							{statusNoteLabel ? <UserStatusNotePill label={statusNoteLabel} /> : null}
-						</div>
+							<MessageCircle className="size-3.5" strokeWidth={2} aria-hidden />
+							<span>{t("group_settings.members.context_menu.message")}</span>
+						</Button>
 
-						{/* Identity */}
-						<div className="mt-3.5 min-w-0">
-							<div className="flex items-center gap-1.5">
-								<h2 id={titleId} className={USER_PROFILE_DISPLAY_NAME_CLASS}>
-									{memberName}
-								</h2>
-								{member.role === "owner" ? <OwnerCrownIcon label={t("invite.role_owner")} /> : null}
-							</div>
-
-							{member.username || member.pronouns ? (
-								<p className={USER_PROFILE_META_CLASS}>
-									{member.username ? `@${member.username}` : ""}
-									{member.username && member.pronouns ? " • " : ""}
-									{member.pronouns ?? ""}
-								</p>
-							) : null}
-						</div>
-
-						{!policy?.isSelf ? (
-							<div className="mt-3.5 flex items-center gap-2">
-								<Button
-									type="button"
-									size="sm"
-									className="h-8 gap-1.5 rounded-lg px-3.5 text-xs font-semibold"
-									onClick={() =>
-										toast.info(t("group_settings.members.context_menu.message_coming_soon"))
-									}
+						<Menu.Root modal={false}>
+							<Menu.Trigger
+								aria-label={t("group_settings.members.profile_dialog.more_actions")}
+								className="inline-flex size-8 items-center justify-center rounded-lg border border-border/80 bg-muted/50 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+							>
+								<MoreHorizontal className="size-4" strokeWidth={2} aria-hidden />
+							</Menu.Trigger>
+							<Menu.Portal>
+								<WiChatMenuPositioner
+									className={menuPositionerClass}
+									side="bottom"
+									align="start"
+									sideOffset={4}
 								>
-									<MessageCircle className="size-3.5" strokeWidth={2} aria-hidden />
-									<span>{t("group_settings.members.context_menu.message")}</span>
-								</Button>
-
-								<Menu.Root modal={false}>
-									<Menu.Trigger
-										aria-label={t("group_settings.members.profile_dialog.more_actions")}
-										className="inline-flex size-8 items-center justify-center rounded-lg border border-border/80 bg-muted/50 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-									>
-										<MoreHorizontal className="size-4" strokeWidth={2} aria-hidden />
-									</Menu.Trigger>
-									<Menu.Portal>
-										<WiChatMenuPositioner
-											className={menuPositionerClass}
-											side="bottom"
-											align="start"
-											sideOffset={4}
-										>
-											<Menu.Popup className={menuPopupClass}>
-												{invitableGroups.length > 0 ? (
-													<>
-														<Menu.SubmenuRoot>
-															<Menu.SubmenuTrigger className={submenuTriggerClass}>
-																<span>
-																	{t("group_settings.members.profile_dialog.invite_to_group")}
-																</span>
-																<ChevronRight className={menuChevronClass} aria-hidden />
-															</Menu.SubmenuTrigger>
-															<Menu.Portal>
-																<WiChatMenuPositioner
-																	className={menuPositionerClass}
-																	side="right"
-																	align="start"
-																	sideOffset={4}
-																>
-																	<Menu.Popup
-																		className={cn(
-																			menuPopupClass,
-																			"thin-scroll max-h-60 overflow-y-auto",
-																		)}
-																	>
-																		{invitableGroups.map((targetGroup) => (
-																			<Menu.Item
-																				key={targetGroup.id}
-																				className={menuItemClass}
-																				disabled={
-																					inviteToGroupMutation.isPending || !captcha.captchaReady
-																				}
-																				onClick={() => inviteToGroupMutation.mutate(targetGroup)}
-																			>
-																				<UserAvatar
-																					src={targetGroup.logo_url}
-																					initials={userInitials(targetGroup.name)}
-																					size="xs"
-																				/>
-																				<span className="truncate">{targetGroup.name}</span>
-																			</Menu.Item>
-																		))}
-																	</Menu.Popup>
-																</WiChatMenuPositioner>
-															</Menu.Portal>
-														</Menu.SubmenuRoot>
-														<Menu.Separator className={menuSeparatorClass} />
-													</>
-												) : null}
-												<Menu.Item
-													className={menuItemClass}
-													onClick={() => {
-														onClose();
-														if (relationshipKind === "ignore") {
-															onClearRelationship(member, "ignore");
-														} else {
-															onRequestIgnore(member);
-														}
-													}}
-												>
-													{t(
-														relationshipKind === "ignore"
-															? "group_settings.members.context_menu.unignore"
-															: "group_settings.members.context_menu.ignore",
-													)}
-												</Menu.Item>
-												<Menu.Item
-													className={menuDestructiveItemClass}
-													onClick={() => {
-														onClose();
-														if (relationshipKind === "block") {
-															onClearRelationship(member, "block");
-														} else {
-															onRequestBlock(member);
-														}
-													}}
-												>
-													{t(
-														relationshipKind === "block"
-															? "group_settings.members.context_menu.unblock"
-															: "group_settings.members.context_menu.block",
-													)}
-												</Menu.Item>
-												{policy?.canTimeout || policy?.canKick || policy?.canBan ? (
-													<>
-														<Menu.Separator className={menuSeparatorClass} />
-														{policy.canTimeout ? (
-															<Menu.Item
-																className={menuDestructiveItemClass}
-																onClick={() => {
-																	onClose();
-																	if (
-																		member.timeout_until &&
-																		new Date(member.timeout_until).getTime() > nowMs
-																	) {
-																		onClearTimeout(member);
-																	} else {
-																		onRequestTimeout(member);
-																	}
-																}}
-															>
-																{t(
-																	member.timeout_until &&
-																		new Date(member.timeout_until).getTime() > nowMs
-																		? "group_settings.members.context_menu.remove_timeout_member"
-																		: "group_settings.members.context_menu.timeout_member",
-																	{
-																		name: memberName,
-																	},
-																)}
-															</Menu.Item>
-														) : null}
-														{policy.canKick ? (
-															<Menu.Item
-																className={menuDestructiveItemClass}
-																onClick={() => {
-																	onClose();
-																	onRequestKick(member);
-																}}
-															>
-																{t("group_settings.members.context_menu.kick_member", {
-																	name: memberName,
-																})}
-															</Menu.Item>
-														) : null}
-														{policy.canBan ? (
-															<Menu.Item
-																className={menuDestructiveItemClass}
-																onClick={() => {
-																	onClose();
-																	onRequestBan(member);
-																}}
-															>
-																{t("group_settings.members.context_menu.ban_member", {
-																	name: memberName,
-																})}
-															</Menu.Item>
-														) : null}
-													</>
-												) : null}
-												{member.username ? (
-													<>
-														<Menu.Separator className={menuSeparatorClass} />
-														<Menu.Item
-															className={menuItemClass}
-															onClick={() => void copyUsername()}
+									<Menu.Popup className={menuPopupClass}>
+										{invitableGroups.length > 0 ? (
+											<>
+												<Menu.SubmenuRoot>
+													<Menu.SubmenuTrigger className={submenuTriggerClass}>
+														<span>
+															{t("group_settings.members.profile_dialog.invite_to_group")}
+														</span>
+														<ChevronRight className={menuChevronClass} aria-hidden />
+													</Menu.SubmenuTrigger>
+													<Menu.Portal>
+														<WiChatMenuPositioner
+															className={menuPositionerClass}
+															side="right"
+															align="start"
+															sideOffset={4}
 														>
-															<Fingerprint className="size-3.5 shrink-0 opacity-45" aria-hidden />
-															<span>{t("group_settings.members.context_menu.copy_username")}</span>
-														</Menu.Item>
-													</>
+															<Menu.Popup
+																className={cn(
+																	menuPopupClass,
+																	"thin-scroll max-h-60 overflow-y-auto",
+																)}
+															>
+																{invitableGroups.map((targetGroup) => (
+																	<Menu.Item
+																		key={targetGroup.id}
+																		className={menuItemClass}
+																		disabled={
+																			inviteToGroupMutation.isPending || !captcha.captchaReady
+																		}
+																		onClick={() => inviteToGroupMutation.mutate(targetGroup)}
+																	>
+																		<UserAvatar
+																			src={targetGroup.logo_url}
+																			initials={userInitials(targetGroup.name)}
+																			size="xs"
+																		/>
+																		<span className="truncate">{targetGroup.name}</span>
+																	</Menu.Item>
+																))}
+															</Menu.Popup>
+														</WiChatMenuPositioner>
+													</Menu.Portal>
+												</Menu.SubmenuRoot>
+												<Menu.Separator className={menuSeparatorClass} />
+											</>
+										) : null}
+										<Menu.Item
+											className={menuItemClass}
+											onClick={() => {
+												onClose();
+												if (relationshipKind === "ignore") {
+													onClearRelationship(member, "ignore");
+												} else {
+													onRequestIgnore(member);
+												}
+											}}
+										>
+											{t(
+												relationshipKind === "ignore"
+													? "group_settings.members.context_menu.unignore"
+													: "group_settings.members.context_menu.ignore",
+											)}
+										</Menu.Item>
+										<Menu.Item
+											className={menuDestructiveItemClass}
+											onClick={() => {
+												onClose();
+												if (relationshipKind === "block") {
+													onClearRelationship(member, "block");
+												} else {
+													onRequestBlock(member);
+												}
+											}}
+										>
+											{t(
+												relationshipKind === "block"
+													? "group_settings.members.context_menu.unblock"
+													: "group_settings.members.context_menu.block",
+											)}
+										</Menu.Item>
+										{policy?.canTimeout || policy?.canKick || policy?.canBan ? (
+											<>
+												<Menu.Separator className={menuSeparatorClass} />
+												{policy.canTimeout ? (
+													<Menu.Item
+														className={menuDestructiveItemClass}
+														onClick={() => {
+															onClose();
+															if (
+																member.timeout_until &&
+																new Date(member.timeout_until).getTime() > nowMs
+															) {
+																onClearTimeout(member);
+															} else {
+																onRequestTimeout(member);
+															}
+														}}
+													>
+														{t(
+															member.timeout_until &&
+																new Date(member.timeout_until).getTime() > nowMs
+																? "group_settings.members.context_menu.remove_timeout_member"
+																: "group_settings.members.context_menu.timeout_member",
+															{
+																name: memberName,
+															},
+														)}
+													</Menu.Item>
 												) : null}
-											</Menu.Popup>
-										</WiChatMenuPositioner>
-									</Menu.Portal>
-								</Menu.Root>
-							</div>
-						) : null}
+												{policy.canKick ? (
+													<Menu.Item
+														className={menuDestructiveItemClass}
+														onClick={() => {
+															onClose();
+															onRequestKick(member);
+														}}
+													>
+														{t("group_settings.members.context_menu.kick_member", {
+															name: memberName,
+														})}
+													</Menu.Item>
+												) : null}
+												{policy.canBan ? (
+													<Menu.Item
+														className={menuDestructiveItemClass}
+														onClick={() => {
+															onClose();
+															onRequestBan(member);
+														}}
+													>
+														{t("group_settings.members.context_menu.ban_member", {
+															name: memberName,
+														})}
+													</Menu.Item>
+												) : null}
+											</>
+										) : null}
+										{member.username ? (
+											<>
+												<Menu.Separator className={menuSeparatorClass} />
+												<Menu.Item className={menuItemClass} onClick={() => void copyUsername()}>
+													<Fingerprint className="size-3.5 shrink-0 opacity-45" aria-hidden />
+													<span>{t("group_settings.members.context_menu.copy_username")}</span>
+												</Menu.Item>
+											</>
+										) : null}
+									</Menu.Popup>
+								</WiChatMenuPositioner>
+							</Menu.Portal>
+						</Menu.Root>
+					</div>
+				) : null}
 
-						<div className="mt-6 space-y-5">
-							{member.bio.trim() ? (
-								<div>
-									<p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-										{t("group_settings.members.profile_dialog.about_me")}
-									</p>
-									<p className="mt-1 whitespace-pre-wrap break-words text-xs leading-relaxed text-foreground">
-										{member.bio.trim()}
-									</p>
-								</div>
-							) : null}
+				<div className="mt-6 space-y-5">
+					{member.bio.trim() ? (
+						<div>
+							<p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+								{t("group_settings.members.profile_dialog.about_me")}
+							</p>
+							<p className="mt-1 whitespace-pre-wrap break-words text-xs leading-relaxed text-foreground">
+								{member.bio.trim()}
+							</p>
+						</div>
+					) : null}
 
-							<div>
-								<p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-									{t("group_settings.members.profile_dialog.member_since")}
-								</p>
-								<div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-medium text-foreground">
-									{member.user_created_at ? (
-										<>
-											<span className="inline-flex items-center gap-1.5" title="WiChat">
-												<WiStudioLogoMark size={16} className="rounded-[4px]" />
-												{formatShortDate(member.user_created_at, locale)}
-											</span>
-											<span className="text-muted-foreground" aria-hidden>
-												·
-											</span>
-										</>
-									) : null}
-									<span className="inline-flex items-center gap-1.5" title={groupName}>
-										<Users className="size-3.5 text-muted-foreground" strokeWidth={2} aria-hidden />
-										{formatShortDate(member.joined_at, locale)}
+					<div>
+						<p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+							{t("group_settings.members.profile_dialog.member_since")}
+						</p>
+						<div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-medium text-foreground">
+							{member.user_created_at ? (
+								<>
+									<span className="inline-flex items-center gap-1.5" title="WiChat">
+										<WiStudioLogoMark size={16} className="rounded-[4px]" />
+										{formatShortDate(member.user_created_at, locale)}
 									</span>
-								</div>
-							</div>
-
-							{!hideRoles ? (
-								<div>
-									<p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-										{t("group_settings.members.profile_dialog.roles")}
-									</p>
-									<MemberRolePickerPopover
-										groupId={groupId}
-										member={member}
-										allRoles={allRoles}
-										assignableRoleIds={assignableRoleIds}
-										canManageRoles={policy?.canManageRoles ?? false}
-										hideRoles={hideRoles}
-										alwaysShowAdd
-									/>
-								</div>
+									<span className="text-muted-foreground" aria-hidden>
+										·
+									</span>
+								</>
 							) : null}
-
-							{invitableGroups.length > 0 && captcha.siteKey ? (
-								<TurnstileWidget
-									siteKey={captcha.siteKey}
-									resetKey={captcha.resetKey}
-									onToken={captcha.setToken}
-								/>
-							) : null}
+							<span className="inline-flex items-center gap-1.5" title={groupName}>
+								<Users className="size-3.5 text-muted-foreground" strokeWidth={2} aria-hidden />
+								{formatShortDate(member.joined_at, locale)}
+							</span>
 						</div>
 					</div>
-				</WiChatDialogBody>
-		) : null;
+
+					{!hideRoles ? (
+						<div>
+							<p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+								{t("group_settings.members.profile_dialog.roles")}
+							</p>
+							<MemberRolePickerPopover
+								groupId={groupId}
+								member={member}
+								allRoles={allRoles}
+								assignableRoleIds={assignableRoleIds}
+								canManageRoles={policy?.canManageRoles ?? false}
+								hideRoles={hideRoles}
+								alwaysShowAdd
+							/>
+						</div>
+					) : null}
+
+					{invitableGroups.length > 0 && captcha.siteKey ? (
+						<TurnstileWidget
+							siteKey={captcha.siteKey}
+							resetKey={captcha.resetKey}
+							onToken={captcha.setToken}
+						/>
+					) : null}
+				</div>
+			</div>
+		</WiChatDialogBody>
+	) : null;
 
 	if (presentation === "popover") {
 		if (!panel) {
 			return null;
 		}
 		return (
-			<div className="thin-scroll max-h-[min(440px,70dvh)] w-[400px] overflow-x-hidden overflow-y-auto rounded-2xl border border-border bg-card text-card-foreground shadow-elevated">
+			<div className="thin-scroll max-h-[min(440px,70dvh)] w-[min(400px,calc(100vw-2rem))] overflow-x-hidden overflow-y-auto rounded-2xl border border-border bg-card text-card-foreground shadow-elevated md:max-h-[min(520px,75dvh)] md:w-[460px]">
 				{panel}
 			</div>
 		);
@@ -481,7 +477,7 @@ export function MemberProfileDialog({
 			}}
 			titleId={titleId}
 			elevated
-			className="min-h-[min(440px,90dvh)] max-w-[400px] rounded-2xl border-border bg-card p-0 py-0 text-card-foreground shadow-elevated sm:py-0 md:py-0 max-h-[880px]:py-0 max-h-[880px]:sm:py-0 max-h-[880px]:md:py-0"
+			className="min-h-[min(440px,90dvh)] max-w-[400px] rounded-2xl border-border bg-card p-0 py-0 text-card-foreground shadow-elevated sm:py-0 md:min-h-[min(520px,88dvh)] md:max-w-[480px] md:py-0 lg:min-h-[min(580px,88dvh)] lg:max-w-[520px] max-h-[880px]:py-0 max-h-[880px]:sm:py-0 max-h-[880px]:md:py-0"
 		>
 			{panel}
 		</WiChatDialog>

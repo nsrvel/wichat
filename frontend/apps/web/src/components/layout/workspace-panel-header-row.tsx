@@ -32,6 +32,48 @@ type WorkspacePanelHeaderRowProps = {
 	quickView?: QuickViewId;
 };
 
+type WorkspaceSidebarHeaderCellProps = {
+	groupId?: string;
+	width: number;
+	className?: string;
+};
+
+export function WorkspaceSidebarHeaderCell({
+	groupId,
+	width,
+	className,
+}: WorkspaceSidebarHeaderCellProps) {
+	const myGroups = useMyGroupsQuery();
+	const activeGroup = groupId ? myGroups.data?.find((g) => g.id === groupId) : undefined;
+	const orderedGroupIds = (myGroups.data ?? []).map((g) => g.id);
+
+	return (
+		<div
+			className={
+				className ??
+				"flex h-14 shrink-0 items-center border-r border-sidebar-border bg-sidebar lg:h-[46px]"
+			}
+			style={{ width }}
+		>
+			<div className="flex size-full items-center pl-4 pr-1.5">
+				{activeGroup ? (
+					<WorkspaceGroupHeaderMenu
+						group={activeGroup}
+						activeGroupId={groupId}
+						orderedGroupIds={orderedGroupIds}
+						className="min-w-0 flex-1"
+					/>
+				) : (
+					<WorkspaceSidebarHeader
+						title={myGroups.data?.[0]?.name ?? ""}
+						className="min-w-0 flex-1"
+					/>
+				)}
+			</div>
+		</div>
+	);
+}
+
 /** Sidebar + conversation headers — aligned strips, full-width divider like workspace chrome. */
 export function WorkspacePanelHeaderRow({
 	onOpenSidebar,
@@ -79,32 +121,10 @@ export function WorkspacePanelHeaderRow({
 		membersQuery.data?.members,
 		sessionUser?.id,
 	]);
-	const myGroups = useMyGroupsQuery();
-	const activeGroup = groupId ? myGroups.data?.find((g) => g.id === groupId) : undefined;
-	const orderedGroupIds = (myGroups.data ?? []).map((g) => g.id);
 
 	return (
 		<div className="hidden shrink-0 border-b border-black lg:flex">
-			<div
-				className="flex h-14 shrink-0 items-center border-r border-sidebar-border bg-sidebar lg:h-[46px]"
-				style={{ width: sidebarWidth }}
-			>
-				<div className="flex size-full items-center pl-4 pr-1.5">
-					{activeGroup ? (
-						<WorkspaceGroupHeaderMenu
-							group={activeGroup}
-							activeGroupId={groupId}
-							orderedGroupIds={orderedGroupIds}
-							className="min-w-0 flex-1"
-						/>
-					) : (
-						<WorkspaceSidebarHeader
-							title={myGroups.data?.[0]?.name ?? ""}
-							className="min-w-0 flex-1"
-						/>
-					)}
-				</div>
-			</div>
+			<WorkspaceSidebarHeaderCell groupId={groupId} width={sidebarWidth} />
 			<div className="min-w-0 flex-1">
 				<ConversationHeader
 					active={active}

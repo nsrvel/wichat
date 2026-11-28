@@ -3,7 +3,11 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useParams, usePathname } from "next/navigation";
 import { useEffect } from "react";
-import { acquireLiveChannels, acquireLivePresence, setLivePresenceGroupId } from "@/features/presence/live-connection";
+import {
+	acquireLiveChannels,
+	acquireLivePresence,
+	setLivePresenceGroupId,
+} from "@/features/presence/live-connection";
 import {
 	patchLiveMemberPresence,
 	patchSelfMemberPresenceFromMyPresence,

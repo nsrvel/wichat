@@ -108,9 +108,7 @@ export const UserProfileIndicator = memo(function UserProfileIndicator({
 	const cutoutPx = cutoutColor ? presenceCutoutRingPx(dotPx) : 0;
 	const sizeStyle: CSSProperties = {
 		...(style ?? { width: dotPx, height: dotPx }),
-		...(cutoutColor
-			? { boxShadow: `0 0 0 ${cutoutPx}px ${cutoutColor}` }
-			: undefined),
+		...(cutoutColor ? { boxShadow: `0 0 0 ${cutoutPx}px ${cutoutColor}` } : undefined),
 	};
 	const dndBarH = Math.max(2, dotPx * 0.22);
 	const dndBarW = dotPx * 0.56;

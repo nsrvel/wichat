@@ -65,10 +65,7 @@ type ShellSearchInputProps = {
 	className?: string;
 };
 
-function measureShellSearchPanelStyle(
-	anchor: HTMLElement,
-	panelHeight: number,
-): CSSProperties {
+function measureShellSearchPanelStyle(anchor: HTMLElement, panelHeight: number): CSSProperties {
 	const rect = anchor.getBoundingClientRect();
 	const width = rect.width;
 	const height =
@@ -90,10 +87,7 @@ function measureShellSearchPanelStyle(
 		left,
 		width,
 		zIndex: 90,
-		maxHeight:
-			side === "top"
-				? Math.max(200, rect.top - floatingCollisionPadding)
-				: undefined,
+		maxHeight: side === "top" ? Math.max(200, rect.top - floatingCollisionPadding) : undefined,
 	};
 }
 
@@ -167,8 +161,7 @@ export const ShellSearchInput = forwardRef<HTMLInputElement, ShellSearchInputPro
 		const messageSearch = useQuery({
 			queryKey: ["shell-search", "messages", groupId ?? "", messageSearchQuery],
 			queryFn: () => searchGroupMessages(groupId ?? "", messageSearchQuery, 8),
-			enabled:
-				open && filter === "messages" && Boolean(groupId) && messageSearchQuery.length >= 2,
+			enabled: open && filter === "messages" && Boolean(groupId) && messageSearchQuery.length >= 2,
 			staleTime: 15_000,
 			retry: 0,
 		});
@@ -236,11 +229,7 @@ export const ShellSearchInput = forwardRef<HTMLInputElement, ShellSearchInputPro
 		const peopleSearchQuery = debouncedQuery.trim();
 		const peopleHits = useMemo(
 			() =>
-				filterGroupMembersForSearch(
-					membersQuery.data?.members,
-					peopleSearchQuery,
-					sessionUser?.id,
-				),
+				filterGroupMembersForSearch(membersQuery.data?.members, peopleSearchQuery, sessionUser?.id),
 			[membersQuery.data?.members, peopleSearchQuery, sessionUser?.id],
 		);
 		const peopleLoading = membersQuery.isFetching && peopleSearchQuery.length >= 2;

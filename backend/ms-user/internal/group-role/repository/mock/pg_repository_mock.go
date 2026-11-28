@@ -291,7 +291,7 @@ func (m pgRepositoryMock) SeedDefaultGroupRolesTx(_ context.Context, _ bun.Tx, g
 		PublicID:    strings.Repeat("e", 24),
 		GroupID:     groupID,
 		Slug:        constants.RoleSlugEveryone,
-		Name:        "@everyone",
+		Name:        "everyone",
 		Color:       "#99aab5",
 		IsDefault:   true,
 		IsSystem:    true,

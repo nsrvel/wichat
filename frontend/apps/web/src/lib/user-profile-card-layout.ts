@@ -18,7 +18,8 @@ export const USER_PROFILE_BODY_CLASS = "px-5 pb-5";
 export const USER_PROFILE_DISPLAY_NAME_CLASS =
 	"truncate text-[17px] font-bold leading-tight tracking-tight text-foreground";
 
-export const USER_PROFILE_META_CLASS = "mt-0.5 truncate text-[13px] font-medium text-muted-foreground";
+export const USER_PROFILE_META_CLASS =
+	"mt-0.5 truncate text-[13px] font-medium text-muted-foreground";
 
 export const USER_PROFILE_BIO_CLASS =
 	"mt-2.5 whitespace-pre-wrap break-words text-xs leading-relaxed text-muted-foreground";
@@ -28,7 +29,5 @@ export function userProfileBannerHeightPx(cardWidthPx = USER_PROFILE_CARD_WIDTH_
 }
 
 export function userProfileAvatarOverlapPx(cardWidthPx = USER_PROFILE_CARD_WIDTH_PX): number {
-	return Math.round(
-		USER_PROFILE_AVATAR_OVERLAP_PX * (cardWidthPx / USER_PROFILE_CARD_WIDTH_PX),
-	);
+	return Math.round(USER_PROFILE_AVATAR_OVERLAP_PX * (cardWidthPx / USER_PROFILE_CARD_WIDTH_PX));
 }

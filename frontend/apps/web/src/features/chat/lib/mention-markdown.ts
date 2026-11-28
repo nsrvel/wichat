@@ -5,6 +5,8 @@ import {
 
 /** Stored user mention: `[@Label](wichat-mention:USER_ID)` */
 export const MENTION_LINK_PREFIX = "wichat-mention:";
+/** Stored role mention: `[@Label](wichat-mention-role:ROLE_ID)` */
+export const MENTION_ROLE_LINK_PREFIX = "wichat-mention-role:";
 
 const MENTION_LINK_RE = new RegExp(
 	`\\[@([^\\]]+)\\]\\(${MENTION_LINK_PREFIX}(${MENTION_USER_ID_SOURCE})\\)`,
@@ -34,6 +36,14 @@ export function messageBodyMentionsSelf(body: string, selfUserId: string | undef
 
 export function isMentionLinkHref(href: string | undefined): boolean {
 	return Boolean(href?.startsWith(MENTION_LINK_PREFIX));
+}
+
+export function isRoleMentionLinkHref(href: string | undefined): boolean {
+	return Boolean(href?.startsWith(MENTION_ROLE_LINK_PREFIX));
+}
+
+export function mentionRoleIdFromHref(href: string): string {
+	return href.slice(MENTION_ROLE_LINK_PREFIX.length).trim();
 }
 
 export function mentionUserIdFromHref(href: string): string {

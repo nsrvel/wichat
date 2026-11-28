@@ -42,7 +42,6 @@ export function dmSidebarPeerMember(
 	return members.find(
 		(m) =>
 			m.user_id !== selfUserId &&
-			(m.display_name.trim().toLowerCase() === label ||
-				m.username.trim().toLowerCase() === label),
+			(m.display_name.trim().toLowerCase() === label || m.username.trim().toLowerCase() === label),
 	);
 }

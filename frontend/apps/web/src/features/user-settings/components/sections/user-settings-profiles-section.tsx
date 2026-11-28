@@ -260,9 +260,7 @@ export function UserSettingsProfilesSection({
 								<UserStatusNotePill label={statusNoteLabel} />
 							</div>
 							<div className="mt-3.5 min-w-0">
-								<p className={USER_PROFILE_DISPLAY_NAME_CLASS}>
-									{nameDraft.trim() || displayName}
-								</p>
+								<p className={USER_PROFILE_DISPLAY_NAME_CLASS}>{nameDraft.trim() || displayName}</p>
 								{username || trimmedPronouns ? (
 									<p className={USER_PROFILE_META_CLASS}>
 										{username ? `@${username}` : ""}

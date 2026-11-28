@@ -74,7 +74,11 @@ export function SidebarNotificationMenuItems({
 					<ChevronRight className={menuChevronClass} aria-hidden />
 				</ContextMenu.SubmenuTrigger>
 				<ContextMenu.Portal>
-					<WiChatContextMenuPositioner className={menuPositionerClass} alignOffset={-4} sideOffset={-4}>
+					<WiChatContextMenuPositioner
+						className={menuPositionerClass}
+						alignOffset={-4}
+						sideOffset={-4}
+					>
 						<ContextMenu.Popup className={menuPopupClass}>
 							{muted ? (
 								<ContextMenu.Item className={menuItemClass} onClick={() => onMutedChange(false)}>
@@ -105,7 +109,11 @@ export function SidebarNotificationMenuItems({
 					<ChevronRight className={menuChevronClass} aria-hidden />
 				</ContextMenu.SubmenuTrigger>
 				<ContextMenu.Portal>
-					<WiChatContextMenuPositioner className={menuPositionerClass} alignOffset={-4} sideOffset={-4}>
+					<WiChatContextMenuPositioner
+						className={menuPositionerClass}
+						alignOffset={-4}
+						sideOffset={-4}
+					>
 						<ContextMenu.Popup className={menuPopupClass}>
 							<ContextMenu.RadioGroup
 								value={notifLevel}

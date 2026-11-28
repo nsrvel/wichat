@@ -135,7 +135,12 @@ export function MessageMoreMenuButton(actions: MessageMenuActionProps) {
 				<MoreHorizontal className="size-4" />
 			</Menu.Trigger>
 			<Menu.Portal>
-				<WiChatMenuPositioner side="bottom" align="end" sideOffset={6} className={menuPositionerClass}>
+				<WiChatMenuPositioner
+					side="bottom"
+					align="end"
+					sideOffset={6}
+					className={menuPositionerClass}
+				>
 					<Menu.Popup className={menuPopupClass}>
 						<MessageMenuItems primitive={DROPDOWN_PRIMITIVE} actions={actions} />
 					</Menu.Popup>

@@ -2,6 +2,7 @@
 
 import hljs from "highlight.js/lib/common";
 import "highlight.js/styles/github-dark.css";
+import { useQuery } from "@tanstack/react-query";
 import { Check, Copy, Download, Maximize2 } from "lucide-react";
 import {
 	createContext,
@@ -32,9 +33,15 @@ import {
 	mentionLabelFromChildren,
 } from "@/features/chat/components/mention-member-chip";
 import { remarkUnderline } from "@/features/chat/lib/remark-underline";
-import { isMentionLinkHref, mentionUserIdFromHref } from "@/features/chat/lib/mention-markdown";
+import {
+	isMentionLinkHref,
+	isRoleMentionLinkHref,
+	mentionRoleIdFromHref,
+	mentionUserIdFromHref,
+} from "@/features/chat/lib/mention-markdown";
 import { resolvePublicObjectUrl } from "@/lib/public-object-url";
 import { cn } from "@/lib/utils";
+import { groupRolesQueryOpts } from "@/services/group-role/group-role.query";
 
 type MessageBodyProps = {
 	text: string;
@@ -93,6 +100,7 @@ type MessageBodyContextValue = {
 	selfUserId?: string;
 	groupId?: string;
 	onMentionMemberClick?: (userId: string) => void;
+	roleColorById?: Map<string, string>;
 };
 
 const MessageBodyContext = createContext<MessageBodyContextValue | null>(null);
@@ -319,6 +327,22 @@ function MarkdownLink({ href, children, className, ...props }: ComponentPropsWit
 			/>
 		);
 	}
+	if (isRoleMentionLinkHref(href)) {
+		const roleId = mentionRoleIdFromHref(href ?? "");
+		const cleanLabel = mentionLabelFromChildren(children).trim().replace(/^@+/, "");
+		const roleColor = ctx?.roleColorById?.get(roleId) ?? "#99aab5";
+		return (
+			<span
+				className={cn("mention-chip inline rounded-md px-1 font-medium no-underline", className)}
+				style={{
+					backgroundColor: `color-mix(in oklab, ${roleColor} 22%, transparent)`,
+					color: roleColor,
+				}}
+			>
+				@{cleanLabel}
+			</span>
+		);
+	}
 	const safeHref = href && /^(https?:\/\/|mailto:|\/)/i.test(href) ? href : undefined;
 	return (
 		<a
@@ -456,7 +480,7 @@ function MarkdownCode({
 const REMARK_PLUGINS = [remarkGfm, remarkUnderline];
 
 function messageMarkdownUrlTransform(url: string): string {
-	if (isMentionLinkHref(url)) {
+	if (isMentionLinkHref(url) || isRoleMentionLinkHref(url)) {
 		return url;
 	}
 	return defaultUrlTransform(url);
@@ -486,6 +510,20 @@ export const MessageBody = memo(function MessageBody({
 	}, [onReplyClick]);
 
 	const hasReplyClick = Boolean(onReplyClick);
+	const rolesQuery = useQuery({
+		...groupRolesQueryOpts(groupId ?? ""),
+		enabled: Boolean(groupId),
+	});
+	const roleColorById = useMemo(() => {
+		const map = new Map<string, string>();
+		for (const role of rolesQuery.data?.roles ?? []) {
+			if (role.id && role.color) {
+				map.set(role.id, role.color);
+			}
+		}
+		return map;
+	}, [rolesQuery.data?.roles]);
+
 	const contextValue = useMemo<MessageBodyContextValue>(
 		() => ({
 			hasReplyClick,
@@ -494,8 +532,9 @@ export const MessageBody = memo(function MessageBody({
 			selfUserId,
 			groupId,
 			onMentionMemberClick,
+			roleColorById,
 		}),
-		[groupId, hasReplyClick, onMentionMemberClick, selfUserId],
+		[groupId, hasReplyClick, onMentionMemberClick, roleColorById, selfUserId],
 	);
 
 	if (!text.trim()) {

@@ -146,6 +146,7 @@ func (r pgRepository) ListForMentionedUser(
 		Join("JOIN users AS u ON u.id = m.author_id").
 		Where("mm.group_id = ?", groupID).
 		Where("mm.mentioned_user_id = ?", mentionedUserID).
+		Where("m.author_id <> mm.mentioned_user_id").
 		OrderExpr("mm.created_at DESC").
 		Limit(int64(limit))
 
@@ -223,11 +224,13 @@ func (r pgRepository) MarkRead(
 
 func (r pgRepository) CountUnread(ctx context.Context, groupID, mentionedUserID string) (int, error) {
 	count, err := r.db.NewSelect().
-		TableExpr("message_mentions").
+		TableExpr("message_mentions AS mm").
 		ColumnExpr("count(*)").
-		Where("group_id = ?", groupID).
-		Where("mentioned_user_id = ?", mentionedUserID).
-		Where("read_at IS NULL").
+		Join("JOIN messages AS m ON m.id = mm.message_id").
+		Where("mm.group_id = ?", groupID).
+		Where("mm.mentioned_user_id = ?", mentionedUserID).
+		Where("m.author_id <> mm.mentioned_user_id").
+		Where("mm.read_at IS NULL").
 		Count(ctx)
 	if err != nil {
 		r.logIfInfraErr("CountUnread", err)

@@ -1,6 +1,9 @@
 import type { JSONContent } from "@tiptap/react";
 import { MENTION_USER_ID_SOURCE } from "@/features/chat/lib/mention-chip-styles";
-import { MENTION_LINK_PREFIX } from "@/features/chat/lib/mention-markdown";
+import {
+	MENTION_LINK_PREFIX,
+	MENTION_ROLE_LINK_PREFIX,
+} from "@/features/chat/lib/mention-markdown";
 
 function applyMarks(text: string, marks: JSONContent["marks"]): string {
 	if (!marks || marks.length === 0) {
@@ -74,11 +77,21 @@ function serializeInline(nodes: JSONContent[] | undefined): string {
 			}
 			if (node.type === "userMention") {
 				const id = typeof node.attrs?.id === "string" ? node.attrs.id : "";
-				const label = typeof node.attrs?.label === "string" ? node.attrs.label : "";
+				const rawLabel = typeof node.attrs?.label === "string" ? node.attrs.label : "";
+				const cleanLabel = rawLabel.replace(/^@+/, "");
 				if (!id) {
-					return `@${label}`;
+					return `@${cleanLabel}`;
 				}
-				return `[@${label}](${MENTION_LINK_PREFIX}${id})`;
+				return `[@${cleanLabel}](${MENTION_LINK_PREFIX}${id})`;
+			}
+			if (node.type === "roleMention") {
+				const id = typeof node.attrs?.id === "string" ? node.attrs.id : "";
+				const rawLabel = typeof node.attrs?.label === "string" ? node.attrs.label : "";
+				const cleanLabel = rawLabel.replace(/^@+/, "");
+				if (!id) {
+					return `@${cleanLabel}`;
+				}
+				return `[@${cleanLabel}](${MENTION_ROLE_LINK_PREFIX}${id})`;
 			}
 			return serializeInline(node.content);
 		})
@@ -290,27 +303,67 @@ const INLINE_MENTION_MD_RE = new RegExp(
 	`\\[@([^\\]]+)\\]\\(wichat-mention:(${MENTION_USER_ID_SOURCE})\\)`,
 	"gi",
 );
+const INLINE_ROLE_MENTION_MD_RE = new RegExp(
+	`\\[@([^\\]]+)\\]\\(wichat-mention-role:([0-9a-f]{24})\\)`,
+	"gi",
+);
 
-function parseInlineLineWithMentions(line: string): JSONContent[] {
-	const nodes: JSONContent[] = [];
-	let lastIndex = 0;
+type MentionToken = {
+	index: number;
+	length: number;
+	node: JSONContent;
+};
+
+function mentionTokensForLine(line: string): MentionToken[] {
+	const tokens: MentionToken[] = [];
 	INLINE_MENTION_MD_RE.lastIndex = 0;
 	for (const match of line.matchAll(INLINE_MENTION_MD_RE)) {
 		const index = match.index ?? 0;
-		if (index > lastIndex) {
-			nodes.push(...parseStyledLineToNodes(line.slice(lastIndex, index)));
-		}
 		const rawLabel = match[1] ?? "";
-		nodes.push({
-			type: "userMention",
-			attrs: { id: match[2] ?? "", label: rawLabel.replace(/^@/, "") },
+		tokens.push({
+			index,
+			length: match[0].length,
+			node: {
+				type: "userMention",
+				attrs: { id: match[2] ?? "", label: rawLabel.replace(/^@/, "") },
+			},
 		});
-		lastIndex = index + match[0].length;
+	}
+	INLINE_ROLE_MENTION_MD_RE.lastIndex = 0;
+	for (const match of line.matchAll(INLINE_ROLE_MENTION_MD_RE)) {
+		const index = match.index ?? 0;
+		const rawLabel = match[1] ?? "";
+		tokens.push({
+			index,
+			length: match[0].length,
+			node: {
+				type: "roleMention",
+				attrs: { id: match[2] ?? "", label: rawLabel.replace(/^@/, ""), color: "#99aab5" },
+			},
+		});
+	}
+	tokens.sort((a, b) => a.index - b.index);
+	return tokens;
+}
+
+function parseInlineLineWithMentions(line: string): JSONContent[] {
+	const tokens = mentionTokensForLine(line);
+	if (tokens.length === 0) {
+		return parseStyledLineToNodes(line);
+	}
+	const nodes: JSONContent[] = [];
+	let lastIndex = 0;
+	for (const token of tokens) {
+		if (token.index > lastIndex) {
+			nodes.push(...parseStyledLineToNodes(line.slice(lastIndex, token.index)));
+		}
+		nodes.push(token.node);
+		lastIndex = token.index + token.length;
 	}
 	if (lastIndex < line.length) {
 		nodes.push(...parseStyledLineToNodes(line.slice(lastIndex)));
 	}
-	return nodes.length > 0 ? nodes : parseStyledLineToNodes(line);
+	return nodes;
 }
 
 function parseStyledLineToNodes(line: string): JSONContent[] {

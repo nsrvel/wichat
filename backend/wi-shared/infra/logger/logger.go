@@ -1,9 +1,14 @@
 package logger
 
 import (
+	"context"
+	"errors"
 	"log/slog"
 	"os"
 	"strings"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // Logger is the application logging interface (inject into service, repository, delivery).
@@ -56,7 +61,10 @@ func stringsEqualFold(a, b string) bool {
 // HTTPWriteErrorLogger adapts Logger for response/http.WithLogger.
 func HTTPWriteErrorLogger(l Logger) func(error) {
 	return func(err error) {
-		if err == nil {
+		if err == nil || errors.Is(err, context.Canceled) {
+			return
+		}
+		if st, ok := status.FromError(err); ok && st.Code() == codes.Canceled {
 			return
 		}
 		l.Error("http error response", "err", err)

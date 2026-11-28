@@ -265,6 +265,8 @@ const TimelineMessageItem = memo(function TimelineMessageItem({
 type ChannelSlowmodeComposerProps = {
 	groupId: string;
 	channelId: string;
+	selfUserId?: string;
+	callerPermissions?: string[];
 	composerDisabled: boolean;
 	disabledReason?: string;
 	slowmodeSeconds: number;
@@ -280,6 +282,8 @@ type ChannelSlowmodeComposerProps = {
 const ChannelSlowmodeComposer = memo(function ChannelSlowmodeComposer({
 	groupId,
 	channelId,
+	selfUserId,
+	callerPermissions,
 	composerDisabled,
 	disabledReason,
 	slowmodeSeconds,
@@ -324,6 +328,8 @@ const ChannelSlowmodeComposer = memo(function ChannelSlowmodeComposer({
 	return (
 		<ChatComposer
 			groupId={groupId}
+			selfUserId={selfUserId}
+			callerPermissions={callerPermissions}
 			onSubmit={onSubmit}
 			onUploadFile={handleUploadFile}
 			disabled={composerDisabled}
@@ -991,6 +997,8 @@ function ChannelChatViewBody({
 						<ChannelSlowmodeComposer
 							groupId={groupId}
 							channelId={channelId}
+							selfUserId={sessionUser?.id}
+							callerPermissions={perms}
 							composerDisabled={composerDisabled}
 							disabledReason={disabledReason}
 							slowmodeSeconds={slowmodeSeconds}

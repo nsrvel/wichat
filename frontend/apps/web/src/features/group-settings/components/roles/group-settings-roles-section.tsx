@@ -83,7 +83,7 @@ export function GroupSettingsRolesSection({ target }: GroupSettingsRolesSectionP
 		return {
 			id: "everyone",
 			slug: "everyone",
-			name: "@everyone",
+			name: "everyone",
 			memberCount: memberTotal,
 			isDefault: true,
 			isSystem: true,

@@ -363,7 +363,7 @@ func (r pgRepository) SeedDefaultGroupRolesTx(ctx context.Context, tx bun.Tx, gr
 		PublicID:    everyonePubID,
 		GroupID:     groupID,
 		Slug:        constants.RoleSlugEveryone,
-		Name:        "@everyone",
+		Name:        "everyone",
 		Color:       "#99aab5",
 		Hoist:       false,
 		Mentionable: false,
