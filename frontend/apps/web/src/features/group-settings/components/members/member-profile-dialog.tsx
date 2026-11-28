@@ -461,7 +461,7 @@ export function MemberProfileDialog({
 			return null;
 		}
 		return (
-			<div className="thin-scroll max-h-[min(440px,70dvh)] w-[min(400px,calc(100vw-2rem))] overflow-x-hidden overflow-y-auto rounded-2xl border border-border bg-card text-card-foreground shadow-elevated md:max-h-[min(520px,75dvh)] md:w-[460px]">
+			<div className="thin-scroll max-h-[min(440px,70dvh)] w-[400px] overflow-x-hidden overflow-y-auto rounded-2xl border border-border bg-card text-card-foreground shadow-elevated">
 				{panel}
 			</div>
 		);
@@ -477,7 +477,7 @@ export function MemberProfileDialog({
 			}}
 			titleId={titleId}
 			elevated
-			className="min-h-[min(440px,90dvh)] max-w-[400px] rounded-2xl border-border bg-card p-0 py-0 text-card-foreground shadow-elevated sm:py-0 md:min-h-[min(520px,88dvh)] md:max-w-[480px] md:py-0 lg:min-h-[min(580px,88dvh)] lg:max-w-[520px] max-h-[880px]:py-0 max-h-[880px]:sm:py-0 max-h-[880px]:md:py-0"
+			className="min-h-[min(440px,90dvh)] max-w-[400px] rounded-2xl border-border bg-card p-0 py-0 text-card-foreground shadow-elevated sm:py-0 md:py-0 max-h-[880px]:py-0 max-h-[880px]:sm:py-0 max-h-[880px]:md:py-0"
 		>
 			{panel}
 		</WiChatDialog>
