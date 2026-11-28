@@ -33,10 +33,7 @@ export function UserProfileCardShell({
 	return (
 		<div className={cn("overflow-visible", className)} style={{ width: widthPx }}>
 			<div
-				className={cn(
-					"w-full shrink-0 overflow-hidden bg-popover",
-					roundedTop && "rounded-t-2xl",
-				)}
+				className={cn("w-full shrink-0 overflow-hidden bg-popover", roundedTop && "rounded-t-2xl")}
 				style={bannerStyle}
 			/>
 			<div className={cn(USER_PROFILE_BODY_CLASS, bodyClassName)}>{children}</div>

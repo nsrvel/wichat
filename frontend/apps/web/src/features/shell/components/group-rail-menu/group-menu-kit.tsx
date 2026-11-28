@@ -3,10 +3,7 @@
 import { ContextMenu } from "@base-ui/react/context-menu";
 import { Menu } from "@base-ui/react/menu";
 import { createContext, useContext, type ReactNode } from "react";
-import {
-	WiChatContextMenuPositioner,
-	WiChatMenuPositioner,
-} from "@/components/ui/menu-positioner";
+import { WiChatContextMenuPositioner, WiChatMenuPositioner } from "@/components/ui/menu-positioner";
 
 export type GroupMenuKit = {
 	Item: typeof ContextMenu.Item;

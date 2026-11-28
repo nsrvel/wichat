@@ -277,9 +277,7 @@ export function UserSettingsAccountSection({
 				onOpenChange={setChangePasswordOpen}
 				hasPassword={hasPassword}
 			/>
-			{mfaFeatureEnabled ? (
-				<MfaSettingsDialog open={mfaOpen} onOpenChange={setMfaOpen} />
-			) : null}
+			{mfaFeatureEnabled ? <MfaSettingsDialog open={mfaOpen} onOpenChange={setMfaOpen} /> : null}
 			<AccountStatusDialog
 				open={accountStatusMode !== null}
 				onOpenChange={(nextOpen) => {

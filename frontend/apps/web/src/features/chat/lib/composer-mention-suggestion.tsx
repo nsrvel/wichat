@@ -9,14 +9,22 @@ import { UserAvatar } from "@/components/ui/user-avatar";
 import { userInitials } from "@/lib/user-initials";
 import { positionWithinViewport } from "@/lib/position-within-viewport";
 import { cn } from "@/lib/utils";
+import {
+	filterMentionSuggestMembers,
+	type MentionSuggestMemberItem,
+} from "@/features/chat/lib/mention-suggest-members";
+import { mentionPickerRoles } from "@/features/chat/lib/mentionable-roles";
 import { groupMembersQueryOpts } from "@/services/invite/invite.query";
+import { groupRolesQueryOpts } from "@/services/group-role/group-role.query";
 
-export type MentionSuggestItem = {
+export type MentionSuggestRoleItem = {
+	kind: "role";
 	id: string;
 	label: string;
-	username: string;
-	avatarUrl: string;
+	color: string;
 };
+
+export type MentionSuggestItem = MentionSuggestMemberItem | MentionSuggestRoleItem;
 
 type MentionListRef = {
 	onKeyDown: (props: SuggestionKeyDownProps) => boolean;
@@ -62,23 +70,26 @@ const MentionList = forwardRef<MentionListRef, MentionListProps>(function Mentio
 		return null;
 	}
 
-	return (
-		<div
-			className="z-50 w-[min(20rem,calc(100vw-1rem))] rounded-lg border border-border bg-popover p-1 shadow-md"
-			role="listbox"
+	const members = items.filter((i): i is MentionSuggestMemberItem => i.kind === "user");
+	const roles = items.filter((i): i is MentionSuggestRoleItem => i.kind === "role");
+
+	const renderRow = (item: MentionSuggestItem, index: number) => (
+		<button
+			key={`${item.kind}-${item.id}`}
+			type="button"
+			role="option"
+			aria-selected={index === selectedIndex}
+			data-testid={
+				item.kind === "user" ? `mention-suggest-user-${item.id}` : `mention-suggest-role-${item.id}`
+			}
+			onClick={() => command(item)}
+			className={cn(
+				"flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted",
+				index === selectedIndex && "bg-muted",
+			)}
 		>
-			{items.map((item, index) => (
-				<button
-					key={item.id}
-					type="button"
-					role="option"
-					aria-selected={index === selectedIndex}
-					onClick={() => command(item)}
-					className={cn(
-						"flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted",
-						index === selectedIndex && "bg-muted",
-					)}
-				>
+			{item.kind === "user" ? (
+				<>
 					<UserAvatar
 						src={item.avatarUrl}
 						alt={item.label}
@@ -87,46 +98,68 @@ const MentionList = forwardRef<MentionListRef, MentionListProps>(function Mentio
 					/>
 					<span className="min-w-0 truncate font-medium">{item.label}</span>
 					<span className="ml-auto truncate text-xs text-muted-foreground">@{item.username}</span>
-				</button>
-			))}
+				</>
+			) : (
+				<>
+					<span
+						className="min-w-0 truncate font-medium"
+						style={
+							item.color && item.color.toLowerCase() !== "#99aab5"
+								? { color: item.color }
+								: undefined
+						}
+					>
+						@{item.label.replace(/^@+/, "")}
+					</span>
+				</>
+			)}
+		</button>
+	);
+
+	let rowIndex = 0;
+	return (
+		<div
+			className="z-50 max-h-72 w-full overflow-y-auto rounded-lg border border-border bg-popover p-1 shadow-md"
+			role="listbox"
+		>
+			{members.length > 0 ? (
+				<div className="px-2 py-1 text-xs font-semibold text-muted-foreground">Members</div>
+			) : null}
+			{members.map((item) => renderRow(item, rowIndex++))}
+			{members.length > 0 && roles.length > 0 ? (
+				<div className="my-1 border-t border-border/60" role="separator" />
+			) : null}
+			{roles.map((item) => renderRow(item, rowIndex++))}
 		</div>
 	);
 });
-
-function filterMembers(
-	members: { user_id: string; display_name: string; username: string; avatar_url?: string | null }[],
-	query: string,
-): MentionSuggestItem[] {
-	const needle = query.trim().toLowerCase();
-	const rows = !needle
-		? members.slice(0, 12)
-		: members
-				.filter((m) => {
-					const name = m.display_name?.toLowerCase() ?? "";
-					const username = m.username?.toLowerCase() ?? "";
-					return name.includes(needle) || username.includes(needle);
-				})
-				.slice(0, 12);
-	return rows.map((m) => ({
-		id: m.user_id,
-		label: m.display_name || m.username,
-		username: m.username,
-		avatarUrl: m.avatar_url ?? "",
-	}));
-}
 
 async function loadMentionItems(
 	queryClient: QueryClient,
 	groupId: string,
 	query: string,
+	selfUserId: string | undefined,
+	callerPermissions: string[] | undefined,
 ): Promise<MentionSuggestItem[]> {
-	const data = await queryClient.fetchQuery(groupMembersQueryOpts(groupId, ""));
-	return filterMembers(data?.members ?? [], query);
+	const [membersData, rolesData] = await Promise.all([
+		queryClient.fetchQuery(groupMembersQueryOpts(groupId, "")),
+		queryClient.fetchQuery(groupRolesQueryOpts(groupId)),
+	]);
+	const members = filterMentionSuggestMembers(membersData?.members ?? [], query, selfUserId);
+	const roles = mentionPickerRoles(rolesData?.roles ?? [], callerPermissions, query).map((r) => ({
+		kind: "role" as const,
+		id: r.id,
+		label: r.name.replace(/^@+/, ""),
+		color: r.color,
+	}));
+	return [...members, ...roles];
 }
 
 export type ComposerMentionSuggestionOptions = {
 	groupId: string;
 	queryClient: QueryClient;
+	selfUserId?: string;
+	callerPermissions?: string[];
 };
 
 export const ComposerMentionSuggestion = Extension.create<ComposerMentionSuggestionOptions>({
@@ -136,11 +169,13 @@ export const ComposerMentionSuggestion = Extension.create<ComposerMentionSuggest
 		return {
 			groupId: "",
 			queryClient: null as unknown as QueryClient,
+			selfUserId: undefined as string | undefined,
+			callerPermissions: [] as string[] | undefined,
 		};
 	},
 
 	addProseMirrorPlugins() {
-		const { groupId, queryClient } = this.options;
+		const { groupId, queryClient, selfUserId, callerPermissions } = this.options;
 		if (!groupId || !queryClient) {
 			return [];
 		}
@@ -154,17 +189,38 @@ export const ComposerMentionSuggestion = Extension.create<ComposerMentionSuggest
 					const $from = state.doc.resolve(range.from);
 					return $from.parent.type.name !== "codeBlock";
 				},
-				items: ({ query }) => loadMentionItems(queryClient, groupId, query),
+				items: ({ query }) =>
+					loadMentionItems(queryClient, groupId, query, selfUserId, callerPermissions),
 				command: ({ editor, range, props }) => {
+					if (props.kind === "user") {
+						const id = props.id?.trim() ?? "";
+						if (selfUserId?.trim() && id === selfUserId.trim()) {
+							return;
+						}
+						const label = (props.label?.trim() || props.username?.trim() || id).replace(/^@+/, "");
+						editor
+							.chain()
+							.focus()
+							.insertContentAt(range, [
+								{
+									type: "userMention",
+									attrs: { id, label },
+								},
+								{ type: "text", text: " " },
+							])
+							.run();
+						return;
+					}
 					const id = props.id?.trim() ?? "";
-					const label = props.label?.trim() || props.username?.trim() || id;
+					const label = (props.label?.trim() || id).replace(/^@+/, "");
+					const color = props.color?.trim() || "#99aab5";
 					editor
 						.chain()
 						.focus()
 						.insertContentAt(range, [
 							{
-								type: "userMention",
-								attrs: { id, label },
+								type: "roleMention",
+								attrs: { id, label, color },
 							},
 							{ type: "text", text: " " },
 						])
@@ -174,23 +230,23 @@ export const ComposerMentionSuggestion = Extension.create<ComposerMentionSuggest
 					let renderer: ReactRenderer<MentionListRef> | null = null;
 					let element: HTMLDivElement | null = null;
 
-					const estimateListHeight = (itemCount: number) =>
-						Math.min(itemCount, 8) * 44 + 12;
+					const estimateListHeight = (itemCount: number) => Math.min(itemCount, 8) * 44 + 12;
 
-					const position = (_editor: Editor, props: SuggestionProps<MentionSuggestItem>) => {
+					const position = (editor: Editor, props: SuggestionProps<MentionSuggestItem>) => {
 						const rect = props.clientRect?.();
 						if (!element || !rect) {
 							return;
 						}
-						const width = Math.max(element.offsetWidth, 288);
+						const composerBox = editor.view.dom.closest("[data-composer-box]");
+						const composerRect = composerBox?.getBoundingClientRect();
+						const anchorRect = composerRect ?? rect;
+						const width = composerRect ? composerRect.width : Math.max(element.offsetWidth, 288);
 						const measured = element.offsetHeight;
-						const height =
-							measured > 0 ? measured : estimateListHeight(props.items.length);
+						const height = measured > 0 ? measured : estimateListHeight(props.items.length);
 						const vh = window.innerHeight;
-						// Composer sits low on the screen — prefer opening above the caret when in the lower band.
-						const preferTop = rect.bottom > vh * 0.52;
+						const preferTop = anchorRect.bottom > vh * 0.52;
 						const { top, left } = positionWithinViewport({
-							anchor: rect,
+							anchor: anchorRect,
 							width,
 							height,
 							align: "start",
@@ -257,6 +313,13 @@ export const ComposerMentionSuggestion = Extension.create<ComposerMentionSuggest
 export function composerMentionSuggestionExtension(
 	groupId: string,
 	queryClient: QueryClient,
+	selfUserId?: string,
+	callerPermissions?: string[],
 ) {
-	return ComposerMentionSuggestion.configure({ groupId, queryClient });
+	return ComposerMentionSuggestion.configure({
+		groupId,
+		queryClient,
+		selfUserId,
+		callerPermissions,
+	});
 }

@@ -38,3 +38,20 @@ func TestIsOutboundUnavailable(t *testing.T) {
 		t.Fatal("canceled")
 	}
 }
+
+func TestIsClientCanceled(t *testing.T) {
+	t.Parallel()
+
+	if utils.IsClientCanceled(nil) {
+		t.Fatal("nil")
+	}
+	if !utils.IsClientCanceled(context.Canceled) {
+		t.Fatal("context canceled")
+	}
+	if !utils.IsClientCanceled(status.Error(codes.Canceled, "aborted")) {
+		t.Fatal("grpc canceled")
+	}
+	if utils.IsClientCanceled(context.DeadlineExceeded) {
+		t.Fatal("deadline is not client canceled")
+	}
+}

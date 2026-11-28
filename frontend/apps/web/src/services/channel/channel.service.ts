@@ -27,7 +27,10 @@ export async function listGroupChannels(groupId: string): Promise<ChannelsList> 
 	return api.get(`/groups/${encodeURIComponent(groupId)}/channels`, ChannelsListSchema);
 }
 
-export async function ensureGroupDmChannel(groupId: string, userId: string): Promise<EnsureGroupDmResponse> {
+export async function ensureGroupDmChannel(
+	groupId: string,
+	userId: string,
+): Promise<EnsureGroupDmResponse> {
 	const body = EnsureGroupDmRequestSchema.parse({ user_id: userId });
 	return api.post(`/groups/${encodeURIComponent(groupId)}/dm`, EnsureGroupDmResponseSchema, body);
 }

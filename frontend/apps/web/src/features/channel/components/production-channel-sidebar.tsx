@@ -707,24 +707,20 @@ export function ProductionChannelSidebar({
 										{dmChannels.map((ch) => {
 											const peer =
 												dmMembersById.get(ch.dm_peer_user_id ?? "") ??
-												dmSidebarPeerMember(
-													ch,
-													dmMembersQuery.data?.members,
-													sessionUser?.id,
-												);
+												dmSidebarPeerMember(ch, dmMembersQuery.data?.members, sessionUser?.id);
 											return (
-											<SidebarChannelRow
-												key={ch.id}
-												menuId={`dm-${ch.id}`}
-												activeMenuId={activeMenuId}
-												onActiveMenuIdChange={setActiveMenuId}
-												icon={<DmSidebarChannelIcon channel={ch} peer={peer} />}
-												label={dmPeerDisplayLabel(ch.name, peer)}
-												selected={!activeQuickView && ch.id === activeChannelId}
-												onSelect={() => navigateToChannel(groupId, ch.id)}
-												onPrefetch={() => prefetchChannel(ch.id)}
-												onPrefetchIntent={() => prefetchChannelIntent(ch.id)}
-											/>
+												<SidebarChannelRow
+													key={ch.id}
+													menuId={`dm-${ch.id}`}
+													activeMenuId={activeMenuId}
+													onActiveMenuIdChange={setActiveMenuId}
+													icon={<DmSidebarChannelIcon channel={ch} peer={peer} />}
+													label={dmPeerDisplayLabel(ch.name, peer)}
+													selected={!activeQuickView && ch.id === activeChannelId}
+													onSelect={() => navigateToChannel(groupId, ch.id)}
+													onPrefetch={() => prefetchChannel(ch.id)}
+													onPrefetchIntent={() => prefetchChannelIntent(ch.id)}
+												/>
 											);
 										})}
 									</ul>

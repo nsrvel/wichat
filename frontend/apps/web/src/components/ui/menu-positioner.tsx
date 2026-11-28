@@ -14,18 +14,11 @@ const floating = floatingPositionerDefaults();
 
 export function WiChatMenuPositioner({ className, ...props }: MenuPositionerProps) {
 	return (
-		<Menu.Positioner
-			{...floating}
-			{...props}
-			className={cn(menuPositionerClass, className)}
-		/>
+		<Menu.Positioner {...floating} {...props} className={cn(menuPositionerClass, className)} />
 	);
 }
 
-export function WiChatContextMenuPositioner({
-	className,
-	...props
-}: ContextMenuPositionerProps) {
+export function WiChatContextMenuPositioner({ className, ...props }: ContextMenuPositionerProps) {
 	return (
 		<ContextMenu.Positioner
 			{...floating}

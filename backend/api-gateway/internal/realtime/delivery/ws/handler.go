@@ -17,6 +17,7 @@ import (
 	"github.com/wichat/wichat/backend/wi-shared/exception"
 	"github.com/wichat/wichat/backend/wi-shared/infra/logger"
 	"github.com/wichat/wichat/backend/wi-shared/microservices"
+	"github.com/wichat/wichat/backend/wi-shared/microservices/utils"
 	userv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/user/v1"
 	responsehttp "github.com/wichat/wichat/backend/wi-shared/response/http"
 	"google.golang.org/grpc/codes"
@@ -261,8 +262,13 @@ func (h Handler) Realtime(w http.ResponseWriter, r *http.Request) {
 				ChannelId:   channelID,
 			})
 			if err != nil {
-				h.log.Info("realtime subscribe channel denied", "group_id", groupID, "channel_id", channelID)
-				h.writeSubscribeDenied(connCtx, conn, "channel", groupID, channelID, "forbidden")
+				if utils.IsClientCanceled(err) {
+					continue
+				}
+				if st, ok := status.FromError(err); ok && st.Code() == codes.PermissionDenied {
+					h.log.Info("realtime subscribe channel denied", "group_id", groupID, "channel_id", channelID)
+					h.writeSubscribeDenied(connCtx, conn, "channel", groupID, channelID, "forbidden")
+				}
 				continue
 			}
 

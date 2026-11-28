@@ -56,9 +56,7 @@ export function ShellSearchResults({
 			return <p className="py-3 text-xs text-muted-foreground">{t("shell.search.loading")}</p>;
 		}
 		if (fileHits.length === 0) {
-			return (
-				<p className="py-3 text-sm text-muted-foreground">{t("shell.search.no_results")}</p>
-			);
+			return <p className="py-3 text-sm text-muted-foreground">{t("shell.search.no_results")}</p>;
 		}
 		return (
 			<div className="space-y-3 pt-0.5">
@@ -85,9 +83,7 @@ export function ShellSearchResults({
 
 	if (filter === "channels") {
 		if (channelHits.length === 0) {
-			return (
-				<p className="py-3 text-sm text-muted-foreground">{t("shell.search.no_results")}</p>
-			);
+			return <p className="py-3 text-sm text-muted-foreground">{t("shell.search.no_results")}</p>;
 		}
 		return (
 			<div className="space-y-3 pt-0.5">
@@ -116,9 +112,7 @@ export function ShellSearchResults({
 	const showMessages = filter === "messages" && (messageHits.length > 0 || messageLoading);
 
 	if (!showPeople && !showMessages) {
-		return (
-			<p className="py-3 text-sm text-muted-foreground">{t("shell.search.no_results")}</p>
-		);
+		return <p className="py-3 text-sm text-muted-foreground">{t("shell.search.no_results")}</p>;
 	}
 
 	return (

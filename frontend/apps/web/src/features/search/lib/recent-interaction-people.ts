@@ -2,10 +2,7 @@ import type { InfiniteData } from "@tanstack/react-query";
 import type { GroupMember } from "@wichat/contracts/group/member";
 import type { MessagesList } from "@wichat/contracts/chat/message";
 import { flattenInfiniteChannelMessages } from "@/features/chat/lib/channel-message";
-import {
-	memberPresenceDot,
-	type AvatarPresenceDot,
-} from "@/features/presence/presence-dot";
+import { memberPresenceDot, type AvatarPresenceDot } from "@/features/presence/presence-dot";
 
 export type RecentPersonHit = {
 	userId: string;

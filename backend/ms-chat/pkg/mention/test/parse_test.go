@@ -14,10 +14,27 @@ func TestPublicUserIDsFromBody_uuid(t *testing.T) {
 	}
 }
 
+func TestStripCallerPublicID(t *testing.T) {
+	t.Parallel()
+	ids := []string{"aaa", "bbb", "aaa"}
+	got := mention.StripCallerPublicID(ids, "aaa")
+	if len(got) != 1 || got[0] != "bbb" {
+		t.Fatalf("StripCallerPublicID() = %v", got)
+	}
+}
+
+func TestPublicRoleIDsFromBody(t *testing.T) {
+	body := "hi [@Mod](wichat-mention-role:aaaaaaaaaaaaaaaaaaaaaaaa)"
+	got := mention.PublicRoleIDsFromBody(body)
+	if len(got) != 1 || got[0] != "aaaaaaaaaaaaaaaaaaaaaaaa" {
+		t.Fatalf("PublicRoleIDsFromBody() = %v", got)
+	}
+}
+
 func TestStripTokensForPreview(t *testing.T) {
-	body := "hi [@Garam](wichat-mention:aaaaaaaaaaaaaaaaaaaaaaaa) there"
+	body := "hi [@Garam](wichat-mention:aaaaaaaaaaaaaaaaaaaaaaaa) [@Mod](wichat-mention-role:bbbbbbbbbbbbbbbbbbbbbbbb) there"
 	got := mention.StripTokensForPreview(body)
-	if got != "hi @Garam there" {
+	if got != "hi @Garam @Mod there" {
 		t.Fatalf("StripTokensForPreview() = %q", got)
 	}
 }

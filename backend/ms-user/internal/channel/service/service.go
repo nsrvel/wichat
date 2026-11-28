@@ -919,6 +919,43 @@ func (s service) AssertGroupChannelAccess(ctx context.Context, accessToken, grou
 		return models.ChannelAccess{}, err
 	}
 
+	if ch.Type == constants.ChannelKindDM {
+		dmVisible, err := s.channels.DmChannelIDSetForUser(ctx, group.ID, userID)
+		if err != nil {
+			return models.ChannelAccess{}, err
+		}
+		if _, ok := dmVisible[ch.ID]; !ok {
+			return models.ChannelAccess{}, exception.PermissionDenied(exception.MsgForbidden, nil)
+		}
+
+		var dmPerms []string
+		if member.Role == constants.GroupRoleOwner {
+			dmPerms = append([]string(nil), constants.AllKnownPermissions...)
+		} else if s.roles != nil {
+			p, err := s.roles.GetEffectivePermissions(ctx, group.ID, userID)
+			if err != nil {
+				return models.ChannelAccess{}, err
+			}
+			if slices.Contains(p, constants.PermAdministrator) {
+				dmPerms = append([]string(nil), constants.AllKnownPermissions...)
+			} else {
+				dmPerms = p
+			}
+		} else {
+			dmPerms = append([]string(nil), constants.AllKnownPermissions...)
+		}
+
+		pub := ch.Public()
+		return models.ChannelAccess{
+			ChannelID:         ch.ID,
+			UserID:            userID,
+			Permissions:       dmPerms,
+			ChannelType:       pub.Type,
+			SlowmodeSeconds:   pub.SlowmodeSeconds,
+			ContentVisibility: pub.ContentVisibility,
+		}, nil
+	}
+
 	var perms []string
 	if member.Role == constants.GroupRoleOwner {
 		perms = append([]string(nil), constants.AllKnownPermissions...)
