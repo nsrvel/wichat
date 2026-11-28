@@ -221,8 +221,13 @@ export function ShareDialog({ open, onOpenChange, target }: ShareDialogProps) {
 						<InviteRecipientField
 							chips={chips}
 							onChangeChips={setChips}
-							searchHits={searchQuery.data?.users ?? []}
-							searchLoading={searchQuery.isFetching}
+							searchHits={debouncedQuery === query.trim() ? (searchQuery.data?.users ?? []) : []}
+							searchLoading={
+								searchQuery.isFetching ||
+								(query.trim().length > 0 &&
+									parseEmailChip(query) === null &&
+									debouncedQuery !== query.trim())
+							}
 							query={query}
 							onQueryChange={setQuery}
 							onPickUser={(hit) => {
