@@ -174,7 +174,7 @@ func (r pgRepository) SearchUsers(ctx context.Context, query string, limit int, 
 		Where("u.deleted_at IS NULL").
 		Where("u.disabled_at IS NULL").
 		Where(
-			"lower(u.display_name) LIKE ? OR lower(u.username) LIKE ?",
+			"(lower(u.display_name) LIKE ? OR lower(u.username) LIKE ?)",
 			pattern, pattern,
 		).
 		OrderExpr("u.display_name ASC").
