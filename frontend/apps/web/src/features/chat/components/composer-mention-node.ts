@@ -22,7 +22,8 @@ export const UserMentionNode = Node.create({
 	},
 
 	renderHTML({ node, HTMLAttributes }) {
-		const label = typeof node.attrs.label === "string" ? node.attrs.label : "";
+		const rawLabel = typeof node.attrs.label === "string" ? node.attrs.label : "";
+		const cleanLabel = rawLabel.replace(/^@+/, "");
 		const id = typeof node.attrs.id === "string" ? node.attrs.id : "";
 		return [
 			"span",
@@ -30,12 +31,12 @@ export const UserMentionNode = Node.create({
 				"data-user-mention": id,
 				class: mentionChipClassName(id),
 			}),
-			label,
+			`@${cleanLabel}`,
 		];
 	},
 
 	renderText({ node }) {
-		const label = typeof node.attrs.label === "string" ? node.attrs.label : "";
-		return label;
+		const rawLabel = typeof node.attrs.label === "string" ? node.attrs.label : "";
+		return `@${rawLabel.replace(/^@+/, "")}`;
 	},
 });

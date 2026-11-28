@@ -5,7 +5,8 @@ import { MentionMemberChip } from "@/features/chat/components/mention-member-chi
 import { MENTION_USER_ID_SOURCE } from "@/features/chat/lib/mention-chip-styles";
 import { extractMentionPublicUserIds } from "@/features/chat/lib/mention-markdown";
 
-const MENTION_LINK_BODY_SOURCE = String.raw`[@([^\]]+)\]\(wichat-mention:(${MENTION_USER_ID_SOURCE})\)`;
+// Leading `[` must be escaped — a bare `[@` would start a regex character class (String.raw does not escape it).
+const MENTION_LINK_BODY_SOURCE = `\\[@([^\\]]+)\\]\\(wichat-mention:(${MENTION_USER_ID_SOURCE})\\)`;
 
 function mentionLinkBodyPattern(): RegExp {
 	return new RegExp(MENTION_LINK_BODY_SOURCE, "gi");

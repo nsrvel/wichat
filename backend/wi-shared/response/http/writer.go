@@ -36,7 +36,7 @@ func WriteJSON(w http.ResponseWriter, status int, v any) {
 
 // WriteError maps err to an HTTP JSON error envelope.
 func WriteError(w http.ResponseWriter, _ *http.Request, err error, opts ...WriteOption) {
-	if err == nil {
+	if err == nil || utils.IsClientCanceled(err) {
 		return
 	}
 
@@ -87,7 +87,7 @@ func clientCode(ex *exception.Error) exception.MessageCode {
 
 // WriteOutboundError maps downstream gRPC or transport errors to HTTP JSON.
 func WriteOutboundError(w http.ResponseWriter, r *http.Request, err error, opts ...WriteOption) {
-	if err == nil {
+	if err == nil || utils.IsClientCanceled(err) {
 		return
 	}
 
@@ -111,7 +111,7 @@ func WriteOutboundError(w http.ResponseWriter, r *http.Request, err error, opts 
 
 // WriteErrorFromGRPC maps a downstream gRPC error to an HTTP JSON error response.
 func WriteErrorFromGRPC(w http.ResponseWriter, _ *http.Request, grpcErr error, opts ...WriteOption) {
-	if grpcErr == nil {
+	if grpcErr == nil || utils.IsClientCanceled(grpcErr) {
 		return
 	}
 

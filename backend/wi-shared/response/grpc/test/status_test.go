@@ -1,6 +1,7 @@
 package grpc_test
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -53,6 +54,19 @@ func TestToStatusRawErrorInternal(t *testing.T) {
 func TestToStatusNil(t *testing.T) {
 	if responsegrpc.ToStatus(nil) != nil {
 		t.Fatal("expected nil")
+	}
+}
+
+func TestToStatusContextCanceled(t *testing.T) {
+	t.Parallel()
+
+	stErr := responsegrpc.ToStatus(context.Canceled)
+	st, ok := status.FromError(stErr)
+	if !ok {
+		t.Fatal("not a status error")
+	}
+	if st.Code() != codes.Canceled {
+		t.Fatalf("code %v", st.Code())
 	}
 }
 

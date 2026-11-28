@@ -899,6 +899,13 @@ func TestEnsureGroupDmChannelIdempotent(t *testing.T) {
 		t.Fatalf("second ensure: created=%v want same id %s got %s err=%v", createdFlag2, ch1.ID, ch2.ID, err)
 	}
 
+	if _, err := svc.AssertGroupChannelAccess(ctx, owner.AccessToken, created.ID, ch1.ID); err != nil {
+		t.Fatalf("owner assert dm: %v", err)
+	}
+	if _, err := svc.AssertGroupChannelAccess(ctx, peer.AccessToken, created.ID, ch1.ID); err != nil {
+		t.Fatalf("peer assert dm: %v", err)
+	}
+
 	listed, _, err := svc.ListGroupChannels(ctx, owner.AccessToken, created.ID)
 	if err != nil {
 		t.Fatal(err)

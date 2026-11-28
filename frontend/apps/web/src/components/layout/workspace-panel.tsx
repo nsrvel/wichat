@@ -4,7 +4,10 @@ import { cloneElement, isValidElement, useEffect, type ReactElement, type ReactN
 import { ChannelSidebar } from "@/components/layout/channel-sidebar";
 import { useShellChrome } from "@/components/layout/shell-chrome-context";
 import { ShellUserDock } from "@/components/layout/shell-user-dock";
-import { WorkspacePanelHeaderRow } from "@/components/layout/workspace-panel-header-row";
+import {
+	WorkspacePanelHeaderRow,
+	WorkspaceSidebarHeaderCell,
+} from "@/components/layout/workspace-panel-header-row";
 import { WorkspaceSidebarResizeHandle } from "@/components/layout/workspace-sidebar-resize-handle";
 import {
 	CHANNEL_SIDEBAR_MIN_WIDTH,
@@ -59,17 +62,28 @@ export function WorkspacePanel({
 			<ChannelSidebar layout="list" width={width} panelResizeHandle />
 		);
 
+	const isMentionsSplit = quickView === "mentions";
+
 	return (
 		<div className="relative flex h-full min-h-0 min-w-0 flex-col overflow-hidden">
-			<WorkspacePanelHeaderRow
-				onOpenSidebar={onOpenSidebar}
-				groupId={groupId}
-				channelId={channelId}
-				quickView={quickView}
-			/>
+			{!isMentionsSplit ? (
+				<WorkspacePanelHeaderRow
+					onOpenSidebar={onOpenSidebar}
+					groupId={groupId}
+					channelId={channelId}
+					quickView={quickView}
+				/>
+			) : null}
 			<div className="flex min-h-0 min-w-0 flex-1">
-				<div className="hidden h-full min-h-0 shrink-0 lg:block" style={{ width }}>
-					{sidebarNode}
+				<div className="hidden h-full min-h-0 shrink-0 lg:flex lg:flex-col" style={{ width }}>
+					{isMentionsSplit ? (
+						<WorkspaceSidebarHeaderCell
+							groupId={groupId}
+							width={width}
+							className="flex h-[46px] shrink-0 items-center border-b border-black border-r border-sidebar-border bg-sidebar"
+						/>
+					) : null}
+					<div className="min-h-0 flex-1">{sidebarNode}</div>
 				</div>
 				<div className="flex min-h-0 min-w-0 flex-1 flex-col bg-chat-surface">{children}</div>
 			</div>

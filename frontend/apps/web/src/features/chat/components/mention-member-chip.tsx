@@ -93,7 +93,8 @@ export function MentionMemberChip({
 		className,
 	);
 
-	const chipLabel = <span className={chipClassName}>{label}</span>;
+	const cleanLabel = label.replace(/^@+/, "");
+	const chipLabel = <span className={chipClassName}>@{cleanLabel}</span>;
 
 	const fallbackUser = {
 		userId,
@@ -127,7 +128,13 @@ export function MentionMemberChip({
 		<Popover open={previewOpen} modal={false}>
 			<PopoverTrigger
 				nativeButton={false}
-				className="inline border-0 bg-transparent p-0"
+				render={
+					<span
+						className="inline border-0 bg-transparent p-0"
+						role={canOpenProfile ? "button" : undefined}
+						tabIndex={canOpenProfile ? 0 : undefined}
+					/>
+				}
 				onClick={onClick}
 				onPointerEnter={handleHoverZoneEnter}
 				onPointerLeave={handleHoverZoneLeave}
@@ -140,10 +147,7 @@ export function MentionMemberChip({
 				sideOffset={8}
 				className="w-auto overflow-visible border-0 bg-transparent p-0 shadow-none"
 			>
-				<div
-					onPointerEnter={handleHoverZoneEnter}
-					onPointerLeave={handleHoverZoneLeave}
-				>
+				<div onPointerEnter={handleHoverZoneEnter} onPointerLeave={handleHoverZoneLeave}>
 					<GroupMemberProfileSurface
 						groupId={groupId ?? ""}
 						memberId={userId}
