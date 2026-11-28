@@ -141,7 +141,7 @@ export function UserSettingsDialog({
 				role="dialog"
 				aria-modal="true"
 				aria-labelledby={titleId}
-				className="relative z-10 flex h-[min(86dvh,720px)] w-[min(960px,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-border bg-background text-foreground shadow-elevated"
+				className="relative z-10 flex h-[min(88dvh,740px)] w-[min(960px,calc(100vw-1.5rem))] overflow-hidden rounded-2xl border border-border bg-background text-foreground shadow-elevated xl:h-[min(88dvh,840px)] xl:w-[min(1100px,calc(100vw-3rem))] 2xl:h-[min(88dvh,900px)] 2xl:w-[min(1180px,calc(100vw-4rem))]"
 			>
 				{/* Desktop left sidebar */}
 				<div className="hidden md:flex">

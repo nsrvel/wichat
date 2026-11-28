@@ -26,6 +26,7 @@ import (
 	"github.com/wichat/wichat/backend/wi-shared/infra/logger"
 	userauth "github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-user/grpc/auth"
 	userchannel "github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-user/grpc/channel"
+	grouprole "github.com/wichat/wichat/backend/wi-shared/microservices/services/ms-user/grpc/group-role"
 	userv1 "github.com/wichat/wichat/backend/wi-shared/models/gen/user/v1"
 )
 
@@ -48,6 +49,7 @@ type service struct {
 	attachments messagerepo.MinioRepository
 	userAuth    userauth.Client
 	userChannel userchannel.Client
+	groupRoles  grouprole.Client
 	outbox      outboxrepo.PgRepository
 	log         logger.Logger
 	now         func() time.Time
@@ -60,6 +62,7 @@ func NewService(
 	attachments messagerepo.MinioRepository,
 	userAuth userauth.Client,
 	userChannel userchannel.Client,
+	groupRoles grouprole.Client,
 	outbox outboxrepo.PgRepository,
 	log logger.Logger,
 ) Service {
@@ -69,6 +72,7 @@ func NewService(
 		attachments: attachments,
 		userAuth:    userAuth,
 		userChannel: userChannel,
+		groupRoles:  groupRoles,
 		outbox:      outbox,
 		log:         log,
 		now:         func() time.Time { return time.Now().UTC() },
@@ -249,7 +253,18 @@ func (s service) CreateChannelMessage(ctx context.Context, in *models.CreateChan
 
 	createdAt := s.now()
 
-	mentionPublicIDs := mention.MergePublicUserIDs(in.MentionedUserIDs, body)
+	mentionPublicIDs, err := s.resolveMentionPublicIDs(
+		ctx,
+		in.AccessToken,
+		in.GroupPublicID,
+		in.CallerUserID,
+		in.CallerPermissions,
+		body,
+		in.MentionedUserIDs,
+	)
+	if err != nil {
+		return models.PublicMessage{}, err
+	}
 	var mentionInternalIDs []string
 	if s.mentions != nil && len(mentionPublicIDs) > 0 {
 		mentionInternalIDs, err = s.mentions.ResolveUserPublicIDsForChannel(ctx, in.ResolvedChannelID, mentionPublicIDs)

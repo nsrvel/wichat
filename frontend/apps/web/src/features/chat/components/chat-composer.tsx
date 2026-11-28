@@ -30,6 +30,7 @@ import { ExpressionPickerPopover } from "@/components/expression-picker/expressi
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { AttachmentBlockNode } from "@/features/chat/components/composer-attachment-node";
 import { UserMentionNode } from "@/features/chat/components/composer-mention-node";
+import { RoleMentionNode } from "@/features/chat/components/composer-role-mention-node";
 import { composerMentionSuggestionExtension } from "@/features/chat/lib/composer-mention-suggestion";
 import { ReplyQuoteNode } from "@/features/chat/components/composer-reply-node";
 import { clearComposerFiles, registerComposerFile } from "@/features/chat/lib/attachment-preview";
@@ -78,6 +79,8 @@ function FormatComposeIcon({ className }: { className?: string }) {
 
 type ChatComposerProps = {
 	groupId?: string;
+	selfUserId?: string;
+	callerPermissions?: string[];
 	mode?: "send" | "edit";
 	initialValue?: string;
 	onCancel?: () => void;
@@ -99,6 +102,8 @@ type ChatComposerProps = {
 
 export function ChatComposer({
 	groupId,
+	selfUserId,
+	callerPermissions,
 	mode = "send",
 	initialValue,
 	onCancel,
@@ -239,15 +244,18 @@ export function ChatComposer({
 			ReplyQuoteNode,
 			AttachmentBlockNode,
 			UserMentionNode,
+			RoleMentionNode,
 			HighlightMark,
 			TextColorMark,
 			FontSizeMark,
 		];
 		if (groupId) {
-			base.push(composerMentionSuggestionExtension(groupId, queryClient));
+			base.push(
+				composerMentionSuggestionExtension(groupId, queryClient, selfUserId, callerPermissions),
+			);
 		}
 		return base;
-	}, [groupId, queryClient, resolvedPlaceholder]);
+	}, [groupId, queryClient, resolvedPlaceholder, selfUserId, callerPermissions]);
 
 	const editor = useEditor({
 		immediatelyRender: false,
@@ -636,6 +644,7 @@ export function ChatComposer({
 			>
 				<div className={cn(!isEditMode && "pl-[42px]")}>
 					<div
+						data-composer-box="true"
 						className={cn(
 							"relative flex flex-col overflow-hidden rounded-xl border bg-chat-bubble transition-colors",
 							isDragOver ? "border-primary ring-2 ring-primary/25" : "border-chat-bubble-border",

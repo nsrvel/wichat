@@ -154,7 +154,7 @@ func (s *server) Run(ctx context.Context) error {
 	mentionSvc := mentionservice.NewService(mentionPg, userGRPC.Channel, userGRPC.Auth, s.log)
 	searchQuerySvc := searchservice.NewQueryService(esRepo, userGRPC.Channel, s.log)
 	searchIndexer := searchkafka.NewSearchIndexer(kafkaConsumer, searchIndexSvc, s.log)
-	messageSvc := messageservice.NewService(messagePg, mentionPg, messageMinio, userGRPC.Auth, userGRPC.Channel, outboxPg, s.log)
+	messageSvc := messageservice.NewService(messagePg, mentionPg, messageMinio, userGRPC.Auth, userGRPC.Channel, userGRPC.GroupRole, outboxPg, s.log)
 
 	// gRPC
 	addr := s.cfg.ListenAddr()

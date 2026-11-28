@@ -75,27 +75,31 @@ export function UserSettingsSidebar({
 				})),
 			}));
 		}
-		return navGroups.map((group) => ({
-			...group,
-			items: group.items
-				.map((item) => {
-					const label = t(item.labelKey).toLowerCase();
-					const matchedFields = (item.fields ?? []).filter((field) => {
-						const fieldLabel = t(field.labelKey).toLowerCase();
-						return (
-							fieldLabel.includes(trimmedQuery) ||
-							(field.keywords ?? []).some((kw) => kw.includes(trimmedQuery))
-						);
-					});
-					const matchesItem =
-						label.includes(trimmedQuery) ||
-						item.keywords.some((kw) => kw.includes(trimmedQuery)) ||
-						item.subAnchors?.some((sub) => t(sub.labelKey).toLowerCase().includes(trimmedQuery)) ||
-						matchedFields.length > 0;
-					return { ...item, matchedFields, matchesItem };
-				})
-				.filter((item) => item.matchesItem),
-		})).filter((group) => group.items.length > 0);
+		return navGroups
+			.map((group) => ({
+				...group,
+				items: group.items
+					.map((item) => {
+						const label = t(item.labelKey).toLowerCase();
+						const matchedFields = (item.fields ?? []).filter((field) => {
+							const fieldLabel = t(field.labelKey).toLowerCase();
+							return (
+								fieldLabel.includes(trimmedQuery) ||
+								(field.keywords ?? []).some((kw) => kw.includes(trimmedQuery))
+							);
+						});
+						const matchesItem =
+							label.includes(trimmedQuery) ||
+							item.keywords.some((kw) => kw.includes(trimmedQuery)) ||
+							item.subAnchors?.some((sub) =>
+								t(sub.labelKey).toLowerCase().includes(trimmedQuery),
+							) ||
+							matchedFields.length > 0;
+						return { ...item, matchedFields, matchesItem };
+					})
+					.filter((item) => item.matchesItem),
+			}))
+			.filter((group) => group.items.length > 0);
 	}, [trimmedQuery, t, mfaFeatureEnabled]);
 
 	return (

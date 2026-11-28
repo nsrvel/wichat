@@ -79,7 +79,7 @@ func (m pgRepositoryMock) CreateGroupWithOwner(_ context.Context, group models.G
 		PublicID:    strings.Repeat("e", 24),
 		GroupID:     group.ID,
 		Slug:        constants.RoleSlugEveryone,
-		Name:        "@everyone",
+		Name:        "everyone",
 		Color:       "#99aab5",
 		IsDefault:   true,
 		IsSystem:    true,

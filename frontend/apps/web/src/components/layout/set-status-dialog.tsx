@@ -167,9 +167,7 @@ function SetStatusDialogBody({
 
 								<div className="mt-3.5 min-w-0">
 									<p className={USER_PROFILE_DISPLAY_NAME_CLASS}>{displayName}</p>
-									{username ? (
-										<p className={USER_PROFILE_META_CLASS}>@{username}</p>
-									) : null}
+									{username ? <p className={USER_PROFILE_META_CLASS}>@{username}</p> : null}
 								</div>
 							</UserProfileCardShell>
 						</div>

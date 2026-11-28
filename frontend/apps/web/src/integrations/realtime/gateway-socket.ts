@@ -32,7 +32,11 @@ export type LivePresenceListener = (frame: {
 	is_online: boolean;
 }) => void;
 
-export type LiveChannelsListener = (frame: { group_id: string; channel_id?: string; reason?: string }) => void;
+export type LiveChannelsListener = (frame: {
+	group_id: string;
+	channel_id?: string;
+	reason?: string;
+}) => void;
 
 export type ChannelRealtimeHandlers = {
 	groupId: string;

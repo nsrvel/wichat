@@ -15,7 +15,11 @@ type DmSidebarChannelIconProps = {
 export function DmSidebarChannelIcon({ channel, peer }: DmSidebarChannelIconProps) {
 	if (!peer) {
 		return (
-			<ChannelListIcon type={channel.type} channelName={channel.name} imageUrl={channel.image_url} />
+			<ChannelListIcon
+				type={channel.type}
+				channelName={channel.name}
+				imageUrl={channel.image_url}
+			/>
 		);
 	}
 

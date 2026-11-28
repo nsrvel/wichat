@@ -1,10 +1,13 @@
 package grpc
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 
 	"github.com/wichat/wichat/backend/wi-shared/exception"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
@@ -15,6 +18,13 @@ func ToStatus(err error) error {
 	if err == nil {
 		return nil
 	}
+	if errors.Is(err, context.Canceled) {
+		return status.Error(codes.Canceled, context.Canceled.Error())
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return status.Error(codes.DeadlineExceeded, context.DeadlineExceeded.Error())
+	}
+
 	ex, ok := exception.As(err)
 	if !ok {
 		// Downstream gRPC services already attach client-safe codes; preserve them.
